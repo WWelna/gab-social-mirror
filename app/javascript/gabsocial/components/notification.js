@@ -148,7 +148,7 @@ class Notification extends ImmutablePureComponent {
                     {message}
                   </Text>
                   {
-                    !!createdAt &&
+                    !!statusUrl &&
                     <React.Fragment>
                       <DotTextSeperator />
                       <DateWrapperContainer
