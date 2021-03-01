@@ -48,7 +48,7 @@ class PreviewCard < ApplicationRecord
   def missing_image?
     width.present? && height.present? && image_file_name.blank?
   end
-  
+
   def save_with_optional_image!
     save!
   rescue ActiveRecord::RecordInvalid
@@ -57,14 +57,15 @@ class PreviewCard < ApplicationRecord
   end
 
   class << self
-    def search_for(term, offset = 0)
-      pattern = '%' + sanitize_sql_like(term.strip) + '%'
+    SEARCH_FIELDS = %i[title description url].freeze
 
-      PreviewCard.where(
-        "lower(title) LIKE lower('#{pattern}') OR lower(description) LIKE lower('#{pattern}') OR lower(url) LIKE lower('#{pattern}')"
-      ).order('updated_at DESC').limit(25).offset(offset)
+    def search_for(term, offset = 0)
+      pattern = "%#{term.strip}%"
+
+      conditions = SEARCH_FIELDS.map { |f| arel_table[f].matches(pattern) }.reduce(:or)
+      PreviewCard.where(conditions).order(updated_at: :desc).limit(25).offset(offset)
     end
-    
+
     private
 
     def image_styles(f)
