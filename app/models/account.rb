@@ -374,51 +374,53 @@ class Account < ApplicationRecord
     end
 
     def search_for(terms, limit = 10, offset = 0, options = {})
-      textsearch, query = generate_query_for_search(terms)
-      @onlyVerified = options[:onlyVerified] || false
+      return []
+      # textsearch, query = generate_query_for_search(terms)
+      # @onlyVerified = options[:onlyVerified] || false
 
-      sql = <<-SQL.squish
-        SELECT
-          accounts.*,
-          ts_rank_cd(#{textsearch}, #{query}, 32) AS rank
-        FROM accounts
-        WHERE #{query} @@ #{textsearch}
-          AND accounts.suspended_at IS NULL
-          AND accounts.moved_to_account_id IS NULL
-          AND accounts.domain IS NULL
-        ORDER BY accounts.is_verified DESC
-        LIMIT ? OFFSET ?
-      SQL
+      # sql = <<-SQL.squish
+      #   SELECT
+      #     accounts.*,
+      #     ts_rank_cd(#{textsearch}, #{query}, 32) AS rank
+      #   FROM accounts
+      #   WHERE #{query} @@ #{textsearch}
+      #     AND accounts.suspended_at IS NULL
+      #     AND accounts.moved_to_account_id IS NULL
+      #     AND accounts.domain IS NULL
+      #   ORDER BY accounts.is_verified DESC
+      #   LIMIT ? OFFSET ?
+      # SQL
 
-      records = find_by_sql([sql, limit, offset])
-      ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
-      records
+      # records = find_by_sql([sql, limit, offset])
+      # ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
+      # records
     end
 
     def advanced_search_for(terms, account, limit = 10, offset = 0, options = {})
-      textsearch, query = generate_query_for_search(terms)
-      @onlyVerified = options[:onlyVerified] || false
+      return []
+      # textsearch, query = generate_query_for_search(terms)
+      # @onlyVerified = options[:onlyVerified] || false
 
-      sql = <<-SQL.squish
-        SELECT
-          accounts.*,
-          (count(f.id) + 1) * ts_rank_cd(#{textsearch}, #{query}, 32) AS rank,
-          (count(f.id) + 1) AS fc
-        FROM accounts
-        LEFT OUTER JOIN follows AS f ON (accounts.id = f.account_id AND f.target_account_id = ?) OR (accounts.id = f.target_account_id AND f.account_id = ?)
-        WHERE #{query} @@ #{textsearch}
-          AND accounts.suspended_at IS NULL
-          AND accounts.moved_to_account_id IS NULL
-          AND accounts.domain IS NULL
-        GROUP BY accounts.id
-        ORDER BY accounts.is_verified DESC, fc DESC, rank DESC
-        LIMIT ? OFFSET ?
-      SQL
+      # sql = <<-SQL.squish
+      #   SELECT
+      #     accounts.*,
+      #     (count(f.id) + 1) * ts_rank_cd(#{textsearch}, #{query}, 32) AS rank,
+      #     (count(f.id) + 1) AS fc
+      #   FROM accounts
+      #   LEFT OUTER JOIN follows AS f ON (accounts.id = f.account_id AND f.target_account_id = ?) OR (accounts.id = f.target_account_id AND f.account_id = ?)
+      #   WHERE #{query} @@ #{textsearch}
+      #     AND accounts.suspended_at IS NULL
+      #     AND accounts.moved_to_account_id IS NULL
+      #     AND accounts.domain IS NULL
+      #   GROUP BY accounts.id
+      #   ORDER BY accounts.is_verified DESC, fc DESC, rank DESC
+      #   LIMIT ? OFFSET ?
+      # SQL
 
-      records = find_by_sql([sql, account.id, account.id, limit, offset])
+      # records = find_by_sql([sql, account.id, account.id, limit, offset])
 
-      ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
-      records
+      # ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
+      # records
     end
 
     private
