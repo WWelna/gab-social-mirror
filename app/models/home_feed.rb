@@ -16,11 +16,7 @@ class HomeFeed < Feed
   private
 
   def from_database(limit, max_id, since_id, min_id)
-    pagination_max = ""
-    pagination_min = ""
-    pagination_max = "and s.id < #{max_id}" unless max_id.nil?
-    pagination_min = "and s.id > #{min_id}" unless min_id.nil?
-    Status.find_by_sql "
+    Status.find_by_sql([<<-SQL, { id: @id, limit: limit, min_id: min_id, max_id: max_id }])
       with cte as
       (
         select
@@ -36,14 +32,14 @@ class HomeFeed < Feed
          where
           s.created_at > NOW() - INTERVAL '7 days'
           and s.reply is false
-          and (exists(select ff.target_account_id from follows ff where ff.account_id = #{@id} and ff.target_account_id = s.account_id)
-            or s.account_id = #{@id})
-          and not exists(select mm.target_account_id from mutes mm where mm.account_id = #{@id} and mm.target_account_id in (s.account_id, r.account_id))
-          and not exists(select bb.target_account_id from blocks bb where bb.account_id = #{@id} and bb.target_account_id in (s.account_id, r.account_id))
-          #{pagination_max}
-                       #{pagination_min}
+          and (exists(select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id)
+            or s.account_id = :id)
+          and not exists(select mm.target_account_id from mutes mm where mm.account_id = :id and mm.target_account_id in (s.account_id, r.account_id))
+          and not exists(select bb.target_account_id from blocks bb where bb.account_id = :id and bb.target_account_id in (s.account_id, r.account_id))
+          and (:max_id is null or s.id < :max_id)
+          and (:min_id is null or s.id > :min_id)
          order by s.created_at desc
-          limit #{limit}
+          limit :limit
         ) sid
       )
       select
@@ -53,6 +49,6 @@ class HomeFeed < Feed
       where
           cte.rn_dupe = 1 or cte.reblog_of_id is null
       order by so.created_at desc
-    "
+    SQL
   end
 end
