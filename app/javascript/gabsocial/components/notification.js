@@ -93,8 +93,8 @@ class Notification extends ImmutablePureComponent {
       )
     }
 
-    const DateWrapperContainer = !!status ? NavLink : Dummy
     const statusUrl = !!status ? status.get('uri') : '/'
+    const DateWrapperContainer = !!status && !!statusUrl ? NavLink : Dummy
 
     const containerClasses = CX({
       d: 1,
@@ -147,20 +147,17 @@ class Notification extends ImmutablePureComponent {
                     {' '}
                     {message}
                   </Text>
-                  {
-                    !!statusUrl &&
-                    <React.Fragment>
-                      <DotTextSeperator />
-                      <DateWrapperContainer
-                        to={statusUrl}
-                        className={[_s.noUnderline, _s.text].join(' ')}
-                      >
-                        <Text size='small' color='tertiary' className={_s.ml5}>
-                          <RelativeTimestamp timestamp={createdAt} />
-                        </Text>
-                      </DateWrapperContainer>
-                    </React.Fragment>
-                  }
+                  <React.Fragment>
+                    <DotTextSeperator />
+                    <DateWrapperContainer
+                      to={statusUrl}
+                      className={[_s.noUnderline, _s.text].join(' ')}
+                    >
+                      <Text size='small' color='tertiary' className={_s.ml5}>
+                        <RelativeTimestamp timestamp={createdAt} />
+                      </Text>
+                    </DateWrapperContainer>
+                  </React.Fragment>
                 </div>
               </div>
               {
