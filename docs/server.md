@@ -10,7 +10,7 @@ This document describes how to prepare a host for development, test, and product
 
 ## What is this guide?
 
-This guide is a walk through of the setup process of a [Gab Social](https://code.gab.com/gab/social/gab-social) instance.
+This guide is a walk through of the setup process of a [Gab Social](https://code.gab.com/gab/gab-open-source) instance.
 
 We use example.com to represent a domain or sub-domain. Example.com should be replaced with your instance domain or sub-domain.
 
@@ -142,7 +142,7 @@ rvm install 2.6.5
 
 ### node.js And Ruby Dependencies
 
-Now that [Ruby](https://www.ruby-lang.org/en/) is enabled, we will clone the [Gab Social git repository](https://code.gab.com/gab/social/gab-social) and install the [Ruby](https://www.ruby-lang.org/en/) and [node.js](https://nodejs.org/en/) dependancies.
+Now that [Ruby](https://www.ruby-lang.org/en/) is enabled, we will clone the [Gab Social git repository](https://code.gab.com/gab/gab-open-source) and install the [Ruby](https://www.ruby-lang.org/en/) and [node.js](https://nodejs.org/en/) dependancies.
 
 Run the following to clone and install:
 
@@ -151,7 +151,6 @@ Run the following to clone and install:
 su - gabsocial
 
 # Clone the gabsocial git repository into ~/live
-git clone https://code.gab.com/gab/social/gab-social live
 
 # Change directory to ~/live
 cd ~/live
@@ -176,7 +175,7 @@ Eventually, the Ruby On Rails dependencies are going away. This is a stop-gap so
 
 ## PostgreSQL Database Creation
 
-[Gab Social](https://code.gab.com/gab/social/gab-social) requires access to a [PostgreSQL](https://www.postgresql.org) instance.
+[Gab Social](https://code.gab.com/gab/gab-open-source) requires access to a [PostgreSQL](https://www.postgresql.org) instance.
 
 Create a user for a [PostgreSQL](https://www.postgresql.org) instance:
 
@@ -193,7 +192,7 @@ CREATE USER gabsocial CREATEDB;
 
 ## nginx Configuration
 
-You need to configure [nginx](http://nginx.org) to serve your [Gab Social](https://code.gab.com/gab/social/gab-social) instance.
+You need to configure [nginx](http://nginx.org) to serve your [Gab Social](https://code.gab.com/gab/gab-open-source) instance.
 
 **Reminder: Replace all occurrences of example.com with your own instance's domain or sub-domain.**
 
@@ -387,7 +386,7 @@ For this we will switch to the `gabsocial` system user:
 sudo su - gabsocial
 ```
 
-Change directory to `~/live` and run the [Gab Social](https://code.gab.com/gab/social/gab-social) setup wizard:
+Change directory to `~/live` and run the [Gab Social](https://code.gab.com/gab/gab-open-source) setup wizard:
 
 ```sh
 cd ~/live
@@ -411,7 +410,7 @@ We will need three [systemd](https://github.com/systemd/systemd) service files f
 
 Now switch back to the root user.
 
-For the [Gab Social](https://code.gab.com/gab/social/gab-social) web workers service place the following in `/etc/systemd/system/gabsocial-web.service`:
+For the [Gab Social](https://code.gab.com/gab/gab-open-source) web workers service place the following in `/etc/systemd/system/gabsocial-web.service`:
 
 ```
 [Unit]
@@ -433,7 +432,7 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-For [Gab Social](https://code.gab.com/gab/social/gab-social) background queue service, place the following in `/etc/systemd/system/gabsocial-sidekiq.service`:
+For [Gab Social](https://code.gab.com/gab/gab-open-source) background queue service, place the following in `/etc/systemd/system/gabsocial-sidekiq.service`:
 
 ```
 [Unit]
@@ -454,7 +453,7 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-For the [Gab Social](https://code.gab.com/gab/social/gab-social) streaming API service place the following in `/etc/systemd/system/gabsocial-streaming.service`:
+For the [Gab Social](https://code.gab.com/gab/gab-open-source) streaming API service place the following in `/etc/systemd/system/gabsocial-streaming.service`:
 
 ```
 [Unit]
@@ -530,13 +529,13 @@ SMTP_PASSWORD=HolySnacksAPassword
 SMTP_FROM_ADDRESS=Domain.com Gab Social Admin <notifications@gab.com>
 ```
 
-Finally, to test this, spin up a Rails console (see [the administration guide](https://code.gab.com/gab/social/gab-social/blob/master/docs/server.md)) and run the following commands to test this out:
+Finally, to test this, spin up a Rails console (see the administration guide) and run the following commands to test this out:
 
 ```ruby
 m = UserMailer.new.mail to:'email@address.com', subject: 'test', body: 'awoo'
 m.deliver
 ```
 
-That is all! If everything was done correctly, a [Gab Social](https://code.gab.com/gab/social/gab-social) instance will appear when you visit `https://example.com` in a web browser.
+That is all! If everything was done correctly, a [Gab Social](https://code.gab.com/gab/gab-open-source) instance will appear when you visit `https://example.com` in a web browser.
 
 Congratulations and welcome to Gab Social!

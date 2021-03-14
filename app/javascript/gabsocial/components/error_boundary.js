@@ -1,10 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
-import {
-  source_url,
-  version,
-} from '../initial_state'
+import { version } from '../initial_state'
 import {
   APP_NAME,
   DEFAULT_REL,
@@ -103,7 +100,7 @@ class ErrorBoundary extends React.PureComponent {
             <div className={[_s.d, _s.flexRow, _s.mt10, _s.aiCenter].join(' ')}>
               <Button
                 isText
-                href={source_url}
+                href={'/'} 
                 rel={DEFAULT_REL}
                 target='_blank'
                 backgroundColor='tertiary'

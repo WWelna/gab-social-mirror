@@ -5,11 +5,7 @@ import {
   defineMessages,
   injectIntl,
 } from 'react-intl'
-import {
-  me,
-  repository,
-  source_url,
-} from '../initial_state'
+import { me } from '../initial_state'
 import { DEFAULT_REL } from '../constants'
 import Text from './text'
 import Button from './button'
@@ -107,11 +103,11 @@ class LinkFooter extends React.PureComponent {
         <Text size='small' color='tertiary' tagName='p' className={_s.mt10}>
           <FormattedMessage
             id='getting_started.open_source_notice'
-            defaultMessage='Gab Social is open source software. You can contribute or report issues on our self-hosted GitLab at {gitlab}.'
+            defaultMessage='Gab Social is open source software.'
             values={{
               gitlab: (
-                <a href={source_url} className={[_s.displayInlineBlock, _s.inherit].join(' ')} rel={DEFAULT_REL} target='_blank'>
-                  {repository}
+                <a href='https://code.gab.com/gab/gab-open-source' className={[_s.displayInlineBlock, _s.inherit].join(' ')} rel={DEFAULT_REL} target='_blank'>
+                  code.gab
                 </a>
               )
             }}

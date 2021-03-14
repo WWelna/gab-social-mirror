@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://code.gab.com/gab/social/gab-social"
+    "url": "https://code.gab.com/gab/gab-open-source"
   },
   "browserslist": [
     "last 2 versions",

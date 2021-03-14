@@ -13,7 +13,6 @@ export const boostModal = getMeta('boost_modal');
 export const deleteModal = getMeta('delete_modal');
 export const me = getMeta('me');
 export const meUsername = getMeta('username');
-export const repository = getMeta('repository');
 export const source_url = getMeta('source_url');
 export const version = getMeta('version');
 export const isStaff = getMeta('is_staff');

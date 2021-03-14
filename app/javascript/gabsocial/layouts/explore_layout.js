@@ -19,6 +19,7 @@ import {
   SignUpLogInPanel,
   UserSuggestionsPanel,
   TrendsBreakingPanel,
+  LinkFooter,
 } from '../features/ui/util/async_components'
 
 class ExploreLayout extends ImmutablePureComponent {
@@ -71,6 +72,7 @@ class ExploreLayout extends ImmutablePureComponent {
       // layout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, suggestionType: 'verified' }} />)
     }
     layout.push(<WrappedBundle component={TrendsBreakingPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />)
+    layout.push(<WrappedBundle component={LinkFooter} />)
 
     return (
       <Layout

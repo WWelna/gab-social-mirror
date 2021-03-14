@@ -12,8 +12,6 @@ class InitialStateSerializer < ActiveModel::Serializer
       access_token: object.token,
       locale: I18n.locale,
       domain: Rails.configuration.x.local_domain,
-      repository: GabSocial::Version.repository,
-      source_url: GabSocial::Version.source_url,
       version: GabSocial::Version.to_s,
     }
 

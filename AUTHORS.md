@@ -4,7 +4,7 @@ Gab Social by Gab.com is available on our self-hosted GitLab.
 
 ## General Statements
 
-The [Gab Social](https://code.gab.com/gab/social/gab-social) fork is not endorsed by the Mastodon team. Gab is not receiving support from the Mastodon team and has not requested it. There has been no communication between the Mastodon and Gab teams regarding the Gab Social fork.
+The [Gab Social](https://code.gab.com/gab/gab-open-source) fork is not endorsed by the Mastodon team. Gab is not receiving support from the Mastodon team and has not requested it. There has been no communication between the Mastodon and Gab teams regarding the Gab Social fork.
 
 ## Acknowledgement of accomplishments
 

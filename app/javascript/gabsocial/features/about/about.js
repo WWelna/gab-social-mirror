@@ -49,9 +49,9 @@ export default class About extends React.PureComponent {
                 color='brand'
                 backgroundColor='none'
                 className={_s.displayInline}
-                href='https://code.gab.com/gab/social/gab-social'
+                href='https://code.gab.com/gab/gab-open-source'
               >
-                https://code.gab.com/gab/social/gab-social
+                https://code.gab.com/gab/gab-open-source
               </Button>
             </Text>
           </div>

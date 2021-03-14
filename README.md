@@ -50,7 +50,7 @@ To get started developing on Gab, you will need to run a version of it locally.
 The following instructions assume you are already familiar with using a terminal program.
 
 1. Install [Vagrant](https://www.vagrantup.com/) and [VirtualBox](https://www.virtualbox.org/) if you haven't already.
-2. Clone this repository with `git clone https://code.gab.com/gab/social/gab-social.git`
+2. Clone this repository
 3. Change into the project directory with `cd gab-social`
 4. Run `vagrant up` to provision the virtual machine. This will take a while.
 5. Finally, run `vagrant ssh -c "cd /vagrant && foreman start"` to start the local web server.
