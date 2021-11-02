@@ -15,6 +15,10 @@ export const GAB_NEWS_FETCH_REQUEST = 'GAB_NEWS_FETCH_REQUEST'
 export const GAB_NEWS_FETCH_SUCCESS = 'GAB_NEWS_FETCH_SUCCESS'
 export const GAB_NEWS_FETCH_FAIL = 'GAB_NEWS_FETCH_FAIL'
 
+export const GAB_TV_EXPLORE_FETCH_SUCCESS = 'GAB_TV_EXPLORE_FETCH_SUCCESS'
+export const GAB_TV_EXPLORE_FETCH_REQUEST = 'GAB_TV_EXPLORE_FETCH_REQUEST'
+export const GAB_TV_EXPLORE_FETCH_FAIL = 'GAB_TV_EXPLORE_FETCH_FAIL'
+
 export const LATEST_GAB_STATUSES_FETCH_REQUEST = 'LATEST_GAB_STATUSES_FETCH_REQUEST'
 export const LATEST_GAB_STATUSES_FETCH_SUCCESS = 'LATEST_GAB_STATUSES_FETCH_SUCCESS'
 export const LATEST_GAB_STATUSES_FETCH_FAIL = 'LATEST_GAB_STATUSES_FETCH_FAIL'
@@ -48,6 +52,38 @@ const fetchGabTrendsSuccess = (items) => ({
 
 const fetchGabTrendsFail = (error) => ({
   type: GAB_TRENDS_FETCH_FAIL,
+  error,
+})
+
+/**
+ * 
+ */
+ export const fetchGabTVExplore = () => (dispatch, getState) => {
+  // If fetched once, dont fetch again
+  const isFetched = getState().getIn(['news', 'gab_tv_explore', 'isFetched'], false)
+  if (isFetched) return
+
+  dispatch(fetchGabTVExploreRequest())
+
+  const url = 'https://tv.gab.com/explore?fmt=json'
+  axios.get(url).then((response) => {
+    dispatch(fetchGabTVExploreSuccess(response.data))
+  }).catch((error) => {
+    dispatch(fetchGabTVExploreFail(error))
+  })
+}
+
+const fetchGabTVExploreRequest = () => ({
+  type: GAB_TV_EXPLORE_FETCH_REQUEST,
+})
+
+const fetchGabTVExploreSuccess = (data) => ({
+  type: GAB_TV_EXPLORE_FETCH_SUCCESS,
+  data,
+})
+
+const fetchGabTVExploreFail = (error) => ({
+  type: GAB_TV_EXPLORE_FETCH_FAIL,
   error,
 })
 

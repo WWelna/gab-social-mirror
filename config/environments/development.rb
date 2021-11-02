@@ -82,7 +82,17 @@ Rails.application.configure do
   # Otherwise, use letter_opener, which launches a browser window to view sent mail.
   config.action_mailer.delivery_method = (ENV['HEROKU'] || ENV['VAGRANT'] || ENV['REMOTE_DEV']) ? :letter_opener_web : :letter_opener
 
-  config.file_watcher = ActiveSupport::EventedFileUpdateChecker
+  if `whoami`.chomp == 'vagrant'
+    # The typical workflow when using Vagrant is to edit files directly on your computer, and
+    # run the code inside the VM. Vagrant is unable to sync file system events, so Rails isn't
+    # notified when a file is changed. Because of this, we have to fall back to polling updated
+    # timestamps on files.
+    config.file_watcher = ActiveSupport::FileUpdateChecker
+  else
+    # Use an evented file watcher to asynchronously detect changes in source code,
+    # routes, locales, etc. This feature depends on the listen gem.
+    config.file_watcher = ActiveSupport::EventedFileUpdateChecker
+  end
 
   config.after_initialize do
     Bullet.enable        = true

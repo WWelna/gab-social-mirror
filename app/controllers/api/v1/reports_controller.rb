@@ -10,7 +10,8 @@ class Api::V1::ReportsController < Api::BaseController
       reported_account,
       status_ids: reported_status_ids,
       comment: report_params[:comment],
-      forward: report_params[:forward]
+      forward: report_params[:forward],
+      category: report_params[:category]
     )
 
     render json: @report, serializer: REST::ReportSerializer
@@ -31,6 +32,6 @@ class Api::V1::ReportsController < Api::BaseController
   end
 
   def report_params
-    params.permit(:account_id, :comment, :forward, status_ids: [])
+    params.permit(:account_id, :comment, :forward, :category, status_ids: [])
   end
 end

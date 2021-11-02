@@ -20,9 +20,10 @@ class SearchService < BaseService
 
       if @query.present?
         results[:accounts] = perform_accounts_search! if account_searchable?
-        results[:statuses] = perform_statuses_search! if full_text_searchable? && @account.user.staff?
-        results[:links] = perform_links_search! if @account.user.staff?
+        results[:statuses] = perform_statuses_search! if full_text_searchable? && @account.vpdi?
+        # results[:links] = perform_links_search! if @account.vpdi?
         results[:groups] = perform_groups_search!
+        results[:hashtags] = perform_hashtags_search! if hashtag_searchable? && @account.vpdi?
       end
     end
   end
@@ -54,6 +55,13 @@ class SearchService < BaseService
     )
   end
 
+  def perform_hashtags_search!
+    Tag.search_for(
+      @query.gsub(/\A#/, ''),
+      @offset
+    )
+  end
+
   def perform_statuses_search!
     definition = StatusesIndex.filter(term: { searchable_by: @account.id })
                               .query(multi_match: { type: 'most_fields', query: @query, operator: 'and', fields: %w(text text.stemmed) })
@@ -80,13 +88,17 @@ class SearchService < BaseService
   end
 
   def default_results
-    { accounts: [], statuses: [], links: [], groups: [] }
+    { accounts: [], hashtags: [], statuses: [], links: [], groups: [] }
   end
 
   def full_text_searchable?
     return false unless Chewy.enabled?
 
     statuses_search? && !@account.nil? && !((@query.start_with?('#') || @query.include?('@')) && !@query.include?(' '))
+  end
+
+  def hashtag_searchable?
+    hashtag_search? && !@query.include?('@')
   end
 
   def account_searchable?
@@ -99,6 +111,10 @@ class SearchService < BaseService
 
   def statuses_search?
     @options[:type].blank? || @options[:type] == 'statuses'
+  end
+
+  def hashtag_search?
+    @options[:type].blank? || @options[:type] == 'hashtags'
   end
 
   def relations_map_for_account(account, account_ids, domains)

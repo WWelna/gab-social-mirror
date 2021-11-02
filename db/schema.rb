@@ -10,10 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_02_18_235403) do
+ActiveRecord::Schema.define(version: 2021_08_03_165635) do
 
   # These are extensions that must be enabled in order to support this database
-  enable_extension "mongo_fdw"
   enable_extension "pg_stat_statements"
   enable_extension "pgstattuple"
   enable_extension "plpgsql"
@@ -27,6 +26,7 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
     t.integer "lock_version", default: 0, null: false
     t.boolean "unread", default: false, null: false
     t.index ["account_id", "conversation_id", "participant_account_ids"], name: "index_unique_conversations", unique: true
+    t.index ["account_id"], name: "index_account_conversations_on_account_id"
     t.index ["conversation_id"], name: "index_account_conversations_on_conversation_id"
   end
 
@@ -214,35 +214,38 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
     t.index ["account_id", "target_account_id"], name: "index_chat_blocks_on_account_id_and_target_account_id", unique: true
   end
 
-  create_table "chat_conversation_accounts", force: :cascade do |t|
+  create_table "chat_conversation_accounts", id: :bigint, default: -> { "timestamp_id('chat_conversation_accounts'::text)" }, force: :cascade do |t|
     t.bigint "account_id"
     t.bigint "chat_conversation_id"
     t.bigint "participant_account_ids", default: [], null: false, array: true
-    t.bigint "last_chat_message_id"
     t.boolean "is_hidden", default: false, null: false
     t.boolean "is_approved", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "unread_count", default: 0
+    t.bigint "unread_count", default: 0, null: false
     t.string "chat_message_expiration_policy"
     t.boolean "is_muted", default: false, null: false
+    t.boolean "is_pinned", default: false, null: false
+    t.datetime "left_group_chat_at"
     t.index ["account_id"], name: "index_chat_conversation_accounts_on_account_id"
     t.index ["chat_conversation_id"], name: "index_chat_conversation_accounts_on_chat_conversation_id"
   end
 
-  create_table "chat_conversations", force: :cascade do |t|
+  create_table "chat_conversations", id: :bigint, default: -> { "timestamp_id('chat_conversations'::text)" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "last_chat_message_id"
+    t.datetime "last_chat_message_sent_at"
   end
 
-  create_table "chat_messages", force: :cascade do |t|
-    t.text "text", default: "", null: false
+  create_table "chat_messages", id: :bigint, default: -> { "timestamp_id('chat_messages'::text)" }, force: :cascade do |t|
     t.text "language", default: "", null: false
     t.integer "from_account_id", null: false
-    t.integer "chat_conversation_id", null: false
+    t.bigint "chat_conversation_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expires_at"
+    t.text "text_ciphertext"
     t.index ["from_account_id", "chat_conversation_id"], name: "index_chat_messages_on_from_account_id_and_chat_conversation_id"
   end
 
@@ -565,7 +568,6 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
     t.datetime "updated_at", null: false
     t.integer "lock_version", default: 0, null: false
     t.index ["account_id"], name: "index_polls_on_account_id"
-    t.index ["created_at"], name: "index_polls_on_created_at"
     t.index ["id", "lock_version"], name: "index_polls_on_id_and_lock_version"
     t.index ["status_id"], name: "index_polls_on_status_id"
   end
@@ -628,6 +630,7 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
     t.bigint "target_account_id", null: false
     t.bigint "assigned_account_id"
     t.string "uri"
+    t.integer "category", limit: 2
     t.index ["account_id"], name: "index_reports_on_account_id"
     t.index ["action_taken"], name: "index_reports_on_action_taken"
     t.index ["target_account_id"], name: "index_reports_on_target_account_id"
@@ -809,6 +812,24 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
     t.boolean "success", default: false, null: false
   end
 
+  create_table "unfavourites", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "status_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_unfavourites_on_account_id"
+    t.index ["status_id"], name: "index_unfavourites_on_status_id"
+  end
+
+  create_table "unfollows", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "target_account_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_unfollows_on_account_id"
+    t.index ["target_account_id"], name: "index_unfollows_on_target_account_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.datetime "created_at", null: false
@@ -895,7 +916,7 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
   add_foreign_key "chat_blocks", "accounts", on_delete: :cascade
   add_foreign_key "chat_conversation_accounts", "accounts", on_delete: :cascade
   add_foreign_key "chat_conversation_accounts", "chat_conversations", on_delete: :cascade
-  add_foreign_key "chat_conversation_accounts", "chat_messages", column: "last_chat_message_id", on_delete: :nullify
+  add_foreign_key "chat_conversations", "chat_messages", column: "last_chat_message_id", on_delete: :nullify
   add_foreign_key "chat_messages", "accounts", column: "from_account_id", on_delete: :cascade
   add_foreign_key "chat_messages", "chat_conversations", on_delete: :cascade
   add_foreign_key "custom_filters", "accounts", on_delete: :cascade
@@ -966,6 +987,10 @@ ActiveRecord::Schema.define(version: 2021_02_18_235403) do
   add_foreign_key "statuses_tags", "statuses", on_delete: :cascade
   add_foreign_key "statuses_tags", "tags", name: "fk_3081861e21", on_delete: :cascade
   add_foreign_key "tombstones", "accounts", on_delete: :cascade
+  add_foreign_key "unfavourites", "accounts", on_delete: :cascade
+  add_foreign_key "unfavourites", "statuses", on_delete: :cascade
+  add_foreign_key "unfollows", "accounts", column: "target_account_id", on_delete: :cascade
+  add_foreign_key "unfollows", "accounts", on_delete: :cascade
   add_foreign_key "users", "accounts", name: "fk_50500f500d", on_delete: :cascade
   add_foreign_key "users", "oauth_applications", column: "created_by_application_id", on_delete: :nullify
   add_foreign_key "web_push_subscriptions", "oauth_access_tokens", column: "access_token_id", on_delete: :cascade

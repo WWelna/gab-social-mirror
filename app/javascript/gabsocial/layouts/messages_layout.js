@@ -83,11 +83,11 @@ class MessagesLayout extends React.PureComponent {
         return (
           <div className={[_s.d, _s.w100PC, _s.minH100VH, _s.bgTertiary].join(' ')}>
             <ChatNavigationBar chatConversationId={selectedChatConversationId} />
-            <main role='main' className={[_s.d, _s.w100PC, _s.flexGrow1, _s.bgPrimary, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
+            <main role='main' className={[_s.d, _s.w100PC, _s.flexGrow1, _s.bgPrimary].join(' ')}>
               <ChatMessageScrollingList chatConversationId={selectedChatConversationId} isXS={isXS} />
             </main>
-            { currentConversationIsRequest && <ChatConversationRequestApproveBar chatConversationId={selectedChatConversationId} /> }
             { !currentConversationIsRequest && <ChatMessageComposeForm chatConversationId={selectedChatConversationId} isXS={isXS} /> }
+            { currentConversationIsRequest && <ChatConversationRequestApproveBar chatConversationId={selectedChatConversationId} isXS={isXS} /> }
           </div>
         )
       } else {
@@ -117,7 +117,7 @@ class MessagesLayout extends React.PureComponent {
         actions={[
           {
             icon: 'cog',
-            to: '/messages/settings',
+            to: '/messages/requests',
           },
           {
             icon: 'pencil',

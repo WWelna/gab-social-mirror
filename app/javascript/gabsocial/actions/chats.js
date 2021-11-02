@@ -1,5 +1,5 @@
 import debounce from 'lodash.debounce'
-import api, { getLinks } from '../api'
+import api from '../api'
 import { importFetchedAccounts } from './importer'
 import { me } from '../initial_state'
 
@@ -15,19 +15,19 @@ export const SET_CHAT_CONVERSATION_SEARCH_VALUE = 'SET_CHAT_CONVERSATION_SEARCH_
  * 
  */
 export const fetchChatConversationAccountSuggestions = (query) => (dispatch, getState) => {
-  if (!query) return
+  if (!query || !me) return
   debouncedFetchChatConversationAccountSuggestions(query, dispatch, getState) 
 }
 
 export const debouncedFetchChatConversationAccountSuggestions = debounce((query, dispatch, getState) => {
   if (!query) return
-  return false
 
   api(getState).get('/api/v1/accounts/search', {
     params: {
       q: query,
       resolve: false,
-      limit: 4,
+      following: true,
+      limit: 6,
     },
   }).then((response) => {
     dispatch(importFetchedAccounts(response.data))

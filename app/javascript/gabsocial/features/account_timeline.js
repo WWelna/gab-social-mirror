@@ -11,6 +11,7 @@ import { openModal } from '../actions/modal'
 import StatusList from '../components/status_list'
 import Text from '../components/text'
 import Button from '../components/button'
+import { me } from '../initial_state'
 
 class AccountTimeline extends ImmutablePureComponent {
 
@@ -74,13 +75,29 @@ class AccountTimeline extends ImmutablePureComponent {
       </div>
     )
 
+    var canSee = true;
+    const blocks = !!me ? localStorage.getItem('blocks') : ''
+    const mutes = !!me ? localStorage.getItem('mutes') : ''
+    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
+    if (
+      !!me && (
+        (blockedby && blockedby.split(',').includes(this.props.accountId))
+        ||
+        (blocks && blocks.split(',').includes(this.props.accountId))
+        ||
+        (mutes && mutes.split(',').includes(this.props.accountId))
+      )
+    ) {
+      canSee = false;
+    }
+
     return (
       <StatusList
         scrollKey='account_timeline'
         statusIds={statusIds}
         featuredStatusIds={featuredStatusIds}
         isLoading={isLoading}
-        hasMore={hasMore}
+        hasMore={hasMore && canSee}
         onLoadMore={this.handleLoadMore}
         emptyMessage={emptyMessage}
       />

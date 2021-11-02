@@ -14,6 +14,7 @@ class PanelLayout extends React.PureComponent {
       headerButtonTitle,
       headerButtonAction,
       headerButtonTo,
+      headerButtonTooltip,
       headerButtonHref,
       footerButtonTitle,
       footerButtonAction,
@@ -34,7 +35,7 @@ class PanelLayout extends React.PureComponent {
                   {title}
                 </Heading>
                 {
-                  (!!headerButtonTitle && (!!headerButtonAction || !!headerButtonTo || !!headerButtonHref)) &&
+                  (!!headerButtonTitle && (!!headerButtonAction || !!headerButtonTo || !!headerButtonHref || !!headerButtonTooltip)) &&
                   <div className={[_s.d, _s.mlAuto].join(' ')}>
                     <Button
                       isText
@@ -44,6 +45,7 @@ class PanelLayout extends React.PureComponent {
                       to={headerButtonTo}
                       href={headerButtonHref}
                       onClick={headerButtonAction}
+                      tooltip={headerButtonTooltip}
                       className={[_s.px15, _s.py5, _s.bgSubtle_onHover].join(' ')}
                     >
                       <Text color='inherit' weight='bold'>
@@ -105,6 +107,7 @@ PanelLayout.propTypes = {
   headerButtonTitle: PropTypes.string,
   headerButtonAction: PropTypes.func,
   headerButtonTo: PropTypes.string,
+  headerButtonTooltip: PropTypes.string,
   headerButtonHref: PropTypes.string,
   footerButtonTitle: PropTypes.string,
   footerButtonAction: PropTypes.func,

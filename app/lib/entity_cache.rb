@@ -12,7 +12,9 @@ class EntityCache
   end
 
   def emoji(shortcodes, domain = nil)
-    shortcodes   = [shortcodes] unless shortcodes.is_a?(Array)
+    shortcodes = Array(shortcodes)
+    return [] if shortcodes.empty?
+
     cached       = Rails.cache.read_multi(*shortcodes.map { |shortcode| to_key(:emoji, shortcode, domain) })
     uncached_ids = []
 

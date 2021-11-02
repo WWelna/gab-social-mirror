@@ -17,7 +17,15 @@ export const CHAT_CONVERSATIONS_APPROVED_EXPAND_FAIL    = 'CHAT_CONVERSATIONS_AP
 
 export const CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_FETCH_SUCCESS = 'CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_FETCH_SUCCESS'
 
+export const CHAT_CONVERSATION_UNREAD_COUNT_RESET_SUCCESS = 'CHAT_CONVERSATION_UNREAD_COUNT_RESET_SUCCESS'
+
 export const CHAT_CONVERSATION_APPROVED_SEARCH_FETCH_SUCCESS = 'CHAT_CONVERSATION_APPROVED_SEARCH_FETCH_SUCCESS'
+
+//
+
+export const CHAT_CONVERSATION_FETCH_REQUEST = 'CHAT_CONVERSATION_FETCH_REQUEST'
+export const CHAT_CONVERSATION_FETCH_SUCCESS = 'CHAT_CONVERSATION_FETCH_SUCCESS'
+export const CHAT_CONVERSATION_FETCH_FAIL    = 'CHAT_CONVERSATION_FETCH_FAIL'
 
 //
 
@@ -110,6 +118,36 @@ export const fetchChatConversationsSuccess = (chatConversations, next) => ({
 export const fetchChatConversationsFail = (error) => ({
   type: CHAT_CONVERSATIONS_APPROVED_FETCH_FAIL,
   showToast: true,
+  error,
+})
+
+/**
+ * @description Fetch single chat conversations, import accounts and set chat converation
+ */
+ export const fetchChatConversation = (chatConversationId) => (dispatch, getState) => {
+  if (!me || !chatConversationId) return
+
+  dispatch(fetchChatConversationRequest())
+
+  api(getState).get(`/api/v1/chat_conversation/${chatConversationId}`).then((response) => {
+    dispatch(importFetchedAccounts(response.data.other_accounts))
+    dispatch(fetchChatConversationSuccess(response.data))
+  }).catch((error) => {
+    dispatch(fetchChatConversationFail(error))
+  })
+}
+
+export const fetchChatConversationRequest = () => ({
+  type: CHAT_CONVERSATION_FETCH_REQUEST,
+})
+
+export const fetchChatConversationSuccess = (chatConversation) => ({
+  type: CHAT_CONVERSATION_FETCH_SUCCESS,
+  chatConversation,
+})
+
+export const fetchChatConversationFail = (error) => ({
+  type: CHAT_CONVERSATION_FETCH_FAIL,
   error,
 })
 
@@ -386,6 +424,8 @@ export const fetchChatConversationRequestedCount = () => (dispatch, getState) =>
       type: CHAT_CONVERSATION_REQUESTED_COUNT_FETCH_SUCCESS,
       count: response.data,
     })
+  }).catch(() => {
+    /** */
   })
 }
 
@@ -395,12 +435,29 @@ export const fetchChatConversationRequestedCount = () => (dispatch, getState) =>
 export const fetchChatConversationUnreadCount = () => (dispatch, getState) => {
   if (!me) return
 
-  // api(getState).get('/api/v1/chat_conversations/approved_conversations/unread_count').then(response => {
+  api(getState).get('/api/v1/chat_conversations/approved_conversations/unread_count').then(response => {
     dispatch({
       type: CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_FETCH_SUCCESS,
-      count: 0,
+      count: response.data,
     })
-  // })
+  }).catch(() => {
+    /** */
+  })
+}
+
+/**
+ * 
+ */
+export const chatConversationUnreadCountReset = () => (dispatch, getState) => {
+  if (!me) return
+
+  api(getState).post('/api/v1/chat_conversations/approved_conversations/reset_all_unread_count').then(() => {
+    dispatch({
+      type: CHAT_CONVERSATION_UNREAD_COUNT_RESET_SUCCESS,
+    })
+  }).catch(() => {
+    /** */
+  })
 }
 
 /**
@@ -525,12 +582,12 @@ export const searchApprovedChatConversations = (query) => (dispatch, getState) =
 export const debouncedSearchApprovedChatConversations = debounce((query, dispatch, getState) => {
   if (!query) return
   
-  api(getState).get('/api/v1/chat_conversation_accounts/_/search', {
+  api(getState).get('/api/v1/chat_conversations/search_conversations', {
     params: { q: query },
   }).then((response) => {
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
     dispatch(searchApprovedChatConversationsSuccess(response.data))
-  }).catch((error) => {
+  }).catch(() => {
     //
   })
 }, 650, { leading: true })

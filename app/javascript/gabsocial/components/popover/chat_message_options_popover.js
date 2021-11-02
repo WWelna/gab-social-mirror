@@ -56,13 +56,14 @@ class ChatMessageOptionsPopover extends React.PureComponent {
         hideArrow: true,
         title: 'Delete Message',
         onClick: () => this.handleOnDelete(),
-      }
-    ] : [
-      {
-        hideArrow: true,
-        title: 'Report Messenger',
-        onClick: () => this.handleOnReport(),
       },
+    ] : [
+      // : todo :
+      // {
+      //   hideArrow: true,
+      //   title: 'Report Messenger',
+      //   onClick: () => this.handleOnReport(),
+      // },
       {},
       {
         hideArrow: true,

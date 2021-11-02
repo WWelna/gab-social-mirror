@@ -37,19 +37,22 @@ class ProfileStatsPanel extends ImmutablePureComponent {
             <UserStat
               title={intl.formatMessage(messages.gabs)}
               value={shortNumberFormat(account.get('statuses_count'))}
+              numvalue={account.get('statuses_count')}
               to={`/${account.get('acct')}`}
               isInline={noPanel}
             />
             <UserStat
               title={intl.formatMessage(messages.followers)}
               value={shortNumberFormat(account.get('followers_count'))}
-              to={`/${account.get('acct')}/followers`}
+              numvalue={account.get('followers_count')}
+              to={`/${account.get('acct')}/followers/`}
               isInline={noPanel}
             />
             <UserStat
               isLast
               title={intl.formatMessage(messages.follows)}
               value={shortNumberFormat(account.get('following_count'))}
+              numvalue={account.get('following_count')}
               to={`/${account.get('acct')}/following`}
               isInline={noPanel}
             />

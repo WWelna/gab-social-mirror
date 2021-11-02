@@ -11,12 +11,19 @@ class ChatConversationCreateModal extends React.PureComponent {
 
     return (
       <ModalLayout
-        title='New Conversation'
-        width={440}
+        title='New Message'
+        width={480}
         onClose={onClose}
         noPadding
       >
-        <WrappedBundle component={ChatConversationCreate} componentParams={{ chatConversationId, onCloseModal: onClose }} />
+        <WrappedBundle
+          component={ChatConversationCreate}
+          componentParams={{
+            chatConversationId,
+            onCloseModal: onClose,
+            isModal: true,
+          }}
+        />
       </ModalLayout>
     )
   }

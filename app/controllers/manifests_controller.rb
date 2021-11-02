@@ -24,7 +24,27 @@ class ManifestsController < EmptyController
           text: 'text',
           url: 'url',
         }
-      }
+      },
+      shortcuts: [
+        {
+          name: "Compose gab",
+          short_name: "Compose gab",
+          description: "Compose a new gab",
+          url: "/compose",
+        },
+        {
+          name: "Explore",
+          short_name: "Explore",
+          description: "Go to explore page",
+          url: "/explore",
+        },
+        {
+          name: "Notifications",
+          short_name: "Notifications",
+          description: "Go to notifications page",
+          url: "/notifications",
+        }
+      ]
     }
   end
 end

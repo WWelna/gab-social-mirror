@@ -182,16 +182,16 @@ class Notification extends ImmutablePureComponent {
 }
 
 const messages = defineMessages({
-  poll: { id: 'notification.poll', defaultMessage: 'A poll you have voted in has ended' },
-  ownPoll: { id: 'notification.own_poll', defaultMessage: 'Your poll has ended' },
-  mentionedInPost: { id: 'mentioned_in_post', defaultMessage: 'mentioned you in their post' },
-  mentionedInComment: { id: 'mentioned_in_comment', defaultMessage: 'mentioned you in their comment' },
+  poll: { id: 'notification.poll', defaultMessage: 'A poll you voted in ended' },
+  ownPoll: { id: 'notification.own_poll', defaultMessage: 'Your poll ended' },
+  mentionedInPost: { id: 'mentioned_in_post', defaultMessage: 'mentioned you' },
+  mentionedInComment: { id: 'mentioned_in_comment', defaultMessage: 'mentioned you' },
   followedYouOne: { id: 'followed_you_one', defaultMessage: 'followed you' },
   followedYouMultiple: { id: 'followed_you_multiple', defaultMessage: 'and {count} others followed you' },
-  likedStatusOne: { id: 'liked_status_one', defaultMessage: 'liked your status' },
-  likedStatusMultiple: { id: 'liked_status_multiple', defaultMessage: 'and {count} others liked your status' },
-  repostedStatusOne: { id: 'reposted_status_one', defaultMessage: 'reposted your status' },
-  repostedStatusMultiple: { id: 'reposted_status_multiple', defaultMessage: 'and {count} others reposted your status' },
+  likedStatusOne: { id: 'liked_status_one', defaultMessage: 'liked your post' },
+  likedStatusMultiple: { id: 'liked_status_multiple', defaultMessage: 'and {count} others liked your post' },
+  repostedStatusOne: { id: 'reposted_status_one', defaultMessage: 'reposted you' },
+  repostedStatusMultiple: { id: 'reposted_status_multiple', defaultMessage: 'and {count} others reposted you' },
 })
 
 Notification.propTypes = {

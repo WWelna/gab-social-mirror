@@ -730,10 +730,9 @@ export const removePollOption = (index) => ({
 /**
  * 
  */
-export const changePollSettings = (expiresIn, isMultiple) => ({
+export const changePollSettings = (expiresIn) => ({
   type: COMPOSE_POLL_SETTINGS_CHANGE,
   expiresIn,
-  isMultiple,
 })
 
 /**

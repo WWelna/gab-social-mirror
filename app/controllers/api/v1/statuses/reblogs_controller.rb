@@ -32,6 +32,8 @@ class Api::V1::Statuses::ReblogsController < Api::BaseController
 
   def status_for_reblog
     Status.find(params[:status_id])
+  rescue ActiveRecord::RecordNotFound
+    raise GabSocial::ValidationError, 'The Gab you are trying to repost could not be found. It may have been deleted.'
   end
 
   def status_for_destroy

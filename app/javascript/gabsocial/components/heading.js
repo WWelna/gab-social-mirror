@@ -35,6 +35,7 @@ class Heading extends React.PureComponent {
     const classes = CX({
       d: 1,
       text: 1,
+      textAlignLeft: !isCentered,
       textAlignCenter: isCentered,
 
       cPrimary: [SIZES.h1, SIZES.h2].indexOf(size) > -1,

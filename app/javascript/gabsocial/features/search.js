@@ -14,6 +14,7 @@ import ColumnIndicator from '../components/column_indicator'
 import StatusContainer from '../containers/status_container'
 import Block from '../components/block'
 import PreviewCardItem from '../components/preview_card_item'
+import List from '../components/list'
 
 class Search extends ImmutablePureComponent {
 
@@ -62,10 +63,11 @@ class Search extends ImmutablePureComponent {
     const showGroups = pathname === '/search/groups'
     const showStatuses = pathname === '/search/statuses'
     const showLinks = pathname === '/search/links'
-    const isTop = !showPeople && !showGroups && !showStatuses && !showLinks
+    const showHashtags = pathname === '/search/hashtags'
+    const isTop = !showPeople && !showGroups && !showStatuses && !showLinks && !showHashtags
     const theLimit = 4
 
-    let accounts, statuses, groups, links
+    let accounts, statuses, groups, links, hashtags
 
     if (results.get('accounts') && results.get('accounts').size > 0 && (isTop || showPeople)) {
       const size = isTop ? Math.min(results.get('accounts').size, theLimit) : results.get('accounts').size;
@@ -190,6 +192,34 @@ class Search extends ImmutablePureComponent {
       )
     }
 
+    if (results.get('hashtags') && results.get('hashtags').size > 0 && me && (isTop || showHashtags)) {
+      const tagLimit = 10
+      const size = isTop ? Math.min(results.get('hashtags').size, tagLimit) : results.get('hashtags').size;
+
+      const hashtagListItems = results.get('hashtags').slice(0, size).map((tag) => {
+        return {
+          title: `#${tag.get('name')}`,
+          to: `/tags/${tag.get('name')}`,
+        }
+      })
+
+      hashtags = (
+        <PanelLayout
+          title='Hashtags'
+          noPadding
+        >
+          <div className={[_s.d, _s.pb10, _s.px15, _s.mb15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
+            <Text color='tertiary' size='small'>
+              Showing {size} of {results.get('hashtags').size} results
+            </Text>
+          </div>
+          <div className={[_s.d, _s.w100PC, _s.boxShadowNone].join(' ')}>
+            <List items={hashtagListItems} />
+          </div>
+        </PanelLayout>
+      )
+    }
+
     if (!accounts && !statuses && !groups && !links) {
       return (
         <ResponsiveClassesComponent classNamesXS={[_s.px10, _s.pt15].join(' ')}>
@@ -206,6 +236,7 @@ class Search extends ImmutablePureComponent {
         {groups}
         {statuses}
         {links}
+        {hashtags}
       </div>
     )
   }

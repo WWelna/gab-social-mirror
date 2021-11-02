@@ -6,19 +6,25 @@ ruby '>= 2.4.0', '< 2.7.0'
 gem 'pkg-config', '~> 1.3'
 
 gem 'puma', '~> 5.0'
-gem 'rails', '6.0.3.4'
+gem 'rails', '~> 6.0.3'
 gem 'thor', '~> 0.20'
 
 gem 'hamlit-rails', '~> 0.2'
 gem 'pg', '~> 1.2.3'
 gem 'pghero', '~> 2.7.0'
 gem 'dotenv-rails', '~> 2.7'
+gem 'email_address'
 
 gem 'aws-sdk-s3', '~> 1.41', require: false
 gem 'fog-core', '<= 2.1.0'
 gem 'fog-openstack', '~> 0.3', require: false
-gem 'paperclip', '~> 6.0'
-gem 'paperclip-av-transcoder', '~> 0.6'
+
+# Using a git branch until this gets merged. https://github.com/kreeti/kt-paperclip/pull/54
+gem 'kt-paperclip', git: 'https://github.com/freespeech4ever/kt-paperclip', branch: 'use-marcel'
+
+# Using a git copy, so that we can require kt-paperclip instead of paperclip. This gem is abandoned.
+gem 'paperclip-av-transcoder', git: 'https://github.com/freespeech4ever/paperclip-av-transcoder'
+
 gem 'streamio-ffmpeg', '~> 3.0'
 gem 'blurhash', '~> 0.1'
 
@@ -68,7 +74,6 @@ gem 'posix-spawn', git: 'https://github.com/rtomayko/posix-spawn', ref: '58465d2
 gem 'pundit', '~> 2.0'
 gem 'premailer-rails'
 gem 'rack-attack', '~> 6.0'
-gem 'rack-cors', '~> 1.0', require: 'rack/cors'
 gem 'rails-i18n', '~> 6.0.0'
 gem 'rails-settings-cached', '~> 0.6'
 gem 'redis', '~> 4.2', require: ['redis', 'redis/connection/hiredis']
@@ -80,7 +85,7 @@ gem 'sidekiq-scheduler', '~> 3.0'
 gem 'sidekiq-unique-jobs', '~> 6.0'
 gem 'sidekiq-bulk', '~>0.2.0'
 gem 'simple-navigation', '~> 4.0'
-gem 'simple_form', '~> 4.1'
+gem 'simple_form', '~> 5.1'
 gem 'sprockets-rails', '~> 3.2', require: 'sprockets/railtie'
 gem 'stoplight', '~> 2.1.3'
 gem 'strong_migrations', '~> 0.4'
@@ -156,3 +161,4 @@ gem 'concurrent-ruby', require: false
 
 gem "elastic-apm", "~> 3.13"
 gem 'similar_text', '~> 0.0.4'
+gem 'lockbox'

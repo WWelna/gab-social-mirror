@@ -20,22 +20,39 @@ class ChatConversationRequestApproveBar extends React.PureComponent {
   }
 
   render () {
-    if (!this.props.chatConversationId) return null
+    const { chatConversationId, isXS } = this.props
 
-    return (
-      <div className={[_s.d, _s.z4, _s.minH53PX, _s.w100PC].join(' ')}>
-        <div className={[_s.d, _s.minH53PX, _s.bgNavigation, _s.aiCenter, _s.z3, _s.bottom0, _s.right0, _s.left0, _s.posFixed].join(' ')} >
-          <div className={[_s.d, _s.w100PC, _s.pt15, _s.px15, _s.aiCenter, _s.jcCenter, _s.saveAreaInsetPB, _s.saveAreaInsetPL, _s.saveAreaInsetPR, _s.w100PC].join(' ')}>
-            <Button
-              isNarrow
-              onClick={this.handleOnApproveMessageRequest}
-            >
-              <Text color='inherit' align='center'>
-                Approve Message Request
-              </Text>
-            </Button>
+    if (!chatConversationId) return null
+
+    const btn = (
+      <Button
+        isBlock
+        isNarrow
+        onClick={this.handleOnApproveMessageRequest}
+      >
+        <Text color='inherit' align='center' weight='medium'>
+          Approve Message Request
+        </Text>
+      </Button>
+    )
+
+    if (isXS) {
+      return (
+        <div className={[_s.d, _s.z4, _s.minH53PX, _s.w100PC, _s.mtAuto, _s.bgPrimary].join(' ')}>
+          <div className={[_s.d, _s.minH53PX, _s.bgPrimary, _s.aiCenter, _s.z3, _s.bottom0, _s.right0, _s.left0, _s.posFixed].join(' ')}>
+            <div className={[_s.d, _s.w100PC, _s.pb5, _s.px15, _s.saveAreaInsetPB, _s.saveAreaInsetPL, _s.saveAreaInsetPR].join(' ')}>
+              <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.minH53PX, _s.w100PC, _s.borderTop1PX, _s.borderColorSecondary, _s.px10].join(' ')}>
+                {btn}
+              </div>
+            </div>
           </div>
         </div>
+      )
+    }
+
+    return (
+      <div className={[_s.d, _s.posAbs, _s.bottom0, _s.left0, _s.right0, _s.flexRow, _s.aiCenter, _s.minH58PX, _s.bgPrimary, _s.w100PC, _s.borderTop1PX, _s.borderColorSecondary, _s.px15].join(' ')}>
+        {btn}
       </div>
     )
   }

@@ -7,35 +7,35 @@ class Api::V1::ChatConversations::RequestedConversationsController < Api::BaseCo
   after_action :insert_pagination_headers, only: :index
 
   def index
-    @chat_conversations = load_chat_conversations
-    render json: @chat_conversations, each_serializer: REST::ChatConversationAccountSerializer
+    @chat_conversation_accounts = load_chat_conversation_accounts
+    render json: @chat_conversation_accounts, each_serializer: REST::ChatConversationAccountSerializer
   end
 
   def count
-    count = ChatConversationAccount.where(
-      account: current_account,
-      is_hidden: false,
-      is_approved: false
-    ).where.not(last_chat_message_id: nil).count
+    count = current_account
+      .chat_conversation_accounts
+      .requests
+      .with_last_message
+      .count
     render json: count
   end
 
   private
 
-  def load_chat_conversations
-    paginated_chat_conversations
+  def load_chat_conversation_accounts
+    paginated_chat_conversation_accounts
   end
 
-  def paginated_chat_conversations
-    ChatConversationAccount.where(
-      account: current_account,
-      is_hidden: false,
-      is_approved: false
-    ).where.not(last_chat_message_id: nil).paginate_by_max_id(
-      limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT),
-      params[:max_id],
-      params[:since_id]
-    )
+  def paginated_chat_conversation_accounts
+    current_account
+      .chat_conversation_accounts
+      .requests
+      .with_last_message
+      .paginate_by_max_id(
+        limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT),
+        params[:max_id],
+        params[:since_id]
+      )
   end
 
   def insert_pagination_headers
@@ -49,21 +49,21 @@ class Api::V1::ChatConversations::RequestedConversationsController < Api::BaseCo
   end
 
   def prev_path
-    unless paginated_chat_conversations.empty?
+    unless paginated_chat_conversation_accounts.empty?
       api_v1_chat_conversations_requested_conversations_url pagination_params(since_id: pagination_since_id)
     end
   end
 
   def pagination_max_id
-    paginated_chat_conversations.last.id
+    paginated_chat_conversation_accounts.last.id
   end
 
   def pagination_since_id
-    paginated_chat_conversations.first.id
+    paginated_chat_conversation_accounts.first.id
   end
 
   def records_continue?
-    paginated_chat_conversations.size == limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT)
+    paginated_chat_conversation_accounts.size == limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT)
   end
 
   def pagination_params(core_params)

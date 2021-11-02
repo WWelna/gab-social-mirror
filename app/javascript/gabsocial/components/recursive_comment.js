@@ -65,7 +65,7 @@ const makeMapStateToProps = () => {
             mutable.push(id)
           }
 
-          if (replies) {
+          if (!!replies) {
             replies.reverse().forEach(reply => {
               ids.unshift(reply)
             });

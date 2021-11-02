@@ -5,6 +5,7 @@ import {
 import {
   COMMENTS_FETCH_SUCCESS,
   CONTEXT_FETCH_SUCCESS,
+  CLEAR_ALL_COMMENTS,
 } from '../actions/statuses'
 import { TIMELINE_DELETE, TIMELINE_UPDATE } from '../actions/timelines'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
@@ -13,6 +14,7 @@ import compareId from '../utils/compare_id'
 const initialState = ImmutableMap({
   inReplyTos: ImmutableMap(),
   replies: ImmutableMap(),
+  nexts: ImmutableMap(),
 })
 
 const normalizeContext = (immutableState, id, ancestors, descendants) => immutableState.withMutations(state => {
@@ -99,7 +101,16 @@ export default function replies(state = initialState, action) {
     return filterContexts(state, action.relationship, action.statuses);
   case CONTEXT_FETCH_SUCCESS:
     return normalizeContext(state, action.id, action.ancestors, action.descendants);
+  case CLEAR_ALL_COMMENTS:
+    state = state.withMutations((mutable) => {
+      mutable.setIn(['nexts', action.id], null)
+    })
+    const thisReplies = state.getIn(['replies', action.id])
+    return deleteFromContexts(state, thisReplies)
   case COMMENTS_FETCH_SUCCESS:
+    state = state.withMutations((mutable) => {
+      mutable.setIn(['nexts', action.id], action.next);
+    })
     return normalizeContext(state, action.id, ImmutableList(), action.descendants);
   case TIMELINE_DELETE:
     return deleteFromContexts(state, [action.id]);

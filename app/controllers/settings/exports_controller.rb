@@ -13,7 +13,7 @@ class Settings::ExportsController < Settings::BaseController
   end
 
   def create
-    raise GabSocial::NotPermittedError unless user_signed_in?
+    raise GabSocial::NotPermittedError, 'You must be signed in to export our account' unless user_signed_in?
 
     backup = nil
 

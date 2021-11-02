@@ -12,7 +12,14 @@ class Api::V1::Timelines::ProController < Api::BaseController
   private
 
   def load_statuses
-    cached_pro_statuses
+    seen = []
+    cached_pro_statuses.reject {|status|
+      dupe = seen.include?(status.account_id)
+      if !dupe
+        seen.push(status.account_id)
+      end
+      dupe
+    }
   end
 
   def cached_pro_statuses

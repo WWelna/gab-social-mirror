@@ -100,9 +100,9 @@ class Account < ApplicationRecord
   scope :bots, -> { where(actor_type: %w(Application Service)) }
   scope :alphabetic, -> { order(domain: :asc, username: :asc) }
   scope :by_domain_accounts, -> { group(:id).select(:domain, 'COUNT(*) AS accounts_count').order('accounts_count desc') }
-  scope :matches_username, ->(value) { where(arel_table[:username].lower.matches("#{value.downcase}%")) }
-  scope :matches_display_name, ->(value) { where(arel_table[:display_name].matches("#{value}%")) }
-  scope :matches_domain, ->(value) { where(arel_table[:domain].lower.matches("%#{value.downcase}%")) }
+  scope :matches_username, ->(value) { matching(:username, :starts_with, value) }
+  scope :matches_display_name, ->(value) { matching(:display_name, :starts_with, value) }
+  scope :matches_domain, ->(value) { matching(:domain, :contains, value) }
   scope :searchable, -> { without_suspended.where(moved_to_account_id: nil) }
   scope :discoverable, -> { searchable.without_silenced.where(discoverable: true).joins(:account_stat).where(AccountStat.arel_table[:followers_count].gteq(MIN_FOLLOWERS_DISCOVERY)) }
   scope :tagged_with, ->(tag) { joins(:accounts_tags).where(accounts_tags: { tag_id: tag }) }
@@ -142,6 +142,10 @@ class Account < ApplicationRecord
     %w(Application Service).include? actor_type
   end
 
+  def vpdi?
+    is_verified || is_pro || is_donor || is_investor?
+  end
+
   alias bot bot?
 
   def bot=(val)
@@ -162,6 +166,10 @@ class Account < ApplicationRecord
 
   def local_following_count
     Follow.where(account_id: id).count
+  end
+
+  def unfollowing_count
+    Unfollow.where(account_id: id).count
   end
 
   def chat_conversation_accounts_count
@@ -374,53 +382,51 @@ class Account < ApplicationRecord
     end
 
     def search_for(terms, limit = 10, offset = 0, options = {})
-      return []
-      # textsearch, query = generate_query_for_search(terms)
-      # @onlyVerified = options[:onlyVerified] || false
+      textsearch, query = generate_query_for_search(terms)
 
-      # sql = <<-SQL.squish
-      #   SELECT
-      #     accounts.*,
-      #     ts_rank_cd(#{textsearch}, #{query}, 32) AS rank
-      #   FROM accounts
-      #   WHERE #{query} @@ #{textsearch}
-      #     AND accounts.suspended_at IS NULL
-      #     AND accounts.moved_to_account_id IS NULL
-      #     AND accounts.domain IS NULL
-      #   ORDER BY accounts.is_verified DESC
-      #   LIMIT ? OFFSET ?
-      # SQL
+      sql = <<-SQL.squish
+        SELECT
+          accounts.*,
+          ts_rank_cd(#{textsearch}, #{query}, 32) AS rank
+        FROM accounts
+        WHERE #{query} @@ #{textsearch}
+          AND accounts.suspended_at IS NULL
+          AND accounts.moved_to_account_id IS NULL
+          AND accounts.domain IS NULL
+          #{'AND accounts.is_verified' if options[:onlyVerified]}
+        ORDER BY accounts.is_verified DESC
+        LIMIT ? OFFSET ?
+      SQL
 
-      # records = find_by_sql([sql, limit, offset])
-      # ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
-      # records
+      records = find_by_sql([sql, limit, offset])
+      ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
+      records
     end
 
     def advanced_search_for(terms, account, limit = 10, offset = 0, options = {})
-      return []
-      # textsearch, query = generate_query_for_search(terms)
-      # @onlyVerified = options[:onlyVerified] || false
+      textsearch, query = generate_query_for_search(terms)
 
-      # sql = <<-SQL.squish
-      #   SELECT
-      #     accounts.*,
-      #     (count(f.id) + 1) * ts_rank_cd(#{textsearch}, #{query}, 32) AS rank,
-      #     (count(f.id) + 1) AS fc
-      #   FROM accounts
-      #   LEFT OUTER JOIN follows AS f ON (accounts.id = f.account_id AND f.target_account_id = ?) OR (accounts.id = f.target_account_id AND f.account_id = ?)
-      #   WHERE #{query} @@ #{textsearch}
-      #     AND accounts.suspended_at IS NULL
-      #     AND accounts.moved_to_account_id IS NULL
-      #     AND accounts.domain IS NULL
-      #   GROUP BY accounts.id
-      #   ORDER BY accounts.is_verified DESC, fc DESC, rank DESC
-      #   LIMIT ? OFFSET ?
-      # SQL
+      sql = <<-SQL.squish
+        SELECT
+          accounts.*,
+          (count(f.id) + 1) * ts_rank_cd(#{textsearch}, #{query}, 32) AS rank,
+          (count(f.id) + 1) AS fc
+        FROM accounts
+        LEFT OUTER JOIN follows AS f ON (accounts.id = f.account_id AND f.target_account_id = ?) OR (accounts.id = f.target_account_id AND f.account_id = ?)
+        WHERE #{query} @@ #{textsearch}
+          AND accounts.suspended_at IS NULL
+          AND accounts.moved_to_account_id IS NULL
+          AND accounts.domain IS NULL
+          #{'AND accounts.is_verified' if options[:onlyVerified]}
+        GROUP BY accounts.id
+        ORDER BY accounts.is_verified DESC, fc DESC, rank DESC
+        LIMIT ? OFFSET ?
+      SQL
 
-      # records = find_by_sql([sql, account.id, account.id, limit, offset])
+      records = find_by_sql([sql, account.id, account.id, limit, offset])
 
-      # ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
-      # records
+      ActiveRecord::Associations::Preloader.new.preload(records, :account_stat)
+      records
     end
 
     private

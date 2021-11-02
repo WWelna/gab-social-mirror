@@ -21,14 +21,6 @@ class ChatMessagePolicy < ApplicationPolicy
     end
   end
 
-  def reblog?
-    !requires_mention? && (!private? || owned?) && show? && !blocking_author?
-  end
-
-  def favourite?
-    show? && !blocking_author?
-  end
-
   def destroy?
     staff? || owned?
   end
@@ -41,16 +33,8 @@ class ChatMessagePolicy < ApplicationPolicy
 
   private
 
-  def requires_mention?
-    record.limited_visibility?
-  end
-
   def owned?
     author.id == current_account&.id
-  end
-
-  def private?
-    record.private_visibility?
   end
 
   def mention_exists?

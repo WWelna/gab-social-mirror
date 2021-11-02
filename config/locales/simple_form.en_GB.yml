@@ -32,6 +32,7 @@ en_GB:
         setting_display_media_hide_all: Always hide media
         setting_display_media_show_all: Always show media
         setting_hide_network: Who you follow and who follows you will not be shown on your profile
+        setting_pro_wants_ads: As a GabPRO Member, you can opt in to seeing advertisements
         setting_noindex: Affects your public profile and status pages
         setting_show_application: The application you use to gab will be displayed in the detailed view of your gabs
         setting_theme: Affects how Gab Social looks when you're logged in from any device.
@@ -101,6 +102,7 @@ en_GB:
         setting_display_media_show_all: Show all
         setting_expand_spoilers: Always expand gabs marked with content warnings
         setting_hide_network: Hide your network
+        setting_pro_wants_ads: Show advertisements
         setting_noindex: Opt-out of search engine indexing
         setting_reduce_motion: Reduce motion in animations
         setting_show_application: Disclose application used to send gabs

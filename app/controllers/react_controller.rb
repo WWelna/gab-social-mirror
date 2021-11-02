@@ -12,7 +12,7 @@ class ReactController < ApplicationController
 
   before_action :set_referrer_policy_header, only: [:react, :home, :status_embed, :status_show, :account_show]
   before_action :set_initial_state_json, only: [:react, :home, :status_embed, :status_show, :account_show]
-  before_action :set_data_for_meta, only: [:status_embed, :status_show, :account_show]
+  before_action :set_data_for_meta, only: [:react, :status_embed, :status_show, :account_show, :group_show]
 
   before_action :set_instance_presenter
 
@@ -69,7 +69,7 @@ class ReactController < ApplicationController
   def set_data_for_meta
     return if find_route_matches && current_account
 
-    if request.path.include?("/groups/")
+    if request.path.match(/^\/groups/)
       groupIdFromPath = request.path.sub("/groups", "").gsub("/", "")
       @group = Group.where(id: groupIdFromPath, is_archived: false).first
     elsif find_public_route_matches
@@ -95,11 +95,11 @@ class ReactController < ApplicationController
   end
 
   def find_route_matches
-    request.path.match(/\A\/(home|news|api|deck|suggestions|links|chat_conversations|chat_conversation_accounts|messages|shortcuts|group|groups|list|lists|notifications|tags|compose|follow_requests|admin|account|settings|filters|timeline|blocks|mutes)/)
+    request.path.match(/\A\/(home|news|api|deck|suggestions|links|chat_conversations|chat_conversation_accounts|messages|shortcuts|list|lists|notifications|tags|compose|follow_requests|admin|account|settings|filters|timeline|blocks|mutes)/)
   end
 
   def find_public_route_matches
-    request.path.match(/\A\/(about|news|search|groups|explore)/)
+    request.path.match(/\A\/(about|news|search|group|groups|explore)/)
   end
 
   def set_initial_state_json

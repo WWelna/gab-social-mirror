@@ -20,7 +20,7 @@ class Api::V1::Groups::RemovedAccountsController < Api::BaseController
   def create
     authorize @group, :create_removed_account?
 
-    @account = @group.accounts.find(params[:account_id])
+    @account = Account.find(params[:account_id])
     @group.removed_accounts << @account
     GroupAccount.where(group: @group, account: @account).destroy_all
     render_empty_success

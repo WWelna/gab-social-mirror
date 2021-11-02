@@ -3,7 +3,7 @@
 class REST::TagSerializer < ActiveModel::Serializer
   include RoutingHelper
 
-  attributes :name, :url, :history
+  attributes :id, :name, :url
 
   def url
     "/tags/#{object.name}"

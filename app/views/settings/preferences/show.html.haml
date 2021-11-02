@@ -6,6 +6,7 @@
   %li= link_to t('preferences.publishing'), '#settings_publishing'
   %li= link_to t('preferences.other'), '#settings_other'
   %li= link_to t('preferences.web'), '#settings_web'
+  %li= link_to 'Ads', '#settings_ads'
   %li= link_to t('settings.notifications'), settings_notifications_path
 
 = simple_form_for current_user, url: settings_preferences_path, html: { method: :put } do |f|
@@ -53,6 +54,12 @@
     = f.input :setting_auto_play_gif, as: :boolean, wrapper: :with_label
     = f.input :setting_expand_spoilers, as: :boolean, wrapper: :with_label
     = f.input :setting_group_in_home_feed, as: :boolean, wrapper: :with_label
+
+  %hr#settings_ads/
+
+  - if current_user.account.is_pro?
+    .fields-group
+      = f.input :setting_pro_wants_ads, as: :boolean, wrapper: :with_label
 
   .actions
     = f.button :button, t('generic.save_changes'), type: :submit

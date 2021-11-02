@@ -17,7 +17,7 @@ class Api::V1::SuggestionsController < Api::BaseController
       @accounts = VerifiedSuggestions.get(current_account.id)
       render json: @accounts, each_serializer: REST::AccountSerializer
     else
-      raise GabSocial::NotPermittedError
+      raise GabSocial::NotPermittedError, %Q|Unknown Type "#{type}"|
     end
   end
 

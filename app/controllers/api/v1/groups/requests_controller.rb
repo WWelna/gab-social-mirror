@@ -12,11 +12,15 @@ class Api::V1::Groups::RequestsController < Api::BaseController
   after_action :insert_pagination_headers, only: :show
 
   def show
+    authorize @group, :allow_if_is_group_admin_or_moderator?
+    
     @accounts = load_accounts
     render json: @accounts, each_serializer: REST::AccountSerializer
   end
 
   def respond_to_request
+    authorize @group, :allow_if_is_group_admin_or_moderator?
+
     if params[:type] === 'reject'
       GroupJoinRequest.where(group: @group, account_id: params[:accountId]).destroy_all
       render json: { message: "ok", type: 'reject', accountId: params[:accountId] }

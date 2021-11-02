@@ -7,6 +7,7 @@ module Admin
     def index
       authorize :report, :index?
       @reports = filtered_reports.page(params[:page])
+      @categories = ReportFilter.new(filter_params.except(:category)).results.order('category nulls first').group(:category).count
     end
 
     def show
@@ -56,7 +57,8 @@ module Admin
         :account_id,
         :resolved,
         :comment,
-        :target_account_id
+        :target_account_id,
+        :category
       )
     end
 

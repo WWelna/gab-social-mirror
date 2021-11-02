@@ -264,40 +264,49 @@ const fetchGroupsFail = (error, tab) => ({
  *              and fetch relationships for each.
  * @param {String} category
  */
-export const fetchGroupsByCategory = (category) => (dispatch, getState) => {
-  if (!category) return
+export const fetchGroupsByCategory = (sluggedCategory) => (dispatch, getState) => {
+  if (!sluggedCategory) return
+
+  const path = ['group_lists', 'by_category', sluggedCategory]
 
   // Don't refetch or fetch when loading
-  const isLoading = getState().getIn(['group_lists', 'by_category', category, 'isLoading'], false)
+  const isLoading = getState().getIn([...path, 'isLoading'], false)
 
   if (isLoading) return
 
-  dispatch(fetchGroupsByCategoryRequest(category))
+  // now loading
+  dispatch(fetchGroupsByCategoryRequest(sluggedCategory))
 
-  api(getState).get(`/api/v1/groups/_/category/${category}`)
+  const groupIds = getState().getIn([...path, 'groupIds'], ImmutableList())
+  const page = getState().getIn([...path, 'page'], 1)
+  const params = { page }
+  api(getState).get(`/api/v1/groups/_/category/${sluggedCategory}`, { params })
     .then((response) => {
-      dispatch(fetchGroupsByCategorySuccess(response.data, category))
+      const { data: groups } = response;
+      dispatch(fetchGroupsByCategorySuccess({ sluggedCategory, groups, groupIds, page }))
       dispatch(fetchGroupRelationships(response.data.map(item => item.id)))
     })
-    .catch((err) => dispatch(fetchGroupsByCategoryFail(err, category)))
+    .catch((err) => dispatch(fetchGroupsByCategoryFail(err, sluggedCategory)))
 }
 
-const fetchGroupsByCategoryRequest = (category) => ({
+const fetchGroupsByCategoryRequest = (sluggedCategory) => ({
   type: GROUPS_BY_CATEGORY_FETCH_REQUEST,
-  category,
+  sluggedCategory,
 })
 
-const fetchGroupsByCategorySuccess = (groups, category) => ({
+const fetchGroupsByCategorySuccess = ({ sluggedCategory, groupIds, groups, page }) => ({
   type: GROUPS_BY_CATEGORY_FETCH_SUCCESS,
+  sluggedCategory,
+  groupIds,
   groups,
-  category,
+  page
 })
 
-const fetchGroupsByCategoryFail = (error, category) => ({
+const fetchGroupsByCategoryFail = (error, sluggedCategory) => ({
   type: GROUPS_BY_CATEGORY_FETCH_FAIL,
   showToast: true,
   error,
-  category,
+  sluggedCategory,
 })
 
 /**

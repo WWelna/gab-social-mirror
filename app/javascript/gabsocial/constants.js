@@ -56,6 +56,7 @@ export const MODAL_BOOKMARK_COLLECTION_CREATE = 'BOOKMARK_COLLECTION_CREATE'
 export const MODAL_BOOST = 'BOOST'
 export const MODAL_CHAT_CONVERSATION_CREATE = 'CHAT_CONVERSATION_CREATE'
 export const MODAL_CHAT_CONVERSATION_DELETE = 'CHAT_CONVERSATION_DELETE'
+export const MODAL_CHAT_CONVERSATION_MEMBERS = 'CHAT_CONVERSATION_MEMBERS'
 export const MODAL_COMPOSE = 'COMPOSE'
 export const MODAL_CONFIRM = 'CONFIRM'
 export const MODAL_DECK_COLUMN_ADD = 'DECK_COLUMN_ADD'
@@ -143,6 +144,15 @@ export const EXPIRATION_OPTION_1_DAY = 'one_day'
 export const EXPIRATION_OPTION_3_DAYS = 'three_days'
 export const EXPIRATION_OPTION_7_DAYS = 'one_week'
 
+export const EXPIRATION_OPTION_NAMES = {
+  [EXPIRATION_OPTION_5_MINUTES]: '5m',
+  [EXPIRATION_OPTION_1_HOUR]: '1h',
+  [EXPIRATION_OPTION_6_HOURS]: '6h',
+  [EXPIRATION_OPTION_1_DAY]: '1d',
+  [EXPIRATION_OPTION_3_DAYS]: '3d',
+  [EXPIRATION_OPTION_7_DAYS]: '7d',
+}
+
 export const GROUP_TIMELINE_SORTING_TYPE_HOT = 'hot'
 export const GROUP_TIMELINE_SORTING_TYPE_NEWEST = 'newest'
 export const GROUP_TIMELINE_SORTING_TYPE_RECENT_ACTIVITY = 'recent'
@@ -166,6 +176,7 @@ export const TIMELINE_INJECTION_PRO_UPGRADE = 'TI_PRO_UPGRADE'
 export const TIMELINE_INJECTION_PWA = 'TI_PWA'
 export const TIMELINE_INJECTION_SHOP = 'TI_SHOP'
 export const TIMELINE_INJECTION_USER_SUGGESTIONS = 'TI_USER_SUGGESTIONS'
+export const TIMELINE_INJECTION_GAB_TV_EXPLORE = 'TI_GAB_TV_EXPLORE'
 
 export const TIMELINE_INJECTION_WEIGHT_DEFAULT = 1
 export const TIMELINE_INJECTION_WEIGHT_MULTIPLIER = 100
@@ -176,19 +187,29 @@ export const GAB_DECK_MAX_ITEMS = 8
 export const GAB_DECK_OPTIONS = ['home', 'user.id', 'notifications', 'list.id', 'likes', 'bookmarks', 'pro', 'compose', 'group.id', 'explore', 'news', 'news.id', 'hashtag.id']
 
 export const TRENDS_RSS_SOURCES = [
+  {'id':'5faf4fb95ca43345214f7989','title':'American Greatness'},
+  {'id':'6036dd6fe09bb91be52bf445','title':'Big League Politics'},
+  {'id':'614fe9b133254e072452208a','title':'Infowars'},
+  {'id':'614d160133254e072443ccb6','title':'Red Voice Media'},
   {'id':'5daf64b18e955e2433b0f5ce','title':'Breitbart'},
   {'id':'5daf66772fea4d3ba000883b','title':'Gateway Pundit'},
   {'id':'5dafa767300c0e2601330386','title':'RT'},
-  {'id':'5dafa88b786f593d02078d35','title':'ABC News'},
   {'id':'5e1e0a7dc46f1d5487be1806','title':'Yahoo News'},
-  {'id':'5e1e0ae5c46f1d5487be1902','title':'NBC'},
-  {'id':'5e1e0b849d78d445de6a35c7','title':'LA Times'},
   {'id':'5e5037159e35822b6afb0f77','title':'CBN'},
   {'id':'5e52dfc91f94b1111db105ed','title':'National File'},
   {'id':'5e56dcff1f94b1111db95a75','title':'WND'},
-  {'id':'5e6423d39f964d7a761997f8','title':'Mediaite'},
-  {'id':'5e7160cb40c78e3a4af7a5bb','title':'FiveThirtyEight'},
   {'id':'5e7160f7a994095d6ca9bbee','title':'Redstate'},
-  {'id':'5e716155a994095d6ca9bd03','title':'Politico'},
   {'id':'5e8275900d86876052a853ae','title':'CD Media'},
+]
+
+export const GAB_AD_PLACEMENTS = {
+  'status': 'status',
+  'banner': 'banner',
+  'panel': 'panel',
+}
+
+export const TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS = [
+  'account_timeline',
+  'liked_statuses',
+  'account_comments_timeline',
 ]

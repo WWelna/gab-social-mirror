@@ -239,7 +239,7 @@ class ScrollableList extends React.PureComponent {
             }
 
             {
-              (hasMore && onLoadMore && !isLoading) && !!onScrollToTop &&
+              (hasMore && onLoadMore && !isLoading) &&
               <LoadMore onClick={this.handleLoadMore} />
             }
 

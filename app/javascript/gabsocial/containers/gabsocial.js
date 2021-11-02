@@ -27,6 +27,8 @@ import UI from '../features/ui'
 import IntroductionPage from '../pages/introduction_page'
 import ErrorBoundary from '../components/error_boundary'
 import Display from './display'
+import { fetchBlocks, fetchBlockedby } from '../actions/blocks'
+import { fetchMutes } from '../actions/mutes'
 
 const { localeData, messages } = getLocale()
 addLocaleData(localeData)
@@ -65,6 +67,16 @@ class GabSocialMount extends React.PureComponent {
       const shouldShow = isFirstSession && !this.state.shownOnboarding && accountCreatedAtValue > MIN_ACCOUNT_CREATED_AT_ONBOARDING
 
       if (shouldShow) this.setState({ shouldShow })
+    }
+
+    if (!!me) {
+      const metricsUpdated = Date.parse(localStorage.getItem('metrics_updated')) || null
+      if (!metricsUpdated || Date.now().valueOf() > metricsUpdated + 60) {
+        localStorage.setItem('metrics_updated', Date.now().valueOf())
+        store.dispatch(fetchBlocks())
+        store.dispatch(fetchBlockedby())
+        store.dispatch(fetchMutes())
+      }
     }
 
     this.handleResize()
@@ -111,7 +123,7 @@ export default class GabSocial extends React.PureComponent {
     if (!!me) {
       this.disconnect = store.dispatch(connectUserStream())
       store.dispatch(connectStatusUpdateStream())
-      // store.dispatch(connectChatMessagesStream(me))
+      store.dispatch(connectChatMessagesStream(me))
     }
 
     console.log('%cGab Social ', [

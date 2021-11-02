@@ -1,9 +1,33 @@
 <%= t "user_mailer.warning.title.#{@warning.action}" %>
 
 ===
-
 <% unless @warning.none_action? %>
+
 <%= t "user_mailer.warning.explanation.#{@warning.action}" %>
+<% end %>
+
+<%= @warning.text %>
+
+<% if !@statuses.nil? && !@statuses.empty? %>
+<%= "Statuses:" %>
+<% @statuses.each do |status| %>
+<%= render 'notification_mailer/status', status: status %>
 
 <% end %>
-<%= @warning.text %>
+<% else %>
+---
+<% end %>
+
+Gab seeks to export the uniquely American value of free speech to the entire world. Regardless of whether Gab’s administrators, outside activist pressure groups, “cancel culture” Internet mobs, the mainstream media, foreign governments, or any other persons agree with any Gabber’s viewpoints: political speech that is protected by the First Amendment of the U.S. Constitution will be allowed on the platform. Illegal activity, threats of violence, doxxing, pornography, child exploitation, and spam are not allowed on Gab.
+
+For further information, please refer to the following pages:
+• Gab Terms of Service: https://gab.com/about/tos
+• Technical limitations: https://help.gab.com/article/understanding-gab-technical-limits
+• Policies regarding unlawful content: https://news.gab.com/2019/08/23/gabs-policies-positions-and-procedures-for-unlawful-content-and-activity-on-our-social-network
+
+===
+
+Go to Gab Home
+
+https://gab.com/home
+

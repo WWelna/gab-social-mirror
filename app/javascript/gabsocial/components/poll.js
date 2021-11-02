@@ -30,19 +30,9 @@ class Poll extends ImmutablePureComponent {
   handleOptionChange = e => {
     const { target: { value } } = e
 
-    if (this.props.poll.get('multiple')) {
-      const tmp = { ...this.state.selected }
-      if (tmp[value]) {
-        delete tmp[value]
-      } else {
-        tmp[value] = true
-      }
-      this.setState({ selected: tmp })
-    } else {
-      const tmp = {}
-      tmp[value] = true
-      this.setState({ selected: tmp })
-    }
+    const tmp = {}
+    tmp[value] = true
+    this.setState({ selected: tmp })
   }
 
   handleVote = () => {
@@ -52,14 +42,13 @@ class Poll extends ImmutablePureComponent {
   }
 
   renderOption(option, optionIndex) {
-    const { poll, disabled } = this.props
+    const { poll, disabled, theme } = this.props
     const { selected } = this.state
     const percent = poll.get('votes_count') === 0 ? 0 : (option.get('votes_count') / poll.get('votes_count')) * 100
     const leading = poll.get('options').filterNot(other => other.get('title') === option.get('title')).every(other => option.get('votes_count') > other.get('votes_count'))
     const optionHasNoVotes = option.get('votes_count') === 0
     const active = !!selected[`${optionIndex}`]
     const showResults = poll.get('voted') || poll.get('expired')
-    const multiple = poll.get('multiple')
     const correctedWidthPercent = optionHasNoVotes ? 100 : percent
 
     let titleEmojified = option.get('title_emojified')
@@ -77,12 +66,6 @@ class Poll extends ImmutablePureComponent {
       h100PC: 1,
       bgSecondary: !leading && !optionHasNoVotes,
       bgBrandLight: leading,
-    })
-
-    // : todo :
-    const inputClasses = CX('poll__input', {
-      'poll__input--checkbox': multiple,
-      'poll__input--active': active,
     })
 
     const listItemClasses = CX({
@@ -108,6 +91,8 @@ class Poll extends ImmutablePureComponent {
       aiCenter: !showResults,
     })
 
+    const textColor = (['black', 'muted'].indexOf(theme) > -1 && leading && showResults) ? 'alt' : 'primary'
+
     // : todo : fix widths and truncate for large poll options
     return (
       <li className={listItemClasses} key={option.get('title')}>
@@ -124,7 +109,7 @@ class Poll extends ImmutablePureComponent {
         <label className={textContainerClasses}>
           <Text
             size='medium'
-            color='primary'
+            color={textColor}
             weight={(leading && showResults) ? 'bold' : 'normal'}
             className={[_s.displayFlex, _s.flexRow, _s.w100PC, _s.aiCenter].join(' ')}
           >
@@ -132,18 +117,13 @@ class Poll extends ImmutablePureComponent {
               !showResults &&
               <input
                 name='vote-options'
-                type={multiple ? 'checkbox' : 'radio'}
+                type='radio'
                 value={optionIndex}
                 checked={active}
                 onChange={this.handleOptionChange}
                 disabled={disabled}
                 className={[_s.d, _s.mr10].join(' ')}
               />
-            }
-
-            {
-              /* : todo : */
-              !showResults && <span className={inputClasses} />
             }
 
             <span
@@ -224,6 +204,7 @@ class Poll extends ImmutablePureComponent {
 
 const mapStateToProps = (state, { pollId }) => ({
   poll: state.getIn(['polls', pollId]),
+  theme: state.getIn(['settings', 'displayOptions', 'theme']),
 })
 
 const messages = defineMessages({

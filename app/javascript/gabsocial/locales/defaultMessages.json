@@ -2352,7 +2352,7 @@
         "id": "lightbox.close"
       },
       {
-        "defaultMessage": "Additional comments",
+        "defaultMessage": "Additional comments (optional)",
         "id": "report.placeholder"
       },
       {
@@ -2374,6 +2374,18 @@
       {
         "defaultMessage": "Forward to {target}",
         "id": "report.forward"
+      },
+      {
+        "defaultMessage": "You can provide additional comments below",
+        "id": "report.comment_hint"
+      },
+      {
+        "defaultMessage": "Choose a category to help our moderators process your report appropriately",
+        "id": "report.category_hint"
+      },
+      {
+        "defaultMessage": "This report will be sent to the moderation team for review.",
+        "id": "report.description"
       }
     ],
     "path": "app/javascript/gabsocial/features/ui/components/report_modal.json"

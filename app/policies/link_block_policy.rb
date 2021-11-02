@@ -2,14 +2,14 @@
 
 class LinkBlockPolicy < ApplicationPolicy
   def index?
-    admin?
+    staff?
   end
 
   def create?
-    admin?
+    staff?
   end
 
   def destroy?
-    admin?
+    staff?
   end
 end

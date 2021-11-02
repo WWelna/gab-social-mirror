@@ -1,27 +1,24 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import ImmutablePureComponent from 'react-immutable-pure-component'
-import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
 import Textarea from 'react-textarea-autosize'
 import { openPopover } from '../../../actions/popover'
-import { modal } from '../../../actions/modal'
+import { openModal } from '../../../actions/modal'
 import { sendChatMessage } from '../../../actions/chat_messages'
 import { me } from '../../../initial_state'
 import {
   CX,
   MODAL_PRO_UPGRADE,
+  EXPIRATION_OPTION_NAMES,
   POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS,
 } from '../../../constants'
 import Button from '../../../components/button'
-import Icon from '../../../components/icon'
-import Input from '../../../components/input'
 import Text from '../../../components/text'
 
-class ChatMessagesComposeForm extends React.PureComponent {
+class ChatMessageComposeForm extends React.PureComponent {
 
   state = {
-    focused: false,
+    focused: !this.props.isXS,
     value: '',
   }
 
@@ -45,12 +42,10 @@ class ChatMessagesComposeForm extends React.PureComponent {
   }
 
   onBlur = () => {
-    console.log("onBlur")
     this.setState({ focused: false })
   }
 
   onFocus = () => {
-    console.log("onFocus")
     this.setState({ focused: true })
   }
 
@@ -126,11 +121,23 @@ class ChatMessagesComposeForm extends React.PureComponent {
       jcCenter: 1,
       cursorPointer: 1,
       outlineNone: 1,
+      cWhite: !!expiresAtValue,
+      fw500: !!expiresAtValue,
       bgSubtle: !expiresAtValue,
       bgBlack: !!expiresAtValue,
     })
 
-    const expireBtnIconClassName = !!expiresAtValue ?  _s.cWhite : _s.cBlack
+    const mobileInnerClasses = CX({
+      d: 1,
+      w100PC: 1,
+      pb5: 1,
+      px15: 1,
+      aiCenter: 1,
+      jcCenter: 1,
+      saveAreaInsetPB: !focused,
+      saveAreaInsetPL: 1,
+      saveAreaInsetPR: 1,
+    })
 
     const textarea = (
       <Textarea
@@ -139,7 +146,7 @@ class ChatMessagesComposeForm extends React.PureComponent {
         className={textareaClasses}
         disabled={disabled}
         placeholder='Type a new message...'
-        autoFocus={false}
+        autoFocus={!isXS}
         value={value}
         onChange={this.onChange}
         onFocus={this.onFocus}
@@ -161,26 +168,29 @@ class ChatMessagesComposeForm extends React.PureComponent {
       </Button>
     )
 
+    const expiresBtnTitle = !!expiresAtValue ? (EXPIRATION_OPTION_NAMES[expiresAtValue] || undefined) : undefined
     const expiresBtn = (
       <Button
         noClasses
         buttonRef={this.setExpiresBtn}
         className={expireBtnClasses}
         onClick={this.handleOnExpire}
-        icon='stopwatch'
+        icon={!expiresAtValue ? 'stopwatch' : undefined}
         iconSize='15px'
-        iconClassName={expireBtnIconClassName}
-      />
+        iconClassName={_s.cPrimary}
+      >
+        {expiresBtnTitle}
+      </Button>
     )
 
     if (isXS) {
       return (
-        <div className={[_s.d, _s.z4, _s.minH58PX, _s.w100PC, _s.mtAuto].join(' ')}>
-          <div className={[_s.d, _s.minH58PX, _s.bgPrimary, _s.aiCenter, _s.z3, _s.bottom0, _s.right0, _s.left0, _s.posFixed].join(' ')} >
-            <div className={[_s.d, _s.w100PC, _s.pb5, _s.px15, _s.aiCenter, _s.jcCenter, _s.saveAreaInsetPB, _s.saveAreaInsetPL, _s.saveAreaInsetPR, _s.w100PC].join(' ')}>
+        <div className={[_s.d, _s.z4, _s.minH58PX, _s.w100PC, _s.mtAuto, _s.bgPrimary].join(' ')}>
+          <div className={[_s.d, _s.minH58PX, _s.bgPrimary, _s.aiCenter, _s.z3, _s.bottom0, _s.right0, _s.left0, _s.posFixed].join(' ')}>
+            <div className={mobileInnerClasses}>
               <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.minH58PX, _s.w100PC, _s.borderTop1PX, _s.borderColorSecondary, _s.px10].join(' ')}>
                 <div className={[_s.d, _s.flexRow, _s.flexGrow1, _s.radiusRounded, _s.border1PX, _s.borderColorSecondary, _s.overflowHidden].join(' ')}>
-                  <div className={_s.d}>  
+                  <div className={_s.d}>
                     {expiresBtn}
                   </div>
                   <div className={[_s.d, _s.flexGrow1].join(' ')}>
@@ -201,7 +211,7 @@ class ChatMessagesComposeForm extends React.PureComponent {
       <div className={[_s.d, _s.posAbs, _s.bottom0, _s.left0, _s.right0, _s.flexRow, _s.aiCenter, _s.minH58PX, _s.bgPrimary, _s.w100PC, _s.borderTop1PX, _s.borderColorSecondary, _s.px15].join(' ')}>
         <div className={[_s.d, _s.pr15, _s.flexGrow1, _s.py10].join(' ')}>
           <div className={[_s.d, _s.flexRow, _s.radiusRounded, _s.border1PX, _s.borderColorSecondary, _s.overflowHidden].join(' ')}>
-            <div className={_s.d}>  
+            <div className={_s.d}>
               {expiresBtn}
             </div>
             <div className={[_s.d, _s.flexGrow1].join(' ')}>
@@ -239,7 +249,7 @@ const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
   }
 })
 
-ChatMessagesComposeForm.propTypes = {
+ChatMessageComposeForm.propTypes = {
   chatConversationId: PropTypes.string,
   isXS: PropTypes.bool,
   isPro: PropTypes.bool,
@@ -248,4 +258,4 @@ ChatMessagesComposeForm.propTypes = {
   onShowProModal: PropTypes.func.isRequired,
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ChatMessagesComposeForm)
+export default connect(mapStateToProps, mapDispatchToProps)(ChatMessageComposeForm)

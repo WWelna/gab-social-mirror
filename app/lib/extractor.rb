@@ -60,7 +60,7 @@ module Extractor
   end
 
   # :yields: cashtag, start, end
-  def extract_cashtags_with_indices(text)
+  def extract_cashtags_with_indices(text, **)
     return [] unless text =~ /\$/
 
     tags = []
@@ -87,4 +87,34 @@ module Extractor
     tags.each { |tag| yield tag[:cashtag], tag[:indices].first, tag[:indices].last } if block_given?
     tags
   end
+
+  # :yields: g_tag, start, end
+  def extract_g_tags_with_indices(text, **)
+    return [] unless text =~ /g\//
+
+    tags = []
+
+    text.scan(Tag::G_TAG_RE) do |tag_text, _|
+      match_data     = $LAST_MATCH_INFO
+      start_position = match_data.char_begin(1) - 2
+      end_position   = match_data.char_end(1)
+      after          = $'
+
+      if after =~ %r{\A://}
+        tag_text.match(/(.+)(https?\Z)/) do |matched|
+          hash_text     = matched[1]
+          end_position -= matched[2].char_length
+        end
+      end
+
+      tags << {
+        g_tag: tag_text,
+        indices: [start_position, end_position],
+      }
+    end
+
+    tags.each { |tag| yield tag[:g_tag], tag[:indices].first, tag[:indices].last } if block_given?
+    tags
+  end
+
 end

@@ -15,9 +15,9 @@ class Tooltip extends React.PureComponent {
         strategy="fixed"
       >
         {({ ref, style, placement, arrowProps }) => (
-          <div ref={ref} style={style} data-placement={placement} className={[_s.z4, _s.mt5, _s.mb5, _s.px5, _s.py5].join(' ')}>
+          <div ref={ref} style={style} data-placement={placement} className={[_s.z5, _s.mt5, _s.mb5, _s.px5, _s.py5].join(' ')}>
             <div ref={arrowProps.ref} style={arrowProps.style} />
-            <div data-popover='true' className={[_s, _s.bgBlackOpaque, _s.px10, _s.py5, _s.circle].join(' ')}>
+            <div data-popover='true' className={[_s.d, _s.bgBlackOpaque, _s.px10, _s.py5, _s.circle].join(' ')}>
               <Text color='white' size='small' className={_s.minW120PX}>
                 {message}
               </Text>

@@ -19,6 +19,7 @@ class Tag < ApplicationRecord
   HASHTAG_NAME_RE = '[[:word:]_]*[[:alpha:]_·][[:word:]_]*'
   HASHTAG_RE = /(?:^|[^\/\)\w])#(#{HASHTAG_NAME_RE})/i.freeze
   CASHTAG_RE = /(?:^|[^\/\)\w])\$([a-zA-Z]{1,})/.freeze
+  G_TAG_RE = /(?:^|[^\/\)\w])g\/([a-zA-Z]{1,})/.freeze
 
   validates :name, presence: true, uniqueness: true, format: { with: /\A#{HASHTAG_NAME_RE}\z/i }
 
@@ -69,9 +70,7 @@ class Tag < ApplicationRecord
 
   class << self
     def search_for(term, offset = 0)
-      pattern = sanitize_sql_like(term.strip) + '%'
-
-      Tag.where('lower(name) like lower(?)', pattern)
+      Tag.matching(:name, :starts_with, term)
          .order(:name)
          .limit(25)
          .offset(offset)

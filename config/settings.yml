@@ -11,6 +11,7 @@ defaults: &defaults
   min_invite_role: 'admin'
   default_sensitive: false
   hide_network: false
+  pro_wants_ads: false
   unfollow_modal: false
   boost_modal: false
   delete_modal: true

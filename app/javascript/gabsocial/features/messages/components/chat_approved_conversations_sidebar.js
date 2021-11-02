@@ -4,6 +4,7 @@ import ResponsiveClassesComponent from '../../ui/util/responsive_classes_compone
 import ChatConversationsSearch from './chat_conversations_search'
 import ChatConversationsList from './chat_conversations_list'
 import ChatConversationRequestsListItem from './chat_conversations_requests_list_item'
+import ChatConversationClearUnreadMessages from './chat_conversation_clear_unread_messages'
 
 class ChatApprovedConversationsSidebar extends React.PureComponent {
 
@@ -22,6 +23,7 @@ class ChatApprovedConversationsSidebar extends React.PureComponent {
             classNames={[_s.d, _s.w100PC, _s.posAbs, _s.bottom0, _s.top60PX, _s.overflowYScroll].join(' ')}
             classNamesXS={[_s.d, _s.w100PC].join(' ')}
           >
+            <ChatConversationClearUnreadMessages />
             <ChatConversationRequestsListItem />
             <ChatConversationsList source={source} />
           </ResponsiveClassesComponent>

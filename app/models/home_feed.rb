@@ -2,7 +2,13 @@
 
 class HomeFeed < Feed
   QUERY = <<-SQL
-    with cte as
+    with my_groups as (
+      select ga.group_id as id
+      from group_accounts ga
+      where ga.account_id = :id
+      and not exists(select from group_removed_accounts gra where ga.group_id = gra.group_id and ga.account_id = gra.account_id)
+    ),
+    cte as
     (
       select
         row_number() over (partition by sid.reblog_of_id order by sid.id desc) as rn_dupe,
@@ -21,6 +27,14 @@ class HomeFeed < Feed
           or s.account_id = :id)
         and not exists(select mm.target_account_id from mutes mm where mm.account_id = :id and mm.target_account_id in (s.account_id, r.account_id))
         and not exists(select bb.target_account_id from blocks bb where bb.account_id = :id and bb.target_account_id in (s.account_id, r.account_id))
+        and (
+          s.group_id IS NULL
+          or exists(
+            select from groups g
+            where g.id = s.group_id
+            and (not g.is_private or g.id in (select id from my_groups))
+          )
+        )
         and (:max_id is null or s.id < :max_id)
         and (:min_id is null or s.id > :min_id)
        order by s.created_at desc

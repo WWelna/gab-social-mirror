@@ -126,14 +126,18 @@ export default function groupLists(state = initialState, action) {
     })
 
   case GROUPS_BY_CATEGORY_FETCH_REQUEST:
-    return state.setIn(['by_category', slugify(action.category), 'isLoading'], true)
+    return state.setIn(['by_category', action.sluggedCategory, 'isLoading'], true)
   case GROUPS_BY_CATEGORY_FETCH_SUCCESS:
-    return state.setIn(['by_category', slugify(action.category)], ImmutableMap({
-      items: ImmutableList(action.groups.map(item => item.id)),
+    return state.setIn(['by_category', action.sluggedCategory], ImmutableMap({
+      isFetched: true,
       isLoading: false,
+      // combine previous group ids with new ids
+      groupIds: action.groupIds.concat(action.groups.map(item => item.id)),
+      hasMore: action.groups.length > 0,
+      page: action.page + 1
     }))
   case GROUPS_BY_CATEGORY_FETCH_FAIL:
-    return state.setIn(['by_category', slugify(action.category)], ImmutableMap({
+    return state.setIn(['by_category', action.sluggedCategory], ImmutableMap({
       items: ImmutableList(),
       isLoading: false,
     }))

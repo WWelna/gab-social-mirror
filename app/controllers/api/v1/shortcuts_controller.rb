@@ -22,7 +22,9 @@ class Api::V1::ShortcutsController < Api::BaseController
       if s.shortcut_type == 'group'
         @group = @groups.detect{ |g| g.id == s.shortcut_id }
         if @group.nil?
-          s.destroy!
+          ActiveRecord::Base.connected_to(role: :writing) do
+            s.destroy!
+          end
         else
           value = REST::GroupSerializer.new(@group)
         end

@@ -12,9 +12,7 @@ import {
   unblockChatMessenger,
 } from '../actions/chat_conversation_accounts'
 import Account from '../components/account'
-import Block from '../components/block'
 import BlockHeading from '../components/block_heading'
-import Divider from '../components/divider'
 import ScrollableList from '../components/scrollable_list'
 import AccountPlaceholder from '../components/placeholder/account_placeholder'
 

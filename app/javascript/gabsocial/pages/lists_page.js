@@ -8,8 +8,9 @@ import DefaultLayout from '../layouts/default_layout'
 import { MODAL_LIST_CREATE } from '../constants'
 import {
   LinkFooter,
-  TrendsBreakingPanel,
+  GabTVVideosPanel,
   UserSuggestionsPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class ListsPage extends React.PureComponent {
@@ -35,7 +36,8 @@ class ListsPage extends React.PureComponent {
           },
         ]}
         layout={[
-          TrendsBreakingPanel,
+          GabAdPanel,
+          GabTVVideosPanel,
           UserSuggestionsPanel,
           LinkFooter,
         ]}

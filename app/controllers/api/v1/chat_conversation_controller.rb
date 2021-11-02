@@ -5,8 +5,8 @@ class Api::V1::ChatConversationController < Api::BaseController
   before_action -> { doorkeeper_authorize! :write, :'write:chats' }
 
   before_action :require_user!
-  before_action :set_account, only: :create
-  before_action :set_chat_conversation, only: [
+  before_action :set_accounts, only: :create
+  before_action :set_chat_conversation_account, only: [
       :show,
       :mark_chat_conversation_approved,
       :mark_chat_conversation_hidden,
@@ -15,7 +15,12 @@ class Api::V1::ChatConversationController < Api::BaseController
     ]
 
   def show
-    render json: {}, each_serializer: REST::ChatConversationAccountSerializer
+    # make sure current_account OWNS this chat conversation
+    my_chat_conversation = current_account
+      .chat_conversation_accounts
+      .where(chat_conversation: params[:id])
+      .first!
+    render json: my_chat_conversation, serializer: REST::ChatConversationAccountSerializer
   end
 
   def create
@@ -39,49 +44,45 @@ class Api::V1::ChatConversationController < Api::BaseController
   end
 
   def set_expiration_policy
-    if current_user.account.is_pro
-      case params[:expiration]
-        when 'five_minutes'
-          @expires_at = ChatConversationAccount::EXPIRATION_POLICY_MAP[:five_minutes]
-        when 'one_hour'
-          @expires_at = ChatConversationAccount::EXPIRATION_POLICY_MAP[:one_hour]
-        when 'six_hours'
-          @expires_at = ChatConversationAccount::EXPIRATION_POLICY_MAP[:six_hours]
-        when 'one_day'
-          @expires_at = ChatConversationAccount::EXPIRATION_POLICY_MAP[:one_day]
-        when 'three_days'
-          @expires_at = ChatConversationAccount::EXPIRATION_POLICY_MAP[:three_days]
-        when 'one_week'
-          @expires_at = ChatConversationAccount::EXPIRATION_POLICY_MAP[:one_week]
-        else
-          @expires_at = nil
-      end
-      @chat_conversation_account.chat_message_expiration_policy = @expires_at
-      @chat_conversation_account.save!
-      render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
+    if !current_user.account.is_pro
+      return render json: { error: 'You need to be a GabPRO member to set chat conversation expiration' }, status: 422
     end
+
+    expiration = ChatConversationAccount.expiration_policy_db(name: params[:expiration])
+
+    @chat_conversation_account.update!(chat_message_expiration_policy: expiration)
+    render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
   end
 
   private
 
   def find_or_create_conversation
-    chat = ChatConversationAccount.find_by(account: current_account, participant_account_ids: [@account.id.to_s])
-    return chat unless chat.nil?
-    my_chat = CreateChatConversationService.new.call(current_account, [@account])
-    return my_chat
+    return CreateChatConversationService.new.call(current_account, @accounts)
   end
 
-  def set_account
-    @account = Account.find(params[:account_id])
+  def set_accounts
+    if !params[:account_id]
+      raise GabSocial::NotPermittedError, "Unable to create conversation."
+    end
+
+    if params[:account_id].is_a?(String)
+      @accounts = Account.where(id: params[:account_id])
+    elsif params[:account_id].is_a?(Array)
+      # just get first if not PRO
+      if current_account.is_pro?
+        @accounts = Account.where(id: params[:account_id]).limit(DEFAULT_GROUP_CHAT_CONVERSATION_PARTICIPANT_LIMIT)
+      else
+        @accounts = Account.where(id: params[:account_id].first)
+      end
+    else
+      raise GabSocial::NotPermittedError, "Unable to create conversation."
+    end
   end
 
-  def set_chat_conversation
-    @chat_conversation = ChatConversation.find(params[:id])
+  def set_chat_conversation_account
     @chat_conversation_account = ChatConversationAccount.where(
       account: current_account,
-      chat_conversation: @chat_conversation
+      chat_conversation: params[:id]
     ).first
   end
 

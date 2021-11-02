@@ -3,22 +3,56 @@
     %h1{:style => "margin:0;font-weight:bold;font-size:30px;color:#444;text-align:center;"}= t "user_mailer.warning.title.#{@warning.action}"
 
 %tr
-  %td{:align => "center", :cellspacing => "0", :style => "vertical-align:middle"}
+  %td{:align => "center", :cellspacing => "0", :style => "vertical-align:middle;"}
     %table
       %tbody
         %tr
-          %p{:style => "font-size:16px;color:#444;margin:15px 0 0;text-align:center;"}
-            - unless @warning.none_action?
-              %p= t "user_mailer.warning.explanation.#{@warning.action}"
+          %p{ :style => "margin:0 25px 15px 25px;text-align:left;" }
+            %span{ :style => "font-size:16px;color:#444;text-align:left;" } 
+              - unless @warning.none_action?
+                %p= t "user_mailer.warning.explanation.#{@warning.action}"
 
-            - unless @warning.text.blank?
-              = Formatter.instance.linkify(@warning.text)
+              - unless @warning.text.blank?
+                = Formatter.instance.linkify(@warning.text)
+
+              - if !@statuses.nil? && !@statuses.empty?
+                %p
+                  %strong Statuses:
+
+%tr
+  - if !@statuses.nil? && !@statuses.empty?
+    - @statuses.each_with_index do |status, i|
+      = render 'notification_mailer/status', status: status, i: i + 1, highlighted: true
 
 %tr
   %td{:align => "center", :cellspacing => "0", :style => "vertical-align:middle"}
     %table
       %tbody
         %tr
-          %p{ :style => "margin:0 0 15px 0;text-align:left;" }
-            = link_to about_url do
-              %span{:style => "font-size:16px;color:#444;margin:15px 0 30px;"}= t 'user_mailer.warning.review_server_policies'
+          %p{ :style => "margin:20px 25px;text-align:left;" }
+            %span{ :style => "font-size:16px;color:#444;text-align:left;" } Gab seeks to export the uniquely American value of free speech to the entire world. Regardless of whether Gab’s administrators, outside activist pressure groups, “cancel culture” Internet mobs, the mainstream media, foreign governments, or any other persons agree with any Gabber’s viewpoints: political speech that is protected by the First Amendment of the U.S. Constitution will be allowed on the platform. Illegal activity, threats of violence, doxxing, pornography, child exploitation, and spam are not allowed on Gab.
+
+%tr
+  %td{:align => "center", :cellspacing => "0", :style => "vertical-align:middle;"}
+    %table
+      %tbody
+        %tr
+          %p{ :style => "margin:0 25px 15px 25px;text-align:left;" }
+            %span{ :style => "font-size:16px;color:#444;text-align:left;" } For further information, please refer to the following pages:
+          %p{ :style => "margin:0 25px 15px 25px;text-align:left;" }
+            %span{ :style => "font-size:16px;color:#444;text-align:left;" } • Gab Terms of Service:
+            = link_to "https://gab.com/about/tos", "https://gab.com/about/tos", :style => "color:#30CE7D;font-size:16px;font-weight:600;text-decoration:underline;"
+          %p{ :style => "margin:0 25px 15px 25px;text-align:left;" }
+            %span{ :style => "font-size:16px;color:#444;text-align:left;" } • Technical limitations:
+            = link_to "https://help.gab.com/article/understanding-gab-technical-limits", "https://help.gab.com/article/understanding-gab-technical-limits", :style => "color:#30CE7D;font-size:16px;font-weight:600;text-decoration:underline;"
+          %p{ :style => "margin:0 25px 15px 25px;text-align:left;" }
+            %span{ :style => "font-size:16px;color:#444;text-align:left;" } • Policies regarding unlawful content:
+            = link_to "https://news.gab.com/2019/08/23/gabs-policies-positions-and-procedures-for-unlawful-content-and-activity-on-our-social-network", "https://news.gab.com/2019/08/23/gabs-policies-positions-and-procedures-for-unlawful-content-and-activity-on-our-social-network", :style => "color:#30CE7D;font-size:16px;font-weight:600;text-decoration:underline;"
+
+%tr
+  %td{:align => "center", :cellspacing => "0", :style => "vertical-align:middle;padding-top:10px;padding-bottom:30px;"}
+    %table{ align: 'center', cellspacing: 0, cellpadding: 0 }
+      %tbody
+        %tr
+          %td{ :style => "background-color:#30CE7D;height:56px;border-radius:9999px;color:#fff;" }
+            = link_to "Go to Gab Home", "https://gab.com/home", :style => "height:56px;padding:20px 30px;text-decoration:none;color:#fff;font-size:16px;margin:0;"

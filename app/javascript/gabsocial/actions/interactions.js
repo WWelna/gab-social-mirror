@@ -93,6 +93,7 @@ const repostSuccess = (status) => ({
 
 const repostFail = (status, error) => ({
   type: REPOST_FAIL,
+  showToast: true,
   status,
   error,
 })
@@ -127,6 +128,7 @@ const unrepostSuccess = (status) => ({
 
 const unrepostFail = (status, error) => ({
   type: UNREPOST_FAIL,
+  showToast: true,
   status,
   error,
 })
@@ -161,6 +163,7 @@ const favoriteSuccess = (data) => ({
 
 const favoriteFail = (status, error) => ({
   type: FAVORITE_FAIL,
+  showToast: true,
   status,
   error,
 })
@@ -195,6 +198,7 @@ const unfavoriteSuccess = (status) => ({
 
 const unfavoriteFail = (status, error) => ({
   type: UNFAVORITE_FAIL,
+  showToast: true,
   status,
   error,
 })

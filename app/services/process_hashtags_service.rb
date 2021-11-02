@@ -2,16 +2,10 @@
 
 class ProcessHashtagsService < BaseService
   def call(status, tags = [])
-    tags    = Extractor.extract_hashtags(status.text) + Extractor.extract_cashtags(status.text) if status.local?
-    records = []
+    tags = Extractor.extract_hashtags(status.text) + Extractor.extract_cashtags(status.text) if status.local?
 
-    tags.map { |str| str.mb_chars.downcase }.uniq(&:to_s).each do |name|
-      tag = Tag.where(name: name).first_or_create(name: name)
-
-      status.tags << tag
-      records << tag
+    status.tags = tags.map { |str| str.mb_chars.downcase }.uniq(&:to_s).map do |name|
+      Tag.where(name: name).first_or_create(name: name)
     end
-
-    return unless status.public_visibility? || status.unlisted_visibility?
   end
 end

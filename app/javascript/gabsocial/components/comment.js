@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { NavLink } from 'react-router-dom'
-import { defineMessages, injectIntl, FormattedMessage } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import {
@@ -11,6 +11,7 @@ import {
   repost,
   unrepost,
 } from '../actions/interactions'
+import { fetchComments } from '../actions/statuses'
 import { replyCompose } from '../actions/compose'
 import { openModal } from '../actions/modal'
 import { openPopover } from '../actions/popover'
@@ -27,6 +28,7 @@ import StatusContent from './status_content'
 import StatusMedia from './status_media'
 import { defaultMediaVisibility } from './status'
 import Text from './text'
+import CommentSubReplyLoadMoreButton from './comment_sub_reply_load_more_button'
 
 class Comment extends ImmutablePureComponent {
 
@@ -84,6 +86,13 @@ class Comment extends ImmutablePureComponent {
     // : todo :
   }
 
+  handleOnLoadMore = () => {
+    const { status } = this.props
+    if (!status) return
+
+    this.props.onFetchComments(status.get('id'))
+  }
+
   setMoreNode = (c) => {
     this.moreNode = c
   }
@@ -105,12 +114,34 @@ class Comment extends ImmutablePureComponent {
       isHighlighted,
       isDetached,
       ancestorAccountId,
+      commentLoadedDescendants,
     } = this.props
 
     if (!status) return null
 
     //If account is spam and not mine, hide
     if (status.getIn(['account', 'is_spam']) && status.getIn(['account', 'id']) !== me) {
+      return null
+    }
+
+    const replyCount = status.get('direct_replies_count')
+    const loadedReplyCount = !!commentLoadedDescendants ? commentLoadedDescendants.size : 0
+    const unloadedReplyCount = replyCount - loadedReplyCount
+    const repliesLoaded = unloadedReplyCount === 0
+
+    //If blocked or muted, hide
+    const blocks = !!me ? localStorage.getItem('blocks') : ''
+    const mutes = !!me ? localStorage.getItem('mutes') : ''
+    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
+    if (
+        !!me && (
+          (blockedby && blockedby.split(',').includes(status.getIn(['account', 'id'])))
+          ||
+          (blocks && blocks.split(',').includes(status.getIn(['account', 'id'])))
+          ||
+          (mutes && mutes.split(',').includes(status.getIn(['author', 'id'])))
+        )
+    ) {
       return null
     }
 
@@ -146,6 +177,7 @@ class Comment extends ImmutablePureComponent {
       bgSubtle: !isHighlighted,
       highlightedComment: isHighlighted,
     })
+
 
     return (
       <div
@@ -215,15 +247,15 @@ class Comment extends ImmutablePureComponent {
 
               <div className={[_s.d, _s.flexRow, _s.mt5].join(' ')}>
                 <CommentButton
-                  title={intl.formatMessage(status.get('favourited') && !!me ? messages.unlike : messages.like)}
+                  title={status.get('favourited') && !!me ? 'Unlike' : 'Like'}
                   onClick={this.handleOnFavorite}
                 />
                 <CommentButton
-                  title={intl.formatMessage(messages.reply)}
+                  title={'Reply'}
                   onClick={this.handleOnReply}
                 />
                 <CommentButton
-                  title={intl.formatMessage(status.get('reblogged') && !!me ? messages.unrepost : messages.repost)}
+                  title={status.get('reblogged') && !!me ? 'Unrepost' : 'Repost'}
                   onClick={this.handleOnRepost}
                 />
                 <div ref={this.setMoreNode}>
@@ -233,10 +265,18 @@ class Comment extends ImmutablePureComponent {
                   />
                 </div>
               </div>
-
             </div>
           </div>
 
+
+          {
+            replyCount > 0 &&
+            <CommentSubReplyLoadMoreButton
+              shouldShow={loadedReplyCount < unloadedReplyCount}
+              replyCount={unloadedReplyCount}
+              onClick={this.handleOnLoadMore}
+            />
+          }
         </div>
       </div>
     )
@@ -272,16 +312,9 @@ CommentButton.propTypes = {
   title: PropTypes.string.isRequired,
 }
 
-const messages = defineMessages({
-  reply: { id: 'status.reply', defaultMessage: 'Reply' },
-  repost: { id: 'status.repost', defaultMessage: 'Repost' },
-  unrepost: { id: 'status.unrepost', defaultMessage: 'Unrepost' },
-  like: { id: 'status.like', defaultMessage: 'Like' },
-  unlike: { id: 'status.unlike', defaultMessage: 'Unlike' },
-})
-
 const makeMapStateToProps = (state, props) => ({
-  status: makeGetStatus()(state, props)
+  commentLoadedDescendants: state.getIn(['contexts', 'replies', props.id]),
+  status: makeGetStatus()(state, props),
 })
 
 const mapDispatchToProps = (dispatch) => ({
@@ -349,6 +382,9 @@ const mapDispatchToProps = (dispatch) => ({
   onOpenMedia (media, index) {
     dispatch(openModal('MEDIA', { media, index }));
   },
+  onFetchComments(statusId) {
+    dispatch(fetchComments(statusId, true))
+  },
 })
 
 Comment.propTypes = {
@@ -370,4 +406,4 @@ Comment.propTypes = {
   onOpenMedia: PropTypes.func.isRequired
 }
 
-export default injectIntl(connect(makeMapStateToProps, mapDispatchToProps)(Comment))
+export default connect(makeMapStateToProps, mapDispatchToProps)(Comment)

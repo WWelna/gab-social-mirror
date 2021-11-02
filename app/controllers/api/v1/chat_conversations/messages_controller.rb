@@ -16,11 +16,7 @@ class Api::V1::ChatConversations::MessagesController < Api::BaseController
 
   def destroy_all
     if current_user.account.is_pro
-      PurgeChatMessagesService.new.call(current_user.account, @chat_conversation)
-      @chat_conversation_account = ChatConversationAccount.where(
-        account: current_user.account,
-        chat_conversation: @chat_conversation
-      ).first
+      PurgeChatMessagesService.new.call(current_user.account, @chat_conversation_account)
       render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
     else
       render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
@@ -30,7 +26,13 @@ class Api::V1::ChatConversations::MessagesController < Api::BaseController
   private
 
   def set_chat_conversation
-    @chat_conversation = ChatConversation.find(params[:id])
+    # make sure current_account OWNS this chat conversation
+    @chat_conversation_account = current_account
+      .chat_conversation_accounts
+      .where(
+        chat_conversation: params[:id]
+      )
+      .first!
   end
 
   def set_chat_messages
@@ -43,7 +45,7 @@ class Api::V1::ChatConversations::MessagesController < Api::BaseController
 
   def conversation_chats
     chats = ChatMessage.where(
-      chat_conversation: @chat_conversation
+      chat_conversation: @chat_conversation_account.chat_conversation
     ).paginate_by_id(
       limit_param(DEFAULT_CHAT_CONVERSATION_MESSAGE_LIMIT),
       params_slice(:max_id, :since_id, :min_id)

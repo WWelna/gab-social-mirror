@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   include Localized
+  include Loggable
 
   helper_method :current_account
   helper_method :current_session
@@ -97,7 +98,9 @@ class ApplicationController < ActionController::Base
   def cache_collection(raw, klass)
     return raw unless klass.respond_to?(:with_includes)
 
-    raw                    = raw.cache_ids.to_a if raw.is_a?(ActiveRecord::Relation)
+    raw = raw.cache_ids.to_a if raw.is_a?(ActiveRecord::Relation)
+    return [] if raw.empty?
+
     cached_keys_with_value = Rails.cache.read_multi(*raw).transform_keys(&:id)
     uncached_ids           = raw.map(&:id) - cached_keys_with_value.keys
 
@@ -117,11 +120,7 @@ class ApplicationController < ActionController::Base
   def respond_with_error(code)
     respond_to do |format|
       format.any  { head code }
-
-      format.html do
-        set_locale
-        render "errors/#{code}", layout: 'error', status: code
-      end
+      format.html { render "errors/#{code}", layout: 'error', status: code }
     end
   end
 

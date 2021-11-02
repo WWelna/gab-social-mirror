@@ -29,10 +29,15 @@ class ChatMessageItem extends ImmutablePureComponent {
     hovering: false,
     isNewDay: false,
     isCloseToMyLast: false,
+    isExpired: false,
   }
 
   componentDidMount() {
-    const { lastChatMessageSameSender, lastChatMessageDate, chatMessage } = this.props
+    const {
+      lastChatMessageSameSender,
+      lastChatMessageDate,
+      chatMessage,
+    } = this.props
     if (lastChatMessageDate && chatMessage) {
       const createdAt = chatMessage.get('created_at')
       const isNewDay = moment(createdAt).format('L') !== moment(lastChatMessageDate).format('L')
@@ -42,12 +47,32 @@ class ChatMessageItem extends ImmutablePureComponent {
         isCloseToMyLast,
       })
     }
+
+    this._scheduleNextUpdate()
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._timer)
+  }
+
+  _scheduleNextUpdate() {
+    const { chatMessage } = this.props
+    const { isExpired } = this.state
+    if (!chatMessage || isExpired) return
+
+    const expirationDate = chatMessage.get('expires_at')
+    if (!expirationDate) return
+
+    const msUntilExpiration = moment(expirationDate).valueOf() - moment().valueOf()
+    this._timer = setTimeout(() => {
+      this.setState({ isExpired: true })
+    }, msUntilExpiration);
   }
 
   handleOnMouseEnter = () => {
     this.setState({ isHovering: true }) 
   }
-  
+
   handleOnMouseLeave = () => {
     this.setState({ isHovering: false })
   }
@@ -70,12 +95,25 @@ class ChatMessageItem extends ImmutablePureComponent {
       isCloseToMyLast,
       isHovering,
       isNewDay,
+      isExpired,
     } = this.state
 
-    if (!chatMessage) return <div />
+    if (!chatMessage || isExpired) return <div />
 
     const account = chatMessage.get('account')
     if (!account) return <div />
+
+    //If blocked or muted, hide
+    const blocks = !!me ? localStorage.getItem('blocks') : ''
+    const mutes = !!me ? localStorage.getItem('mutes') : ''
+    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
+    if (!!me && (
+      (blockedby && blockedby.split(',').includes(account.get('id'))) ||
+      (blocks && blocks.split(',').includes(account.get('id'))) ||
+      (mutes && mutes.split(',').includes(account.get('id'))))
+    ) {
+      return null
+    }
 
     const content = { __html: chatMessage.get('text_html') }
     const alt = account.get('id', null) === me

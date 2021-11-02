@@ -25,8 +25,9 @@ class EditStatusService < BaseService
 
     return idempotency_duplicate if idempotency_given? && idempotency_duplicate?
 
-    validate_similarity!
-    validate_links!
+    # validate_similarity! unless @account.user&.staff? || @account.vpdi?
+    validate_links! unless @account.user&.staff?
+    validate_mention_count! unless @account.user&.staff?
     validate_media!
     preprocess_attributes!
     revision_text = prepare_revision_text
@@ -94,11 +95,21 @@ class EditStatusService < BaseService
   end
 
   def validate_similarity!
-    raise GabSocial::NotPermittedError if StatusSimilarityService.new.call?(@text, @account.id)
+    return true unless StatusSimilarityService.new.call?(@text, @account.id)
+    raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
   end
 
   def validate_links!
-    raise GabSocial::LinkBlockedError if LinkBlock.block?(@text)
+    return true unless LinkBlock.block?(@text)
+    raise GabSocial::NotPermittedError, "A link you're trying to post has been blocked by the moderation team"
+  end
+
+  def validate_mention_count!
+    return true if @text.length < 8
+    return true if @status.reply?
+    return true unless @text.scan(Account::MENTION_RE).length > 8
+
+    raise GabSocial::NotPermittedError, 'Too many @mentions in one post'
   end
 
   def language_from_option(str)

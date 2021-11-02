@@ -17,7 +17,7 @@ class Api::V2::SearchController <  Api::BaseController
       params[:q],
       current_account,
       limit_param(RESULTS_LIMIT),
-      search_params.merge(resolve: truthy_param?(:resolve))
+      search_params.merge(resolve: truthy_param?(:resolve), onlyVerified: truthy_param?(:onlyVerified))
     )
   end
 

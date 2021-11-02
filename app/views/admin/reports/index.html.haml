@@ -9,6 +9,15 @@
       %li= filter_link_to t('admin.reports.unresolved'), resolved: nil
       %li= filter_link_to t('admin.reports.resolved'), resolved: '1'
 
+- if @categories.present?
+  .filters
+    .filter-subset
+      %strong= 'Categories'
+      %ul
+        %li= filter_link_to 'All', category: nil
+        - @categories.each do |(category, count)|
+          %li= filter_link_to "#{category || 'Not Specified'} (#{count})", category: category || ''
+
 = form_tag admin_reports_url, method: 'GET', class: 'simple_form' do
   .fields-group
     .input.string.optional
@@ -61,6 +70,11 @@
             %span.report-card__summary__item__content__icon{ title: t('admin.accounts.media_attachments') }
               = fa_icon('camera')
               = report.media_attachments.count
+
+            %span.report-card__summary__item__content__icon{ title: 'Category' }
+              - if report.category.present?
+                = fa_icon('tag')
+                = report.category
 
           .report-card__summary__item__assigned.hidden-sm{style: "width:220px;text-align:right;padding: 10px 0 0 0;"}
             %time.formatted{ datetime: report.created_at.iso8601 }

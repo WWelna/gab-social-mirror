@@ -1,5 +1,3 @@
-import { Map as ImmutableMap, List as ImmutableList, toJS } from 'immutable'
-import noop from 'lodash.noop'
 import api from '../api'
 import { me } from '../initial_state'
 import { importFetchedChatMessages } from './importer'
@@ -16,11 +14,17 @@ export const CHAT_MESSAGES_PURGE_REQUEST = 'CHAT_MESSAGES_PURGE_REQUEST'
 export const CHAT_MESSAGES_PURGE_SUCCESS = 'CHAT_MESSAGES_PURGE_SUCCESS'
 export const CHAT_MESSAGES_PURGE_FAIL    = 'CHAT_MESSAGES_PURGE_FAIL'
 
+export const CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT = 'CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT'
+
 /**
- * 
+ * Send a chat message with given text to given chatConversationId
+ * @param {String} text
+ * @param {String} chatConversationId
  */
 export const sendChatMessage = (text = '', chatConversationId) => (dispatch, getState) => {
+  // must have current user and id
   if (!me || !chatConversationId) return
+  // cannot send message if no text
   if (text.length === 0) return
 
   dispatch(sendChatMessageRequest(chatConversationId))
@@ -29,9 +33,9 @@ export const sendChatMessage = (text = '', chatConversationId) => (dispatch, get
     text,
     chat_conversation_id: chatConversationId,
   }, {
-    // headers: {
-    //   'Idempotency-Key': getState().getIn(['chat_compose`', 'idempotencyKey']),
-    // },
+    headers: {
+      'Idempotency-Key': getState().getIn(['chat_compose`', 'idempotencyKey']),
+    },
   }).then((response) => {
     dispatch(importFetchedChatMessages([response.data]))
     dispatch(sendChatMessageSuccess(response.data))
@@ -57,31 +61,19 @@ const sendChatMessageFail = (error) => ({
 })
 
 /**
- * 
- */
-export const manageIncomingChatMessage = (chatMessage) => (dispatch, getState) => {
-  if (!chatMessage) return
-
-  dispatch(sendChatMessageSuccess(chatMessage))
-
-  const isOnline = getState().getIn(['chat_conversation_messages', chatMessage.chat_conversation_id, 'online'])
-
-  // : todo :
-  // Check if is online for conversation, if not increase total/convo unread count 
-}
-
-/**
- * 
+ * Delete chat message with given id
+ * @param {String} chatMessageId
  */
 export const deleteChatMessage = (chatMessageId) => (dispatch, getState) => {
+  // must have user and id
   if (!me || !chatMessageId) return
 
   dispatch(deleteChatMessageRequest(chatMessageId))
 
   api(getState).delete(`/api/v1/chat_messages/${chatMessageId}`, {}, {
-    // headers: {
-    //   'Idempotency-Key': getState().getIn(['chat_compose', 'idempotencyKey']),
-    // },
+    headers: {
+      'Idempotency-Key': getState().getIn(['chat_compose', 'idempotencyKey']),
+    },
   }).then((response) => {
     dispatch(deleteChatMessageSuccess(response.data))
   }).catch((error) => {
@@ -106,15 +98,17 @@ const deleteChatMessageFail = (error) => ({
 })
 
 /**
- * 
+ * Delete all chat messages with a given chatConversationId
+ * @param {String} chatConversationId
  */
 export const purgeChatMessages = (chatConversationId) => (dispatch, getState) => {
+  // must have user and id
   if (!me || !chatConversationId) return
 
   dispatch(purgeChatMessagesRequest(chatConversationId))
 
   api(getState).delete(`/api/v1/chat_conversations/messages/${chatConversationId}/destroy_all`).then((response) => {
-  dispatch(purgeChatMessagesSuccess(chatConversationId))
+    dispatch(purgeChatMessagesSuccess(chatConversationId))
   }).catch((error) => {
     dispatch(purgeChatMessagesFail(error))
   })
@@ -136,3 +130,28 @@ const purgeChatMessagesFail = (error) => ({
   showToast: true,
   error,
 })
+
+/**
+ * Manage incoming chatMessage json data coming from web socket in streaming.js
+ * @param {Object} chatMessage
+ */
+export const manageIncomingChatMessage = (chatMessage) => (dispatch, getState) => {
+  if (!chatMessage) return
+
+  // immediately insert into conversation
+  dispatch(sendChatMessageSuccess(chatMessage))
+
+  // Check if conversation is online and approved, if not increase total/convo unread count
+  const selectedId = getState().getIn(['chats', 'selectedChatConversationId'], null)
+  const incomingId = chatMessage.chat_conversation_id
+  if (selectedId === incomingId) return
+
+  // check if is approved
+  const chatConversation = getState().getIn(['chat_conversations', selectedId], null)
+  if (!chatConversation) return
+
+  if (!chatConversation.get('is_hidden') && chatConversation.get('is_approved')) {
+    // increment
+    dispatch({ type: CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT })
+  }
+}

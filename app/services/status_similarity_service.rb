@@ -10,8 +10,20 @@ class StatusSimilarityService < BaseService
     # Not alike if no status_text or no account
     # : todo : come up with solution for same image spamming
     return false if @status_text.length == 0 || @account_id.nil?
+    # No posting periods
+    return true if @status_text == "."
 
     alike?
+  end
+
+  def clear(account)
+    return if account.nil?
+
+    key = "last_status_from_account:#{account.id}"
+
+    Redis.current.with do |conn|
+      conn.del(key)
+    end
   end
 
   private

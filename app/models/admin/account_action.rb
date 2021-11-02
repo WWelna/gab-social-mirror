@@ -17,10 +17,17 @@ class Admin::AccountAction
                 :type,
                 :text,
                 :report_id,
-                :warning_preset_id,
-                :send_email_notification
+                :warning_preset_id
 
-  attr_reader :warning
+  attr_reader :warning, :send_email_notification, :include_statuses
+
+  def send_email_notification=(value)
+    @send_email_notification = ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def include_statuses=(value)
+    @include_statuses = ActiveModel::Type::Boolean.new.cast(value)
+  end
 
   def save!
     ApplicationRecord.transaction do
@@ -28,6 +35,7 @@ class Admin::AccountAction
       process_warning!
     end
 
+    process_email!
     process_reports!
   end
 
@@ -74,6 +82,7 @@ class Admin::AccountAction
 
     # A log entry is only interesting if the warning contains
     # custom text from someone. Otherwise it's just noise.
+
     log_action(:create, warning) if warning.text.present?
   end
 
@@ -117,8 +126,26 @@ class Admin::AccountAction
     Admin::SuspensionWorker.perform_async(target_account.id)
   end
 
+  def process_email!
+    UserMailer.warning(target_account.user, warning, status_ids).deliver_later! if warnable?
+  end
+
   def warnable?
     send_email_notification && target_account.local?
+  end
+
+  def status_ids
+    report.status_ids if report
+  end
+
+  def reports
+    @reports ||= begin
+      if type == 'none' && with_report?
+        [report]
+      else
+        Report.where(target_account: target_account).unresolved
+      end
+    end
   end
 
   def warning_preset

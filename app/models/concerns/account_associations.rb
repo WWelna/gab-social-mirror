@@ -8,12 +8,13 @@ module AccountAssociations
     has_one :user, inverse_of: :account, dependent: :destroy
 
     # Chat
-    has_many :chat_messages, inverse_of: :account, dependent: :destroy
+    has_many :chat_messages, inverse_of: :from_account, dependent: :destroy, foreign_key: :from_account_id
     has_many :chat_conversation_accounts, inverse_of: :account, dependent: :destroy
 
     # Timelines
     has_many :statuses, inverse_of: :account, dependent: :destroy
     has_many :favourites, inverse_of: :account, dependent: :destroy
+    has_many :unfavourites, inverse_of: :account, dependent: :destroy
     has_many :mentions, inverse_of: :account, dependent: :destroy
     has_many :notifications, inverse_of: :account, dependent: :destroy
     has_many :scheduled_statuses, inverse_of: :account, dependent: :destroy

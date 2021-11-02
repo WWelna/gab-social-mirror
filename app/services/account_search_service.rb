@@ -11,6 +11,7 @@ class AccountSearchService < BaseService
     @options = options
     @account = account
     @group = options[:group] || nil
+    @following_only = options[:following] && @account
 
     search_service_results
   end
@@ -19,6 +20,12 @@ class AccountSearchService < BaseService
 
   def search_service_results
     return [] if query_blank_or_hashtag? || limit < 1
+
+    if @following_only
+      return @account.following.matches_display_name(@query)
+        .or(@account.following.matches_username(@query))
+        .limit(@limit)
+    end
 
     if resolving_non_matching_remote_account?
       return []

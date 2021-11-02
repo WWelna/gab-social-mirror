@@ -19,10 +19,6 @@ class ChatSettingsSidebar extends React.PureComponent {
         <List
           items={[
             {
-              title: 'Preferences',
-              to: '/messages/settings',
-            },
-            {
               title: 'Message Requests',
               to: '/messages/requests',
             },

@@ -1,7 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import ImmutablePureComponent from 'react-immutable-pure-component'
-import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
 import { makeGetChatConversation } from '../../../selectors'
 import { openPopover } from '../../../actions/popover'
@@ -10,8 +8,10 @@ import {
   POPOVER_CHAT_CONVERSATION_OPTIONS
 } from '../../../constants'
 import Button from '../../../components/button'
+import Avatar from '../../../components/avatar'
 import AvatarGroup from '../../../components/avatar_group'
 import DisplayName from '../../../components/display_name'
+import DisplayNameGroup from '../../../components/display_name_group'
 import Text from '../../../components/text'
 
 class ChatMessageHeader extends React.PureComponent {
@@ -43,14 +43,24 @@ class ChatMessageHeader extends React.PureComponent {
       <div className={[_s.d, _s.posAbs, _s.top0, _s.left0, _s.right0, _s.flexRow, _s.aiCenter, _s.h60PX, _s.w100PC, _s.borderBottom1PX, _s.borderColorSecondary, _s.bgPrimary, _s.px15, _s.py5].join(' ')}>
 
         {
-          !!otherAccounts &&
+          !!otherAccounts && otherAccounts.size === 1 &&
           <React.Fragment>
-            <AvatarGroup accounts={otherAccounts} size={34} noHover />
+            <Avatar account={otherAccounts.get(0)} size={34} />
             <div className={[_s.d, _s.pl10, _s.maxW100PC86PX, _s.overflowHidden].join(' ')}>
               <DisplayName account={otherAccounts.get(0)} isMultiline />
             </div>
           </React.Fragment>
         }
+        {
+          !!otherAccounts && otherAccounts.size > 1 &&
+          <React.Fragment>
+            <AvatarGroup accounts={otherAccounts} size={34} maxVisible={3} />
+            <div className={[_s.d, _s.pl10, _s.maxW80PC, _s.overflowHidden].join(' ')}>
+              <DisplayNameGroup accounts={otherAccounts} />
+            </div>
+          </React.Fragment>
+        }
+
         <Button
           buttonRef={this.setOptionsBtnRef}
           isNarrow
@@ -61,18 +71,6 @@ class ChatMessageHeader extends React.PureComponent {
           icon='ellipsis'
           iconSize='18px'
         />
-        {
-          isChatConversationRequest &&
-          <Button
-            isNarrow
-            onClick={this.handleOnApproveMessageRequest}
-            className={_s.ml10}
-          >
-            <Text color='inherit'>
-              Approve Message Request
-            </Text>
-          </Button>
-        }
       </div>
     )
   }

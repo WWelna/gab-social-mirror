@@ -262,6 +262,13 @@ class Status extends ImmutablePureComponent {
     this.handleToggleMediaVisibility()
   }
 
+  handleOnExpandComments = () => {
+    const { status, ancestorStatus } = this.props
+    const statusId = !!ancestorStatus ? ancestorStatus.get('id') : status.get('id')
+
+    this.props.onExpandComments(statusId)
+  }
+
   _properStatus() {
     const { status, ancestorStatus } = this.props
 
@@ -289,7 +296,10 @@ class Status extends ImmutablePureComponent {
   }
 
   handleOnCommentSortOpen = (btn) => {
-    this.props.onCommentSortOpen(btn)
+    const { status } = this.props
+    if (!status) return
+
+    this.props.onCommentSortOpen(btn, status.get('id'))
   }
 
   handleRef = (c) => {
@@ -316,6 +326,8 @@ class Status extends ImmutablePureComponent {
       onOpenProModal,
       isDeckConnected,
       statusId,
+      loadedDirectDescendantsCount,
+      next,
     } = this.props
     // const { height } = this.state
 
@@ -327,6 +339,22 @@ class Status extends ImmutablePureComponent {
 
     //If account is spam and not mine, hide
     if (status.getIn(['account', 'is_spam']) && status.getIn(['account', 'id']) !== me) {
+      return null
+    }
+
+    //If blocked or muted, hide
+    const blocks = !!me ? localStorage.getItem('blocks') : ''
+    const mutes = !!me ? localStorage.getItem('mutes') : ''
+    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
+    if (
+        !!me && (
+          (blockedby && blockedby.split(',').includes(status.getIn(['account', 'id'])))
+          ||
+          (blocks && blocks.split(',').includes(status.getIn(['account', 'id'])))
+          ||
+          (mutes && mutes.split(',').includes(status.getIn(['author', 'id'])))
+        )
+    ) {
       return null
     }
 
@@ -409,16 +437,16 @@ class Status extends ImmutablePureComponent {
       return null
     }
 
-    if (isHidden) {
-      return (
-        <HotKeys handlers={handlers}>
-          <div ref={this.handleRef} className={parentClasses} tabIndex='0'>
-            {status.getIn(['account', 'display_name']) || status.getIn(['account', 'username'])}
-            {status.get('content')}
-          </div>
-        </HotKeys>
-      )
-    }
+    // if (isHidden) {
+    //   return (
+    //     <HotKeys handlers={handlers}>
+    //       <div ref={this.handleRef} className={parentClasses} tabIndex='0'>
+    //         {status.getIn(['account', 'display_name']) || status.getIn(['account', 'username'])}
+    //         {status.get('content')}
+    //       </div>
+    //     </HotKeys>
+    //   )
+    // }
 
     return (
       <HotKeys handlers={handlers} className={_s.outlineNone}>
@@ -552,10 +580,13 @@ class Status extends ImmutablePureComponent {
                       {
                         descendantsIds.size > 0 &&
                         <CommentList
+                          totalDirectDescendants={status.get('direct_replies_count')}
                           ancestorAccountId={status.getIn(['account', 'id'])}
                           commentsLimited={commentsLimited}
                           descendants={descendantsIds}
-                          onViewComments={this.handleClick}
+                          loadedDirectDescendantsCount={loadedDirectDescendantsCount}
+                          onViewComments={this.handleOnExpandComments}
+                          next={next}
                         />
                       }
                     </React.Fragment>

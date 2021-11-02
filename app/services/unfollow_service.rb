@@ -18,6 +18,10 @@ class UnfollowService < BaseService
 
     return unless follow
 
+    # attempt to unfollow, responds to validator
+    unfollow = Unfollow.create!(account: @source_account, target_account: @target_account)
+    raise ActiveRecord::RecordInvalid unless unfollow.valid?
+
     follow.destroy!
     follow
   end

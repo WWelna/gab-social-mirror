@@ -68,8 +68,10 @@ class DisplayName extends ImmutablePureComponent {
     const {
       account,
       isMultiline,
+      isGrouped,
       isLarge,
       noHover,
+      noDisplayName,
       noUsername,
       noRelationship,
       isSmall,
@@ -81,7 +83,7 @@ class DisplayName extends ImmutablePureComponent {
     if (!account) return null
 
     const containerClassName = CX({
-      d: 1,
+      d: !isGrouped,
       maxW100PC: 1,
       aiCenter: !isMultiline,
       flexRow: !isMultiline,
@@ -105,15 +107,17 @@ class DisplayName extends ImmutablePureComponent {
 
     const usernameClasses = CX({
       text: 1,
-      displayFlex: 1,
-      flexShrink0: 1,
-      overflowWrapBreakWord: 1,
-      textOverflowEllipsis: 1,
-      cSecondary: 1,
-      fw400: 1,
+      displayFlex: isMultiline,
+      whiteSpaceNoWrap: 1,
+      textOverflowEllipsis2: 1,
+      overflowHidden: 1,
+      cSecondary: !noDisplayName,
+      cPrimary: noDisplayName,
+      fw400: !noDisplayName,
+      fw600: noDisplayName,
       lineHeight15: isMultiline,
       lineHeight125: !isMultiline,
-      ml5: !isMultiline,
+      ml5: !isMultiline && !noDisplayName,
       fs14PX: isSmall,
       fs15PX: !isLarge,
       fs16PX: isLarge && !isSmall,
@@ -141,22 +145,25 @@ class DisplayName extends ImmutablePureComponent {
         onMouseLeave={noHover ? undefined : this.handleMouseLeave}
         ref={this.setRef}
       >
-        <span className={[_s.d, _s.flexRow, _s.aiCenter, _s.maxW100PC, _s.flexShrink1, _s.overflowHidden, _s.cPrimary].join(' ')}>
-          <bdi className={[_s.text, _s.whiteSpaceNoWrap, _s.textOverflowEllipsis].join(' ')}>
-            <strong
-              className={displayNameClasses}
-              dangerouslySetInnerHTML={{ __html: account.get('display_name_html') }}
-            />
+        {
+          !noDisplayName &&
+          <span className={[_s.d, _s.flexRow, _s.aiCenter, _s.maxW100PC, _s.flexShrink0, _s.overflowHidden, _s.cPrimary].join(' ')}>
+            <bdi className={[_s.text, _s.whiteSpaceNoWrap, _s.textOverflowEllipsis].join(' ')}>
+              <strong
+                className={displayNameClasses}
+                dangerouslySetInnerHTML={{ __html: account.get('display_name_html') }}
+              />
+              {
+                account.get('locked') &&
+                <Icon id='lock-filled' size={`${iconSize - 3}px`} className={[_s.cPrimary, _s.ml5].join(' ')} />
+              }
+            </bdi>
             {
-              account.get('locked') &&
-              <Icon id='lock-filled' size={`${iconSize - 3}px`} className={[_s.cPrimary, _s.ml5].join(' ')} />
+              account.get('is_verified') &&
+              <Icon id='verified' size={`${iconSize}px`} className={[_s.ml5, _s.d].join(' ')} />
             }
-          </bdi>
-          {
-            account.get('is_verified') &&
-            <Icon id='verified' size={`${iconSize}px`} className={[_s.ml5, _s.d].join(' ')} />
-          }
-        </span>
+          </span>
+        }
         {
           !noUsername &&
           <span className={usernameClasses}>
@@ -201,9 +208,11 @@ DisplayName.propTypes = {
   noHover: PropTypes.bool,
   noRelationship: PropTypes.bool,
   noUsername: PropTypes.bool,
+  noDisplayName: PropTypes.bool,
   isComment: PropTypes.bool,
   isCentered: PropTypes.bool,
   isInline: PropTypes.bool,
+  isGrouped: PropTypes.bool,
 }
 
 export default (connect(null, mapDispatchToProps)(DisplayName))

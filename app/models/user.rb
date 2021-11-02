@@ -81,13 +81,21 @@ class User < ApplicationRecord
   validates_with EmailMxValidator, if: :validate_email_dns?
   validates :agreement, acceptance: { allow_nil: false, accept: [true, 'true', '1'] }, on: :create
 
+  # The built in Devise validator is a simple uniqueness validator that doesn't take Gmail's
+  # `.` or `+` syntax into account.
+  self.validators_on(:email).
+    detect { |v| v.is_a?(ActiveRecord::Validations::UniquenessValidator) }.
+    attributes.
+    delete(:email)
+  validates_with EmailUniquenessValidator, if: :email_changed?
+
   scope :recent, -> { order(id: :desc) }
   scope :approved, -> { where(approved: true) }
   scope :confirmed, -> { where.not(confirmed_at: nil) }
   scope :enabled, -> { where(disabled: false) }
   scope :inactive, -> { where(arel_table[:current_sign_in_at].lt(ACTIVE_DURATION.ago)) }
   scope :active, -> { confirmed.where(arel_table[:current_sign_in_at].gteq(ACTIVE_DURATION.ago)).joins(:account).where.not(accounts: { suspended_at: nil }) }
-  scope :matches_email, ->(value) { where(arel_table[:email].matches("#{value}%")) }
+  scope :matches_email, ->(value) { matching(:email, :starts_with, value) }
   scope :emailable, -> { confirmed.enabled.joins(:account).merge(Account.searchable) }
 
   before_validation :sanitize_languages
@@ -102,11 +110,17 @@ class User < ApplicationRecord
   has_many :session_activations, dependent: :destroy
 
   delegate :auto_play_gif, :default_sensitive, :unfollow_modal, :boost_modal, :delete_modal,
-           :noindex, :display_media, :hide_network,
+           :noindex, :display_media, :hide_network, :pro_wants_ads,
            :expand_spoilers, :default_language, :aggregate_reblogs,
            :group_in_home_feed, to: :settings, prefix: :setting, allow_nil: false
 
   attr_writer :external
+
+  def email=(email_address)
+    self[:unique_email] = EmailAddress::Address.new(email_address).canonical
+    self[:email] = email_address
+    super
+  end
 
   def confirmed?
     confirmed_at.present?
@@ -208,6 +222,10 @@ class User < ApplicationRecord
 
   def hides_network?
     @hides_network ||= settings.hide_network
+  end
+
+  def pro_wants_ads?
+    @pro_wants_ads ||= settings.pro_wants_ads
   end
 
   def aggregates_reblogs?

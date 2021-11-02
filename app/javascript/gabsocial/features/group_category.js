@@ -11,91 +11,84 @@ import Block from '../components/block'
 import ColumnIndicator from '../components/column_indicator'
 import Heading from '../components/heading'
 import GroupListItem from '../components/group_list_item'
+import ScrollableList from "../components/scrollable_list";
 
 class GroupCategory extends ImmutablePureComponent {
-
-  state = {
-    category: this.props.params.sluggedCategory,
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.params.sluggedCategory !== prevProps.params.sluggedCategory) {
-      this.handleLoad(this.props.params.sluggedCategory)
-    }
-  }
-
   componentDidMount() {
-    this.handleLoad(this.props.params.sluggedCategory)
-  }
-
-  handleLoad = (sluggedCategory) => {
-    const category = unslugify(sluggedCategory)
-    this.setState({ category })
-    this.props.onFetchGroupsByCategory(category)
+    const { sluggedCategory } = this.props.params
+    this.props.onFetchGroupsByCategory(sluggedCategory)
   }
 
   render() {
     const {
-      isFetched,
-      isLoading,
-      groupIds,
+      isFetched = false,
+      isLoading = true,
+      hasMore = true,
+      groupIds = [],
     } = this.props
-    const { category } = this.state
+    const { sluggedCategory } = this.props.params
+    const title = unslugify(sluggedCategory)
 
-    let errorMessage
-    if (!groupIds || (isFetched && groupIds.size === 0)) {
-			errorMessage = <ColumnIndicator type='error' message={<FormattedMessage id='groups.empty' defaultMessage='There are no groups to display' />} />
-		} else if (isLoading && groupIds.size === 0) {
-      errorMessage = <ColumnIndicator type='loading' />
-		} 
+    let emptyMessage
+
+    if (isFetched && groupIds.size === 0) {
+			emptyMessage = 'There are no groups to display'
+		}
+
+    const groups = groupIds.map((groupId, i) => (
+      <GroupListItem
+        isAddable
+        key={`group-collection-item-${i}`}
+        id={groupId}
+      />
+    ))
   
 		return (
 			<Block>
 				<div className={[_s.d, _s.flexRow, _s.px15, _s.pt10].join(' ')}>
 					<div className={[_s.d, _s.aiStart, _s.overflowHidden].join(' ')}>
 						<Heading size='h2'>
-							Groups by category: {category}
+							Groups by category: {title}
 						</Heading>
 					</div>
 				</div>
 				<div className={[_s.d, _s.py10, _s.w100PC].join(' ')}>
-					{
-            !errorMessage &&
-						groupIds.map((groupId, i) => (
-							<GroupListItem
-								isAddable
-								key={`group-collection-item-${i}`}
-								id={groupId}
-								isLast={groupIds.count() - 1 === i}
-							/>
-						))
-          }
-          { !!errorMessage && errorMessage}
+          <ScrollableList
+            scrollKey={`group-category-${sluggedCategory}`}
+            onLoadMore={() => this.props.onFetchGroupsByCategory(sluggedCategory)}
+            disableInfiniteScroll={false}
+            isLoading={isLoading}
+            showLoading={false}
+            hasMore={hasMore}
+            emptyMessage={emptyMessage}
+          >
+            {groups}
+          </ScrollableList>
 				</div>
 			</Block>
 		)
   }
-
 }
 
 const mapStateToProps = (state, { params: { sluggedCategory } }) => {
-  const cleanSluggedCategory = slugify(sluggedCategory)
-
+  const path = ['group_lists', 'by_category', sluggedCategory]
   return {
-    groupIds: state.getIn(['group_lists', 'by_category', cleanSluggedCategory, 'items']),
-	  isFetched: state.getIn(['group_lists', 'by_category', cleanSluggedCategory, 'isFetched']),
-	  isLoading: state.getIn(['group_lists', 'by_category', cleanSluggedCategory, 'isLoading']),
+    groupIds: state.getIn([...path, 'groupIds']),
+    isFetched: state.getIn([...path, 'isFetched']),
+    isLoading: state.getIn([...path, 'isLoading']),
+    hasMore: state.getIn([...path, 'hasMore']),
   }
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  onFetchGroupsByCategory: (category) => dispatch(fetchGroupsByCategory(category)),
+  onFetchGroupsByCategory: (sluggedCategory) => dispatch(fetchGroupsByCategory(sluggedCategory)),
 })
 
 GroupCategory.propTypes = {
-  groupIds: ImmutablePropTypes.list,
-	isFetched: PropTypes.bool.isRequired,
-  isLoading: PropTypes.bool.isRequired,
+  groupIds: PropTypes.array,
+	isFetched: PropTypes.bool,
+  isLoading: PropTypes.bool,
+  hasMore: PropTypes.bool,
   onFetchGroupsByCategory: PropTypes.func.isRequired,
   sluggedCategory: PropTypes.string.isRequired,
 }

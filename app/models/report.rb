@@ -14,6 +14,7 @@
 #  target_account_id          :bigint(8)        not null
 #  assigned_account_id        :bigint(8)
 #  uri                        :string
+#  category                   :integer
 #
 
 class Report < ApplicationRecord
@@ -28,6 +29,15 @@ class Report < ApplicationRecord
   scope :resolved,   -> { where(action_taken: true) }
 
   validates :comment, length: { maximum: 1000 }
+
+  enum category: {
+    'Spam' => 0,
+    'Violence' => 1,
+    'Threat' => 2,
+    'Porn' => 3,
+    'Doxxing' => 4,
+    'Other' => 5,
+  }
 
   def local?
     false # Force uri_for to use uri attribute

@@ -119,6 +119,7 @@ class DeckSidebar extends ImmutablePureComponent {
 
                 <Divider isSmall />
 
+                <NavigationBarButton attrTitle='Chat' icon='chat' to='/messages' />
                 <NavigationBarButton attrTitle='Dark/Muted/Light/White Mode' icon='light-bulb' onClick={this.handleOnClickLightBulb} />
 
                 <button

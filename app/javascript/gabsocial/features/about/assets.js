@@ -88,7 +88,7 @@ export default class Assets extends React.PureComponent {
                 <div className={[_s.d, _s.px15, _s.aiCenter, _s.jcCenter, _s.flexRow, _s.mt10].join(' ')}>
                   <GabLogo />
                   <div className={[_s.d, _s.pl10, _s.ml15].join(' ')}>
-                    <Button>
+                    <Button onclick="location.href='https://gab.com/legacy/gab_logo.svg'" type="button">
                       Download Logo
                     </Button>
                   </div>

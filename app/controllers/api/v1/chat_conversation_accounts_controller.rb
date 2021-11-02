@@ -5,9 +5,21 @@ class Api::V1::ChatConversationAccountsController < Api::BaseController
   before_action -> { doorkeeper_authorize! :write, :'write:chats' }
 
   before_action :require_user!
-  before_action :set_account, only: [:block_messenger, :unblock_messenger, :messenger_block_relationships]
-  before_action :check_account_suspension, only: [:block_messenger, :unblock_messenger, :messenger_block_relationships]
-  before_action :set_chat_conversation, except: [:block_messenger, :unblock_messenger, :messenger_block_relationships, :search]
+  before_action :set_account, only: [
+    :block_messenger,
+    :unblock_messenger,
+    :messenger_block_relationships
+  ]
+  before_action :check_account_suspension, only: [
+    :block_messenger,
+    :unblock_messenger,
+    :messenger_block_relationships
+  ]
+  before_action :set_chat_conversation, except: [
+    :block_messenger,
+    :unblock_messenger,
+    :messenger_block_relationships,
+  ]
 
   def block_messenger
     @block = BlockChatMessengerService.new.call(current_user.account, @account)
@@ -23,6 +35,7 @@ class Api::V1::ChatConversationAccountsController < Api::BaseController
            chat_blocking: false
   end
 
+  # fetch if current_user is blocking @account or blocked by @account
   def messenger_block_relationships
     chat_blocking = current_user.account.chat_blocking?(@account)
     chat_blocked_by = current_user.account.chat_blocked_by?(@account, current_account)
@@ -42,24 +55,40 @@ class Api::V1::ChatConversationAccountsController < Api::BaseController
     render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
   end
 
-  def search
-    # : todo :
-    search_conversations = [] #ChatConversationAccount.where(account: current_account, is_hidden: false, is_approved: true).map(&:participant_account_ids)
-                          # .joins(:account).where("accounts.display_name ILIKE ?", "%#{params[:q]}%")
-    render json: search_conversations, each_serializer: REST::ChatConversationAccountSerializer
+  def pin_chat_conversation
+    @chat_conversation_account.update!(is_pinned: true)
+    render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
+  end
+
+  def unpin_chat_conversation
+    @chat_conversation_account.update!(is_pinned: false)
+    render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
+  end
+
+  def leave_group_chat_conversation
+    if !@chat_conversation_account.is_group_chat?
+      raise GabSocial::NotPermittedError, "You cannot leave this chat. To stop receiving messages from this sender, you can hide and block them."
+    end
+
+    @chat_conversation_account.update!(
+      left_group_chat_at: Time.now.utc,
+      is_hidden: true
+    )
+    render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
   end
 
   private
 
   def set_account
-    @account = Account.find(params[:account_id])
+    # using params[:id] for this too, yea...
+    @account = Account.find(params[:id])
   end
 
+  # find MY chat conversation account
   def set_chat_conversation
-    @chat_conversation = ChatConversation.find(params[:id])
     @chat_conversation_account = ChatConversationAccount.where(
       account: current_account,
-      chat_conversation: @chat_conversation
+      chat_conversation: params[:id]
     ).first
   end
 

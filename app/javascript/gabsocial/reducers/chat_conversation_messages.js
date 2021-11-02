@@ -15,7 +15,6 @@ import {
   CHAT_CONVERSATION_MESSAGES_EXPAND_FAIL,
   CHAT_CONVERSATION_MESSAGES_CONNECT,
   CHAT_CONVERSATION_MESSAGES_DISCONNECT,
-  CHAT_CONVERSATION_MESSAGES_CLEAR,
 } from '../actions/chat_conversation_messages'
 
 const initialState = ImmutableMap()
@@ -86,8 +85,6 @@ export default function chat_conversation_messages(state = initialState, action)
       initialConversation,
       map => map.set('online', false).update('items', items => items.first() ? items.unshift(null) : items)
     )
-  case CHAT_CONVERSATION_MESSAGES_CLEAR:
-    return state.set(chatConversationId, initialTimeline)
   case CHAT_CONVERSATION_MESSAGES_EXPAND_REQUEST:
     return state.update(action.chatConversationId, initialConversation, map => map.set('isLoading', true))
   case CHAT_CONVERSATION_MESSAGES_EXPAND_FAIL:

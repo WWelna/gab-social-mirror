@@ -14,6 +14,7 @@ import {
   SignUpPanel,
   GroupsPanel,
   GroupInfoPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class GroupLayout extends ImmutablePureComponent {
@@ -67,6 +68,7 @@ class GroupLayout extends ImmutablePureComponent {
                       page={`group.${groupId}`}
                       layout={[
                         <WrappedBundle component={GroupInfoPanel} componentParams={{ group }} />,
+                        GabAdPanel,
                         SignUpPanel,
                         GroupsPanel,
                         LinkFooter,

@@ -8,15 +8,22 @@ class Api::V1::ChatMessagesController < Api::BaseController
   before_action :set_chat_message, only: :destroy
 
   def create
-    @chat_conversation = ChatConversation.find(chat_params[:chat_conversation_id])
-    @chat = PostChatMessageService.new.call(current_user.account, text: chat_params[:text], chat_conversation: @chat_conversation)
-    render json: @chat, serializer: REST::ChatMessageSerializer
+    chat_conversation_account = current_account.chat_conversation_accounts.find_by!(
+      chat_conversation: chat_params[:chat_conversation_id]
+    )
+
+    chat = PostChatMessageService.new.call(
+      current_account,
+      text: chat_params[:text],
+      chat_conversation_account: chat_conversation_account
+    )
+
+    render json: chat, serializer: REST::ChatMessageSerializer
   end
 
   def destroy
-    return not_found if @chatMessage.nil?
-    DeleteChatMessageService.new.call(@chatMessage)
-    render json: @chatMessage, serializer: REST::ChatMessageSerializer
+    DeleteChatMessageService.new.call(@chat_message)
+    render json: @chat_message, serializer: REST::ChatMessageSerializer
   end
 
   private
@@ -26,7 +33,7 @@ class Api::V1::ChatMessagesController < Api::BaseController
   end
 
   def set_chat_message
-    @chatMessage = ChatMessage.where(from_account: current_user.account).find(params[:id])
+    @chat_message = current_account.chat_messages.find(params[:id])
   end
 
 end

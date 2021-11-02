@@ -6,7 +6,8 @@ import {
   TIMELINE_INJECTION_PRO_UPGRADE,
   TIMELINE_INJECTION_PWA,
   TIMELINE_INJECTION_SHOP,
-  TIMELINE_INJECTION_USER_SUGGESTIONS, 
+  TIMELINE_INJECTION_USER_SUGGESTIONS,
+  TIMELINE_INJECTION_GAB_TV_EXPLORE,
 } from '../../constants'
 import {
   FeaturedGroupsInjection,
@@ -16,6 +17,7 @@ import {
   PWAInjection,
   ShopInjection,
   UserSuggestionsInjection,
+  GabTVVideosInjection,
 } from '../../features/ui/util/async_components'
 
 import React from 'react'
@@ -25,12 +27,13 @@ import Bundle from '../../features/ui/util/bundle'
 
 const INJECTION_COMPONENTS = {}
 INJECTION_COMPONENTS[TIMELINE_INJECTION_FEATURED_GROUPS] = FeaturedGroupsInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_GROUP_CATEGORIES] = GroupCategoriesInjection
+// INJECTION_COMPONENTS[TIMELINE_INJECTION_GROUP_CATEGORIES] = GroupCategoriesInjection
 INJECTION_COMPONENTS[TIMELINE_INJECTION_PROGRESS] = ProgressInjection
 INJECTION_COMPONENTS[TIMELINE_INJECTION_PRO_UPGRADE] = ProUpgradeInjection
 INJECTION_COMPONENTS[TIMELINE_INJECTION_PWA] = PWAInjection
 INJECTION_COMPONENTS[TIMELINE_INJECTION_SHOP] = ShopInjection
 INJECTION_COMPONENTS[TIMELINE_INJECTION_USER_SUGGESTIONS] = UserSuggestionsInjection
+INJECTION_COMPONENTS[TIMELINE_INJECTION_GAB_TV_EXPLORE] = GabTVVideosInjection
 
 class TimelineInjectionRoot extends React.PureComponent {
 

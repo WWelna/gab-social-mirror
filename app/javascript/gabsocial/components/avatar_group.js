@@ -1,62 +1,69 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import ImmutablePropTypes from 'react-immutable-proptypes'
-import ImmutablePureComponent from 'react-immutable-pure-component'
-import Image from './image'
-
+import Avatar from './avatar'
+import Text from './text'
+import { CX } from '../constants'
 
 /**
- * Renders an avatar component
- * @param {list} [props.accounts] - the accounts for images
- * @param {number} [props.size=40] - the size of the avatar
+ * Renders a inline group of avatars
+ * @version 1.0.0
  */
-class AvatarGroup extends ImmutablePureComponent {
-
-  render() {
-    const { accounts, size } = this.props
-
-    return (
-      <div className={[_s.d].join(' ')}>
-        {
-          !!accounts &&
-          accounts.map((account) => {
-            const isPro = account.get('is_pro')
-            const alt = `${account.get('display_name')} ${isPro ? '(PRO)' : ''}`.trim()
-            const className = [_s.d, _s.circle, _s.overflowHidden]
-            if (isPro) {
-              className.push(_s.boxShadowAvatarPro)
-            }
-        
-            const options = {
-              alt,
-              className,
-              src: account.get('avatar_static'),
-              style: {
-                width: `${size}px`,
-                height: `${size}px`,
-              },
-            }
-      
-            return (
-              <div className={[_s.d].join(' ')}>
-                <Image {...options} />
-              </div>
-            )
-          })
-        }
-      </div>
-    )
+const AvatarGroup = ({ accounts, avatarCount, size, maxVisible, showText }) => {
+  if (!accounts) {
+    return null
   }
 
-}
+  const count = avatarCount || accounts.size
+  const textSize =
+    size < 50 ? 'small' : size >= 50 && size < 80 ? 'normal' : 'large'
 
-AvatarGroup.propTypes = {
-  accounts: ImmutablePropTypes.list,
-  size: PropTypes.number,
+  return (
+    // eslint-disable-next-line array-element-newline
+    <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
+      {accounts.slice(0, maxVisible).map((account, i) => {
+        const containerClasses = CX({
+          d: 1,
+          mlNeg25PX: i !== 0 && size >= 40,
+          mlNeg15PX: i !== 0 && size < 40,
+          circle: 1,
+          border2PX: 1,
+          borderColorSecondary: 1,
+        })
+        return (
+          <div
+            key={`grouped-avatar-${i}`}
+            className={containerClasses}
+          >
+            <Avatar
+              account={account}
+              size={size}
+            />
+          </div>
+        )
+      })}
+      {count > maxVisible && showText && (
+        <Text
+          text={`+ ${count - maxVisible}`}
+          className={[_s.ml10].join(' ')}
+          color='secondary'
+          size={textSize}
+        />
+      )}
+    </div>
+  )
 }
 
 AvatarGroup.defaultProps = {
+  maxVisible: 3,
   size: 40,
+}
+
+AvatarGroup.propTypes = {
+  accounts: PropTypes.array,
+  avatarCount: PropTypes.number,
+  maxVisible: PropTypes.number,
+  size: PropTypes.number,
+  showText: PropTypes.bool,
 }
 
 export default AvatarGroup

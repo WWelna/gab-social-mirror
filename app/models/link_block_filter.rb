@@ -18,7 +18,7 @@ class LinkBlockFilter
   def scope_for(key, value)
     case key.to_sym
     when :link
-      LinkBlock.where("LOWER(link) LIKE LOWER(?)", "%#{value}%")
+      LinkBlock.matching(:link, :contains, value)
     else
       raise "Unknown filter: #{key}"
     end

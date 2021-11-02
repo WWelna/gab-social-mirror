@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'mime/types'
+require 'mime/types/columnar'
 
 module Attachmentable
   extend ActiveSupport::Concern
@@ -8,11 +8,23 @@ module Attachmentable
   MAX_MATRIX_LIMIT = 16_777_216 # 4096x4096px or approx. 16MB
 
   included do
+    before_post_process :obfuscate_file_name
     before_post_process :set_file_extensions
     before_post_process :check_image_dimensions
+    before_post_process :set_file_content_type
   end
 
   private
+
+  def set_file_content_type
+    self.class.attachment_definitions.each_key do |attachment_name|
+      attachment = send(attachment_name)
+
+      next if attachment.blank? || attachment.queued_for_write[:original].blank?
+
+      attachment.instance_write :content_type, calculated_content_type(attachment)
+    end
+  end
 
   def set_file_extensions
     self.class.attachment_definitions.each_key do |attachment_name|
@@ -32,7 +44,7 @@ module Attachmentable
 
       width, height = FastImage.size(attachment.queued_for_write[:original].path)
 
-      raise GabSocial::DimensionsValidationError, "#{width}x#{height} images are not supported" if width.present? && height.present? && (width * height >= MAX_MATRIX_LIMIT)
+      raise GabSocial::DimensionsValidationError, "#{width}x#{height} images are not supported, must be below #{MAX_MATRIX_LIMIT} sqpx" if width.present? && height.present? && (width * height >= MAX_MATRIX_LIMIT)
     end
   end
 
@@ -46,5 +58,23 @@ module Attachmentable
     extension                = 'jpeg' if extension == 'jpe'
 
     extension
+  end
+
+  def calculated_content_type(attachment)
+    content_type = Paperclip.run('file', '-b --mime :file', file: attachment.queued_for_write[:original].path).split(/[:;\s]+/).first.chomp
+    content_type = 'video/mp4' if content_type == 'video/x-m4v'
+    content_type
+  rescue Terrapin::CommandLineError
+    ''
+  end
+
+  def obfuscate_file_name
+    self.class.attachment_definitions.each_key do |attachment_name|
+      attachment = send(attachment_name)
+
+      next if attachment.blank? || attachment.queued_for_write[:original].blank?
+
+      attachment.instance_write :file_name, SecureRandom.hex(8) + File.extname(attachment.instance_read(:file_name))
+    end
   end
 end

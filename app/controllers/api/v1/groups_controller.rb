@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Api::V1::GroupsController < Api::BaseController
+  GROUPS_PER_PAGE = 50
+
   include Authorization
 
   # before_action -> { doorkeeper_authorize! :read, :'read:groups' }, only: [:index, :show]
@@ -13,22 +15,17 @@ class Api::V1::GroupsController < Api::BaseController
     case current_tab
       when 'featured'
         @groupIds = FetchGroupsService.new.call("featured")
-        @groups = Group.where(id: @groupIds).limit(150).all
-      when 'new'
-        if !current_user
-          return render json: { error: 'This method requires an authenticated user' }, status: 422
-        end
-        @groups = Group.where(is_archived: false).limit(24).order('created_at DESC').all
+        @groups = Group.where(id: @groupIds).limit(150).includes(:group_categories)
       when 'member'
         if !current_user
           return render json: { error: 'This method requires an authenticated user' }, status: 422
         end
-        @groups = Group.joins(:group_accounts).where(is_archived: false, group_accounts: { account: current_account }).order('group_accounts.id DESC').all
+        @groups = Group.joins(:group_accounts).where(is_archived: false, group_accounts: { account: current_account }).order('group_accounts.id DESC').includes(:group_categories)
       when 'admin'
         if !current_user
           render json: { error: 'This method requires an authenticated user' }, status: 422
         end
-        @groups = Group.joins(:group_accounts).where(is_archived: false, group_accounts: { account: current_account, role: :admin }).all
+        @groups = Group.joins(:group_accounts).where(is_archived: false, group_accounts: { account: current_account, role: :admin }).includes(:group_categories)
     end
 
     render json: @groups, each_serializer: REST::GroupSerializer
@@ -39,17 +36,21 @@ class Api::V1::GroupsController < Api::BaseController
       return render json: { error: 'This method requires an authenticated user' }, status: 422
     end
 
-    @groupCategory = nil
-    if !params[:category].empty?
-      # @groupCategory = GroupCategories.where("text ILIKE ?", "%#{params[:category]}%")
+    page = Integer(params[:page] || 1)
+
+    groups = if params[:category].present?
+      Group.where(
+        is_archived: false,
+        group_categories: GroupCategories.matching(:text, :contains, params[:category])
+      )
+      .order(member_count: :desc).includes(:group_categories)
+      .page(page)
+      .per(GROUPS_PER_PAGE)
+    else
+      []
     end
 
-    @groups = []
-    if !@groupCategory.nil?
-      @groups = Group.where(is_archived: false, group_categories: @groupCategory).order('member_count DESC').all
-    end
-
-    render json: @groups, each_serializer: REST::GroupSerializer
+    render json: groups, each_serializer: REST::GroupSerializer
   end
 
   def by_tag
@@ -57,18 +58,13 @@ class Api::V1::GroupsController < Api::BaseController
       return render json: { error: 'This method requires an authenticated user' }, status: 422
     end
 
-    @groups = []
-    if !params[:tag].empty?
-      # @groups = Group.where(is_archived: false).where("array_to_string(tags, '||') ILIKE :tag", tag: "%#{params[:tag]}%").order('member_count DESC').all
+    groups = if params[:tag].present?
+      Group.where(is_archived: false).matches_array(:tags, '||', params[:tag]).order(member_count: :desc).includes(:group_categories)
+    else
+      []
     end
 
-    render json: @groups, each_serializer: REST::GroupSerializer
-  end
-
-  def current_tab 
-    tab = 'featured'
-    tab = params[:tab] if ['featured', 'member', 'admin', 'new'].include? params[:tab]
-    return tab
+    render json: groups, each_serializer: REST::GroupSerializer
   end
 
   def show
@@ -77,7 +73,7 @@ class Api::V1::GroupsController < Api::BaseController
 
   def create
     authorize :group, :create?
-    
+
     @group = Group.create!(group_params.merge(account: current_account))
     render json: @group, serializer: REST::GroupSerializer
   end
@@ -114,24 +110,35 @@ class Api::V1::GroupsController < Api::BaseController
   end
 
   def member_search
-    @accounts = Group.search_for_members(@group, params[:q], DEFAULT_ACCOUNTS_LIMIT)
+    authorize @group, :allow_if_is_group_admin_or_moderator?
+
+    @accounts = Group.search_for_members(@group, params[:q].strip, DEFAULT_ACCOUNTS_LIMIT)
     render json: @accounts, each_serializer: REST::AccountSerializer
   end
 
   def removed_accounts_search
-    @accounts = Group.search_for_removed_accounts(@group, params[:q], DEFAULT_ACCOUNTS_LIMIT)
+    authorize @group, :allow_if_is_group_admin_or_moderator?
+    
+    @accounts = Group.search_for_removed_accounts(@group, params[:q].strip, DEFAULT_ACCOUNTS_LIMIT)
     render json: @accounts, each_serializer: REST::AccountSerializer
   end
 
   private
 
+  def current_tab
+    tab = 'featured'
+    tab = params[:tab] if ['featured', 'member', 'admin', 'new'].include? params[:tab]
+    return tab
+  end
+
   def set_group
-    @group = Group.where(id: params[:id], is_archived: false).includes(:group_categories).first
+    @group = Group.includes(:group_categories).find_by!(id: params[:id], is_archived: false)
   end
 
   def group_params
     thep = params.permit(:title, :password, :cover_image, :description, :is_private, :tags, :is_visible, :group_category_id, :slug)
     thep[:tags] = thep[:tags].split(",") unless thep[:tags].nil?
+    thep[:cover_image] = nil if thep[:cover_image] == 'undefined'
     thep
   end
 end

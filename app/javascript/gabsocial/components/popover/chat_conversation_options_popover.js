@@ -10,12 +10,16 @@ import { setChatConversationSelected } from '../../actions/chats'
 import {
   muteChatConversation,
   unmuteChatConversation,
+  pinChatConversation,
+  unpinChatConversation,
+  leaveGroupChatConversation,
 } from '../../actions/chat_conversation_accounts'
 import { purgeChatMessages } from '../../actions/chat_messages'
-import { MODAL_PRO_UPGRADE } from '../../constants'
+import {
+  MODAL_PRO_UPGRADE,
+  MODAL_CHAT_CONVERSATION_MEMBERS,
+} from '../../constants'
 import { me } from '../../initial_state'
-import { makeGetChatConversation } from '../../selectors'
-import { changeSetting, saveSettings } from '../../actions/settings'
 import PopoverLayout from './popover_layout'
 import List from '../list'
 
@@ -35,6 +39,15 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
     this.handleOnClosePopover()
   }
 
+  handleOnPin = () => {
+    if (this.props.isPinned) {
+      this.props.onUnpin()
+    } else {
+      this.props.onPin()
+    }
+    this.handleOnClosePopover()
+  }
+
   handleOnPurge = () => {
     if (!this.props.isPro) {
       this.props.openProUpgradeModal()
@@ -45,16 +58,27 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
     this.handleOnClosePopover()
   }
 
+  handleOnLeaveGroupChat = () => {
+    this.props.onLeaveGroupChatConversation()
+    this.handleOnClosePopover()
+  }
+
+  handleOnViewMembers = () => {
+    this.props.openMembersModal()
+    this.handleOnClosePopover()
+  }
+
   handleOnClosePopover = () => {
     this.props.onClosePopover()
   }
 
   render() {
     const {
-      intl,
       isXS,
       isMuted,
+      isPinned,
       isChatConversationRequest,
+      isGroupChat,
     } = this.props
 
     const items = [
@@ -63,13 +87,21 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
         title: 'Hide Conversation',
         subtitle: 'Hide until next message',
         onClick: () => this.handleOnHide(),
-      }
+      },
     ]
     if (!isChatConversationRequest) {
+      items.push({})
+      items.push({
+        hideArrow: true,
+        title: isPinned ? 'Un-Pin Conversation' : 'Pin Conversation',
+        subtitle: isPinned ? null : 'Show this conversation at top of list',
+        onClick: () => this.handleOnPin(),
+      })
+      items.push({})
       items.push({
         hideArrow: true,
         title: isMuted ? 'Unmute Conversation' : 'Mute Conversation',
-        subtitle: isMuted ? null : "Don't get notified of new messages",
+        subtitle: isMuted ? null : 'Don\'t get notified of new messages',
         onClick: () => this.handleOnMute(),
       })
       items.push({})
@@ -78,6 +110,19 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
         title: 'Purge messages',
         subtitle: 'Remove all of your messages in this conversation',
         onClick: () => this.handleOnPurge(),
+      })
+    }
+    if (isGroupChat) {
+      items.push({})
+      items.push({
+        hideArrow: true,
+        title: 'Leave group chat',
+        onClick: () => this.handleOnLeaveGroupChat(),
+      })
+      items.push({
+        hideArrow: true,
+        title: 'View members',
+        onClick: () => this.handleOnViewMembers(),
       })
     }
 
@@ -100,6 +145,8 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
 const mapStateToProps = (state, { chatConversationId }) => ({
   isPro: state.getIn(['accounts', me, 'is_pro']),
   isMuted: state.getIn(['chat_conversations', chatConversationId, 'is_muted']),
+  isPinned: state.getIn(['chat_conversations', chatConversationId, 'is_pinned']),
+  isGroupChat: state.getIn(['chat_conversations', chatConversationId, 'is_group_chat']),
 })
 
 const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
@@ -119,9 +166,23 @@ const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
   onUnmute() {
     dispatch(unmuteChatConversation(chatConversationId))
   },
+  onPin() {
+    dispatch(pinChatConversation(chatConversationId))
+  },
+  onUnpin() {
+    dispatch(unpinChatConversation(chatConversationId))
+  },
   onClosePopover() {
     dispatch(closePopover())
   },
+  onLeaveGroupChatConversation() {
+    dispatch(leaveGroupChatConversation(chatConversationId))
+  },
+  openMembersModal() {
+    dispatch(openModal(MODAL_CHAT_CONVERSATION_MEMBERS, {
+      chatConversationId,
+    }))
+  }
 })
 
 ChatConversationOptionsPopover.propTypes = {

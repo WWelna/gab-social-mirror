@@ -88,7 +88,6 @@ const initialState = ImmutableMap({
 const initialPoll = ImmutableMap({
   options: ImmutableList(['', '']),
   expires_in: 24 * 3600,
-  multiple: false,
 });
 
 function statusToTextMentions(state, status) {
@@ -412,7 +411,7 @@ export default function compose(state = initialState, action) {
   case COMPOSE_POLL_OPTION_REMOVE:
     return state.updateIn(['poll', 'options'], options => options.delete(action.index));
   case COMPOSE_POLL_SETTINGS_CHANGE:
-    return state.update('poll', poll => poll.set('expires_in', action.expiresIn).set('multiple', action.isMultiple));
+    return state.update('poll', poll => poll.set('expires_in', action.expiresIn));
   case COMPOSE_SCHEDULED_AT_CHANGE:
     return state.set('scheduled_at', action.date);
   case COMPOSE_EXPIRES_AT_CHANGE:

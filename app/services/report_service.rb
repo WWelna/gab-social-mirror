@@ -22,7 +22,8 @@ class ReportService < BaseService
       target_account: @target_account,
       status_ids: @status_ids,
       comment: @comment,
-      uri: @options[:uri]
+      uri: @options[:uri],
+      category: @options[:category]
     )
   end
 

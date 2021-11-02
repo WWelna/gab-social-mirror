@@ -3,9 +3,23 @@ import {
   TOAST_DISMISS,
   TOAST_CLEAR,
 } from '../actions/toasts'
+import isObject from 'lodash.isobject'
+import get from 'lodash.get'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
 
+const getMessageFromError = (data) => {
+  if (!isObject(data)) return null
+  const response = get(data, 'error.response.data')
+  if (!!response && !isObject(response)) return `${response}`
+  else if (isObject(response)) {
+    return response.error || null
+  }
+  return null
+}
+
 const makeMessageFromData = (data) => {
+  const error = getMessageFromError(data)
+  if (!!error) return error
   return `${data.type}`.split('_').join(' ').toLowerCase()
 }
 

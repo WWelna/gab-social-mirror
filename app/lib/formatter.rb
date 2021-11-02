@@ -277,6 +277,8 @@ class Formatter
         link_to_cashtag(entity)
       elsif entity[:screen_name]
         link_to_mention(entity, accounts)
+      elsif entity[:g_tag]
+        link_to_g_tag(entity)
       end
     end
   end
@@ -397,8 +399,9 @@ class Formatter
     end
 
     standard = Extractor.extract_entities_with_indices(text, options)
+    g_tags = Extractor.extract_g_tags_with_indices(text)
 
-    Extractor.remove_overlapping_entities(special + standard)
+    Extractor.remove_overlapping_entities(special + standard + g_tags)
   end
 
   def html_friendly_extractor(html, options = {})
@@ -462,6 +465,10 @@ class Formatter
     cashtag_html(entity[:cashtag])
   end
 
+  def link_to_g_tag(entity)
+    g_tag_html(entity[:g_tag])
+  end
+
   def link_html(url)
     url    = Addressable::URI.parse(url).to_s
     prefix = url.match(/\Ahttps?:\/\/(www\.)?/).to_s
@@ -483,6 +490,10 @@ class Formatter
   def mention_html(account)
     # return "<span>@#{encode(account.acct)}</span>" unless account.local?
     "<a data-focusable=\"true\" role=\"link\" href=\"#{encode(TagManager.instance.url_for(account))}\" class=\"u-url mention\">@#{encode(account.acct)}</a>"
+  end
+
+  def g_tag_html(tag)
+    "<a data-focusable=\"true\" role=\"link\" href=\"/g/#{tag}\" class=\"u-url mention\">g/#{tag}</a>"
   end
 
 end

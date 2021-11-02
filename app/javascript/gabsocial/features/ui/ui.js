@@ -218,22 +218,18 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/news' exact publicRoute page={NewsPage} component={News} content={children} componentParams={{ title: 'News' }} />
         <WrappedRoute path='/news/view/:trendsRSSId' page={NewsPage} component={NewsView} content={children} componentParams={{ title: 'News RSS Feed' }} />
 
-        {
-          /*
         <WrappedRoute path='/messages' exact page={MessagesPage} component={Messages} content={children} componentParams={{ source: 'approved' }} />
         <WrappedRoute path='/messages/new' exact page={BasicPage} component={ChatConversationCreate} content={children} componentParams={{ title: 'New Message' }} />
-        <WrappedRoute path='/messages/settings' exact page={MessagesPage} component={MessagesSettings} content={children} componentParams={{ isSettings: true }} />
+        {/*<WrappedRoute path='/messages/settings' exact page={MessagesPage} component={MessagesSettings} content={children} componentParams={{ isSettings: true }} />*/}
         <WrappedRoute path='/messages/requests' exact page={MessagesPage} component={ChatConversationRequests} content={children} componentParams={{ isSettings: true, source: 'requested' }} />
         <WrappedRoute path='/messages/blocks' exact page={MessagesPage} component={ChatConversationBlockedAccounts} content={children} componentParams={{ isSettings: true }} />
         <WrappedRoute path='/messages/muted_conversations' exact page={MessagesPage} component={ChatConversationMutes} content={children} componentParams={{ isSettings: true }} />
         <WrappedRoute path='/messages/:chatConversationId' exact page={MessagesPage} component={Messages} content={children} componentParams={{ source: 'approved' }} />
-          */
-        }
 
         <WrappedRoute path='/timeline/pro' exact page={ProPage} component={ProTimeline} content={children} componentParams={{ title: 'Pro Feed' }} />
 
         <WrappedRoute path='/groups' publicRoute exact page={GroupsPage} component={GroupCollectionTimeline} content={children} componentParams={{ activeTab: 'timeline', collectionType: 'member' }} />
-        <WrappedRoute path='/groups/browse/new' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'new' }} />
+        { /* <WrappedRoute path='/groups/browse/new' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'new' }} /> */ }
         <WrappedRoute path='/groups/browse/featured' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'featured' }} />
         <WrappedRoute path='/groups/browse/member' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'member' }} />
         <WrappedRoute path='/groups/browse/admin' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'admin' }} />
@@ -270,6 +266,7 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/search/groups' exact publicRoute page={SearchPage} component={Search} content={children} />
         <WrappedRoute path='/search/statuses' exact publicRoute page={SearchPage} component={Search} content={children} />
         <WrappedRoute path='/search/links' exact page={SearchPage} component={Search} content={children} />
+        <WrappedRoute path='/search/hashtags' exact page={SearchPage} component={Search} content={children} />
 
         <WrappedRoute path='/settings/blocks' exact page={SettingsPage} component={BlockedAccounts} content={children} componentParams={{ title: 'Blocked Users' }} />
         <WrappedRoute path='/settings/mutes' exact page={SettingsPage} component={MutedAccounts} content={children} componentParams={{ title: 'Muted Users' }} />
@@ -608,7 +605,12 @@ class UI extends React.PureComponent {
 
     return (
       <div ref={this.setRef} className={_s.gabsocial}>
-        <LoadingBar className={[_s.h1PX, _s.z3, _s.bgBrandLight].join(' ')} />
+        <LoadingBar
+          maxProgress={100}
+          progressIncrease={100}
+          showFastActions
+          className={[_s.h2PX, _s.posFixed, _s.z6, _s.top53PX, _s.bgBrandLight, _s.saveAreaInsetMT].join(' ')}
+        />
 
         <SwitchingArea location={location} onLayoutChange={this.handleLayoutChange}>
           {children}

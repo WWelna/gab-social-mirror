@@ -50,12 +50,12 @@ class Api::V1::StatusesController < Api::BaseController
   end
 
   def create
+    log_request(:info)
     markdown = status_params[:markdown] unless status_params[:markdown] === status_params[:status]
     @status = PostStatusService.new.call(current_user.account,
                                          text: status_params[:status],
                                          markdown: markdown,
                                          autoJoinGroup: status_params[:autoJoinGroup],
-                                         isPrivateGroup: status_params[:isPrivateGroup],
                                          thread: status_params[:in_reply_to_id].blank? ? nil : Status.find(status_params[:in_reply_to_id]),
                                          media_ids: status_params[:media_ids],
                                          sensitive: status_params[:sensitive],
@@ -73,6 +73,7 @@ class Api::V1::StatusesController < Api::BaseController
   end
 
   def update
+    log_request(:info)
     authorize @status, :update?
     markdown = status_params[:markdown] unless status_params[:markdown] === status_params[:status]
     @status = EditStatusService.new.call(@status,
@@ -93,6 +94,7 @@ class Api::V1::StatusesController < Api::BaseController
     @status = Status.where(account_id: current_user.account).find(params[:id])
     authorize @status, :destroy?
 
+    StatusSimilarityService.new.clear(current_user.account)
     RemovalWorker.perform_async(@status.id)
 
     render json: @status, serializer: REST::StatusSerializer, source_requested: true
@@ -112,7 +114,6 @@ class Api::V1::StatusesController < Api::BaseController
       :status,
       :markdown,
       :autoJoinGroup,
-      :isPrivateGroup,
       :in_reply_to_id,
       :quote_of_id,
       :sensitive,
@@ -123,7 +124,6 @@ class Api::V1::StatusesController < Api::BaseController
       :group_id,
       media_ids: [],
       poll: [
-        :multiple,
         :expires_in,
         options: [],
       ],

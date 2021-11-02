@@ -311,7 +311,7 @@ class ChatMessageScrollingList extends ImmutablePureComponent {
               amITalkingToMyself &&
               <div className={[_s.d, _s.bgTertiary, _s.radiusSmall, _s.mt5, _s.ml10, _s.mr15, _s.px15, _s.py15, _s.mb15].join(' ')}>
                 <Text size='medium' color='secondary'>
-                  This is a chat conversation with yourself. Use this space to keep messages, links and texts. Please remember that these messages are not encrypted.
+                  This is a chat conversation with yourself. Use this space to keep messages, links and texts.
                 </Text>
               </div>
             }

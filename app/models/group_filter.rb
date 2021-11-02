@@ -20,9 +20,9 @@ class GroupFilter
     when :id
       Group.where(id: value)
     when :title
-      Group.where("LOWER(title) LIKE LOWER(?)", "%#{value}%")
+      Group.matching(:title, :contains, value)
     when :description
-      Group.where("LOWER(description) LIKE LOWER(?)", "%#{value}%")
+      Group.matching(:description, :contains, value)
     when :member_count_gte
       Group.where("member_count >= ?", value)
     when :created_at_gte

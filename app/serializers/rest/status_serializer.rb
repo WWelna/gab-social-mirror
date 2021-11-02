@@ -3,7 +3,7 @@
 class REST::StatusSerializer < ActiveModel::Serializer
   attributes :id, :created_at, :revised_at, :in_reply_to_id, :in_reply_to_account_id,
              :sensitive, :spoiler_text, :visibility, :language, :uri,
-             :url, :replies_count, :reblogs_count, :pinnable, :pinnable_by_group,
+             :url, :direct_replies_count, :replies_count, :reblogs_count, :pinnable, :pinnable_by_group,
              :favourites_count, :quote_of_id, :expires_at, :has_quote, :bookmark_collection_id
 
   attribute :favourited, if: :current_user?
@@ -29,6 +29,14 @@ class REST::StatusSerializer < ActiveModel::Serializer
 
   def id
     object.id.to_s
+  end
+
+  def direct_replies_count
+    if instance_options && instance_options[:relationships]
+      instance_options[:relationships].direct_replies_count_map[object.id] || 0
+    else
+      object.direct_replies_count
+    end
   end
 
   def in_reply_to_id

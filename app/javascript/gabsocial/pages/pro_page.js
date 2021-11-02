@@ -8,6 +8,9 @@ import {
   LinkFooter,
   UserSuggestionsPanel,
   ProgressPanel,
+  GabTVVideosPanel,
+  GabAdPanel,
+  TrendingHashtagsPanel,
 } from '../features/ui/util/async_components'
 
 class ProPage extends React.PureComponent {
@@ -24,7 +27,10 @@ class ProPage extends React.PureComponent {
         page='pro'
         layout={[
           ProgressPanel,
+          GabAdPanel,
+          GabTVVideosPanel,
           <WrappedBundle component={UserSuggestionsPanel} componentParams={{ suggestionType: 'verified' }} />,
+          TrendingHashtagsPanel,
           LinkFooter,
         ]}
       >

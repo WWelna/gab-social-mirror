@@ -12,13 +12,17 @@ import {
   TIMELINE_INJECTION_FEATURED_GROUPS,
   TIMELINE_INJECTION_GROUP_CATEGORIES,
   TIMELINE_INJECTION_USER_SUGGESTIONS,
+  TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS,
 } from '../constants'
 import {
   dequeueTimeline,
   scrollTopTimeline,
   forceDequeueTimeline,
 } from '../actions/timelines'
-import { SignUpPanel } from '../features/ui/util/async_components'
+import {
+  SignUpPanel,
+  GabAdStatus,
+} from '../features/ui/util/async_components'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import { showTimelineInjection } from '../actions/timeline_injections'
 import { fetchStatus, fetchContext } from '../actions/statuses'
@@ -224,10 +228,26 @@ class StatusList extends ImmutablePureComponent {
               )
             }
           }
-          
+
+          // timeline injection
           if (i % 7 === 0 && i !== 0 && scrollKey === 'home_timeline') {
             scrollableContent.push(
               <TimelineInjectionBase index={i} key={`timeline-injection-${i}`} />
+            )
+          }
+
+          // gab ad status injections
+          if (
+            i % 9 === 0 && // randomize it
+            i !== 0 && // dont put an ad in top slot
+            TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS.indexOf(scrollKey) === -1 && // dont put ads in certain timelines
+            !isComments // dont put ads on profile > comments timeline since it renders comment components, not status components
+          ) {
+            scrollableContent.push(
+              <WrappedBundle
+                component={GabAdStatus}
+                key={`gab-ad-status-timeline-injection-${i}`}
+              />
             )
           }
 

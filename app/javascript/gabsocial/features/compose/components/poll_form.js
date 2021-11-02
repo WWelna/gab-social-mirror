@@ -19,18 +19,13 @@ import Input from '../../../components/input'
 class PollForm extends ImmutablePureComponent {
 
   handleSelectDuration = (e) => {
-    this.props.onChangeSettings(e.target.value, this.props.isMultiple)
-  }
-
-  handleToggleMultiple = () => {
-    this.props.onChangeSettings(this.props.expiresIn, !this.props.isMultiple)
+    this.props.onChangeSettings(e.target.value)
   }
 
   render() {
     const {
       options,
       expiresIn,
-      isMultiple,
       onChangeOption,
       onRemoveOption,
       intl,
@@ -52,8 +47,6 @@ class PollForm extends ImmutablePureComponent {
                 index={i}
                 onChange={onChangeOption}
                 onRemove={onRemoveOption}
-                isPollMultiple={isMultiple}
-                onToggleMultiple={this.handleToggleMultiple}
                 {...otherProps}
               />
             ))
@@ -125,14 +118,8 @@ class PollFormOption extends ImmutablePureComponent {
     this.props.onRemove(this.props.index)
   }
 
-  handleToggleMultiple = e => {
-    this.props.onToggleMultiple()
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
   render() {
-    const { isPollMultiple, title, index, intl } = this.props
+    const { title, index, intl } = this.props
 
     const toggleClasses = CX({
       d: 1,
@@ -142,7 +129,7 @@ class PollFormOption extends ImmutablePureComponent {
       border1PX: 1,
       outlineNone: 1,
       mr10: 1,
-      circle: !isPollMultiple,
+      circle: 1,
     })
 
     return (
@@ -150,7 +137,6 @@ class PollFormOption extends ImmutablePureComponent {
         <label className={[_s.d, _s.flexRow, _s.flexGrow1, _s.aiCenter].join(' ')}>
           <span
             className={toggleClasses}
-            onClick={this.handleToggleMultiple}
             role='button'
             tabIndex='0'
           />
@@ -186,10 +172,8 @@ class PollFormOption extends ImmutablePureComponent {
 PollFormOption.propTypes = {
   title: PropTypes.string.isRequired,
   index: PropTypes.number.isRequired,
-  isPollMultiple: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
-  onToggleMultiple: PropTypes.func.isRequired,
   intl: PropTypes.object.isRequired,
 }
 
@@ -206,7 +190,6 @@ const messages = defineMessages({
 const mapStateToProps = (state) => ({
   options: state.getIn(['compose', 'poll', 'options']),
   expiresIn: state.getIn(['compose', 'poll', 'expires_in']),
-  isMultiple: state.getIn(['compose', 'poll', 'multiple']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
@@ -231,7 +214,6 @@ const mapDispatchToProps = (dispatch) => ({
 PollForm.propTypes = {
   options: ImmutablePropTypes.list,
   expiresIn: PropTypes.number,
-  isMultiple: PropTypes.bool,
   onChangeOption: PropTypes.func.isRequired,
   onAddOption: PropTypes.func.isRequired,
   onRemoveOption: PropTypes.func.isRequired,

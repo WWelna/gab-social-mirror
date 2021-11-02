@@ -60,10 +60,8 @@ class PreviewCard < ApplicationRecord
     SEARCH_FIELDS = %i[title description url].freeze
 
     def search_for(term, offset = 0)
-      pattern = "%#{term.strip}%"
-
-      conditions = SEARCH_FIELDS.map { |f| arel_table[f].matches(pattern) }.reduce(:or)
-      PreviewCard.where(conditions).order(updated_at: :desc).limit(25).offset(offset)
+      SEARCH_FIELDS.inject(none) { |r, f| r.or(matching(f, :contains, term)) }.
+        order(updated_at: :desc).limit(25).offset(offset)
     end
 
     private

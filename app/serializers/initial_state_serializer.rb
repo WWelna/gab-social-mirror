@@ -13,6 +13,7 @@ class InitialStateSerializer < ActiveModel::Serializer
       locale: I18n.locale,
       domain: Rails.configuration.x.local_domain,
       version: GabSocial::Version.to_s,
+      report_categories: Report.categories.keys,
     }
 
     if object.current_account
@@ -24,6 +25,7 @@ class InitialStateSerializer < ActiveModel::Serializer
       store[:auto_play_gif]      = object.current_account.user.setting_auto_play_gif
       store[:display_media]      = object.current_account.user.setting_display_media
       store[:expand_spoilers]    = object.current_account.user.setting_expand_spoilers
+      store[:pro_wants_ads]      = object.current_account.user.setting_pro_wants_ads
       store[:is_staff]           = object.current_account.user.staff?
       store[:unread_count]       = unread_count object.current_account
       store[:last_read_notification_id] = object.current_account.user.last_read_notification
@@ -57,7 +59,7 @@ class InitialStateSerializer < ActiveModel::Serializer
   end
 
   def media_attachments
-    { accept_content_types: MediaAttachment::IMAGE_FILE_EXTENSIONS + MediaAttachment::VIDEO_FILE_EXTENSIONS + MediaAttachment::IMAGE_MIME_TYPES + MediaAttachment::VIDEO_MIME_TYPES }
+    { accept_content_types: MediaAttachment.supported_file_extensions + MediaAttachment.supported_mime_types }
   end
 
   private

@@ -157,7 +157,8 @@ class FetchLinkCardService < BaseService
                                                height: @card.height,
                                                allowtransparency: 'true',
                                                scrolling: 'no',
-                                               frameborder: '0')
+                                               frameborder: '0',
+                                               allowfullscreen: true)
     else
       @card.type = :link
     end

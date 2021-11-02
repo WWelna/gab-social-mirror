@@ -15,9 +15,8 @@ class Api::V1::Lists::AccountsController < Api::BaseController
   end
 
   def create
-    puts "tilly create"
     if Block.where(account_id: params[:account_id], target_account: current_account).exists?
-      raise GabSocial::NotPermittedError
+      raise GabSocial::NotPermittedError, 'Cannot add to list. That account has you blocked.'
     else
       ApplicationRecord.transaction do
         @list.accounts << list_account

@@ -40,14 +40,30 @@ class Api::V1::NotificationsController < Api::BaseController
   end
 
   def paginated_notifications
-    browserable_account_notifications.latest.paginate_by_id(
-      limit_param(DEFAULT_NOTIFICATIONS_LIMIT),
-      params_slice(:max_id, :since_id, :min_id)
-    )
+    if params[:max_id] && params[:max_id].present?
+      # dont use "latest" if not first load
+      browserable_account_notifications.paginate_by_id(
+        limit_param(DEFAULT_NOTIFICATIONS_LIMIT),
+        params_slice(:max_id, :since_id, :min_id)
+      )
+    else
+      # USE "latest" if IS first load
+      browserable_account_notifications.latest.paginate_by_id(
+        limit_param(DEFAULT_NOTIFICATIONS_LIMIT),
+        params_slice(:max_id, :since_id, :min_id)
+      )
+    end
   end
 
   def browserable_account_notifications
-    current_account.notifications.browserable(exclude_types, from_account, params[:only_verified], params[:only_following])
+    current_account
+      .notifications
+      .browserable(
+        exclude_types,
+        from_account,
+        params[:only_verified],
+        params[:only_following],
+      )
   end
 
   def target_statuses_from_notifications
@@ -87,7 +103,8 @@ class Api::V1::NotificationsController < Api::BaseController
   def set_filter_params
     params.permit(
       :only_verified,
-      :only_following
+      :only_following,
+      :max_id
     )
   end
 

@@ -113,16 +113,19 @@ class UserPanel extends ImmutablePureComponent {
           <UserStat
             to={`/${acct}`}
             title={intl.formatMessage(messages.gabs)}
+            numvalue={account.get('statuses_count')}
             value={shortNumberFormat(account.get('statuses_count'))}
           />
           <UserStat
             to={`/${acct}/followers`}
             title={intl.formatMessage(messages.followers)}
+            numvalue={account.get('followers_count')}
             value={shortNumberFormat(account.get('followers_count'))}
           />
           <UserStat
             to={`/${acct}/following`}
             title={intl.formatMessage(messages.follows)}
+            numvalue={account.get('following_count')}
             value={shortNumberFormat(account.get('following_count'))}
           />
         </div>

@@ -2,12 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { injectIntl, defineMessages } from 'react-intl'
+import { Konfettikanone } from 'react-konfettikanone'
 import {
   URL_DISSENTER_SHOP,
   URL_DISSENTER_SHOP_DONATIONS,
 } from '../../constants'
+import { me } from '../../initial_state'
 import { fetchExpenses } from '../../actions/expenses'
-import PanelLayout from './panel_layout';
+import PanelLayout from './panel_layout'
 import ProgressBar from '../progress_bar'
 import Button from '../button'
 import Text from '../text'
@@ -22,9 +24,16 @@ class ProgressPanel extends React.PureComponent {
   }
 
   render() {
-    const { intl, value, isFetched } = this.props
+    const {
+      intl,
+      value,
+      isFetched,
+      isPro,
+    } = this.props
 
     if (value === 0 && !isFetched) return null
+
+    const isFunded = value >= 100
 
     const subtitle = (
       <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.jcCenter].join(' ')}>
@@ -50,6 +59,10 @@ class ProgressPanel extends React.PureComponent {
         title={intl.formatMessage(messages.operationsTitle)}
         subtitle={subtitle}
       >
+        {
+          isFunded &&
+          <Konfettikanone launch colors={['#21cf7a1f', '#21cf7a3b', '#21cf7a5c', '#21cf7a80']} duration={50} />
+        }
         <div className={[_s.d, _s.px15, _s.pb15, _s.pt5].join(' ')}>
           <ProgressBar
             progress={value}
@@ -57,6 +70,13 @@ class ProgressPanel extends React.PureComponent {
             href={URL_DISSENTER_SHOP}
           />
         </div>
+        { isFunded && isPro && (
+          <div className={[_s.d, _s.px15, _s.pb15].join(' ')}>
+            <Text align='left' size='small' weight='medium' color='secondary'>
+              Thank you for being a GabPRO member!
+            </Text>
+          </div>
+        )}
       </PanelLayout>
     )
   }
@@ -73,6 +93,7 @@ const messages = defineMessages({
 const mapStateToProps = (state) => ({
   isFetched: state.getIn(['expenses', 'fetched'], false),
   value: state.getIn(['expenses', 'value'], 0),
+  isPro: state.getIn(['accounts', me, 'is_pro'], false),
 })
 
 const mapDispatchToProps = (dispatch) => ({
@@ -84,6 +105,7 @@ const mapDispatchToProps = (dispatch) => ({
 ProgressPanel.propTypes = {
   intl: PropTypes.object.isRequired,
   isFetched: PropTypes.bool.isRequired,
+  isPro: PropTypes.bool.isRequired,
   value: PropTypes.number.isRequired,
   onFetchExpenses: PropTypes.func.isRequired,
 }

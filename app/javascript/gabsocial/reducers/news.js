@@ -11,12 +11,17 @@ import {
   LATEST_GAB_STATUSES_FETCH_REQUEST,
   LATEST_GAB_STATUSES_FETCH_SUCCESS,
   LATEST_GAB_STATUSES_FETCH_FAIL,
+  GAB_TV_EXPLORE_FETCH_REQUEST,
+  GAB_TV_EXPLORE_FETCH_SUCCESS,
+  GAB_TV_EXPLORE_FETCH_FAIL,
 } from '../actions/news'
 import {
   Map as ImmutableMap,
   List as ImmutableList,
   fromJS,
 } from 'immutable'
+import { toHHMMSS } from '../utils/time'
+import { shortNumberFormat } from '../utils/numbers'
 
 const defaultMap = ImmutableMap({
   isLoading: false,
@@ -66,6 +71,20 @@ const normalizeNewsItem = (item) => {
   })
 }
 
+const normalizeGabTVEpisode = (item) => {
+  return ImmutableMap({
+    id: item._id,
+    videoUrl: `https://tv.gab.com/channel/${item.channel.slug}/view/${item.slug}`,
+    title: item.title,
+    views: shortNumberFormat(item.stats.playCount),
+    thumbnail: `https://tv.gab.com/image/${item.image}`,
+    created: item.created,
+    channelName: item.channel.name,
+    channelAvatar: item.publisher.picture_url,
+    duration: toHHMMSS(item.content.metadata.duration),
+  })
+}
+
 const setStateKeysOnRequest = (state, keys) => {
   return state.withMutations((map) => {
     keys.map((key) => {
@@ -96,6 +115,19 @@ const setStateKeysOnSuccess = (state, keysAndData) => {
 
 export default function (state = initialState, action) {
   switch (action.type) {
+    case GAB_TV_EXPLORE_FETCH_REQUEST:
+      return setStateKeysOnRequest(state, ['gab_tv_explore'])
+    case GAB_TV_EXPLORE_FETCH_FAIL:
+      return setStateKeysOnFail(state, ['gab_tv_explore'])
+    case GAB_TV_EXPLORE_FETCH_SUCCESS:
+      let data = {}
+      try {
+        data.gab_tv_explore = ImmutableList(action.data.episodes.map((item) => normalizeGabTVEpisode(item)))
+      } catch (error) {
+        data = { gab_tv_explore: ImmutableList() }
+      }
+      return setStateKeysOnSuccess(state, data)
+
     case GAB_TRENDS_FETCH_REQUEST:
       return setStateKeysOnRequest(state, ['trends_headlines', 'trends_breaking'])
     case GAB_TRENDS_FETCH_FAIL:

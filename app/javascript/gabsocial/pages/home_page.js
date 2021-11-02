@@ -20,11 +20,13 @@ import {
   GroupsPanel,
   LinkFooter,
   ListsPanel,
-  TrendsBreakingPanel,
+  GabTVVideosPanel,
   UserSuggestionsPanel,
   ProPanel,
   ShopPanel,
+  TrendingHashtagsPanel,
   ProgressPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class HomePage extends React.PureComponent {
@@ -79,16 +81,16 @@ class HomePage extends React.PureComponent {
     const sidebarLayout = [
       UserPanel,
       ProgressPanel,
+      GabAdPanel,
       <WrappedBundle component={ProPanel} componentParams={{ isPro: isPro }} />,
-      <WrappedBundle component={TrendsBreakingPanel} />,
+      <WrappedBundle component={GabTVVideosPanel} />,
       <WrappedBundle component={ShopPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
     ]
 
-    if (this.props.isPro) {
-      sidebarLayout.push(<WrappedBundle component={ListsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-      // sidebarLayout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-      sidebarLayout.push(<WrappedBundle component={GroupsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, groupType: 'member' }}  />)
-    }
+    sidebarLayout.push(<WrappedBundle component={ListsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
+    sidebarLayout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
+    sidebarLayout.push(<WrappedBundle component={GroupsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, groupType: 'member' }}  />)
+    sidebarLayout.push(<WrappedBundle component={TrendingHashtagsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
 
     sidebarLayout.push(LinkFooter)
 
@@ -105,6 +107,11 @@ class HomePage extends React.PureComponent {
             icon: 'search',
             to: '/search',
           },
+          {
+            icon: 'chat',
+            to: '/messages',
+            count: unreadChatsCount,
+          },           
         ]}
         layout={sidebarLayout}
       >

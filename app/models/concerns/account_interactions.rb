@@ -58,6 +58,7 @@ module AccountInteractions
   included do
     # Follow relations
     has_many :follow_requests, dependent: :destroy
+    has_many :unfollows, dependent: :destroy
 
     has_many :active_relationships,  class_name: 'Follow', foreign_key: 'account_id',        dependent: :destroy
     has_many :passive_relationships, class_name: 'Follow', foreign_key: 'target_account_id', dependent: :destroy
@@ -155,7 +156,7 @@ module AccountInteractions
     chat_block_relationships.where(target_account: other_account).exists?
   end
 
-  def chat_blocked_by(target_account_id, account_id)
+  def chat_blocked_by?(target_account_id, account_id)
     ChatBlock.where(account_id: target_account_id, target_account_id: account_id).exists?
   end
 

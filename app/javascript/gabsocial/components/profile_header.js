@@ -116,7 +116,8 @@ class ProfileHeader extends ImmutablePureComponent {
       children,
       intl,
       isShortcut,
-      isXS
+      isXS,
+      unavailable,
     } = this.props
     const { stickied } = this.state
 
@@ -167,6 +168,7 @@ class ProfileHeader extends ImmutablePureComponent {
     const headerMissing = !headerSrc ? true : headerSrc.indexOf(PLACEHOLDER_MISSING_HEADER_SRC) > -1
     const avatarSize = headerMissing ? 75 : 150
     const top = headerMissing ? -46 : -430
+    const allowChat = !unavailable
 
     const avatarContainerClasses = CX({
       d: 1,
@@ -241,7 +243,7 @@ class ProfileHeader extends ImmutablePureComponent {
                         </Button>
                       </div>
                     }
-  
+
                     {
                       account && account.get('id') !== me && !!me &&
                       <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.pt15, _s.flexGrow1, _s.h40PX, _s.jcEnd].join(' ')}>
@@ -253,6 +255,21 @@ class ProfileHeader extends ImmutablePureComponent {
                           className={[_s.jcCenter, _s.aiCenter, _s.px10, _s.mr10].join(' ')}
                           onClick={this.handleToggleShortcut}
                         />
+                        {
+                          allowChat &&
+                          <div className={[_s.d, _s.flexRow, _s.h40PX].join(' ')}>
+                            <Button
+                              isOutline
+                              icon='chat'
+                              iconSize='18px'
+                              iconClassName={_s.inheritFill}
+                              color='brand'
+                              backgroundColor='none'
+                              className={[_s.jcCenter, _s.aiCenter, _s.mr10, _s.px10].join(' ')}
+                              onClick={this.handleOnCreateChatConversation}
+                            />
+                          </div>
+                        }
                         <div className={[_s.d, _s.flexRow, _s.h40PX].join(' ')}>
                           <AccountActionButton account={account} />
                         </div>
@@ -386,6 +403,19 @@ class ProfileHeader extends ImmutablePureComponent {
                               onClick={this.handleOpenMore}
                               buttonRef={this.setOpenMoreNodeRef}
                             />
+                            {
+                              allowChat &&
+                              <Button
+                                isOutline
+                                icon='chat'
+                                iconSize='18px'
+                                iconClassName={_s.inheritFill}
+                                color='brand'
+                                backgroundColor='none'
+                                className={[_s.jcCenter, _s.aiCenter, _s.mr10, _s.px10].join(' ')}
+                                onClick={this.handleOnCreateChatConversation}
+                              />
+                            }
                           </div>
                         }
 
@@ -411,9 +441,19 @@ const mapStateToProps = (state, { account }) => {
   const accountId = account ? account.get('id') : null
   const shortcuts = state.getIn(['shortcuts', 'items'])
   const isShortcut = !!shortcuts.find((s) => {
-    return s.get('shortcut_id') == accountId && s.get('shortcut_type') === 'account'
+    return s.get('shortcut_id') === accountId && s.get('shortcut_type') === 'account'
   })
-  return { isShortcut }
+
+  const isBlocked = state.getIn(['relationships', accountId, 'blocked_by'], false)
+  const isLocked = state.getIn(['accounts', accountId, 'locked'], false)
+  const isFollowing = state.getIn(['relationships', accountId, 'following'], false)
+
+  const unavailable = (me === accountId) ? false : (isBlocked || (isLocked && !isFollowing))
+
+  return {
+    isShortcut,
+    unavailable,
+  }
 }
 
 const messages = defineMessages({

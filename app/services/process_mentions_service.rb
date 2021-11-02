@@ -10,12 +10,19 @@ class ProcessMentionsService < BaseService
 
     @status  = status
     mentions = []
-
+    
+    current_mention_count = 0
+    maximum_mentions = 8
+    
     status.text = status.text.gsub(Account::MENTION_RE) do |match|
+      next match if current_mention_count >= maximum_mentions
+
       username, domain  = Regexp.last_match(1).split('@')
       mentioned_account = Account.find_local(username)
 
       next match if mentioned_account.nil? || mentioned_account&.suspended?
+
+      current_mention_count += 1
 
       mentions << mentioned_account.mentions.where(status: status).first_or_create(status: status)
 

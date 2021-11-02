@@ -6,6 +6,7 @@ import {
   LinkFooter,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class BasicPage extends React.PureComponent {
@@ -24,6 +25,7 @@ class BasicPage extends React.PureComponent {
         title={title}
         page={page}
         layout={[
+          GabAdPanel,
           TrendsBreakingPanel,
           UserSuggestionsPanel,
           LinkFooter,

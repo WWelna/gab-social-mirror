@@ -10,7 +10,7 @@ import Button from '../button'
 import Text from '../text'
 import TimelineInjectionLayout from './timeline_injection_layout'
 
-class FeaturedGroupsInjection extends React.PureComponent {
+class GroupCategoriesInjection extends React.PureComponent {
 
   componentDidMount() {
     this.props.dispatch(fetchGroupCategories())
@@ -95,9 +95,9 @@ const mapStateToProps = (state) => ({
   categories: state.getIn(['group_categories', 'items']),
 })
 
-FeaturedGroupsInjection.propTypes = {
+GroupCategoriesInjection.propTypes = {
   categories: ImmutablePropTypes.list.isRequired,
   injectionId: PropTypes.string.isRequired,
 }
 
-export default connect(mapStateToProps)(FeaturedGroupsInjection)
+export default connect(mapStateToProps)(GroupCategoriesInjection)

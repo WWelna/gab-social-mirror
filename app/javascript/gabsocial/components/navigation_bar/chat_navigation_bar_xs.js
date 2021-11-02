@@ -10,8 +10,6 @@ import { POPOVER_CHAT_CONVERSATION_OPTIONS } from '../../constants'
 import Heading from '../heading'
 import Button from '../button'
 import BackButton from '../back_button'
-import Text from '../text'
-import AvatarGroup from '../avatar_group'
 
 class ChatNavigationBar extends React.PureComponent {
 

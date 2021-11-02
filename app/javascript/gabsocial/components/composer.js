@@ -114,7 +114,7 @@ const styleMap = {
   },
 };
 
-const GROUP_HANDLE_REGEX = /\g\/[\w]+/g
+const GROUP_HANDLE_REGEX = /(?:^|[^\/\)\w])g\/([a-zA-Z]{1,})/g
 const HANDLE_REGEX = /\@[\w]+/g
 const HASHTAG_REGEX = /\#[\w\u0590-\u05ff]+/g
 const CASHTAG_REGEX = /\$[\w\u0590-\u05ff]+/g

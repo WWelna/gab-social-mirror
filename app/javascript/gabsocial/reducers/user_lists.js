@@ -118,6 +118,14 @@ const appendToList = (state, type, id, accounts, next) => {
   })
 }
 
+const removeOneFromList = (state, type, id, accountId) => {
+  return state.updateIn([type, id, 'items'], (list) => {
+    if (!list) return ImmutableList();
+    return list.filterNot(item => item === accountId);
+  })
+}
+
+
 export default function userLists(state = initialState, action) {
   switch(action.type) {
 
@@ -207,7 +215,8 @@ export default function userLists(state = initialState, action) {
     return appendToList(state, 'groups', action.groupId, action.accounts, action.next);
 
   case GROUP_REMOVED_ACCOUNTS_CREATE_SUCCESS:
-    return state.updateIn(['groups', action.groupId, 'items'], list => list.filterNot(item => item === action.accountId));
+    return removeOneFromList(state, 'groups', action.groupId, action.accountId)
+    // return state.updateIn(['groups', action.groupId, 'items'], list => list.filterNot(item => item === action.accountId));
   
   case GROUP_REMOVED_ACCOUNTS_FETCH_SUCCESS:
     return normalizeList(state, 'group_removed_accounts', action.groupId, action.accounts, action.next);

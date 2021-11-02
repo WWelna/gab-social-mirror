@@ -26,6 +26,7 @@ import {
   ExploreTimeline,
   HashtagTimeline,
   SidebarXS,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class SearchLayout extends React.PureComponent {
@@ -65,9 +66,15 @@ class SearchLayout extends React.PureComponent {
         to: '/search/statuses',
       },
       {
+        title: intl.formatMessage(messages.hashtags),
+        to: '/search/hashtags',
+      },
+      /*
+      {
         title: intl.formatMessage(messages.links),
         to: '/search/links',
       },
+      */
     ]
   }
 
@@ -97,13 +104,13 @@ class SearchLayout extends React.PureComponent {
     }
 
     if (Array.isArray(trendingHashtags) && trendingHashtagsFetched) {
-      trendingHashtags.forEach((tag, i) => {
+      trendingHashtags.forEach((block, i) => {
         let j = i + 1
         exploreTabs.push({
-          title: `#${tag}`,
+          title: `#${block.tag}`,
           onClick: () => this.setState({ currentExploreTabIndex: j }),
           component: HashtagTimeline,
-          componentParams: { params: { id: `${tag}`.toLowerCase() } },
+          componentParams: { params: { id: `${block.tag}`.toLowerCase() } },
         })
       })
       this.setState({
@@ -200,6 +207,7 @@ class SearchLayout extends React.PureComponent {
             layout={[
               SignUpPanel,
               SearchFilterPanel,
+              GabAdPanel,
               TrendsBreakingPanel,
               LinkFooter,
             ]}

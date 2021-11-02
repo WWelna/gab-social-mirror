@@ -106,7 +106,7 @@ class SharePopover extends ImmutablePureComponent {
             iconClassName={_s.inheritFill}
             color='white'
             backgroundColor='none'
-            href={`sms:+&body=${encodedUrl}`}
+            href={`sms:&body=${encodedUrl}`}
             target='_blank'
             title='Share via text message'
             className={[_s.jcCenter, _s.aiCenter, _s.mr10, _s.px10, _s.bgSMS].join(' ')}

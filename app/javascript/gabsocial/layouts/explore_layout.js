@@ -18,8 +18,10 @@ import {
   GroupsPanel,
   SignUpLogInPanel,
   UserSuggestionsPanel,
-  TrendsBreakingPanel,
+  GabTVVideosPanel,
   LinkFooter,
+  GabAdPanel,
+  TrendingHashtagsPanel,
 } from '../features/ui/util/async_components'
 
 class ExploreLayout extends ImmutablePureComponent {
@@ -66,12 +68,14 @@ class ExploreLayout extends ImmutablePureComponent {
 
     const layout = [
       SignUpLogInPanel,
+      GabAdPanel,
     ]
     if (!!me) {
       layout.push(<WrappedBundle component={GroupsPanel} componentParams={{ groupType: 'featured' }} />)
-      // layout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, suggestionType: 'verified' }} />)
+      layout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, suggestionType: 'verified' }} />)
     }
-    layout.push(<WrappedBundle component={TrendsBreakingPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />)
+    layout.push(<WrappedBundle component={GabTVVideosPanel} />)
+    layout.push(<WrappedBundle component={TrendingHashtagsPanel} />)
     layout.push(<WrappedBundle component={LinkFooter} />)
 
     return (

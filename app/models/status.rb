@@ -64,6 +64,7 @@ class Status < ApplicationRecord
   belongs_to :quote, foreign_key: 'quote_of_id', class_name: 'Status', inverse_of: :quotes, optional: true
 
   has_many :favourites, inverse_of: :status, dependent: :destroy
+  has_many :unfavourites, inverse_of: :status, dependent: :destroy
   has_many :status_bookmarks, inverse_of: :status, dependent: :destroy
   has_many :reblogs, foreign_key: 'reblog_of_id', class_name: 'Status', inverse_of: :reblog, dependent: :destroy
   has_many :quotes, foreign_key: 'quote_of_id', class_name: 'Status', inverse_of: :quote, dependent: :nullify
@@ -83,6 +84,7 @@ class Status < ApplicationRecord
   validates :uri, uniqueness: true, presence: true, unless: :local?
   validates :text, presence: true, unless: -> { with_media? || reblog? }
   validates_with StatusLengthValidator
+  validates_with StatusLimitValidator
   validates :reblog, uniqueness: { scope: :account }, if: :reblog?
   validates :visibility, exclusion: { in: %w(limited) }, if: :reblog?
 
@@ -91,6 +93,8 @@ class Status < ApplicationRecord
   default_scope { recent }
 
   scope :recent, -> { reorder(created_at: :desc) }
+  scope :oldest, -> { reorder(created_at: :asc) }
+  scope :top, -> { select('statuses.*, case when status_stats.favourites_count is null then 0 else status_stats.favourites_count end as favcount').left_outer_joins(:status_stat).reorder('favcount desc, statuses.id asc') }
   scope :remote, -> { where(local: false).or(where.not(uri: nil)) }
   scope :local,  -> { where(local: true).or(where(uri: nil)) }
 
@@ -118,7 +122,6 @@ class Status < ApplicationRecord
 
   cache_associated :application,
                    :media_attachments,
-                   :group,
                    :conversation,
                    :status_stat,
                    :tags,
@@ -126,6 +129,7 @@ class Status < ApplicationRecord
                    :preloadable_poll,
                    account: :account_stat,
                    active_mentions: { account: :account_stat },
+                   group: :group_categories,
                    reblog: [
                      :application,
                      :tags,
@@ -242,8 +246,28 @@ class Status < ApplicationRecord
     @marked_for_mass_destruction
   end
 
+  def direct_replies_count
+    replies.count
+  end
+
   def replies_count
-    status_stat&.replies_count || 0
+    return(0) unless persisted?
+    
+    @replies_count ||= Rails.cache.fetch("replies_count:#{id}", expires_in: 1.minutes) do    
+      Status.count_by_sql([<<-SQL.squish, id: id])
+        with recursive comment_counter AS(
+          select id
+          from statuses
+          where in_reply_to_id = :id
+        
+          union
+        
+          select s.id
+          from statuses s
+          join comment_counter c on s.in_reply_to_id = c.id
+        ) select count(*) from comment_counter;
+      SQL
+    end
   end
 
   def reblogs_count
@@ -334,6 +358,13 @@ class Status < ApplicationRecord
       StatusPin.select('status_id').where(status_id: status_ids).where(account_id: account_id).each_with_object({}) { |p, h| h[p.status_id] = true }
     end
 
+    def direct_replies_count_map(status_ids)
+      unscoped.
+        where(in_reply_to_id: status_ids).
+        group(:in_reply_to_id).
+        count
+    end
+
     def group_pins_map(status_ids, group_id = nil)
       unless group_id.nil?
         GroupPinnedStatus.select('status_id').where(status_id: status_ids).where(group_id: group_id).each_with_object({}) { |p, h| h[p.status_id] = true }
@@ -352,7 +383,7 @@ class Status < ApplicationRecord
 
       return if account_ids.empty?
 
-      accounts = Account.where(id: account_ids).includes(:account_stat).each_with_object({}) { |a, h| h[a.id] = a }
+      accounts = Account.where(id: account_ids).includes(:account_stat, :user).each_with_object({}) { |a, h| h[a.id] = a }
 
       cached_items.each do |item|
         item.account = accounts[item.account_id]
@@ -416,6 +447,20 @@ class Status < ApplicationRecord
         excluding_silenced_accounts
       end
     end
+  end
+
+  def resync_status_stat!
+    return if marked_for_destruction? || destroyed?
+
+    replies_count = replies.count if reply_countable?
+    reblogs_count = reblogs.count if reblog_countable?
+
+    atts = {
+      replies_count: replies_count,
+      reblogs_count: reblogs_count,
+    }.compact
+
+    update_status_stat!(atts) if atts.present?
   end
 
   private
@@ -495,16 +540,24 @@ class Status < ApplicationRecord
 
   def increment_counter_caches
     account&.increment_count!(:statuses_count)
-    reblog&.increment_count!(:reblogs_count) if reblog? && (public_visibility? || unlisted_visibility?)
-    thread&.increment_count!(:replies_count) if in_reply_to_id.present? && (public_visibility? || unlisted_visibility?)
+    reblog&.increment_count!(:reblogs_count) if reblog? && reblog_countable?
+    thread&.increment_count!(:replies_count) if in_reply_to_id.present? && reply_countable?
   end
 
   def decrement_counter_caches
     return if marked_for_mass_destruction?
 
     account&.decrement_count!(:statuses_count)
-    reblog&.decrement_count!(:reblogs_count) if reblog? && (public_visibility? || unlisted_visibility?)
-    thread&.decrement_count!(:replies_count) if in_reply_to_id.present? && (public_visibility? || unlisted_visibility?)
+    reblog&.decrement_count!(:reblogs_count) if reblog? && reblog_countable?
+    thread&.decrement_count!(:replies_count) if in_reply_to_id.present? && reply_countable?
+  end
+
+  def reblog_countable?
+    public_visibility? || unlisted_visibility?
+  end
+
+  def reply_countable?
+    public_visibility? || unlisted_visibility? || private_group_visibility?
   end
 
   def unlink_from_conversations

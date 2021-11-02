@@ -3,11 +3,13 @@ import PropTypes from 'prop-types'
 import { me } from '../initial_state'
 import { CX } from '../constants'
 import ComposeNavigationBar from '../components/navigation_bar/compose_navigation_bar_xs'
+import WrappedBundle from '../features/ui/util/wrapped_bundle'
+import { GlobalFooter } from '../features/ui/util/async_components'
 
 class ComposeLayout extends React.PureComponent {
 
   render() {
-    const { children, isXS } = this.props
+    const { children, isExternal, isXS } = this.props
     
     const mainClasses = CX({
       d: 1,
@@ -19,11 +21,14 @@ class ComposeLayout extends React.PureComponent {
     })
 
     return (
-      <div className={[_s.d, _s.w100PC, _s.maxW640PX, _s.mlAuto, _s.mrAuto, _s.minH100VH, _s.bgTertiary].join(' ')}>
-        <ComposeNavigationBar isXS={isXS} />
-        <main role='main' className={mainClasses}>
-          { children }
-        </main>
+      <div className={[_s.d, _s.w100PC, _s.minH100VH, _s.bgTertiary].join(' ')}>
+        <ComposeNavigationBar isXS={isXS} isExternal={isExternal} />
+        <div className={[_s.d, _s.w100PC, _s.maxW640PX, _s.mlAuto, _s.mrAuto].join(' ')}>
+          <main role='main' className={mainClasses}>
+            { children }
+          </main>
+        </div>
+        { isExternal && <WrappedBundle component={GlobalFooter} /> }
       </div>
     )
   }
@@ -32,6 +37,8 @@ class ComposeLayout extends React.PureComponent {
 
 ComposeLayout.propTypes = {
   children: PropTypes.node,
+  isExternal: PropTypes.bool,
+  isXS: PropTypes.bool,
 }
 
 export default ComposeLayout

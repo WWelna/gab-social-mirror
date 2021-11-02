@@ -1,81 +1,47 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
-import ImmutablePropTypes from 'react-immutable-proptypes'
-import ImmutablePureComponent from 'react-immutable-pure-component'
-import { me } from '../initial_state'
-import { CX } from '../constants'
-import Icon from './icon'
-import Text from './text'
+import { NavLink } from 'react-router-dom'
+import DisplayName from './display_name'
 
-class DisplayNameGroup extends ImmutablePureComponent {
+const DisplayNameGroup = ({
+  accounts,
+  maxVisible,
+}) => {
+  if (!accounts) return null
 
-  render() {
-    const {
-      accounts,
-      isMultiline,
-      isLarge,
-      noHover,
-      isSmall,
-    } = this.props
+  const newMaxVisible = maxVisible || accounts.size
 
-    if (!account) return null
-
-    const containerClassName = CX({
-      d: 1,
-      maxW100PC: 1,
-      aiCenter: !isMultiline,
-      flexRow: !isMultiline,
-      cursorPointer: !noHover,
-      aiCenter: isCentered,
-    })
-
-    const displayNameClasses = CX({
-      text: 1,
-      overflowWrapBreakWord: 1,
-      whiteSpaceNoWrap: 1,
-      fw600: 1,
-      cPrimary: 1,
-      mr2: 1,
-      lineHeight125: !isSmall,
-      fs14PX: isSmall,
-      fs15PX: !isLarge,
-      fs24PX: isLarge && !isSmall,
-    })
-
-    const usernameClasses = CX({
-      text: 1,
-      displayFlex: 1,
-      flexNormal: 1,
-      flexShrink1: 1,
-      overflowWrapBreakWord: 1,
-      textOverflowEllipsis: 1,
-      cSecondary: 1,
-      fw400: 1,
-      lineHeight15: isMultiline,
-      lineHeight125: !isMultiline,
-      ml5: !isMultiline,
-      fs14PX: isSmall,
-      fs15PX: !isLarge,
-      fs16PX: isLarge && !isSmall,
-    })
-
-    const iconSize =
-      !!isLarge ? 19 :
-      !!isComment ? 12 :
-      !!isSmall ? 14 : 15
-
-    return (
-      <div />
-    )
-  }
+  return (
+    <div className={[_s.d, _s.w100PC, _s.displayInlineBlock, _s.overflowHidden, _s.textOverflowEllipsis2, _s.whiteSpaceNoWrap].join(' ')}>
+      {accounts.slice(0, newMaxVisible).map((account, i) => {
+        const isLast = i === newMaxVisible - 1
+        return (
+          <NavLink
+            key={`display-name-group-${i}`}
+            className={[_s.displayInlineBlock, _s.noUnderline].join(' ')}
+            to={`/${account.get('acct')}`}
+            title={account.get('acct')}
+          >
+            <span className={[_s.text, _s.fw600, _s.cPrimary, _s.fs15PX, _s.mr2].join(' ')}>
+              <DisplayName
+                account={account}
+                noDisplayName
+                isInline
+                isMultiline
+                isGrouped
+              />
+              {`${ !isLast ? ',' : '' }`}
+            </span>
+          </NavLink>
+        )
+      })}
+    </div>
+  )
 }
 
 DisplayNameGroup.propTypes = {
-  accounts: ImmutablePropTypes.map,
-  isLarge: PropTypes.bool,
-  isMultiline: PropTypes.bool,
-  isSmall: PropTypes.bool,
+  accounts: PropTypes.array,
+  maxVisible: PropTypes.number,
 }
 
 export default DisplayNameGroup

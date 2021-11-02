@@ -24,7 +24,9 @@ class ReportFilter
     when :target_account_id
       Report.where(target_account_id: value)
     when :comment
-      Report.where("LOWER(comment) LIKE LOWER(?)", "%#{value}%")
+      Report.matching(:comment, :contains, value)
+    when :category
+      Report.where(category: value.presence)
     else
       raise "Unknown filter: #{key}"
     end

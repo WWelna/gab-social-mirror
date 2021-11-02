@@ -17,9 +17,10 @@ module SessionTrackingConcern
       conn = ActiveRecord::Base.connection
       conn.exec_query "update session_activations set updated_at = NOW() where id = #{current_session.id}"
     end
+    @session_activity_tracked = true
   end
 
   def session_needs_update?
-    !current_session.nil? && current_session.updated_at > UPDATE_SIGN_IN_HOURS.hours.ago
+    !@session_activity_tracked && !current_session.nil? && current_session.updated_at > UPDATE_SIGN_IN_HOURS.hours.ago
   end
 end

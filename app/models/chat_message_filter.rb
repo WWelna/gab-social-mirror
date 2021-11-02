@@ -18,7 +18,7 @@ class ChatMessageFilter
   def scope_for(key, value)
     case key.to_sym
     when :text
-      ChatMessage.where("LOWER(text) LIKE LOWER(?)", "%#{value}%")
+      ChatMessage.matching(:text, :contains, value)
     when :id
       ChatMessage.where(id: value)
     when :account_id

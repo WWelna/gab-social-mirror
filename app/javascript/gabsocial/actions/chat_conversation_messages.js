@@ -1,4 +1,4 @@
-import { Map as ImmutableMap, List as ImmutableList, toJS } from 'immutable'
+import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
 import noop from 'lodash.noop'
 import api, { getLinks } from '../api'
 import { me } from '../initial_state'
@@ -8,62 +8,32 @@ export const CHAT_CONVERSATION_MESSAGES_EXPAND_REQUEST = 'CHAT_CONVERSATION_MESS
 export const CHAT_CONVERSATION_MESSAGES_EXPAND_SUCCESS = 'CHAT_CONVERSATION_MESSAGES_EXPAND_SUCCESS'
 export const CHAT_CONVERSATION_MESSAGES_EXPAND_FAIL    = 'CHAT_CONVERSATION_MESSAGES_EXPAND_FAIL'
 
-//
-
 export const CHAT_CONVERSATION_MESSAGES_CONNECT    = 'CHAT_CONVERSATION_MESSAGES_CONNECT'
 export const CHAT_CONVERSATION_MESSAGES_DISCONNECT = 'CHAT_CONVERSATION_MESSAGES_DISCONNECT'
-export const CHAT_CONVERSATION_MESSAGES_CLEAR      = 'CHAT_CONVERSATION_MESSAGES_CLEAR'
+
 export const CHAT_CONVERSATION_MESSAGES_SCROLL_BOTTOM = 'CHAT_CONVERSATION_MESSAGES_SCROLL_BOTTOM'
 
 /**
- * 
- */
-export const connectChatMessageConversation = (chatConversationId) => ({
-  type: CHAT_CONVERSATION_MESSAGES_CONNECT,
-  chatConversationId,
-})
-
-/**
- * 
- */
-export const disconnectChatMessageConversation = (chatConversationId) => ({
-  type: CHAT_CONVERSATION_MESSAGES_DISCONNECT,
-  chatConversationId,
-})
-
-/**
- * 
- */
-export const clearChatMessageConversation = (chatConversationId) => (dispatch) => {
-  dispatch({
-    type: CHAT_CONVERSATION_MESSAGES_CLEAR,
-    chatConversationId
-  })
-}
-
-/**
- * 
- */
-export const scrollBottomChatMessageConversation = (chatConversationId, bottom) => ({
-  type: CHAT_CONVERSATION_MESSAGES_SCROLL_BOTTOM,
-  chatConversationId,
-  bottom,
-})
-
-/**
- * 
+ * Expand chat messages by chatConversationId
+ * @param {String} chatConversationId
+ * @param {Object} params
  */
 export const expandChatMessages = (chatConversationId, params = {}, done = noop) => (dispatch, getState) => {
+  // must be logged in and have id
   if (!me || !chatConversationId) return
 
+  // get existing conversation state
   const chatConversation = getState().getIn(['chat_conversations', chatConversationId], ImmutableMap())
+  // check if initial load already occured and if we need to load more
   const isLoadingMore = !!params.maxId
 
+  // check if has conversation and if it isnt already loading and no error
   if (!!chatConversation && (chatConversation.get('isLoading') || chatConversation.get('isError'))) {
     done()
     return
   }
 
+  // if no maxId present, we need to load from the start or "since" 
   if (!params.maxId && chatConversation.get('items', ImmutableList()).size > 0) {
     params.sinceId = chatConversation.getIn(['items', 0])
   }
@@ -112,3 +82,32 @@ export const expandChatMessagesFail = (chatConversationId, error, isLoadingMore)
   skipLoading: !isLoadingMore,
 })
 
+
+/**
+ * Action to mark the current conversation a user is in as "connected"
+ * Which means that it will receive real time updates
+ * @param {String} chatConversationId
+ */
+export const connectChatMessageConversation = (chatConversationId) => ({
+  type: CHAT_CONVERSATION_MESSAGES_CONNECT,
+  chatConversationId,
+})
+
+/**
+ * Disconnect real time conversation by id 
+ * @param {String} chatConversationId
+ */
+export const disconnectChatMessageConversation = (chatConversationId) => ({
+  type: CHAT_CONVERSATION_MESSAGES_DISCONNECT,
+  chatConversationId,
+})
+
+/**
+ * Scroll to the bottom of the chat conversation
+ * @param {String} chatConversationId
+ */
+export const scrollBottomChatMessageConversation = (chatConversationId, bottom) => ({
+  type: CHAT_CONVERSATION_MESSAGES_SCROLL_BOTTOM,
+  chatConversationId,
+  bottom,
+})

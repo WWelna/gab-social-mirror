@@ -29,16 +29,19 @@ class PostStatusService < BaseService
     @text        = @options[:text] || ''
     @markdown    = @options[:markdown] if @account.is_pro
     @in_reply_to = @options[:thread]
-    @autoJoinGroup = @options[:autoJoinGroup] || false
-    @isPrivateGroup = @options[:isPrivateGroup] || false
+    @auto_join_group = @options[:autoJoinGroup] || false
+
+    set_group
 
     return idempotency_duplicate if idempotency_given? && idempotency_duplicate?
 
+    validate_blocked!(@in_reply_to)
     validate_user_confirmation!
-    validate_similarity!
-    validate_links!
+    validate_links! unless @account.user&.staff?
+    validate_mention_count! unless @account.user&.staff?
     validate_media!
     validate_group!
+    #validate_similarity! unless @account.user&.staff? || @account.vpdi?
     preprocess_attributes!
 
     if scheduled?
@@ -58,11 +61,32 @@ class PostStatusService < BaseService
 
   private
 
+  def set_group
+    # If this is a reply, we want the group to be the same group that the status we're
+    # replying to has set to keep a consistent thread.
+    #
+    # If it's not a reply, use the group_id from options, since this is a top-level status.
+
+    if @in_reply_to
+      @group = @in_reply_to.group
+    elsif (group_id = @options[:group_id]).present?
+      @group = Group.find(group_id)
+    end
+
+    # Write `group_id` back into `@options`, since scheduled statuses uses it
+    @options[:group_id] = @group&.id
+  end
+
   def preprocess_attributes!
     @text         = @options.delete(:spoiler_text) if @text.blank? && @options[:spoiler_text].present?
-    @visibility   = @options[:visibility] || @account.user&.setting_default_privacy
-    @visibility   = :unlisted if @visibility == :public && @account.silenced?
-    @visibility   = :private_group if @isPrivateGroup
+
+    if @group&.is_private?
+      @visibility = :private_group
+    else
+      @visibility = @options[:visibility] || @account.user&.setting_default_privacy
+      @visibility = :unlisted if @visibility == :public && @account.silenced?
+    end
+
     @expires_at = nil
     if @account.is_pro
       case @options[:expires_at]
@@ -82,6 +106,14 @@ class PostStatusService < BaseService
     end
     @scheduled_at = @options[:scheduled_at]&.to_datetime
     @scheduled_at = nil if scheduled_in_the_past?
+
+    if (quote_id = @options.delete(:quote_of_id))
+      begin
+        @options[:quote] = Status.find(quote_id)
+      rescue ActiveRecord::RecordNotFound
+        raise GabSocial::ValidationError, 'The Gab you are trying to quote could not be found. It may have been deleted.'
+      end
+    end
   rescue ArgumentError
     raise ActiveRecord::RecordInvalid
   end
@@ -126,28 +158,29 @@ class PostStatusService < BaseService
   end
 
   def validate_group!
-    group_id = @options[:group_id]
+    # If there's no group, there's nothing to validate
+    return if @group.blank?
 
-    # All good if no group
-    return if group_id.blank?
-
-    # If removed from group, return error immediately
-    if GroupRemovedAccount.where(account: @account, group_id: group_id).exists?
+    # If you were kicked out of the group, you're not allowed to post. Game Over.
+    if GroupRemovedAccount.where(account: @account, group: @group).exists?
       raise GabSocial::ValidationError, I18n.t('statuses.not_a_member_of_group')
-      return
     end
 
-    # Return ok if autojoin flag exists
-    return if @autoJoinGroup
+    # Public groups can be posted in by anyone.
+    return if !@group.is_private?
 
-    # Return ok if is reply
-    return unless @in_reply_to.nil?
-
-    # If is normal post and tries without being a member, return error
-    unless GroupAccount.where(account: @account, group_id: group_id).exists?
+    # You have to be a member of a private group to post in it. 
+    unless GroupAccount.where(account: @account, group: @group).exists?
       raise GabSocial::ValidationError, I18n.t('statuses.not_a_member_of_group')
-      return
     end
+  end
+
+  def validate_blocked!(reply_status)
+    return unless reply_status
+    reply_account = reply_status.account
+    return validate_blocked!(reply_status.thread) unless reply_account.blocking?(@account)
+
+    raise GabSocial::NotPermittedError, "Cannot reply. @#{reply_account.username} has you blocked."
   end
 
   def validate_media!
@@ -163,23 +196,35 @@ class PostStatusService < BaseService
 
   def validate_user_confirmation!
     return true if @account.user&.confirmed?
-    
-    has_mentions = !@text.match(Account::MENTION_RE).nil?
-    group_id = @options[:group_id]
-    is_introduce_yourself_group = group_id == "12"
-    
+
     # do not allow statuses with mentions and not reply
-    raise GabSocial::NotPermittedError if has_mentions && @in_reply_to.nil?
-    # do not allow statuses with group if not group 12
-    raise GabSocial::NotPermittedError if !group_id.nil? && !is_introduce_yourself_group
+    has_mentions = !@text.match(Account::MENTION_RE).nil?
+    if has_mentions && @in_reply_to.nil?
+      raise GabSocial::NotPermittedError, 'Please confirm your email address to @mention accounts'
+    end
+
+    # the only group unconfirmed accounts are allowed to post in is the "introduce yourself" group
+    if @group && @group.id != 12
+      raise GabSocial::NotPermittedError, 'Please confirm your email address to post in a group'
+    end
   end
 
   def validate_similarity!
-    raise GabSocial::NotPermittedError if StatusSimilarityService.new.call?(@text, @account.id)
+    return true unless StatusSimilarityService.new.call?(@text, @account.id)
+    raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
   end
 
   def validate_links!
-    raise GabSocial::NotPermittedError if LinkBlock.block?(@text)
+    return true unless LinkBlock.block?(@text)
+    raise GabSocial::NotPermittedError, "A link you're trying to post has been blocked by the moderation team"
+  end
+
+  def validate_mention_count!
+    return true if @text.length < 8
+    return true if !@in_reply_to.nil?
+    return true unless @text.scan(Account::MENTION_RE).length > 8
+
+    raise GabSocial::NotPermittedError, 'Too many @mentions in one post'
   end
 
   def language_from_option(str)
@@ -242,8 +287,8 @@ class PostStatusService < BaseService
       text: @text,
       markdown: @markdown,
       expires_at: @expires_at,
-      group_id: @options[:group_id],
-      quote_of_id: @options[:quote_of_id],
+      group: @group,
+      quote: @options[:quote],
       media_attachments: @media || [],
       thread: @in_reply_to,
       poll_attributes: poll_attributes,
@@ -273,6 +318,7 @@ class PostStatusService < BaseService
     @options.tap do |options_hash|
       options_hash[:in_reply_to_id] = options_hash.delete(:thread)&.id
       options_hash[:application_id] = options_hash.delete(:application)&.id
+      options_hash[:quote_of_id]    = options_hash.delete(:quote)&.id
       options_hash[:scheduled_at]   = nil
       options_hash[:idempotency]    = nil
     end

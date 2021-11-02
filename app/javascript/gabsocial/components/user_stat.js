@@ -30,6 +30,7 @@ class UserStat extends React.PureComponent {
       to,
       title,
       value,
+      numvalue,
       isCentered,
       isInline,
       isLast,
@@ -62,7 +63,7 @@ class UserStat extends React.PureComponent {
     return (
       <NavLink
         to={to}
-        title={`${value} ${title}`}
+        title={`${Number(numvalue || value).toLocaleString()} ${title}`}
         className={containerClasses}
         onMouseEnter={this.handleOnMouseEnter}
         onMouseLeave={this.handleOnMouseLeave}

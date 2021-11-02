@@ -1,15 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
-import { length } from 'stringz'
-import { openPopover } from '../../actions/popover'
-import {
-  CX,
-  MAX_POST_CHARACTER_COUNT,
-} from '../../constants'
+import { CX } from '../../constants'
 import Heading from '../heading'
-import Button from '../button'
 import BackButton from '../back_button'
+import Button from '../button'
+import Icon from '../icon'
 import ComposeFormSubmitButton from '../../features/compose/components/compose_form_submit_button'
 
 class ComposeNavigationBar extends React.PureComponent {
@@ -19,7 +14,7 @@ class ComposeNavigationBar extends React.PureComponent {
   }
   
   render() {
-    const { isXS } = this.props
+    const { isExternal, isXS } = this.props
 
     const innerClasses = CX({
       d: 1,
@@ -33,6 +28,58 @@ class ComposeNavigationBar extends React.PureComponent {
       mrAuto: !isXS,
     })
 
+    return (
+      <div className={[_s.d, _s.z4, _s.minH53PX, _s.w100PC].join(' ')}>
+        <div className={[_s.d, _s.minH53PX, _s.bgNavigation, _s.aiCenter, _s.z3, _s.top0, _s.right0, _s.left0, _s.posFixed].join(' ')} >
+        
+          <div className={innerClasses}>
+
+            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.aiCenter, _s.ml15, _s.w84PX].join(' ')}>
+              {
+                isExternal &&
+                <h1 className={[_s.d, _s.mr15].join(' ')}>
+                  <Button
+                    to='/'
+                    isText
+                    title='Gab'
+                    aria-label='Gab'
+                    color='none'
+                    backgroundColor='none'
+                    className={[_s.d, _s.jcCenter, _s.noSelect, _s.noUnderline, _s.h53PX, _s.cursorPointer, _s.px10, _s.mr5].join(' ')}
+                  >
+                    <Icon id='logo' className={_s.fillNavigationBrand} />
+                  </Button>
+                </h1>
+              }
+              {
+                !isExternal &&
+                <BackButton
+                  toHome
+                  className={_s.h53PX}
+                  iconSize='18px'
+                  iconClassName={[_s.mr5, _s.fillNavigation].join(' ')}
+                />
+              }
+            </div>
+
+            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.jcCenter, _s.aiCenter, _s.mlAuto, _s.mrAuto].join(' ')}>
+              <Heading size='h1'>
+                <span className={[_s.dangerousContent, _s.fs24PX, _s.colorNavigation].join(' ')}>
+                  Compose
+                </span>
+              </Heading>
+            </div>
+
+            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.aiCenter, _s.jcEnd, _s.mr15, _s.w84PX].join(' ')}>
+              <ComposeFormSubmitButton type='navigation' router={this.context.router} />
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    )
+    
     return (
       <div className={[_s.d, _s.z4, _s.minH53PX, _s.w100PC].join(' ')}>
         <div className={[_s.d, _s.minH53PX, _s.bgNavigation, _s.aiCenter, _s.z3, _s.top0, _s.right0, _s.left0, _s.posFixed].join(' ')} >
@@ -68,6 +115,7 @@ class ComposeNavigationBar extends React.PureComponent {
 }
 
 ComposeNavigationBar.propTypes = {
+  isExternal: PropTypes.bool,
   isXS: PropTypes.bool,
 }
 

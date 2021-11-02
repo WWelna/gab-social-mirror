@@ -9,6 +9,8 @@ import {
   ProgressPanel,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
+  TrendingHashtagsPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class HashtagPage extends React.PureComponent {
@@ -29,8 +31,10 @@ class HashtagPage extends React.PureComponent {
         page={`hashtag.${hashtag}`}
         layout={[
           ProgressPanel,
+          GabAdPanel,
           TrendsBreakingPanel,
           UserSuggestionsPanel,
+          TrendingHashtagsPanel,
           LinkFooter,
         ]}
       >

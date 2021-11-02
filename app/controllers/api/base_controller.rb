@@ -2,9 +2,11 @@
 
 class Api::BaseController < ApplicationController
   DEFAULT_STATUSES_LIMIT = 20
+  DEFAULT_COMMENTS_LIMIT = 10
   DEFAULT_ACCOUNTS_LIMIT = 20
-  DEFAULT_CHAT_CONVERSATION_LIMIT = 100
+  DEFAULT_CHAT_CONVERSATION_LIMIT = 20
   DEFAULT_CHAT_CONVERSATION_MESSAGE_LIMIT = 20
+  DEFAULT_GROUP_CHAT_CONVERSATION_PARTICIPANT_LIMIT = 50
   MAX_LIMIT_PARAM = 25
   MIN_UNAUTHENTICATED_PAGES = 1
 
@@ -15,6 +17,8 @@ class Api::BaseController < ApplicationController
   before_action :set_cache_headers
 
   protect_from_forgery with: :null_session
+
+  skip_around_action :set_locale
 
   rescue_from ActiveRecord::RecordInvalid, GabSocial::ValidationError do |e|
     render json: { error: e.to_s }, status: 422
@@ -32,8 +36,8 @@ class Api::BaseController < ApplicationController
     render json: { error: 'Remote SSL certificate could not be verified' }, status: 503
   end
 
-  rescue_from GabSocial::NotPermittedError do
-    render json: { error: 'This action is not allowed' }, status: 403
+  rescue_from GabSocial::NotPermittedError do |e|
+    render json: { error: e.to_s }, status: 403
   end
 
   def doorkeeper_unauthorized_render_options(error: nil)
@@ -65,16 +69,14 @@ class Api::BaseController < ApplicationController
   def current_resource_owner
     ActiveRecord::Base.connected_to(role: :writing) do
       if doorkeeper_token
-        @current_user ||= Rails.cache.fetch("dk:user:#{doorkeeper_token.resource_owner_id}", expires_in: 25.hours) do
-            User.find(doorkeeper_token.resource_owner_id)
-        end
+        @current_user ||= User.find(doorkeeper_token.resource_owner_id)
       end
     end
     return @current_user
   end
 
   def current_user
-    current_resource_owner || super
+    user_if_trustworthy(current_resource_owner || super)
   rescue ActiveRecord::RecordNotFound
     nil
   end
@@ -102,13 +104,43 @@ class Api::BaseController < ApplicationController
     doorkeeper_authorize!(*scopes) if doorkeeper_token
   end
 
+  # Ensure that the Bearer token wasn't stolen
+  def user_if_trustworthy(user)
+    # Not logged in, don't worry about it.
+    return nil unless user
+
+    # Only enable this protection for StatusesController#create for now, while we work to add
+    # HMAC to HYDRA services.
+    return user unless controller_name == 'statuses' && action_name == 'create'
+
+    # Validate CSRF token with a Devise cookie
+    # Ensuring that the current session's User ID from your Devise cookie matches the ID from your
+    # Doorkeeper token. If you submit the wrong CSRF token, you'll get a new cookie jar and
+    # therefore won't have a `cookies.signed['_session_id']` set, because of
+    # `protect_from_forgery with: :null_session`, which means there won't be a `current_session`.
+    return user if (id = current_session&.user_id) && user.id == id
+
+    # HYDRA uses a HMAC Token to verify requests
+    return user if ValidateHmacRequestService.new.call(
+                     id: doorkeeper_token&.application_id,
+                     hmac: request.headers['X-Gab-Hmac'],
+                     url: request.url,
+                     body: request.raw_post
+                   )
+
+    # Something fishy is going on...
+    log_request(:error, 'REQUEST NOT VERIFIED')
+    return user if user
+    return nil
+  end
+
   def superapp?
     return true if doorkeeper_token.nil?
     doorkeeper_token && doorkeeper_token.application.superapp? || false
   end
 
   def block_if_doorkeeper
-    raise GabSocial::NotPermittedError unless superapp?
+    raise GabSocial::NotPermittedError, 'Unauthorized app' unless superapp?
   end
 
   def set_cache_headers

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import { closePopover } from '../../actions/popover'
+import { fetchComments, clearAllComments } from '../../actions/statuses'
 import { changeSetting, saveSettings } from '../../actions/settings'
 import {
   COMMENT_SORTING_TYPE_NEWEST,
@@ -82,10 +83,12 @@ const mapStateToProps = (state) => ({
   commentSorting: state.getIn(['settings', 'commentSorting']),
 })
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch, { statusId }) => ({
   onSetCommentSortingSetting(type) {
     dispatch(changeSetting(['commentSorting'], type))
     dispatch(saveSettings())
+    dispatch(clearAllComments(statusId))
+    dispatch(fetchComments(statusId))
     dispatch(closePopover())
   },
   onClosePopover: () => dispatch(closePopover()),
@@ -96,6 +99,7 @@ CommentSortingOptionsPopover.propTypes = {
   intl: PropTypes.object.isRequired,
   isXS: PropTypes.bool,
   onClosePopover: PropTypes.func.isRequired,
+  statusId: PropTypes.string.isRequired,
   onSetCommentSortingSetting: PropTypes.func.isRequired,
 }
 

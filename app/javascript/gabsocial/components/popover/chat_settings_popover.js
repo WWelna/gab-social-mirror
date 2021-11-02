@@ -19,11 +19,6 @@ class ChatSettingsPopover extends React.PureComponent {
           scrollKey='profile_options'
           items={[
             {
-              title: 'Preferences',
-              to: '/messages/settings',
-              onClick: () => this.handleOnClosePopover(),
-            },
-            {
               title: 'Message Requests',
               to: '/messages/requests',
               onClick: () => this.handleOnClosePopover(),

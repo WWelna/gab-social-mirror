@@ -35,7 +35,14 @@ class Api::V1::Timelines::ExploreController < Api::BaseController
   end
 
   def set_statuses
-    @statuses = cached_explore_statuses
+    seen = []
+    @statuses = cached_explore_statuses.reject {|status|
+      dupe = seen.include?(status.account_id)
+      if !dupe
+        seen.push(status.account_id)
+      end
+      dupe
+    }
   end
 
   def cached_explore_statuses

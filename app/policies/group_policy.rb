@@ -10,7 +10,7 @@ class GroupPolicy < ApplicationPolicy
   end
 
   def update?
-    if admin?
+    if staff?
       true
     else
       check_archive!
@@ -19,7 +19,7 @@ class GroupPolicy < ApplicationPolicy
   end
 
   def destroy?
-    if admin?
+    if staff?
       true
     else
       check_archive!
@@ -34,7 +34,7 @@ class GroupPolicy < ApplicationPolicy
 
   def destroy_status?
     check_archive!
-    is_group_admin_or_moderator?
+    staff? || is_group_admin_or_moderator?
   end
 
   def join?
@@ -69,6 +69,10 @@ class GroupPolicy < ApplicationPolicy
 
   def destroy_removed_account?
     is_group_admin_or_moderator?
+  end
+
+  def allow_if_is_group_admin_or_moderator?
+    staff? || is_group_admin_or_moderator?
   end
 
   private

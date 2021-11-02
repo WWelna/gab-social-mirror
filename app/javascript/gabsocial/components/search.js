@@ -114,7 +114,7 @@ class Search extends React.PureComponent {
     })
 
     const prependIconColor = (highlighted || !isInNav || theme === 'white') ? 'brand' : 'white'
-    const placeholder = !me ? 'Search Gab' : 'Search for people, groups or gabs'
+    const placeholder = !me ? 'Search Gab' : 'Search for people or groups on Gab'
     const id = 'nav-search'
       
     return (

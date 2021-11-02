@@ -10,6 +10,8 @@ import {
 } from '../actions/statuses'
 import StatusContainer from '../containers/status_container'
 import StatusPlaceholder from '../components/placeholder/status_placeholder'
+import WrappedBundle from './ui/util/wrapped_bundle'
+import { GabAdStatus } from './ui/util/async_components'
 
 class Status extends ImmutablePureComponent {
 
@@ -53,8 +55,16 @@ class Status extends ImmutablePureComponent {
       return <StatusPlaceholder />
     }
 
+    const shouldShowGabAdStatus = status.get('replies_count') < 3
+
     return (
-      <StatusContainer {...this.props} contextType='feature' />
+      <React.Fragment>
+        <StatusContainer {...this.props} contextType='feature' />
+        {
+          shouldShowGabAdStatus &&
+          <WrappedBundle component={GabAdStatus} />
+        }
+      </React.Fragment>
     )
   }
 

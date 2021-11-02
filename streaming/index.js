@@ -13,7 +13,7 @@ const redis = require('redis');
 const pg = require('pg');
 const log = require('npmlog');
 const url = require('url');
-const { WebSocketServer } = require('@clusterws/cws');
+const WebSocket = require('ws');
 const uuid = require('uuid');
 const fs = require('fs');
 
@@ -81,11 +81,11 @@ const startMaster = () => {
     log.warn('UNIX domain socket is now supported by using SOCKET. Please migrate from PORT hack.');
   }
 
-  log.info(`Starting streaming API server master with ${numWorkers} workers`);
+  log.warn(`Starting streaming API server master with ${numWorkers} workers`);
 };
 
 const startWorker = (workerId) => {
-  log.info(`Starting worker ${workerId}`);
+  log.warn(`Starting worker ${workerId}`);
 
   const pgConfigs = {
     development: {
@@ -536,12 +536,23 @@ const startWorker = (workerId) => {
     streamFrom(`timeline:${req.accountId}`, req, streamToHttp(req, res), streamHttpEnd(req), false, true);
   });
 
-  const wss = new WebSocketServer({ server, verifyClient: wsVerifyClient });
+  app.get('/api/v1/streaming/chat_messages', (req, res) => {
+    const channel = `chat_messages:${req.accountId}`;
+    streamFrom(channel, req, streamToHttp(req, res), streamHttpEnd(req, subscriptionHeartbeat(channel)));
+  });
+
+  const wss = new WebSocket.Server({ server, verifyClient: wsVerifyClient });
 
   wss.on('connection', (ws, req) => {
     const location = url.parse(req.url, true);
     req.requestId = uuid.v4();
     req.remoteAddress = ws._socket.remoteAddress;
+
+    ws.isAlive = true;
+
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
 
     let channel;
 
@@ -557,19 +568,32 @@ const startWorker = (workerId) => {
       case 'user:notification':
         streamFrom(`timeline:${req.accountId}`, req, streamToWs(req, ws), streamWsEnd(req, ws), false, true);
         break;
+      case 'chat_messages':
+        streamFrom(`chat_messages:${req.accountId}`, req, streamToWs(req, ws), streamWsEnd(req, ws), false, true);
+        break;         
       default:
         ws.close();
     }
   });
 
-  wss.startAutoPing(30000);
+  setInterval(() => {
+    wss.clients.forEach(ws => {
+      if (ws.isAlive === false) {
+        ws.terminate();
+        return;
+      }
+
+      ws.isAlive = false;
+      ws.ping('', false, true);
+    });
+  }, 30000);
 
   attachServerWithConfig(server, address => {
-    log.info(`Worker ${workerId} now listening on ${address}`);
+    log.warn(`Worker ${workerId} now listening on ${address}`);
   });
 
   const onExit = () => {
-    log.info(`Worker ${workerId} exiting, bye bye`);
+    log.warn(`Worker ${workerId} exiting, bye bye`);
     server.close();
     process.exit(0);
   };

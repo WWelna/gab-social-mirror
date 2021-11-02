@@ -18,9 +18,12 @@ class LinkBlock < ApplicationRecord
 
   def self.block?(text)
     return false if text.nil?
-    return false if text.length < 1
+    return false if text.length < 8
 
     return true if text.include? '.weebly.com'
+    return true if text.include? '.brokenfuture.com'
+    return true if text.include? 'gildapparels.xyz'
+    return true if text.include? 'skatapparel.com'
 
     urls = text.scan(FetchLinkCardService::URL_PATTERN).map {|array|
       Addressable::URI.parse(array[0]).normalize
@@ -34,8 +37,8 @@ class LinkBlock < ApplicationRecord
 
     domain_for_fetch = TagManager.instance.normalize_link_domain(url)
 
-    where("LOWER(link) LIKE LOWER(?)", "%#{link_for_fetch}").or(
-      where("LOWER(link) LIKE LOWER(?)", "#{domain_for_fetch}")
-    ).exists?
+    matching(:link, :is, link_for_fetch).
+      or(matching(:link, :is, domain_for_fetch)).
+      exists?
   end
 end

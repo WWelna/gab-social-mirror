@@ -12,7 +12,7 @@ class Api::V1::PopularLinksController < Api::BaseController
     elsif type == 'gab'
       render json: get_top_gab, each_serializer: REST::StatusSerializer
     else
-      raise GabSocial::NotPermittedError
+      raise GabSocial::NotPermittedError, %Q|Unknown Type "#{type}"|
     end
   end
 

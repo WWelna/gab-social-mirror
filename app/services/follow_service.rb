@@ -11,7 +11,7 @@ class FollowService < BaseService
     reblogs = true if reblogs.nil?
 
     raise ActiveRecord::RecordNotFound if target_account.nil? || target_account.id == source_account.id || target_account.suspended?
-    raise GabSocial::NotPermittedError  if target_account.blocking?(source_account) || source_account.blocking?(target_account) || target_account.moved?
+    verify_permitted!(source_account, target_account)
 
     if source_account.following?(target_account)
       # We're already following this account, but we'll call follow! again to
@@ -36,6 +36,21 @@ class FollowService < BaseService
   end
 
   private
+
+  def verify_permitted!(source_account, target_account)
+    error_suffix = if target_account.blocking?(source_account)
+      'they block you'
+    elsif source_account.blocking?(target_account)
+      'you block them'
+    elsif target_account.moved?
+      "they have moved their account to @#{target_account.moved_to_account.username}"
+    end
+
+    return true unless error_suffix
+    error_prefix = "Cannot follow @#{target_account.username} because"
+
+    raise GabSocial::NotPermittedError, "#{error_prefix} #{error_suffix}"
+  end
 
   def request_follow(source_account, target_account, reblogs: true)
     follow_request = FollowRequest.create!(account: source_account, target_account: target_account, show_reblogs: reblogs)

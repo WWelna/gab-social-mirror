@@ -7,6 +7,8 @@ import {
   importErrorWhileFetchingAccountByUsername,
 } from './importer'
 import { me } from '../initial_state'
+import { fetchBlocks } from '../actions/blocks'
+import { fetchMutes } from '../actions/mutes'
 
 export const ACCOUNT_FETCH_REQUEST = 'ACCOUNT_FETCH_REQUEST'
 export const ACCOUNT_FETCH_SUCCESS = 'ACCOUNT_FETCH_SUCCESS'
@@ -235,6 +237,7 @@ export const blockAccount = (id) => (dispatch, getState) => {
     // : todo : remove gay stuff like passing entire status below:
     // Pass in entire statuses map so we can use it to filter stuff in different parts of the reducers
     dispatch(blockAccountSuccess(response.data, getState().get('statuses')))
+    dispatch(fetchBlocks())
   }).catch((error) => {
     dispatch(blockAccountFail(id, error))
   })
@@ -268,6 +271,7 @@ export const unblockAccount = (id) => (dispatch, getState) => {
 
   api(getState).post(`/api/v1/accounts/${id}/unblock`).then((response) => {
     dispatch(unblockAccountSuccess(response.data))
+    dispatch(fetchBlocks())
   }).catch((error) => {
     dispatch(unblockAccountFail(id, error))
   })
@@ -301,6 +305,7 @@ export const muteAccount = (id, notifications) => (dispatch, getState) => {
   api(getState).post(`/api/v1/accounts/${id}/mute`, { notifications }).then((response) => {
     // Pass in entire statuses map so we can use it to filter stuff in different parts of the reducers
     dispatch(muteAccountSuccess(response.data, getState().get('statuses')))
+    dispatch(fetchMutes())
   }).catch((error) => {
     dispatch(muteAccountFail(id, error))
   })
@@ -334,6 +339,7 @@ export const unmuteAccount = (id) => (dispatch, getState) => {
 
   api(getState).post(`/api/v1/accounts/${id}/unmute`).then((response) => {
     dispatch(unmuteAccountSuccess(response.data))
+    dispatch(fetchMutes())
   }).catch((error) => {
     dispatch(unmuteAccountFail(id, error))
   })

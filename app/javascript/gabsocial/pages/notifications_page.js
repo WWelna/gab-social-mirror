@@ -10,8 +10,9 @@ import DefaultLayout from '../layouts/default_layout'
 import {
   LinkFooter,
   NotificationFilterPanel,
-  TrendsBreakingPanel,
+  GabTVVideosPanel,
   UserSuggestionsPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class NotificationsPage extends React.PureComponent {
@@ -63,7 +64,8 @@ class NotificationsPage extends React.PureComponent {
         page='notifications'
         layout={[
           NotificationFilterPanel,
-          TrendsBreakingPanel,
+          GabAdPanel,
+          GabTVVideosPanel,
           UserSuggestionsPanel,
           LinkFooter,
         ]}

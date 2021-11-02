@@ -66,37 +66,31 @@ class Group < ApplicationRecord
 
   class << self
     def search_for(term, offset = 0)
-      pattern = sanitize_sql_like(term.strip) + '%'
-
-      Group.where('lower(title) like lower(?) AND is_archived=false AND is_visible=true', pattern)
-        .order('member_count DESC')
+      Group.matching(:title, :contains, term)
+        .includes(:group_categories)
+        .where(is_archived: false, is_visible: true)
+        .order(member_count: :desc)
         .limit(25)
         .offset(offset)
     end
 
     def search_for_members(group, term, limit)
-      pattern = '%' + sanitize_sql_like(term.strip) + '%'
-      group.accounts.where("LOWER(username) LIKE LOWER(?)", pattern).limit(limit)
+      group.accounts.matching(:username, :contains, term).limit(limit)
     end
 
     def search_for_removed_accounts(group, term, limit)
-      pattern = '%' + sanitize_sql_like(term.strip) + '%'
-      group.removed_accounts.where("LOWER(username) LIKE LOWER(?)", pattern).limit(limit)
+      group.removed_accounts.matching(:username, :contains, term).limit(limit)
     end
   end
 
   def has_password?
-    return !!self.password && self.password.gsub(/\s+/, "").length > 1 && self.password.to_s != "null"
+    self.password.present? && self.password != 'null'
   end
 
   private
 
   def set_password
-    if password.nil? || !password || password.gsub(/\s+/, "").length <= 1 || password == "null"
-      nil
-    else
-      password
-    end
+    self.password = nil unless self.has_password?
   end
 
   def set_slug

@@ -30,8 +30,6 @@ class CustomEmoji < ApplicationRecord
 
   has_attached_file :image, styles: { static: { format: 'png', convert_options: '-coalesce -strip' } }
 
-  before_validation :downcase_domain
-
   validates_attachment :image, content_type: { content_type: 'image/png' }, presence: true, size: { less_than: LIMIT }
   validates :shortcode, uniqueness: { scope: :domain }, format: { with: /\A#{SHORTCODE_RE_FRAGMENT}\z/ }, length: { minimum: 2 }
 
@@ -65,7 +63,7 @@ class CustomEmoji < ApplicationRecord
     end
 
     def search(shortcode)
-      where('"custom_emojis"."shortcode" ILIKE ?', "%#{shortcode}%")
+      matching(:shortcode, :contains, shortcode)
     end
   end
 

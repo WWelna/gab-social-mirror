@@ -2,6 +2,7 @@ import { combineReducers } from 'redux-immutable'
 import { loadingBarReducer } from 'react-redux-loading-bar'
 import accounts from './accounts'
 import accounts_counters from './accounts_counters'
+import advertisements from './advertisements'
 import albums from './albums'
 import album_lists from './album_lists'
 import bookmark_collections from './bookmark_collections'
@@ -59,6 +60,7 @@ import user_lists from './user_lists'
 const reducers = {
   accounts,
   accounts_counters,
+  advertisements,
   albums,
   album_lists,
   bookmark_collections,

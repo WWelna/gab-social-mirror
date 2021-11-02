@@ -14,6 +14,7 @@ import {
   MODAL_BOOST,
   MODAL_CHAT_CONVERSATION_CREATE,
   MODAL_CHAT_CONVERSATION_DELETE,
+  MODAL_CHAT_CONVERSATION_MEMBERS,
   MODAL_COMPOSE,
   MODAL_CONFIRM,
   MODAL_DECK_COLUMN_ADD,
@@ -51,6 +52,7 @@ import {
   BoostModal,
   ChatConversationCreateModal,
   ChatConversationDeleteModal,
+  ChatConversationMembersModal,
   ComposeModal,
   ConfirmationModal,
   DeckColumnAddModal,
@@ -91,6 +93,7 @@ const MODAL_COMPONENTS = {
   [MODAL_BOOST]: BoostModal,
   [MODAL_CHAT_CONVERSATION_CREATE]: ChatConversationCreateModal,
   [MODAL_CHAT_CONVERSATION_DELETE]: ChatConversationDeleteModal,
+  [MODAL_CHAT_CONVERSATION_MEMBERS]: ChatConversationMembersModal,
   [MODAL_COMPOSE]: ComposeModal,
   [MODAL_CONFIRM]: ConfirmationModal,
   [MODAL_DECK_COLUMN_ADD]: DeckColumnAddModal,
@@ -163,7 +166,7 @@ class ModalRoot extends React.PureComponent {
     const visible = !!type
 
     return (
-      <ModalBase 
+      <ModalBase
         onClose={this.onClickClose}
         isCenteredXS={CENTERED_XS_MODALS.indexOf(type) > -1}
         type={type}

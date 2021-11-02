@@ -5,6 +5,7 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import { NavLink } from 'react-router-dom'
 import { decode } from 'blurhash'
 import { autoPlayGif, displayMedia } from '../initial_state'
+import { toHHMMSS } from '../utils/time'
 import { CX } from '../constants'
 import Icon from './icon'
 import Image from './image'
@@ -97,7 +98,7 @@ class MediaItem extends ImmutablePureComponent {
 
     if (isVideo) {
       const duration = attachment.getIn(['meta', 'duration'])
-      badge = (duration / 60).toFixed(2)
+      badge = toHHMMSS(duration)
     } else if (attachmentType === 'gifv') {
       badge = 'GIF'
     }

@@ -27,19 +27,45 @@ export const fetchBlocks = () => (dispatch, getState) => {
   }).catch(error => dispatch(fetchBlocksFail(error)))
 }
 
+export const fetchBlockedby = () => (dispatch, getState) => {
+  if (!me) return
+
+  api(getState).get('/api/v1/blockedby').then(response => {
+    dispatch(fetchBlockedbySuccess(response.data))
+  }).catch(error => dispatch(fetchBlockedbyFail(error)))
+}
+
 export const fetchBlocksRequest = () => ({
   type: BLOCKS_FETCH_REQUEST,
 })
 
-export const fetchBlocksSuccess = (accounts, next) => ({
-  type: BLOCKS_FETCH_SUCCESS,
-  accounts,
-  next,
-})
+export const fetchBlockedbySuccess = (accounts) => {
+  localStorage.setItem('blockedby', accounts.map(item => item.id))
+  return {
+    type: BLOCKS_FETCH_SUCCESS,
+    accounts,
+    next,
+  }
+}
+
+export const fetchBlocksSuccess = (accounts, next) => {
+  localStorage.setItem('blocks', accounts.map(item => item.id))
+  return {
+    type: BLOCKS_FETCH_SUCCESS,
+    accounts,
+    next,
+  }
+}
 
 export const fetchBlocksFail = (error) => ({
   type: BLOCKS_FETCH_FAIL,
   showToast: true,
+  error,
+})
+
+export const fetchBlockedbyFail = (error) => ({
+  type: BLOCKS_FETCH_FAIL,
+  showToast: false,
   error,
 })
 

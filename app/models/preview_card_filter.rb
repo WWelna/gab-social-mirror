@@ -18,11 +18,11 @@ class PreviewCardFilter
   def scope_for(key, value)
     case key.to_sym
     when :title
-      PreviewCard.where("LOWER(title) LIKE LOWER(?)", "%#{value}%")
+      PreviewCard.matching(:title, :contains, value)
     when :description
-      PreviewCard.where("LOWER(description) LIKE LOWER(?)", "%#{value}%")
+      PreviewCard.matching(:description, :contains, value)
     when :url
-      PreviewCard.where("LOWER(url) LIKE LOWER(?)", "%#{value}%")
+      PreviewCard.matching(:url, :contains, value)
     else
       raise "Unknown filter: #{key}"
     end

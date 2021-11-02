@@ -31,7 +31,7 @@ class MediaAttachment < ApplicationRecord
   VIDEO_FILE_EXTENSIONS = ['.webm', '.mp4', '.m4v', '.mov'].freeze
 
   IMAGE_MIME_TYPES             = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].freeze
-  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime'].freeze
+  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime', 'video/ogg'].freeze
   VIDEO_CONVERTIBLE_MIME_TYPES = ['video/webm', 'video/quicktime'].freeze
 
   BLURHASH_OPTIONS = {
@@ -91,6 +91,7 @@ class MediaAttachment < ApplicationRecord
 
   VIDEO_FORMAT = {
     format: 'mp4',
+    content_type: 'video/mp4',
     convert_options: {
       output: VIDEO_FORMAT_OUTPUT_OPTIONS,
     },
@@ -106,7 +107,7 @@ class MediaAttachment < ApplicationRecord
   has_attached_file :file,
                     styles: ->(f) { file_styles f },
                     processors: ->(f) { file_processors f },
-                    convert_options: { all: '-quality 90 -strip' }
+                    convert_options: { all: '-quality 90 -strip +set modify-date +set create-date' }
 
   validates_attachment_content_type :file, content_type: IMAGE_MIME_TYPES + VIDEO_MIME_TYPES
   validates_attachment_size :file, less_than: IMAGE_LIMIT, unless: :video_or_gifv?
@@ -171,6 +172,14 @@ class MediaAttachment < ApplicationRecord
   before_save :set_meta
 
   class << self
+    def supported_mime_types
+      IMAGE_MIME_TYPES + VIDEO_MIME_TYPES
+    end
+
+    def supported_file_extensions
+      IMAGE_FILE_EXTENSIONS + VIDEO_FILE_EXTENSIONS
+    end
+
     private
 
     def file_styles(f)
@@ -196,9 +205,9 @@ class MediaAttachment < ApplicationRecord
       if f.file_content_type == 'image/gif'
         [:gif_transcoder, :blurhash_transcoder]
       elsif VIDEO_MIME_TYPES.include? f.file_content_type
-        [:video_transcoder, :blurhash_transcoder]
+        [:video_transcoder, :blurhash_transcoder, :type_corrector]
       else
-        [:lazy_thumbnail, :blurhash_transcoder]
+        [:lazy_thumbnail, :blurhash_transcoder, :type_corrector]
       end
     end
   end

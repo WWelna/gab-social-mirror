@@ -2,6 +2,8 @@
 
 Paperclip.options[:read_timeout] = 60
 
+Paperclip::DataUriAdapter.register
+
 Paperclip.interpolates :filename do |attachment, style|
   return attachment.original_filename if style == :original
   [basename(attachment, style), extension(attachment, style)].delete_if(&:blank?).join('.')

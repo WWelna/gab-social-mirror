@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import BlockHeading from '../components/block_heading'
 import ChatConversationsList from './messages/components/chat_conversations_list'
 

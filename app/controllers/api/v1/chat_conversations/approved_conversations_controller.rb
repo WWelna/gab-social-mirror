@@ -4,44 +4,61 @@ class Api::V1::ChatConversations::ApprovedConversationsController < Api::BaseCon
   before_action -> { authorize_if_got_token! :read, :'read:chats' }
 
   before_action :require_user!
-  before_action :set_chat_conversation, only: :create
   after_action :insert_pagination_headers
 
   def index
-    @chat_conversations = load_chat_conversations
-    render json: @chat_conversations, each_serializer: REST::ChatConversationAccountSerializer
+    chat_conversation_accounts = load_chat_conversation_accounts
+    render json: chat_conversation_accounts, each_serializer: REST::ChatConversationAccountSerializer
   end
 
   def show
-    render json: @chat_conversation, serializer: REST::ChatConversationAccountSerializer
+    render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
   end
 
   def unread_count
-    unreads = ChatConversationAccount.where(account: current_account, is_hidden: false, is_approved: true).where('unread_count > 0')
-    sum = unreads.sum('unread_count')
-    render json: sum.to_i
+    # find conversations where user has approved and not hidden them
+    sum_of_unreads = current_account
+      .chat_conversation_accounts
+      .active
+      .where('unread_count > 0')
+      .sum('unread_count')
+
+    # just count convo, not all unreads msgs
+    sum_of_unread_chat_requests = current_account
+      .chat_conversation_accounts
+      .requests
+      .where('unread_count > 0')
+      .count
+    
+    total = sum_of_unreads.to_i + sum_of_unread_chat_requests.to_i
+
+    render json: total
+  end
+
+  def reset_all_unread_count
+    # reset all, approved and unapproved
+    current_account
+      .chat_conversation_accounts
+      .where('unread_count > 0')
+      .update_all(unread_count: 0)
   end
 
   private
 
-  def set_chat_conversation
-    @chat_conversation = ChatConversationAccount.where(account: current_account).find(params[:id]).first
+  def load_chat_conversation_accounts
+    paginated_chat_conversation_accounts
   end
 
-  def load_chat_conversations
-    paginated_chat_conversations
-  end
-
-  def paginated_chat_conversations
-    ChatConversationAccount.where(
-      account: current_account,
-      is_hidden: false,
-      is_approved: true
-    ).paginate_by_max_id(
-      limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT),
-      params[:max_id],
-      params[:since_id]
-    )
+  def paginated_chat_conversation_accounts
+    current_account
+      .chat_conversation_accounts
+      .active
+      .by_recent_message
+      .paginate_by_max_id(
+        limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT),
+        params[:max_id],
+        params[:since_id]
+      )
   end
 
   def insert_pagination_headers
@@ -55,21 +72,21 @@ class Api::V1::ChatConversations::ApprovedConversationsController < Api::BaseCon
   end
 
   def prev_path
-    unless paginated_chat_conversations.empty?
+    unless paginated_chat_conversation_accounts.empty?
       api_v1_chat_conversations_approved_conversations_url pagination_params(since_id: pagination_since_id)
     end
   end
 
   def pagination_max_id
-    paginated_chat_conversations.last.id
+    paginated_chat_conversation_accounts.last.id
   end
 
   def pagination_since_id
-    paginated_chat_conversations.first.id
+    paginated_chat_conversation_accounts.first.id
   end
 
   def records_continue?
-    paginated_chat_conversations.size == limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT)
+    paginated_chat_conversation_accounts.size == limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT)
   end
 
   def pagination_params(core_params)

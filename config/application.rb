@@ -10,6 +10,7 @@ require_relative '../lib/exceptions'
 require_relative '../lib/paperclip/lazy_thumbnail'
 require_relative '../lib/paperclip/gif_transcoder'
 require_relative '../lib/paperclip/video_transcoder'
+require_relative '../lib/paperclip/type_corrector'
 require_relative '../lib/gabsocial/snowflake'
 require_relative '../lib/gabsocial/version'
 require_relative '../lib/devise/ldap_authenticatable'
@@ -110,6 +111,9 @@ module GabSocial
       Doorkeeper::AuthorizationsController.layout 'modal'
       Doorkeeper::AuthorizedApplicationsController.layout 'admin'
       Doorkeeper::Application.send :include, ApplicationExtension
+      Devise::FailureApp.send :include, AbstractController::Callbacks
+      Devise::FailureApp.send :include, HttpAcceptLanguage::EasyAccess
+      Devise::FailureApp.send :include, Localized
     end
   end
 end

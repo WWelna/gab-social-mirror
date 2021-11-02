@@ -52,7 +52,7 @@ class AccountFilter
     when 'staff'
       accounts_with_users.merge User.staff
     when "note"
-      Account.where("LOWER(note) LIKE LOWER(?)", "%#{value}%")
+      Account.matching(:note, :contains, value)
     when "status_count_gte"
       # : todo :
       Account.joins(:account_stat)

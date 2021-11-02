@@ -149,8 +149,8 @@ Rails.application.routes.draw do
       resources :followers, only: [:index]
       resources :follows, only: [:index]
       resources :joined_groups, only: [:index]
-      # resources :chat_conversation_accounts, only: [:index]
-      # resources :chat_messages, only: [:index, :show, :create, :update, :destroy]
+      resources :chat_conversation_accounts, only: [:index]
+      resources :chat_messages, only: [:index, :show, :create, :update, :destroy]
 
       resource :confirmation, only: [:create] do
         collection do
@@ -185,6 +185,10 @@ Rails.application.routes.draw do
     # OEmbed
     get '/oembed', to: 'oembed#show', as: :oembed
 
+    # Ads
+    post '/ad_click', to: 'ads#click'
+    post '/ad_view', to: 'ads#view'
+
     # Identity proofs
     get :proofs, to: 'proofs#index'
 
@@ -215,6 +219,8 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :hmac_tokens, only: [:create]
+
       namespace :timelines do
         resource :home, only: :show, controller: :home
         resource :pro, only: :show, controller: :pro
@@ -227,49 +233,53 @@ Rails.application.routes.draw do
         resource :explore, only: :show, controller: :explore
       end
 
-      # namespace :chat_conversation_accounts do
-        #
-      # end
+      namespace :chat_conversation_accounts do
+        
+      end
 
-      # resources :chat_conversation_accounts, only: :show do
-      #   member do
-      #     post :messenger_block_relationships
-      #     post :block_messenger
-      #     post :unblock_messenger
-      #     post :mute_chat_conversation
-      #     post :unmute_chat_conversation
-      #     get  :search
-      #   end
-      # end
+      resources :chat_conversation_accounts, only: :show do
+        member do
+          post :messenger_block_relationships
+          post :block_messenger
+          post :unblock_messenger
+          post :mute_chat_conversation
+          post :unmute_chat_conversation
+          post :pin_chat_conversation
+          post :unpin_chat_conversation
+          post :leave_group_chat_conversation
+        end
+      end
 
-      # namespace :chat_conversations do
-      #   resources :messages, only: :show do
-      #     member do
-      #       delete :destroy_all
-      #     end
-      #   end
-      #   resources :approved_conversations, only: :index do
-      #     collection do
-      #       get :unread_count
-      #     end
-      #   end
-      #   resources :requested_conversations, only: :index do
-      #     collection do
-      #       get :count
-      #     end
-      #   end
-      #   resources :blocked_chat_accounts, only: :index
-      #   resources :muted_conversations, only: :index
-      # end
+      namespace :chat_conversations do
+        resources :messages, only: :show do
+          member do
+            delete :destroy_all
+          end
+        end
+        resources :approved_conversations, only: :index do
+          collection do
+            get :unread_count
+            post :reset_all_unread_count
+          end
+        end
+        resources :requested_conversations, only: :index do
+          collection do
+            get :count
+          end
+        end
+        resources :blocked_chat_accounts, only: :index
+        resources :muted_conversations, only: :index
+        resources :search_conversations, only: :index
+      end
 
-      # resources :chat_conversation, only: [:show, :create] do
-      #   member do
-      #     post :mark_chat_conversation_approved
-      #     post :mark_chat_conversation_read
-      #     post :mark_chat_conversation_hidden
-      #     post :set_expiration_policy
-      #   end
-      # end
+      resources :chat_conversation, only: [:show, :create] do
+        member do
+          post :mark_chat_conversation_approved
+          post :mark_chat_conversation_read
+          post :mark_chat_conversation_hidden
+          post :set_expiration_policy
+        end
+      end
 
       resources :links,         only: :show
       resources :hashtags,         only: :show
@@ -280,12 +290,13 @@ Rails.application.routes.draw do
       resources :scheduled_statuses, only: [:index, :show, :update, :destroy]
       resources :preferences,   only: [:index]
       resources :group_categories, only: [:index]
-      # resources :chat_messages, only: [:create, :destroy]
+      resources :chat_messages, only: [:create, :destroy]
       resources :promotions,   only: [:index]
       resources :follows,      only: [:create]
       resources :media,        only: [:create, :update]
       resources :blocks,       only: [:index]
       resources :mutes,        only: [:index]
+      resources :blockedby,    only: [:index]
       resources :favourites,   only: [:index]
       resources :reports,      only: [:create]
       resources :filters,      only: [:index, :create, :show, :update, :destroy]
@@ -294,6 +305,7 @@ Rails.application.routes.draw do
       resources :album_lists,  only: [:show]
       resource :trending_hashtags,  only: [:show]
       resource :expenses,     only: [:show]
+      resources :comments,    only: [:show]
 
       resources :bookmark_collections, only: [:index, :create, :show, :update, :destroy] do
         resources :bookmarks, only: [:index], controller: 'bookmark_collections/bookmarks'
@@ -400,12 +412,13 @@ Rails.application.routes.draw do
 
   get '/:username/posts/:statusId', to: 'react#status_show', username: username_regex
   get '/:username/posts/:statusId', to: 'react#status_show', username: username_regex, as: :short_account_status
-  get '/:username/posts/:statusId/embed', to: 'react#embed_status', username: username_regex, as: :embed_short_account_status
+  # get '/:username/posts/:statusId/embed', to: 'react#status_embed', username: username_regex, as: :embed_short_account_status
 
   get '/(*any)', to: 'react#react', as: :web
   get '/:username', to: 'react#account_show', username: username_regex, as: :short_account_with_replies
-  get '/groups/:groupId', to: 'react#group_show', as: :group_show_page
   root 'react#react'
+
+  get '/groups/:groupId', to: 'react#group_show', as: :group_show_page
 
   get '/', to: 'react#react', as: :homepage
 

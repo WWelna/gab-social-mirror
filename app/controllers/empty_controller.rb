@@ -20,8 +20,8 @@ class EmptyController < ActionController::Base
     render json: { error: 'Remote SSL certificate could not be verified' }, status: 503
   end
 
-  rescue_from GabSocial::NotPermittedError do
-    render json: { error: 'This action is not allowed' }, status: 403
+  rescue_from GabSocial::NotPermittedError do |e|
+    render json: { error: e.to_s }, status: 403
   end
 
   def doorkeeper_unauthorized_render_options(error: nil)

@@ -5,6 +5,7 @@ module Admin
     PER_PAGE = 50
 
     def index
+      return
       authorize :chat_message, :index?
 
       @chat_messages = filtered_chat_messages.page(params[:page]).per(PER_PAGE)
@@ -12,6 +13,7 @@ module Admin
     end
 
     def show
+      return
       authorize :chat_message, :index?
 
       @chat_message = ChatMessage.where(id: params[:id])
@@ -21,6 +23,7 @@ module Admin
     end
 
     def create
+      return
       authorize :chat_message, :update?
 
       @form         = Form::ChatMessageBatch.new(form_chat_message_batch_params.merge(current_account: current_account, action: action_from_button))

@@ -14,8 +14,9 @@ import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import {
   ListDetailsPanel,
   LinkFooter,
-  TrendsBreakingPanel,
+  GabTVVideosPanel,
   UserSuggestionsPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class ListPage extends ImmutablePureComponent {
@@ -53,7 +54,8 @@ class ListPage extends ImmutablePureComponent {
         ]}
         layout={[
           <WrappedBundle component={ListDetailsPanel} componentParams={{ list: list, onEdit: this.handleOnOpenListEditModal }} />,
-          TrendsBreakingPanel,
+          GabAdPanel,
+          GabTVVideosPanel,
           // UserSuggestionsPanel,
           LinkFooter,
         ]}

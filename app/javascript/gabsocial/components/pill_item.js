@@ -4,6 +4,8 @@ import { withRouter } from 'react-router-dom'
 import { CX } from '../constants'
 import Button from './button'
 import Text from './text'
+import Image from './image'
+import Icon from './icon'
 
 class PillItem extends React.PureComponent {
 
@@ -33,6 +35,9 @@ class PillItem extends React.PureComponent {
 
   render() {
     const {
+      prependIcon,
+      appendIcon,
+      prependImage,
       title,
       to,
       onClick,
@@ -68,13 +73,15 @@ class PillItem extends React.PureComponent {
       aiCenter: 1,
       jcCenter: 1,
       py2: 1,
-      px15: 1,
+      px5: 1,
+      flexRow: 1,
     })
 
     const textOptions = {
       size: 'small',
       color: active ? 'white' : 'secondary',
       weight: active ? 'bold' : 'medium',
+      className: _s.px10,
     }
 
     return (
@@ -85,9 +92,12 @@ class PillItem extends React.PureComponent {
         noClasses
       >
         <span className={textParentClasses}>
+          { !!prependImage && <Image src={prependImage} width='24px' height='24px' className={_s.circle} /> }
+          { !!prependIcon && <Icon id={prependIcon} size='10px' /> }
           <Text {...textOptions}>
             {title}
           </Text>
+          { !!appendIcon && <Icon id={appendIcon} size='10px' className={[_s.circle, _s.mr5].join(' ')} /> }
         </span>
       </Button>
     )
@@ -95,7 +105,9 @@ class PillItem extends React.PureComponent {
 }
 
 PillItem.propTypes = {
-  icon: PropTypes.string,
+  appendIcon: PropTypes.string,
+  prependIcon: PropTypes.string,
+  prependImage: PropTypes.string,
   isActive: PropTypes.bool,
   onClick: PropTypes.func,
   title: PropTypes.string,

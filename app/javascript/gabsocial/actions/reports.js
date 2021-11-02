@@ -12,6 +12,7 @@ export const REPORT_SUBMIT_FAIL    = 'REPORT_SUBMIT_FAIL'
 export const REPORT_STATUS_TOGGLE  = 'REPORT_STATUS_TOGGLE'
 export const REPORT_COMMENT_CHANGE = 'REPORT_COMMENT_CHANGE'
 export const REPORT_FORWARD_CHANGE = 'REPORT_FORWARD_CHANGE'
+export const REPORT_CATEGORY_CHANGE = 'REPORT_CATEGORY_CHANGE'
 
 /**
  * 
@@ -53,6 +54,7 @@ export const submitReport = () => (dispatch, getState) => {
     status_ids: getState().getIn(['reports', 'new', 'status_ids']),
     comment: getState().getIn(['reports', 'new', 'comment']),
     forward: getState().getIn(['reports', 'new', 'forward']),
+    category: getState().getIn(['reports', 'new', 'category']),
   }).then((response) => {
     dispatch(closeModal());
     dispatch(submitReportSuccess(response.data))
@@ -81,4 +83,9 @@ const submitReportFail = (error) => ({
 export const changeReportComment = (comment) => ({
   type: REPORT_COMMENT_CHANGE,
   comment,
+})
+
+export const changeReportCategory = (category) => ({
+  type: REPORT_CATEGORY_CHANGE,
+  category,
 })

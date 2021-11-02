@@ -2,7 +2,7 @@
 
 module Admin::FilterHelper
   ACCOUNT_FILTERS      = %i(local remote by_domain active pending silenced suspended username display_name email ip note staff spam is_pro is_investor is_donor is_verified).freeze
-  REPORT_FILTERS       = %i(resolved account_id target_account_id).freeze
+  REPORT_FILTERS       = %i(resolved account_id target_account_id category).freeze
   INVITE_FILTER        = %i(available expired).freeze
   CUSTOM_EMOJI_FILTERS = %i(local remote by_domain shortcode).freeze
   TAGS_FILTERS         = %i(hidden).freeze

@@ -1,6 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { FormattedMessage } from 'react-intl'
+import moment from 'moment-mini'
 import {
   Map as ImmutableMap,
   List as ImmutableList,
@@ -47,33 +48,34 @@ import Status from '../components/status';
 const sortReplies = (replyIds, state, type) => {
   if (!replyIds) return replyIds
 
-  if (type === COMMENT_SORTING_TYPE_OLDEST || !type) {
-    return replyIds // default
-  } else if (type === COMMENT_SORTING_TYPE_NEWEST) {
-    return replyIds.reverse()
-  } else if (type === COMMENT_SORTING_TYPE_TOP) {
-    let statusList = []
-    replyIds.forEach((replyId) => {
-      const status = state.getIn(['statuses', replyId])
-      if (status) {
-        statusList.push({
-          id: replyId,
-          likeCount: status.get('favourites_count'),
-        })
-      }
-    })
-    statusList.sort((a, b) => parseFloat(b.likeCount) - parseFloat(a.likeCount))
-    
-    let newReplyIds = ImmutableList()
-    for (let i = 0; i < statusList.length; i++) {
-      const block = statusList[i];
-      newReplyIds = newReplyIds.set(i, block.id)   
+  let statusList = []
+  replyIds.forEach((replyId) => {
+    const status = state.getIn(['statuses', replyId])
+    if (status) {
+      statusList.push({
+        id: replyId,
+        likeCount: parseFloat(status.get('favourites_count')),
+        createdAt: moment(status.get('created_at')).valueOf(),
+      })
     }
+  })
 
-    return newReplyIds
+  statusList.sort((a, b) => {
+    if (type === COMMENT_SORTING_TYPE_NEWEST) {
+      return b.createdAt - a.createdAt
+    } else if (type === COMMENT_SORTING_TYPE_TOP) {
+      return b.likeCount - a.likeCount
+    }
+    return a.createdAt - b.createdAt
+  })
+
+  let newReplyIds = ImmutableList()
+  for (let i = 0; i < statusList.length; i++) {
+    const block = statusList[i];
+    newReplyIds = newReplyIds.set(i, block.id)   
   }
 
-  return replyIds
+  return newReplyIds
 }
 
 const getDescendants = (state, status, highlightStatusId, commentSortingType) => {
@@ -107,7 +109,7 @@ const getDescendants = (state, status, highlightStatusId, commentSortingType) =>
         }))
       }
 
-      if (replies) {
+      if (!!replies) {
         indent++
         indent = Math.min(MAX_INDENT, indent)
 
@@ -142,30 +144,30 @@ const makeMapStateToProps = () => {
     let fetchedContext = false
     let descendantsIds = ImmutableList()
     let ancestorStatus
-    
+
     //
 
     if (status && status.get('in_reply_to_account_id') && !props.isChild) {
       fetchedContext = true
 
       let inReplyTos = state.getIn(['contexts', 'inReplyTos'])
-      
       let ancestorsIds = ImmutableList()
       ancestorsIds = ancestorsIds.withMutations(mutable => {
         let id = statusId;
-  
         while (id) {
           mutable.unshift(id)
           id = inReplyTos.get(id)
         }
       })
-  
+
       const ancestorStatusId = ancestorsIds.get(0)
       if (ancestorStatusId !== statusId) {
         ancestorStatus = getStatus(state, {
           id: ancestorStatusId,
         })
-        if (!!ancestorStatus) descendantsIds = getDescendants(state, ancestorStatus, statusId)
+        if (!!ancestorStatus) {
+          descendantsIds = getDescendants(state, ancestorStatus, statusId)
+        }
       }
     }
 
@@ -176,11 +178,13 @@ const makeMapStateToProps = () => {
     }
 
     const isComment = !!status ? !!status.get('in_reply_to_id') : false
+    const loadedDirectDescendants = !!ancestorStatus ? state.getIn(['contexts', 'replies', ancestorStatus.get('id')]) : state.getIn(['contexts', 'replies', statusId])
 
     return {
       status,
       ancestorStatus,
       descendantsIds,
+      loadedDirectDescendantsCount: !!loadedDirectDescendants ? loadedDirectDescendants.size : 0,
       isComment,
       commentSortingType,
       isComposeModalOpen: state.getIn(['modal', 'modalType']) === 'COMPOSE',
@@ -330,10 +334,11 @@ const mapDispatchToProps = (dispatch) => ({
     }))
   },
 
-  onCommentSortOpen(targetRef, callback) {
+  onCommentSortOpen(targetRef, statusId, callback) {
     dispatch(openPopover(POPOVER_COMMENT_SORTING_OPTIONS, {
       targetRef,
       callback,
+      statusId,
       position: 'top',
     }))
   },
@@ -344,6 +349,10 @@ const mapDispatchToProps = (dispatch) => ({
 
   onOpenStatusModal(statusId) {
     dispatch(openModal(MODAL_STATUS, { statusId }))
+  },
+
+  onExpandComments(statusId) {
+    dispatch(fetchComments(statusId))
   },
 
 });

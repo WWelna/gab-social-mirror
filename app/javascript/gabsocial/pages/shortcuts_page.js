@@ -10,6 +10,7 @@ import {
   LinkFooter,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class ShortcutsPage extends React.PureComponent {
@@ -35,6 +36,7 @@ class ShortcutsPage extends React.PureComponent {
           },
         ]}
         layout={[
+          GabAdPanel,
           TrendsBreakingPanel,
           UserSuggestionsPanel,
           LinkFooter,

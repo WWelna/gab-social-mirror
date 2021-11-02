@@ -18,7 +18,7 @@ class Api::V1::Timelines::GroupPinsController < Api::BaseController
   private
 
   def set_group
-    @group = Group.where(id: params[:id], is_archived: false).first
+    @group = Group.find_by!(id: params[:id], is_archived: false)
   end
 
   def set_statuses

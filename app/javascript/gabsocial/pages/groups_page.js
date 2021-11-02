@@ -11,6 +11,7 @@ import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import {
   GroupsPanel,
   LinkFooter,
+  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class GroupsPage extends React.PureComponent {
@@ -38,10 +39,6 @@ class GroupsPage extends React.PureComponent {
         to: '/groups/browse/featured',
       },
       {
-        title: intl.formatMessage(messages.new),
-        to: '/groups/browse/new',
-      },
-      {
         title: intl.formatMessage(messages.categories),
         to: '/groups/browse/categories',
       },
@@ -53,7 +50,9 @@ class GroupsPage extends React.PureComponent {
 
     const title = intl.formatMessage(messages.groups)
 
-    const layout = []
+    const layout = [
+      GabAdPanel,
+    ]
     if (!!me) {
       layout.push(<WrappedBundle component={GroupsPanel} componentParams={{ groupType: 'member' }} />)
     }

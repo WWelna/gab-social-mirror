@@ -1,11 +1,12 @@
 import debounce from 'lodash.debounce'
-import api from '../api'
+import api, { getLinks } from '../api'
 import openDB from '../storage/db'
 import { evictStatus } from '../storage/modifier'
 import { deleteFromTimelines } from './timelines'
 import { importFetchedStatus, importFetchedStatuses, importAccount, importStatus } from './importer'
 import { openModal } from './modal'
 import { me } from '../initial_state'
+import { COMMENT_SORTING_TYPE_NEWEST } from '../constants'
 
 export const STATUS_FETCH_REQUEST = 'STATUS_FETCH_REQUEST'
 export const STATUS_FETCH_SUCCESS = 'STATUS_FETCH_SUCCESS'
@@ -29,6 +30,8 @@ export const STATUS_HIDE   = 'STATUS_HIDE'
 export const STATUS_EDIT = 'STATUS_EDIT'
 
 export const UPDATE_STATUS_STATS = 'UPDATE_STATUS_STATS'
+
+export const CLEAR_ALL_COMMENTS = 'CLEAR_ALL_COMMENTS'
 
 /**
  * 
@@ -227,18 +230,23 @@ const fetchContextFail = (id, error) => ({
 /**
  * 
  */
-export const fetchComments = (id) => (dispatch, getState) => {
-  if (!id || !me) return
-  debouncedFetchComments(id, dispatch, getState)
+export const fetchComments = (id, forceNewest) => (dispatch, getState) => {
+  debouncedFetchComments(id, forceNewest, dispatch, getState)
 }
 
-export const debouncedFetchComments = debounce((id, dispatch, getState) => {
-  if (!id) return
+export const debouncedFetchComments = debounce((id, forceNewest, dispatch, getState) => {
+  if (!id || !me) return
+
   dispatch(fetchCommentsRequest(id))
 
-  api(getState).get(`/api/v1/statuses/${id}/comments`).then((response) => {
-    dispatch(importFetchedStatuses(response.data.descendants))
-    dispatch(fetchCommentsSuccess(id, response.data.descendants))
+  const sort = forceNewest ? COMMENT_SORTING_TYPE_NEWEST : getState().getIn(['settings', 'commentSorting'])
+  const fetchNext = getState().getIn(['contexts', 'nexts', id])
+  const url = !!fetchNext ? fetchNext : `/api/v1/comments/${id}?sort_by=${sort}`
+
+  api(getState).get(url).then((response) => {
+    const next = getLinks(response).refs.find(link => link.rel === 'next')
+    dispatch(importFetchedStatuses(response.data))
+    dispatch(fetchCommentsSuccess(id, response.data, next.uri)) 
   }).catch((error) => {
     if (error.response && error.response.status === 404) {
       dispatch(deleteFromTimelines(id))
@@ -246,18 +254,18 @@ export const debouncedFetchComments = debounce((id, dispatch, getState) => {
 
     dispatch(fetchCommentsFail(id, error))
   })
-}, 5000, { leading: true })
-
+}, 650, { leading: true })
 
 const fetchCommentsRequest = (id) => ({
   type: COMMENTS_FETCH_REQUEST,
   id,
 })
 
-const fetchCommentsSuccess = (id, descendants) => ({
+const fetchCommentsSuccess = (id, descendants, next) => ({
   type: COMMENTS_FETCH_SUCCESS,
   id,
   descendants,
+  next,
 })
 
 const fetchCommentsFail = (id, error) => ({
@@ -266,6 +274,16 @@ const fetchCommentsFail = (id, error) => ({
   error,
   skipAlert: true,
 })
+
+// clearAllComments
+export const clearAllComments = (id) => (dispatch) => {
+  if (!id) return
+
+  dispatch({
+    type: CLEAR_ALL_COMMENTS,
+    id,
+  })
+}
 
 /**
  * 

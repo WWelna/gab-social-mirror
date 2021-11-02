@@ -1,9 +1,4 @@
-import {
-  Map as ImmutableMap,
-  List as ImmutableList,
-  fromJS,
-} from 'immutable'
-import { me } from '../initial_state'
+import { Map as ImmutableMap, fromJS } from 'immutable'
 import {
   CHAT_MESSAGES_SEND_SUCCESS,
   CHAT_MESSAGES_DELETE_REQUEST,
@@ -22,7 +17,15 @@ import {
   SET_CHAT_CONVERSATION_EXPIRATION_SUCCESS,
   CHAT_CONVERSATION_APPROVED_SEARCH_FETCH_SUCCESS,
   CHAT_CONVERSATION_HIDE_FETCH,
+  CHAT_CONVERSATION_FETCH_SUCCESS,
 } from '../actions/chat_conversations'
+import {
+  MUTE_CHAT_CONVERSATION_SUCCESS,
+  UNMUTE_CHAT_CONVERSATION_SUCCESS,
+  PIN_CHAT_CONVERSATION_SUCCESS,
+  UNPIN_CHAT_CONVERSATION_SUCCESS,
+  LEAVE_GROUP_CHAT_CONVERSATION_SUCCESS,
+} from '../actions/chat_conversation_accounts'
 
 const initialState = ImmutableMap()
 
@@ -42,7 +45,7 @@ const importChatConversation = (state, chatConversation) => state.set(chatConver
 
 const importChatConversations = (state, chatConversations) => {
   if (!Array.isArray(chatConversations)) return state
-  
+
   return state.withMutations((mutable) => chatConversations.forEach((chatConversation) => importChatConversation(mutable, chatConversation)))
 }
 
@@ -67,7 +70,13 @@ export default function chat_conversations(state = initialState, action) {
   case CHAT_MESSAGES_PURGE_REQUEST:
     // : todo :
     return state
+  case CHAT_CONVERSATION_FETCH_SUCCESS:
+  case MUTE_CHAT_CONVERSATION_SUCCESS:
+  case UNMUTE_CHAT_CONVERSATION_SUCCESS:
+  case PIN_CHAT_CONVERSATION_SUCCESS:
+  case UNPIN_CHAT_CONVERSATION_SUCCESS:
   case CHAT_CONVERSATION_MARK_READ_SUCCESS:
+  case LEAVE_GROUP_CHAT_CONVERSATION_SUCCESS:
     return importChatConversation(state, action.chatConversation)
   default:
     return state
