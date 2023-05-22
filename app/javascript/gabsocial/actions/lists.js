@@ -1,5 +1,5 @@
 import api from '../api'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import { importFetchedAccounts } from './importer'
 import { List as ImmutableList } from 'immutable'
 import { resetListEditor } from './list_editor'
@@ -49,9 +49,9 @@ export const LIST_SUBSCRIBE_REQUEST = 'LIST_SUBSCRIBE_REQUEST'
 export const LIST_SUBSCRIBE_SUCCESS = 'LIST_SUBSCRIBE_SUCCESS'
 export const LIST_SUBSCRIBE_FAIL    = 'LIST_SUBSCRIBE_FAIL'
 
-export const LIST_UNSUBSCRIBE_REQUEST = 'LIST_SUBSCRIBE_REQUEST'
-export const LIST_UNSUBSCRIBE_SUCCESS = 'LIST_SUBSCRIBE_SUCCESS'
-export const LIST_UNSUBSCRIBE_FAIL    = 'LIST_SUBSCRIBE_FAIL'
+export const LIST_UNSUBSCRIBE_REQUEST = 'LIST_UNSUBSCRIBE_REQUEST'
+export const LIST_UNSUBSCRIBE_SUCCESS = 'LIST_UNSUBSCRIBE_SUCCESS'
+export const LIST_UNSUBSCRIBE_FAIL    = 'LIST_UNSUBSCRIBE_FAIL'
 
 export const LIST_RELATIONSHIPS_FETCH_REQUEST = 'LIST_RELATIONSHIPS_FETCH_REQUEST'
 export const LIST_RELATIONSHIPS_FETCH_SUCCESS = 'LIST_RELATIONSHIPS_FETCH_SUCCESS'
@@ -244,7 +244,9 @@ export const addToList = (listId, accountId) => (dispatch, getState) => {
   dispatch(addToListRequest(listId, accountId))
 
   api(getState).post(`/api/v1/lists/${listId}/accounts`, { account_id: accountId })
-    .then(() => dispatch(addToListSuccess(listId, accountId)))
+    .then(({data}) => {
+      dispatch(addToListSuccess(listId, accountId, data.member_count))
+    })
     .catch((err) => dispatch(addToListFail(listId, accountId, err)))
 }
 
@@ -254,11 +256,12 @@ const addToListRequest = (listId, accountId) => ({
   accountId,
 })
 
-const addToListSuccess = (listId, accountId) => ({
+const addToListSuccess = (listId, accountId, memberCount) => ({
   type: LIST_EDITOR_ADD_SUCCESS,
   showToast: true,
   listId,
   accountId,
+  memberCount,
 })
 
 const addToListFail = (listId, accountId, error) => ({
@@ -278,7 +281,9 @@ export const removeFromList = (listId, accountId) => (dispatch, getState) => {
   dispatch(removeFromListRequest(listId, accountId))
 
   api(getState).delete(`/api/v1/lists/${listId}/accounts`, { params: { account_id: accountId } })
-    .then(() => dispatch(removeFromListSuccess(listId, accountId)))
+    .then(({data}) => {
+      dispatch(removeFromListSuccess(listId, accountId, data.member_count))
+    })
     .catch((err) => dispatch(removeFromListFail(listId, accountId, err)))
 }
 
@@ -288,11 +293,12 @@ const removeFromListRequest = (listId, accountId) => ({
   accountId,
 })
 
-const removeFromListSuccess = (listId, accountId) => ({
+const removeFromListSuccess = (listId, accountId, memberCount) => ({
   type: LIST_EDITOR_REMOVE_SUCCESS,
   showToast: true,
   listId,
   accountId,
+  memberCount,
 })
 
 const removeFromListFail = (listId, accountId, error) => ({
@@ -375,7 +381,7 @@ export const subscribeToList = (listId) => (dispatch, getState) => {
   dispatch(subscribeToListRequest(listId))
 
   api(getState).post(`/api/v1/lists/${listId}/subscribers`)
-    .then(({ data }) => dispatch(subscribeToListSuccess(listId)))
+    .then(({ data }) => dispatch(subscribeToListSuccess(listId, data.subscriber_count)))
     .catch((err) => dispatch(subscribeToListFail(listId, err)))
 }
 
@@ -384,9 +390,10 @@ const subscribeToListRequest = (id) => ({
   id,
 })
 
-const subscribeToListSuccess = (id) => ({
+const subscribeToListSuccess = (id, subscriberCount) => ({
   type: LIST_SUBSCRIBE_SUCCESS,
   showToast: true,
+  subscriberCount,
   id,
 })
 
@@ -401,12 +408,13 @@ const subscribeToListFail = (id, error) => ({
  *
  */
  export const unsubscribeFromList = (listId) => (dispatch, getState) => {
+  console.log("unsubscribeFromList:",listId)
   if (!me) return
 
   dispatch(unsubscribeFromListRequest(listId))
 
   api(getState).delete(`/api/v1/lists/${listId}/subscribers`)
-    .then(({ data }) => dispatch(unsubscribeFromListSuccess(listId)))
+    .then(({ data }) => dispatch(unsubscribeFromListSuccess(listId, data.subscriber_count)))
     .catch((err) => dispatch(unsubscribeFromListFail(listId, err)))
 }
 
@@ -415,9 +423,10 @@ const unsubscribeFromListRequest = (id) => ({
   id,
 })
 
-const unsubscribeFromListSuccess = (id, lists) => ({
+const unsubscribeFromListSuccess = (id, subscriberCount) => ({
   type: LIST_UNSUBSCRIBE_SUCCESS,
   showToast: true,
+  subscriberCount,
   id,
 })
 

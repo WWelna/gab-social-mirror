@@ -63,6 +63,9 @@ class ReactController < ApplicationController
 
   def set_status
     @status = @account.statuses.find(params[:statusId])
+    if (@status.nil? || @status.proper.nil?)
+      raise ActiveRecord::RecordNotFound
+    end
 
     authorize @status, :show?
   rescue GabSocial::NotPermittedError
@@ -76,7 +79,11 @@ class ReactController < ApplicationController
 
   def redirect_to_original
     if @status.reblog?
-      redirect_to ::TagManager.instance.url_for(@status.reblog)
+      if !@status.proper.nil?
+        redirect_to ::TagManager.instance.url_for(@status.reblog)
+      else
+        raise ActiveRecord::RecordNotFound
+      end
     end
   end
 
@@ -119,7 +126,7 @@ class ReactController < ApplicationController
   end
 
   def find_public_route_matches
-    request.path.match(/\A\/(about|news|search|group|groups|explore|feeds|marketplace)/)
+    request.path.match(/\A\/(about|news|search|group|groups|explore|feeds|marketplace|timeline)/)
   end
 
   def set_initial_state_json

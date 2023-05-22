@@ -34,7 +34,7 @@ export const MARKETPLACE_LISTING_CHECK_SAVED_FAIL = 'MARKETPLACE_LISTING_CHECK_S
 
   dispatch(fetchMarketplaceListingSavesRequest())
 
-  api(getState).get(`/api/v1/accounts/${me}/marketplace_listing_saves`).then(response => {
+  api(getState).get(`/api/v1/marketplace_listing_saves`).then(response => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     dispatch(importFetchedMarketplaceListings(response.data))
     dispatch(fetchMarketplaceListingSavesSuccess(response.data, next ? next.uri : null))

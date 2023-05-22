@@ -13,6 +13,10 @@ export const SHORTCUTS_REMOVE_REQUEST = 'SHORTCUTS_REMOVE_REQUEST'
 export const SHORTCUTS_REMOVE_SUCCESS = 'SHORTCUTS_REMOVE_SUCCESS'
 export const SHORTCUTS_REMOVE_FAIL    = 'SHORTCUTS_REMOVE_FAIL'
 
+export const SHORTCUTS_CLEAR_COUNT_REQUEST = 'SHORTCUTS_CLEAR_COUNT_REQUEST'
+export const SHORTCUTS_CLEAR_COUNT_SUCCESS = 'SHORTCUTS_CLEAR_COUNT_SUCCESS'
+export const SHORTCUTS_CLEAR_COUNT_FAIL    = 'SHORTCUTS_CLEAR_COUNT_FAIL'
+
 /**
  * 
  */
@@ -118,3 +122,54 @@ const removeShortcutsFail = (error) => ({
   showToast: true,
   error,
 })
+
+/**
+ * 
+ */
+ export const clearShortcutCount = (shortcutObjectId) => (dispatch, getState) => {
+  if (!me || !shortcutObjectId) return
+
+  dispatch(clearShortcutCountRequest(shortcutObjectId))
+
+  api(getState).post(`/api/v1/shortcuts/${shortcutObjectId}/clear_count`).then(() => {
+    dispatch(clearShortcutCountSuccess())
+  }).catch(() => dispatch(clearShortcutCountFail()))
+}
+
+const clearShortcutCountRequest = (shortcutId) => ({
+  type: SHORTCUTS_CLEAR_COUNT_REQUEST,
+  shortcutId,
+})
+
+const clearShortcutCountSuccess = () => ({
+  type: SHORTCUTS_CLEAR_COUNT_SUCCESS,
+})
+
+const clearShortcutCountFail = () => ({
+  type: SHORTCUTS_CLEAR_COUNT_FAIL,
+})
+
+// 
+export const clearShortcutCountByTimelineId = (timelineId) => (dispatch, getState) => {
+  if (!me || !timelineId) return
+
+  // destructure
+  const splits = timelineId.toLowerCase().split(':')
+  if (!Array.isArray(splits) || splits.length !== 2) return
+  
+  let entityType = splits[0]
+  const entityId = splits[1]
+
+  // name correction
+  if (entityType === 'hashtag') entityType = 'tag'
+
+  const shortcuts = getState().getIn(['shortcuts', 'items'])
+  const foundShortcut = shortcuts.find((s) => {
+    return `${s.get('shortcut_id')}`.toLowerCase() == entityId && s.get('shortcut_type').toLowerCase() === entityType
+  })
+
+  // clear if found and has unread_count
+  if (foundShortcut && foundShortcut.get('unread_count') > 0) {
+    dispatch(clearShortcutCount(foundShortcut.get('id')))
+  } 
+}

@@ -197,6 +197,13 @@ class StatusContent extends ImmutablePureComponent {
 
     if (status.get('content').length === 0) return null
 
+    const directReplyCount = status.get('direct_replies_count')
+    const replyCount = status.get('replies_count') || directReplyCount
+    const repostCount = status.get('reblogs_count')
+    const favoriteCount = status.get('favourites_count')
+    const quotesCount = status.get('quotes_count')
+    const hasInteractions = favoriteCount > 0 || replyCount > 0 || repostCount > 0 || quotesCount > 0
+
     const hidden = this.props.onExpandedToggle ? !this.props.expanded : this.state.hidden
 
     const content = { __html: this.getHtmlContent() }
@@ -254,7 +261,6 @@ class StatusContent extends ImmutablePureComponent {
 
       return (
         <div
-          className={[].join(' ')}
           ref={this.setRef}
           tabIndex='0'
           className={containerClasses}
@@ -310,6 +316,7 @@ class StatusContent extends ImmutablePureComponent {
         h122PX: collapsed && isComment,
         overflowHidden: collapsed,
         mt5: isComment,
+        mt10: !hasInteractions && !isComment,
       })
 
       return (

@@ -339,7 +339,7 @@ class AutosuggestTextbox extends ImmutablePureComponent {
               onPaste={this.props.onPaste}
               aria-autocomplete="list"
             />
-            {!isModalOpen && (
+            {(!isModalOpen && !text) && (
               <Icon
                 id="pencil"
                 className={[

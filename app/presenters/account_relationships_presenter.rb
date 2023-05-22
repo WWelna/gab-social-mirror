@@ -9,25 +9,36 @@ class AccountRelationshipsPresenter
     @account_ids        = account_ids.map { |a| a.is_a?(Account) ? a.id : a }
     @current_account_id = current_account_id
 
-    @following       = cached[:following].merge(Account.following_map(@uncached_account_ids, @current_account_id))
-    @followed_by     = cached[:followed_by].merge(Account.followed_by_map(@uncached_account_ids, @current_account_id))
-    @blocking        = cached[:blocking].merge(Account.blocking_map(@uncached_account_ids, @current_account_id))
-    @blocked_by      = cached[:blocked_by].merge(Account.blocked_by_map(@uncached_account_ids, @current_account_id))
-    @chat_blocking   = cached[:chat_blocking].merge(Account.chat_blocking_map(@uncached_account_ids, @current_account_id))
-    # @chat_blocked_by = cached[:chat_blocked_by].merge(Account.chat_blocked_by_map(@uncached_account_ids, @current_account_id))
-    @muting          = cached[:muting].merge(Account.muting_map(@uncached_account_ids, @current_account_id))
-    @requested       = cached[:requested].merge(Account.requested_map(@uncached_account_ids, @current_account_id))
+    if (@current_account_id.nil? || @account_ids.empty?)
+      @following = {}
+      @followed_by = {}
+      @blocking = {}
+      @blocked_by = {}
+      @muting = {}
+      @requested = {}
+      @chat_blocking = {}
+    else
+      @following       = cached[:following].merge(Account.following_map(@uncached_account_ids, @current_account_id))
+      @followed_by     = cached[:followed_by].merge(Account.followed_by_map(@uncached_account_ids, @current_account_id))
+      @blocking        = cached[:blocking].merge(Account.blocking_map(@uncached_account_ids, @current_account_id))
+      @blocked_by      = cached[:blocked_by].merge(Account.blocked_by_map(@uncached_account_ids, @current_account_id))
+      @chat_blocking   = cached[:chat_blocking].merge(Account.chat_blocking_map(@uncached_account_ids, @current_account_id))
+      # @chat_blocked_by = cached[:chat_blocked_by].merge(Account.chat_blocked_by_map(@uncached_account_ids, @current_account_id))
+      @muting          = cached[:muting].merge(Account.muting_map(@uncached_account_ids, @current_account_id))
+      @requested       = cached[:requested].merge(Account.requested_map(@uncached_account_ids, @current_account_id))
 
-    cache_uncached!
+      cache_uncached!
 
-    @following.merge!(options[:following_map] || {})
-    @followed_by.merge!(options[:followed_by_map] || {})
-    @blocking.merge!(options[:blocking_map] || {})
-    @blocked_by.merge!(options[:blocked_by_map] || {})
-    @chat_blocking.merge!(options[:chat_blocking_map] || {})
-    # @chat_blocked_by.merge!(options[:chat_blocked_by_map] || {})
-    @muting.merge!(options[:muting_map] || {})
-    @requested.merge!(options[:requested_map] || {})
+      @following.merge!(options[:following_map] || {})
+      @followed_by.merge!(options[:followed_by_map] || {})
+      @blocking.merge!(options[:blocking_map] || {})
+      @blocked_by.merge!(options[:blocked_by_map] || {})
+      @chat_blocking.merge!(options[:chat_blocking_map] || {})
+      # @chat_blocked_by.merge!(options[:chat_blocked_by_map] || {})
+      @muting.merge!(options[:muting_map] || {})
+      @requested.merge!(options[:requested_map] || {}) 
+    end
+
   end
 
   private

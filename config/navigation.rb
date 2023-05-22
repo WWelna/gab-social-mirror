@@ -58,6 +58,7 @@ SimpleNavigation::Configuration.run do |navigation|
       s.item :group_categories, safe_join([fa_icon('users fw'), t('group_categories.title')]), admin_group_categories_url, if: -> { current_user.admin? }
       s.item :marketplace_listing_categories, safe_join([fa_icon('bars fw'), 'Marketplace Categories']), admin_marketplace_listing_categories_url, if: -> { current_user.admin? }
       s.item :reaction_types, safe_join([fa_icon('thumbs-up fw'), 'Reaction Types']), admin_reaction_types_url, if: -> { current_user.admin? }
+      s.item :status_contexts, safe_join([fa_icon('smile-o fw'), 'Contexts']), admin_status_contexts_url, if: -> { current_user.admin? }
     end
 
     n.item :logout, safe_join([fa_icon('sign-out fw'), t('auth.logout')]), destroy_user_session_url, link_html: { 'data-method' => 'delete' }

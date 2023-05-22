@@ -7,16 +7,7 @@ import Button from '../button'
 import Text from '../text'
 
 class ProUpgradeInjection extends React.PureComponent {
-
-  deferredPrompt = null
-
-  componentDidMount() {
-    
-  }
-
-  handleOnClick = () => {
-   
-  }
+  handleOnClick = () => {}
 
   render() {
     const { isPro } = this.props
@@ -25,29 +16,54 @@ class ProUpgradeInjection extends React.PureComponent {
 
     return (
       <div className={[_s.d, _s.w100PC, _s.px15, _s.mb15].join(' ')}>
-        <div className={[_s.d, _s.w100PC, _s.py15, _s.px10, _s.boxShadowBlock, _s.radiusSmall, _s.bgPrimary].join(' ')}>
+        <div
+          className={[
+            _s.d,
+            _s.w100PC,
+            _s.py15,
+            _s.px10,
+            _s.boxShadowBlock,
+            _s.radiusSmall,
+            _s.bgPrimary
+          ].join(' ')}
+        >
           <div className={[_s.d, _s.py15, _s.px10].join(' ')}>
-            <Text size='extraLarge' align='center' weight='bold' className={_s.mb15}>
+            <Text
+              size="extraLarge"
+              align="center"
+              weight="bold"
+              className={_s.mb15}
+            >
               Upgrade to GabPRO
             </Text>
-            <Text size='large' color='secondary' align='center'>
-              Please consider supporting us on our mission to defend free expression online for all people.
+            <Text size="large" color="secondary" align="center">
+              Please consider supporting us on our mission to defend free
+              expression online for all people.
             </Text>
           </div>
 
-          <div className={[_s.d, _s.mt10, _s.mb5, _s.flexRow, _s.mlAuto, _s.mrAuto].join(' ')}>
+          <div
+            className={[
+              _s.d,
+              _s.mt10,
+              _s.mb5,
+              _s.flexRow,
+              _s.mlAuto,
+              _s.mrAuto
+            ].join(' ')}
+          >
             <Button
-              backgroundColor='secondary'
-              color='secondary'
+              backgroundColor="secondary"
+              color="secondary"
               onClick={this.handleOnClick}
               className={_s.mr10}
             >
-              <Text color='inherit' className={_s.px5}>
+              <Text color="inherit" className={_s.px5}>
                 Not now
               </Text>
             </Button>
             <Button href={URL_GAB_PRO}>
-              <Text color='inherit' weight='medium' className={_s.px15}>
+              <Text color="inherit" weight="medium" className={_s.px15}>
                 Learn More
               </Text>
             </Button>
@@ -55,19 +71,17 @@ class ProUpgradeInjection extends React.PureComponent {
         </div>
       </div>
     )
-
   }
-
 }
 
-const mapStateToProps = (state) => ({
-  isPro: state.getIn(['accounts', me, 'is_pro']),
+const mapStateToProps = state => ({
+  isPro: state.getIn(['accounts', me, 'is_pro'])
 })
 
 ProUpgradeInjection.propTypes = {
-  isPro: PropTypes.bool.isRequired,
+  isPro: PropTypes.bool,
   injectionId: PropTypes.string,
-  isXS: PropTypes.bool,
+  isXS: PropTypes.bool
 }
 
 export default connect(mapStateToProps)(ProUpgradeInjection)

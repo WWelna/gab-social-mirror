@@ -12,7 +12,7 @@ class CreateMarketplaceListingService < BaseService
     validate_attributes!
     validate_links! unless @account.user&.staff?
     validate_media!
-    validate_user_confirmation!
+    validate_user_confirmation! unless !@existing_marketplace_listing.nil? || @account.user&.staff?
 
     process_marketplace_listing!
 
@@ -27,7 +27,7 @@ class CreateMarketplaceListingService < BaseService
 
   def validate_status!
     # if not editing, return
-    return if @existing_marketplace_listing.nil?
+    return true if @existing_marketplace_listing.nil?
 
     # can NOT edit if status is sold, archived, expired, rejected
     if @existing_marketplace_listing.status.to_sym == :sold

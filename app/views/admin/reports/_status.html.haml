@@ -1,4 +1,4 @@
-- return nil if status.marked_for_destruction? || status.marked_for_mass_destruction?
+- return nil if status.marked_for_destruction? || status.marked_for_mass_destruction? || status.proper.nil?
 
 .batch-table__row{style:'overflow:hidden;'}
   %label.batch-table__row__select.batch-checkbox
@@ -22,13 +22,13 @@
             %span{style:'display:flex;border:1px solid #6C6C6C;border-radius:8px;line-height:1.5em;padding:2px 10px;flex-grow:1;'}
               %span= key
 
-    - if !status.proper.media_attachments.empty?
-      - if status.proper.media_attachments.first.video?
-        - video = status.proper.media_attachments.first
-        %div{style:'height: 400px;'}
-          = react_component :video, src: video.file.url(:playable), preview: video.file.url(:small), sensitive: !current_account&.user&.show_all_media? && status.proper.sensitive? || current_account&.user&.hide_all_media?, width: '100%', height: '100%', inline: true, alt: video.description
-      - else
-        = react_component :media_gallery, height: 343, sensitive: !current_account&.user&.show_all_media? && status.sensitive? || current_account&.user&.hide_all_media?, 'autoPlayGif': current_account&.user&.setting_auto_play_gif, media: status.proper.media_attachments.map { |a| ActiveModelSerializers::SerializableResource.new(a, serializer: REST::MediaAttachmentSerializer).as_json }
+    - if !status.proper.media_attachments.empty?          
+      %div{style:'display:flex;flex-direction:row;flex-wrap:wrap;width:100%'}
+        - status.proper.media_attachments.map do |attachment|
+          - if attachment.type == "video" || attachment.type == "gifv"
+            %video{src: attachment.file.url(:playable), controls: true, width: '355px', height: '200px', alt: attachment.description, style:'margin-right:2px;margin-bottom:2px;'}
+          - else
+            %img{src: attachment.file.url(:small), width: 'auto', height: '200px', alt: attachment.description, style:'max-width:500px;object-fit:cover;margin-right:2px;margin-bottom:2px;'}
 
     .detailed-status__meta{style:'display:flex;flex-direction:row;flex-wrap:wrap;color:#757575;'}
       %div{style:'display:flex;flex-direction:row;color:#757575;margin-right:auto;padding-right:10px;'}

@@ -5,6 +5,10 @@ import {
   LISTS_FETCH_SUCCESS,
   LISTS_FETCH_REQUEST,
   LIST_ACCOUNTS_MEMBER_LEAVE_SUCCESS,
+  LIST_EDITOR_ADD_SUCCESS,
+  LIST_EDITOR_REMOVE_SUCCESS,
+  LIST_SUBSCRIBE_SUCCESS,
+  LIST_UNSUBSCRIBE_SUCCESS,
 } from '../actions/lists'
 import {
   LISTS_IMPORT,
@@ -48,6 +52,12 @@ export default function lists(state = initialState, action) {
       const curCount = map.get('memberCount')
       map.set('memberCount', Math.max(curCount - 1, 0))
     })
+  case LIST_SUBSCRIBE_SUCCESS:
+  case LIST_UNSUBSCRIBE_SUCCESS:
+    return state.setIn(['items', action.id, 'subscriber_count'], action.subscriberCount)
+  case LIST_EDITOR_ADD_SUCCESS:
+  case LIST_EDITOR_REMOVE_SUCCESS:
+    return state.setIn(['items', action.listId, 'member_count'], action.memberCount)
   default:
     return state;
   }

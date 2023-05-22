@@ -37,6 +37,7 @@ class UserSettingsDecorator
     user.settings['group_in_home_feed']  = group_in_home_feed_preference if change?('setting_group_in_home_feed')
     user.settings['show_pro_life']       = show_pro_life_preference if change?('setting_show_pro_life')
     user.settings['remote_rss_feed']     = Addressable::URI.parse(remote_rss_feed_entry).to_s if actually_changed?('setting_remote_rss_feed')
+    user.settings['telegram_channel']    = Addressable::URI.parse(telegram_channel_entry).to_s if actually_changed?('setting_telegram_channel')
   end
 
   def merged_notification_emails
@@ -71,6 +72,10 @@ class UserSettingsDecorator
     boolean_cast_setting 'setting_show_videos'
   end
 
+  def show_voice_rooms_preference
+    boolean_cast_setting 'setting_show_voice_rooms'
+  end
+
   def show_suggested_users_preference
     boolean_cast_setting 'setting_show_suggested_users'
   end
@@ -102,6 +107,12 @@ class UserSettingsDecorator
   def remote_rss_feed_entry
     if user.account.vpdi? && settings['setting_remote_rss_feed'].starts_with?('http')
       settings['setting_remote_rss_feed'].downcase
+    end
+  end
+
+  def telegram_channel_entry
+    if user.account.vpdi? && settings['setting_telegram_channel'].starts_with?('http')
+      settings['setting_telegram_channel'].downcase
     end
   end
 

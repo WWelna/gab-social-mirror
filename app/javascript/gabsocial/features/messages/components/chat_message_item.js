@@ -13,9 +13,10 @@ import {
   showChatMessageAnyways,
 } from '../../../actions/chat_messages'
 import {
+  BREAKPOINT_SMALL,
   CX,
   POPOVER_CHAT_MESSAGE_OPTIONS,
- } from '../../../constants'
+} from '../../../constants'
 import { me } from '../../../initial_state'
 import Icon from '../../../components/icon'
 import Avatar from '../../../components/avatar'
@@ -24,14 +25,18 @@ import Text from '../../../components/text'
 import DotTextSeperator from '../../../components/dot_text_seperator'
 import SensitiveMediaItem from '../../../components/sensitive_media_item'
 import { makeGetChatMessage } from '../../../selectors'
+import MediaGallery from '../../../components/media_gallery'
+import StatusCard from '../../../components/status_card'
+import { openModal } from '../../../actions/modal'
 
 class ChatMessageItem extends ImmutablePureComponent {
 
   state = {
-    hovering: false,
+    isHovering: false,
     isNewDay: false,
     isCloseToMyLast: false,
     isExpired: false,
+    showMediaAnyways: false,
   }
 
   componentDidMount() {
@@ -87,6 +92,10 @@ class ChatMessageItem extends ImmutablePureComponent {
     this.props.onShowChatMessageAnyways(this.props.chatMessageId)
   }
 
+  handleOnShowMediaAnyways = () => {
+    this.setState({ showMediaAnyways: true })
+  }
+
   setDeleteBtnRef = (c) => {
     this.deleteBtnRef = c
   }
@@ -96,12 +105,16 @@ class ChatMessageItem extends ImmutablePureComponent {
       chatMessage,
       isHidden,
       lastChatMessageDate,
+      isSmall,
+      isRequest,
+      onOpenMedia,
     } = this.props
     const {
       isCloseToMyLast,
       isHovering,
       isNewDay,
       isExpired,
+      showMediaAnyways,
     } = this.state
 
     if (!chatMessage || isExpired) return <div />
@@ -119,8 +132,15 @@ class ChatMessageItem extends ImmutablePureComponent {
     const csd = canShowChatMessage(chatMessage)
 
     const content = { __html: chatMessage.get('text_html') }
+    const hasContent = !!chatMessage.get('text') && chatMessage.get('text').length > 0
     const alt = account.get('id', null) === me
     const createdAt = chatMessage.get('created_at')
+    const hasMedia = chatMessage.get('media_attachments').size > 0
+    const hasManyMedia = chatMessage.get('media_attachments').size > 1
+    const card = chatMessage.get('card')
+    const avatarSize = isSmall ? 26 : 38
+    const showWarning = !!csd.label && !csd.nulled
+    const blurhashOnly = isRequest && !showMediaAnyways
 
     if (isHidden) {
       return (
@@ -140,9 +160,10 @@ class ChatMessageItem extends ImmutablePureComponent {
 
     const messageInnerContainerClasses = CX({
       d: 1,
-      px15: !csd.label,
-      py5: !csd.label,
       maxW80PC: 1,
+      w50PC: hasMedia && !hasManyMedia && !isSmall && !showWarning,
+      w75PC: ((hasMedia && hasManyMedia) || !!card) && !isSmall && !showWarning,
+      w80PC: hasMedia && isSmall && !showWarning,
       bgTertiary: alt || csd.nulled || !!csd.label,
       bgSecondary: !alt && !csd.nulled && !csd.label,
       radiusRounded: 1,
@@ -163,10 +184,18 @@ class ChatMessageItem extends ImmutablePureComponent {
       pr50: alt,
     })
 
+    const isMultiline = false
     const buttonContainerClasses = CX({
       d: 1,
-      flexRow: 1,
+      flexRow: isMultiline,
       displayNone: !isHovering,
+    })
+
+    const blurClass = blurhashOnly ? _s.blurImg : undefined
+    const mediaContainerClasses = CX({
+      d: 1,
+      borderBottom1PX: hasContent,
+      borderColorSecondary: hasContent,
     })
 
     const expirationDate = chatMessage.get('expires_at')
@@ -174,6 +203,21 @@ class ChatMessageItem extends ImmutablePureComponent {
     if (!!expirationDate) {
       timeUntilExpiration = moment(expirationDate).fromNow()
     }
+
+    const showMediaBtn = (
+      <div className={[_s.d, _s.posAbs, _s.top0, _s.left0, _s.right0, _s.bottom0, _s.aiCenter, _s.jcCenter, _s.bgPrimaryOpaque].join(' ')}>
+        <Button
+          onClick={this.handleOnShowMediaAnyways}
+          color='white'
+          backgroundColor='black'
+          className={_s.bgSecondaryDark_onHover}
+        >
+          <Text color='inherit' weight='bold' size='medium'>
+            Show media
+          </Text>
+        </Button>
+      </div>
+    )
 
     return (
       <div
@@ -191,8 +235,8 @@ class ChatMessageItem extends ImmutablePureComponent {
         <div className={[_s.d, _s.w100PC, _s.pb15].join(' ')}>
 
           <div className={messageContainerClasses}>
-            <NavLink to={`/${chatMessage.getIn(['account', 'username'])}`}>
-              <Avatar account={chatMessage.get('account')} size={38} />
+            <NavLink className={isSmall ? _s.mt5 : undefined} to={`/${account.get('username')}`}>
+              <Avatar account={account} size={avatarSize} isStatic />
             </NavLink>
 
             <div className={messageInnerContainerClasses}>
@@ -203,7 +247,7 @@ class ChatMessageItem extends ImmutablePureComponent {
                 </div>
               }
               {
-                (!!csd.label && !csd.nulled) &&
+                showWarning &&
                 <SensitiveMediaItem
                   noPadding
                   onClick={this.handleOnShowAnyways}
@@ -211,9 +255,40 @@ class ChatMessageItem extends ImmutablePureComponent {
                   btnTitle='View'
                 />
               }
+
               {
-                (!csd.label && !csd.nulled) &&
-                <div className={[_s.py5, _s.dangerousContent, _s.cPrimary].join(' ')} dangerouslySetInnerHTML={content} />
+                (!csd.label && !csd.nulled) && hasMedia &&
+                <div className={[mediaContainerClasses, _s.growOverflow].join(' ')}>
+                  <MediaGallery
+                    onOpenMedia={onOpenMedia}
+                    blurhashOnly={blurhashOnly}
+                    media={chatMessage.get('media_attachments')}
+                  />
+                  {blurhashOnly && showMediaBtn}
+                </div>
+              }
+
+              {
+                (!csd.label && !csd.nulled) && !!card && ! hasMedia &&
+                <div className={mediaContainerClasses}>
+                  <div className={[_s.d, blurClass].join(' ')}>
+                    <StatusCard
+                      key={`${card.get('id')}-status-card`}
+                      blurhashOnly={blurhashOnly}
+                      card={card}
+                      isBorderless
+                      isVertical
+                    />
+                  </div>
+                  {blurhashOnly && showMediaBtn}
+                </div>
+              }
+
+              {
+                (!csd.label && !csd.nulled) && hasContent &&
+                <div className={[_s.d, _s.px15, _s.py5].join(' ')}>
+                  <div className={[_s.py5, _s.dangerousContent, _s.cPrimary].join(' ')} dangerouslySetInnerHTML={content} />
+                </div>
               }
             </div>
             <div className={buttonContainerClasses}>
@@ -252,9 +327,14 @@ const mapStateToProps = (state, { lastChatMessageId, chatMessageId }) => ({
   chatMessage: makeGetChatMessage()(state, { id: chatMessageId }),
   lastChatMessageDate: lastChatMessageId ? state.getIn(['chat_messages', `${lastChatMessageId}`, 'created_at'], null) : null,
   lastChatMessageSameSender: lastChatMessageId ? state.getIn(['chat_messages', `${lastChatMessageId}`, 'from_account_id'], null) === state.getIn(['chat_messages', `${chatMessageId}`, 'from_account_id'], null) : false,
+  isRequest: state.getIn(['chat_conversations', state.getIn(['chat_messages', chatMessageId, 'chat_conversation_id']), 'is_approved']) === false,
+  isSmall: state.getIn(['settings', 'window_dimensions', 'width']) <= BREAKPOINT_SMALL,
 })
 
 const mapDispatchToProps = (dispatch) => ({
+  onOpenMedia(media, index) {
+    dispatch(openModal('MEDIA', { index, media }));
+  },
   onOpenChatMessageOptionsPopover(chatMessageId, targetRef) {
     dispatch(openPopover(POPOVER_CHAT_MESSAGE_OPTIONS, {
       targetRef,
@@ -268,7 +348,6 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 ChatMessageItem.propTypes = {
-  intl: PropTypes.object.isRequired,
   lastChatMessageId: PropTypes.string,
   lastChatMessageDate: PropTypes.string,
   lastChatMessageSameSender: PropTypes.bool,

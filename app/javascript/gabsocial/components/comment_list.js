@@ -17,6 +17,7 @@ class CommentList extends ImmutablePureComponent {
       totalDirectDescendants,
       ancestorStatusId,
       highlightStatusId,
+      isLoading
     } = this.props
 
     const size = loadedDirectDescendantsCount
@@ -36,7 +37,7 @@ class CommentList extends ImmutablePureComponent {
         if (isTopLevelComment) topLevelCommentCount++
 
          // gab ad comment injections
-         if (
+        if (
           isTopLevelComment && // only top level
           (topLevelCommentCount === 3 || // always 3rd slot |OR|
           topLevelCommentCount % 9 === 0) && // then every 9
@@ -73,6 +74,7 @@ class CommentList extends ImmutablePureComponent {
         hasMore={size < max}
         onLoadMore={onViewComments}
         disableInfiniteScrollUntilClicked={!!highlightStatusId}
+        isLoading={isLoading}
       >
         {scrollableContent}
       </ScrollableList>

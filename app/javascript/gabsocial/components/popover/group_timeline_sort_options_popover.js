@@ -3,7 +3,11 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { closePopover } from '../../actions/popover'
 import { timelineSort } from '../../store/timelines'
-import { groupSorts } from '../../constants'
+import {
+  GROUP_SORTS,
+  PRO_POLLS_TIMELINE_SORTS,
+  ACCOUNT_TIMELINE_SORTS,
+} from '../../constants'
 import PopoverLayout from './popover_layout'
 import List from '../list'
 
@@ -15,8 +19,15 @@ function GroupTimelineSortOptionsPopover({
   isXS,
   onSort,
   onClosePopover,
+  timelineId,
 }) {
-  const items = groupSorts.map(function({ key, title, subtitle, hideForFeatured }) {
+  
+  const mapper = 
+    timelineId === 'polls' ? PRO_POLLS_TIMELINE_SORTS :
+    timelineId.startsWith('account:') ? ACCOUNT_TIMELINE_SORTS :
+    GROUP_SORTS
+
+  const items = mapper.map(function({ key, title, subtitle, hideForFeatured }) {
     if (collectionType === 'featured' && hideForFeatured) {
       return false
     }
@@ -28,6 +39,7 @@ function GroupTimelineSortOptionsPopover({
       onClick: () => onSort(key),
     }
   }).filter(Boolean)
+
   return (
     <PopoverLayout
       width={280}

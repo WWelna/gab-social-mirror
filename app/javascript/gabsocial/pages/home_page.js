@@ -1,12 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import throttle from 'lodash.throttle'
+import throttle from 'lodash/throttle'
 import { defineMessages, injectIntl } from 'react-intl'
 import { openModal } from '../actions/modal'
 import {
   MODAL_HOME_TIMELINE_SETTINGS,
   LAZY_LOAD_SCROLL_OFFSET,
+  BREAKPOINT_EXTRA_SMALL,
 } from '../constants'
 import { me } from '../initial_state'
 import PageTitle from '../features/ui/util/page_title'
@@ -26,9 +27,13 @@ import {
   ProPanel,
   ShopPanel,
   ProgressPanel,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 import { supportsPassiveEvents } from 'detect-it'
 import ComposeForm from '../features/compose/components/compose_form'
+import ShortcutsAvatarList from '../components/shortcuts_avatar_list'
+import { isTouch } from '../utils/is_mobile'
 
 class HomePage extends React.PureComponent {
 
@@ -79,12 +84,14 @@ class HomePage extends React.PureComponent {
       showVideos,
       showSuggestedUsers,
       showGroups,
+      isXS,
     } = this.props
     const { lazyLoaded } = this.state
 
     const title = intl.formatMessage(messages.home)
     let sidebarLayout = [
       UserPanel,
+      <WrappedBundle key='home-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'home.sidebar', position: 1 }} />,
       ProgressPanel,
       <WrappedBundle key='home-page-pro-panel' component={ProPanel} componentParams={{ isPro: isPro }} />,
       <WrappedBundle key='home-page-lists-panel' component={ListsPanel} />,
@@ -105,6 +112,7 @@ class HomePage extends React.PureComponent {
     }
 
     sidebarLayout.push(LinkFooter)
+    sidebarLayout.push(<WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />)
 
     return (
       <DefaultLayout
@@ -113,7 +121,7 @@ class HomePage extends React.PureComponent {
         actions={[
           {
             icon: 'tv',
-            href: 'https://tv.gab.com',
+            to: '/timeline/videos',
           },
           {
             icon: 'search',
@@ -144,6 +152,8 @@ class HomePage extends React.PureComponent {
 
         <ComposeForm composerId="home-timeline" />
 
+        {isXS && <ShortcutsAvatarList />}
+
         <WelcomeReminders />
 
         <HomeSortBlock />
@@ -164,6 +174,7 @@ const mapStateToProps = (state) => ({
   unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount'], 0),
   unreadWarningsCount: state.getIn(['warnings', 'unreadCount'], 0),
   isPro: state.getIn(['accounts', me, 'is_pro']),
+  isXS: state.getIn(['settings', 'window_dimensions', 'width']) <= BREAKPOINT_EXTRA_SMALL,
 })
 
 HomePage.propTypes = {

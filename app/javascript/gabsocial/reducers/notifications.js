@@ -6,35 +6,48 @@ import {
   NOTIFICATIONS_FILTER_SET,
   NOTIFICATIONS_CLEAR,
   NOTIFICATIONS_SCROLL_TOP,
-  NOTIFICATIONS_UPDATE_QUEUE,
-  NOTIFICATIONS_DEQUEUE,
-  MAX_QUEUED_NOTIFICATIONS,
   NOTIFICATIONS_MARK_READ,
+  NOTIFICATIONS_INCREMENT_UNREAD
 } from '../actions/notifications'
 import {
   ACCOUNT_BLOCK_SUCCESS,
   ACCOUNT_MUTE_SUCCESS,
 } from '../actions/accounts'
 import { Range, Map as ImmutableMap, List as ImmutableList } from 'immutable'
-import get from 'lodash.get'
+import get from 'lodash/get'
 import { unreadCount } from '../initial_state'
 import compareId from '../utils/compare_id';
+import { parseQuerystring } from '../utils/querystring'
 
 const DEFAULT_NOTIFICATIONS_LIMIT = 20
+let initialFilter = 'all'
+const { pathname } = window.location
+
+if (pathname.startsWith('/notifications')) {
+  const qp = parseQuerystring({ view: '' })
+  if (
+    typeof qp.view === 'string' &&
+    qp.view.length > 0 &&
+    qp.view !== initialFilter
+  ) {
+    initialFilter = qp.view.toLowerCase()
+  }
+  if (pathname.startsWith('/notifications/follow_requests')) {
+    initialFilter = 'follow_requests'
+  }
+}
 
 const initialState = ImmutableMap({
   items: ImmutableList(),
   sortedItems: ImmutableList(),
   lastId: null,
-  hasMore: true,
+  hasMore: false,
   top: false,
   unread: unreadCount || 0,
   isLoading: false,
   isError: false,
-  queuedNotifications: ImmutableList(), //max = MAX_QUEUED_NOTIFICATIONS
-  totalQueuedNotificationsCount: 0, //used for queuedItems overflow for MAX_QUEUED_NOTIFICATIONS+
   filter: ImmutableMap({
-    active: 'all',
+    active: initialFilter,
     onlyVerified: false,
     onlyFollowing: false,
   }),
@@ -47,6 +60,7 @@ const notificationToMap = (notification) => ImmutableMap({
   created_at: notification.created_at,
   reaction_id: notification.favourite && notification.favourite.reaction_id ? notification.favourite.reaction_id : null,
   status: notification.status ? notification.status.id : null,
+  has_quote: get(notification, 'status.has_quote', false),
   group_id: notification.group_moderation_event ? notification.group_moderation_event.group_id : null,
   approved: notification.group_moderation_event ? notification.group_moderation_event.approved : null,
   rejected: notification.group_moderation_event ? notification.group_moderation_event.rejected : null,
@@ -69,9 +83,11 @@ const makeSortedNotifications = (state) => {
     // schema: likes [statusId] [reactionTypeId]
     let likes = {}
     let reposts = {}
+    let quotes = {}
   
     let followIndex = -1
     let indexesForStatusesForReposts = {}
+    let indexesForStatusesForQuotes = {}
     let indexesForStatusesForFavorites = {}
 
     chunk.forEach((notification) => {
@@ -112,17 +128,32 @@ const makeSortedNotifications = (state) => {
             break
           }
           case 'reblog': {
-            if (reposts[statusId] === undefined) {
-              let size = sortedItems.size
-              sortedItems = sortedItems.set(size, ImmutableMap())
-              indexesForStatusesForReposts[statusId] = size
-              reposts[statusId] = []
+            if (notification.get('has_quote')) {
+              if (quotes[statusId] === undefined) {
+                let size = sortedItems.size
+                sortedItems = sortedItems.set(size, ImmutableMap())
+                indexesForStatusesForQuotes[statusId] = size
+                quotes[statusId] = []
+              }
+              quotes[statusId].push({
+                account: notification.get('account'),
+                created_at: notification.get('created_at'),
+                id: notification.get('id'),
+              })
+              break
+            } else {
+              if (reposts[statusId] === undefined) {
+                let size = sortedItems.size
+                sortedItems = sortedItems.set(size, ImmutableMap())
+                indexesForStatusesForReposts[statusId] = size
+                reposts[statusId] = []
+              }
+              reposts[statusId].push({
+                account: notification.get('account'),
+                created_at: notification.get('created_at'),
+                id: notification.get('id'),
+              })
             }
-            reposts[statusId].push({
-              account: notification.get('account'),
-              created_at: notification.get('created_at'),
-              id: notification.get('id'),
-            })
             break
           }
           default: {
@@ -172,6 +203,24 @@ const makeSortedNotifications = (state) => {
             }
           }
         }
+
+        if (Object.keys(quotes).length > 0) {
+          for (const statusId in quotes) {
+            if (quotes.hasOwnProperty(statusId)) {
+              const repostArr = quotes[statusId]
+              const accounts = repostArr.map((l) => l.account)
+              const lastUpdated = repostArr[0]['created_at']
+
+              sortedItems = sortedItems.set(indexesForStatusesForQuotes[statusId], ImmutableMap({
+                quote: ImmutableMap({
+                  accounts,
+                  lastUpdated,
+                  status: statusId,
+                })
+              }))
+            }
+          }
+        }
       }
     })
 
@@ -213,7 +262,10 @@ const expandNormalizedNotifications = (state, action) => {
       })
     }
 
-    if (!next && operation === 'load-next') mutable.set('hasMore', false)
+    if (operation === 'load-next') {
+      mutable.set('hasMore', next && notifications.length > 0)
+    }
+
     mutable.set('isLoading', false)
   })
 
@@ -239,35 +291,6 @@ const deleteByStatus = (state, statusId) => {
   return makeSortedNotifications(state)
 }
 
-const updateNotificationsQueue = (state, notification, intlMessages, intlLocale) => {
-  const queuedNotifications = state.getIn(['queuedNotifications'], ImmutableList());
-  const listedNotifications = state.getIn(['items'], ImmutableList());
-  const totalQueuedNotificationsCount = state.getIn(['totalQueuedNotificationsCount'], 0);
-  const unread = state.getIn(['unread'], 0)
-
-  let alreadyExists = queuedNotifications.find((existingQueuedNotification) => existingQueuedNotification.id === notification.id);
-  if (!alreadyExists) {
-    alreadyExists = listedNotifications.find((existingListedNotification) => existingListedNotification.get('id') === notification.id);
-  }
-  if (alreadyExists) {
-    return state;
-  }
-
-  let newQueuedNotifications = queuedNotifications;
-
-  return state.withMutations(mutable => {
-    if (totalQueuedNotificationsCount <= MAX_QUEUED_NOTIFICATIONS) {
-      mutable.set('queuedNotifications', newQueuedNotifications.push({
-        notification,
-        intlMessages,
-        intlLocale,
-      }));
-    }
-    mutable.set('totalQueuedNotificationsCount', totalQueuedNotificationsCount + 1);
-    mutable.set('unread', unread + 1);
-  });
-};
-
 export default function notifications(state = initialState, action) {
   switch(action.type) {
   case NOTIFICATIONS_EXPAND_REQUEST:
@@ -287,16 +310,8 @@ export default function notifications(state = initialState, action) {
   case NOTIFICATIONS_UPDATE:
     state = state.set('unread', state.get('unread') + 1);
     return normalizeNotification(state, action.notification);
-  case NOTIFICATIONS_UPDATE_QUEUE:
-    return updateNotificationsQueue(state, action.notification, action.intlMessages, action.intlLocale);
   case NOTIFICATIONS_MARK_READ:
-    return state.set('unread', 0);    
-  case NOTIFICATIONS_DEQUEUE:
-    return state.withMutations(mutable => {
-      mutable.set('queuedNotifications', ImmutableList())
-      mutable.set('totalQueuedNotificationsCount', 0)
-      mutable.set('unread', 0)
-    });
+    return state.set('unread', 0);
   case NOTIFICATIONS_EXPAND_SUCCESS:
     return expandNormalizedNotifications(state.set('unread', 0), action);
   case ACCOUNT_BLOCK_SUCCESS:
@@ -308,6 +323,8 @@ export default function notifications(state = initialState, action) {
     return state.withMutations(mutable => {
       mutable.set('unread', 0)
     });
+  case NOTIFICATIONS_INCREMENT_UNREAD:
+    return state.set('unread', state.get('unread') + 1)
   default:
     return state;
   }

@@ -28,6 +28,7 @@ Rails.application.routes.draw do
 
   devise_scope :user do
     match '/auth/finish_signup' => 'auth/confirmations#finish_signup', via: [:get, :patch], as: :finish_signup
+    match '/auth/sign_out' => 'auth/sessions#destroy', via: [:get, :delete]
   end
 
   devise_for :users, path: 'auth', controllers: {
@@ -38,6 +39,8 @@ Rails.application.routes.draw do
   }
 
   get '/:username/avatar', to: 'account_assets#avatar'
+
+  post '/settings/sessions/all', to: 'settings/sessions#all'
 
   namespace :settings do
     resource :profile, only: [:show, :update]
@@ -91,8 +94,6 @@ Rails.application.routes.draw do
     get :player
   end
 
-  get '/media_proxy/:id/(*any)', to: 'media_proxy#show', as: :media_proxy
-
   namespace :admin do
     get '/dashboard', to: 'dashboard#index'
 
@@ -114,6 +115,7 @@ Rails.application.routes.draw do
     resources :reaction_types, only: [:index, :new, :create, :show, :update]
     resources :lists, only: [:index, :show, :create, :edit, :update, :destroy]
     resources :comments, only: [:index, :show, :create, :edit, :update, :destroy]
+    resources :status_contexts, only: [:index, :new, :create, :show, :update]
 
     resources :marketplace_listings, only: [:index, :show, :destroy] do
       member do
@@ -156,6 +158,9 @@ Rails.application.routes.draw do
         post :add_investor_badge
         post :remove_investor_badge
         post :reset_spam
+        post :spam
+        post :reset_parody
+        post :parody
         get :edit_pro
         put :save_pro
       end
@@ -213,6 +218,8 @@ Rails.application.routes.draw do
 
     # JSON / REST API
     namespace :v1 do
+      get '/conversation_owner/:conversation_id', controller: :conversation_owner, action: :show
+      post '/statuses/:id/remove', controller: :statuses, action: :remove
       resources :statuses, only: [:create, :update, :show, :destroy] do
         scope module: :statuses do
           resources :reblogged_by, controller: :reblogged_by_accounts, only: :index
@@ -220,6 +227,7 @@ Rails.application.routes.draw do
           resources :quotes, controller: :quotes, only: :index
           resource :reblog, only: :create
           post :unreblog, to: 'reblogs#destroy'
+          get '/reactions', to: 'favourites#reactions'
 
           resource :favourite, only: :create
           post :unfavourite, to: 'favourites#destroy'
@@ -275,6 +283,8 @@ Rails.application.routes.draw do
         resources :group_pins, only: :show
         resources :preview_card, only: :show
         resource :explore, only: :show, controller: :explore
+        resource :polls, only: :show
+        resources :status_context, only: :show
       end
 
       namespace :comment_timelines do
@@ -349,7 +359,6 @@ Rails.application.routes.draw do
       resources :favourites,   only: [:index]
       resources :reports,      only: [:create]
       resources :filters,      only: [:index, :create, :show, :update, :destroy]
-      resources :shortcuts,    only: [:index, :create, :show, :destroy]
       resources :albums,       only: [:create, :update, :show, :destroy]
       resources :album_lists,  only: [:show]
       resource :expenses,     only: [:show]
@@ -357,9 +366,21 @@ Rails.application.routes.draw do
       resources :blocks_and_mutes, only: [:index]
       resources :marketplace_listing_categories, only: [:index]
       resources :marketplace_listing_search, only: [:index]
+      resources :timeline_presets, only: [:index, :create, :show, :destroy]
+      resources :marketplace_listing_browse, only: [:index]
+      resources :marketplace_listing_saves, only: [:index]
+      resources :status_stats, only: [:show]
+      resources :status_flags, only: [:show]
       resources :comment_stats, only: [:show]
       resources :comment_flags, only: [:show]
+      resource :status_contexts, only: [:show]
 
+      resources :shortcuts, only: [:index, :create, :show, :destroy] do
+        member do
+          post :clear_count
+        end
+      end
+      
       resources :warnings, only: [:index, :show, :destroy] do
         collection do
           get :new_unread_warnings_count
@@ -402,7 +423,6 @@ Rails.application.routes.draw do
         resources :followers, only: :index, controller: 'accounts/follower_accounts'
         resources :following, only: :index, controller: 'accounts/following_accounts'
         resources :lists, only: :index, controller: 'accounts/lists'
-        resources :marketplace_listing_saves, only: :index, controller: 'accounts/marketplace_listing_saves'
         resources :marketplace_listings, only: :index, controller: 'accounts/marketplace_listings'
         resources :media_attachments, only: :index, controller: 'accounts/media_attachments'
         resources :comments, only: :index, controller: 'accounts/comments'
@@ -426,7 +446,7 @@ Rails.application.routes.draw do
         resource :subscribers, only: [:show, :create, :destroy], controller: 'lists/subscribers'
       end
 
-      resources :groups, only: [:index, :create, :show, :update, :destroy] do
+      resources :groups, only: [:index, :create, :show, :update, :destroy, :block, :unblock] do
         member do
           delete '/statuses/:status_id', to: 'groups#destroy_status'
           post '/statuses/:status_id/approve', to: 'groups#approve_status'
@@ -435,6 +455,9 @@ Rails.application.routes.draw do
           get '/removed_accounts_search', to: 'groups#removed_accounts_search'
         end
 
+        post :block, to: 'groups#block'
+        post :unblock, to: 'groups#unblock'
+
         get '/category/:category', to: 'groups#by_category'
         get '/tag/:tag', to: 'groups#by_tag'
 
@@ -442,6 +465,9 @@ Rails.application.routes.draw do
         resource :removed_accounts, only: [:show, :create, :destroy], controller: 'groups/removed_accounts'
         resource :password, only: [:create], controller: 'groups/password'
         resource :join_requests, only: [:show], controller: 'groups/requests'
+        resources :questions, only: [:index, :create, :update, :destroy], controller: 'groups/questions'
+        resources :status_contexts, only: [:index, :show, :create, :update, :destroy], controller: 'groups/status_contexts'
+        resource :rules, only: [:create, :destroy], controller: 'groups/rules'
 
         post '/join_requests/respond', to: 'groups/requests#respond_to_request'
         
@@ -456,6 +482,24 @@ Rails.application.routes.draw do
 
         resource :pin, only: [:show, :create], controller: 'groups/pins'
         post :unpin, to: 'groups/pins#destroy'
+
+        resources :account_badges, only: [:index, :show, :create, :update, :destroy], controller: 'groups/account_badges' do
+          member do
+            post '/assign_badge', to: 'groups/account_badges#assign_badge'
+            post '/unassign_badge', to: 'groups/account_badges#unassign_badge'
+          end
+        end
+        
+        get '/insights/member_growth',   to: 'groups/insights#member_growth'
+        get '/insights/post_engagement', to: 'groups/insights#post_engagement'
+        get '/insights/popular_days',    to: 'groups/insights#popular_days'
+        get '/insights/popular_times',   to: 'groups/insights#popular_times'
+        get '/insights/top_members',     to: 'groups/insights#top_members'
+        get '/insights/removed_members', to: 'groups/insights#removed_members'
+
+        post '/question_answers/answer_all', to: 'groups/question_answers#answer_all'
+        post '/question_answers/account_answers', to: 'groups/question_answers#account_answers'
+  
       end
 
       resources :marketplace_listings, only: [:show, :create, :update, :destroy] do
@@ -489,6 +533,8 @@ Rails.application.routes.draw do
       get '/search', to: 'search#index', as: :search_v3
       get '/me', to: 'me#index', as: :me
       post '/authcode', to: 'authcode#create', as: :authcode
+      get '/voice', to: 'voice#index'
+      post '/telegram', to: 'telegram#create', as: :telegram
     end
 
     namespace :web do

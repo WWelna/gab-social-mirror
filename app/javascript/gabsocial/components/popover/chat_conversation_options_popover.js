@@ -7,6 +7,7 @@ import { closePopover } from '../../actions/popover'
 import { openModal } from '../../actions/modal'
 import { hideChatConversation } from '../../actions/chat_conversations'
 import { setChatConversationSelected } from '../../actions/chats'
+import { initReport } from '../../actions/reports'
 import {
   muteChatConversation,
   unmuteChatConversation,
@@ -15,6 +16,7 @@ import {
   leaveGroupChatConversation,
 } from '../../actions/chat_conversation_accounts'
 import { purgeChatMessages } from '../../actions/chat_messages'
+import { makeGetChatConversation } from '../../selectors'
 import { MODAL_CHAT_CONVERSATION_MEMBERS } from '../../constants'
 import { me } from '../../initial_state'
 import PopoverLayout from './popover_layout'
@@ -50,6 +52,11 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
     this.handleOnClosePopover()
   }
 
+  handleOnReport = (account) => {
+    this.props.onReport(account)
+    this.handleOnClosePopover()
+  }
+
   handleOnLeaveGroupChat = () => {
     this.props.onLeaveGroupChatConversation()
     this.handleOnClosePopover()
@@ -71,7 +78,10 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
       isPinned,
       isChatConversationRequest,
       isGroupChat,
+      chatConversation,
     } = this.props
+
+    const otherAccounts = !!chatConversation ? chatConversation.get('other_accounts') : null
 
     const items = [
       {
@@ -117,6 +127,18 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
         onClick: () => this.handleOnViewMembers(),
       })
     }
+    if (!isGroupChat && otherAccounts && otherAccounts.size === 1) {
+      const otherAccount = otherAccounts.get(0)
+      const amITalkingToMyself = otherAccount.get('id') === me
+      if (!amITalkingToMyself) {
+        items.push({})
+        items.push({
+          hideArrow: true,
+          title: `Report @${otherAccount.get('acct')}`,
+          onClick: () => this.handleOnReport(otherAccount),
+        })
+      }
+    }
 
     return (
       <PopoverLayout
@@ -135,6 +157,7 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state, { chatConversationId }) => ({
+  chatConversation: makeGetChatConversation()(state, { id: chatConversationId }),
   isMuted: state.getIn(['chat_conversations', chatConversationId, 'is_muted']),
   isPinned: state.getIn(['chat_conversations', chatConversationId, 'is_pinned']),
   isGroupChat: state.getIn(['chat_conversations', chatConversationId, 'is_group_chat']),
@@ -170,7 +193,10 @@ const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
     dispatch(openModal(MODAL_CHAT_CONVERSATION_MEMBERS, {
       chatConversationId,
     }))
-  }
+  },
+  onReport(account) {
+    dispatch(initReport(account, null, { noStatuses: true }))
+  },
 })
 
 ChatConversationOptionsPopover.propTypes = {

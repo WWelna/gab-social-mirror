@@ -12,25 +12,34 @@ import {
   POPOVER_NOTIFICATION_SETTINGS,
 } from '../constants'
 import PageTitle from '../features/ui/util/page_title'
+import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import DefaultLayout from '../layouts/default_layout'
 import {
   LinkFooter,
   NotificationFilterPanel,
   UserSuggestionsPanel,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 
 class NotificationsPage extends React.PureComponent {
 
   onChangeActiveFilter(notificationType) {
     this.props.dispatch(setFilter('active', notificationType))
-    
+    let href
+
     if (notificationType === 'all') {
-      this.props.history.push('/notifications')
+      href = '/notifications'
     } else if (notificationType === 'follow_requests') {
-      this.props.history.push(`/notifications/follow_requests`)
+      href = `/notifications/follow_requests`
     } else {
-      this.props.history.push(`/notifications?view=${notificationType}`)
+      href = `/notifications?view=${notificationType}`
     }
+
+    this.props.history.push(href)
+    
+    // otherwise it can stay scrolled down
+    window.scrollTo(0, 0)
   }
 
   handleOnClickSettings = () => {
@@ -52,6 +61,7 @@ class NotificationsPage extends React.PureComponent {
       selectedFilter,
       isXS,
       showSuggestedUsers,
+      isLoading
     } = this.props
 
     let filters = NOTIFICATION_FILTERS
@@ -62,18 +72,22 @@ class NotificationsPage extends React.PureComponent {
     const tabs = filters.map((filter) => ({ 
       title: intl.formatMessage(messages[filter]),
       onClick: () => this.onChangeActiveFilter(filter),
-      active: selectedFilter.toLowerCase() === filter.toLowerCase(),
+      active: selectedFilter.toLowerCase() === filter.toLowerCase()
     }))
 
     const title = intl.formatMessage(messages.notifications)
 
-    let sidebarLayout = [NotificationFilterPanel]
+    let sidebarLayout = [
+      <WrappedBundle key='notifications-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'notifications.sidebar', position: 1 }} />,
+      NotificationFilterPanel,
+    ]
     
     if(showSuggestedUsers) {
       sidebarLayout.push(UserSuggestionsPanel)
     }
 
     sidebarLayout.push(LinkFooter)
+    sidebarLayout.push(<WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />)
 
     return (
       <DefaultLayout
@@ -119,6 +133,7 @@ const mapStateToProps = (state) => ({
   notificationCount: state.getIn(['notifications', 'unread']),
   locked: !!state.getIn(['accounts', me, 'locked']),
   isXS: state.getIn(['settings', 'window_dimensions', 'width']) <= BREAKPOINT_EXTRA_SMALL,
+  isLoading: state.getIn(['notifications', 'isLoading'], false),
 })
 
 NotificationsPage.propTypes = {

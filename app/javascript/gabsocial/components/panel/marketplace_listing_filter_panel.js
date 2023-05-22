@@ -157,6 +157,13 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
     const { isAdvancedOpen } = this.state
     this.setState({ isAdvancedOpen: !isAdvancedOpen })
   }
+  
+  keypress = evt => {
+    if (evt.charCode === 13 || evt.which === 13) {
+      // enter key
+      this.handleOnSubmit(evt)
+    }
+  }
 
   render() {
     const {
@@ -194,6 +201,7 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
             value={query}
             // hasClear
             onChange={this.handleChangeQuery}
+            onKeyPress={this.keypress}
             id='mpl-search'
             hideLabel
             maxLength={120}

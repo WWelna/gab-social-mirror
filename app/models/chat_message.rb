@@ -20,6 +20,9 @@ class ChatMessage < ApplicationRecord
 
   belongs_to :from_account, class_name: 'Account'
   belongs_to :chat_conversation
+  
+  has_and_belongs_to_many :media_attachments
+  has_and_belongs_to_many :preview_cards
 
   validates_with ChatMessageLengthValidator
   validates_with ChatMessageLimitValidator
@@ -33,5 +36,9 @@ class ChatMessage < ApplicationRecord
     return @emojis if defined?(@emojis)
 
     @emojis = CustomEmoji.from_text(text)
+  end
+
+  def preview_card
+    preview_cards.first
   end
 end

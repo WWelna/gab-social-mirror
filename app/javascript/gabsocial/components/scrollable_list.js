@@ -1,7 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import throttle from 'lodash.throttle'
+import isNil from 'lodash/isNil'
+import throttle from 'lodash/throttle'
 import { supportsPassiveEvents } from 'detect-it'
+import isArray from 'lodash/isArray'
 import Block from './block'
 import ColumnIndicator from './column_indicator'
 import LoadMore from './load_more'
@@ -12,20 +14,49 @@ const isFunction = val => typeof val === 'function'
 
 const evtOpts = supportsPassiveEvents ? { passive: true } : false
 
-class ScrollableList extends React.PureComponent {
+class ScrollableList extends React.Component {
 
   state = {
     nearBottom: false,
     clickedLoadMore: false,
   }
+
   scrollableParent = null
+  eventsBound = false
+  eventsTimer = null
+
+  componentDidMount() {
+    // defer binding events
+    this.startEventsTimer()
+  }
+
+  componentDidUpdate() {
+    /*
+    Component update can fire many times as redux keeps changing. This is
+    deferring and debouncing binding of events until after the component
+    settles down. Prevent loading more until later.
+    */
+    this.startEventsTimer()
+  }
 
   componentWillUnmount() {
     this.unbindEvents()
+    this.cancelEventsTimer()
   }
 
   get useWindow() {
     return this.scrollableParent.isSameNode(document.documentElement)
+  }
+
+  startEventsTimer = () => {
+    this.cancelEventsTimer()
+    this.eventsTimer = setTimeout(() => this.bindEvents(), 1000)
+  }
+
+  cancelEventsTimer = () => {
+    if (isNil(this.eventsTimer) === false) {
+      clearTimeout(this.eventsTimer)
+    }
   }
 
   handleScroll = throttle(() => {
@@ -93,19 +124,20 @@ class ScrollableList extends React.PureComponent {
 
   bindEvents = () => {
     const { scrollableParent } = this
-    if (scrollableParent === null) {
+    if (isNil(scrollableParent) || this.eventsBound) {
       return
     }
     const el = this.useWindow ? window : scrollableParent
     el.addEventListener('scroll', this.handleScroll, evtOpts)
     el.addEventListener('wheel', this.handleScroll, evtOpts)
     el.addEventListener('touchmove', this.handleScroll, evtOpts)
+    this.eventsBound = true
   }
 
   unbindEvents = () => {
     const { scrollableParent } = this
-    if (scrollableParent === null) {
-      return
+    if (isNil(scrollableParent) || this.eventsBound === false) {
+      return // it could have unmounted before binding
     }
     const el = this.useWindow ? window : scrollableParent
     el.removeEventListener('scroll', this.handleScroll)
@@ -115,10 +147,9 @@ class ScrollableList extends React.PureComponent {
 
   outer = null
   setRef = el => {
-    if (this.outer === null) {
+    if (isNil(this.outer)) {
       this.outer = el
       this.scrollableParent = getScrollableParent(el)
-      this.bindEvents()
       if (typeof this.props.scrollRef === 'function') {
         this.props.scrollRef(el)
       }
@@ -141,7 +172,6 @@ class ScrollableList extends React.PureComponent {
 
     const { nearBottom } = this.state
 
-    const childrenCount = React.Children.count(children)
 
     if (showLoading) {
       if (Placeholder) {
@@ -164,7 +194,11 @@ class ScrollableList extends React.PureComponent {
       return <ColumnIndicator type='loading' />
     }
 
-    if (isLoading || childrenCount > 0 || hasMore || !emptyMessage) {
+    // [] or false shows as children count 1 so we use a few other checks here
+    const childrenCount = !isArray(children) && children !== false ? React.Children.count(children) : 0
+    const hasItems = isArray(children) && children.length > 0
+
+    if (isLoading || childrenCount > 0 || hasItems || hasMore || !emptyMessage) {
       return (
         <div ref={this.setRef}>
           {children}

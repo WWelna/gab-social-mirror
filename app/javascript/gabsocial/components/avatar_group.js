@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import Avatar from './avatar'
 import Text from './text'
 import { CX } from '../constants'
+import ImmutablePropTypes from 'react-immutable-proptypes'
 
 /**
  * Renders a inline group of avatars
@@ -59,7 +60,7 @@ AvatarGroup.defaultProps = {
 }
 
 AvatarGroup.propTypes = {
-  accounts: PropTypes.array,
+  accounts: ImmutablePropTypes.list,
   avatarCount: PropTypes.number,
   maxVisible: PropTypes.number,
   size: PropTypes.number,

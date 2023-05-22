@@ -8,7 +8,10 @@ class SortingQueryBuilder < BaseService
 
   TOP_ORDER = 'status_stats.favourites_count DESC, status_stats.reblogs_count DESC, status_stats.replies_count DESC'
 
-  def call(sort_type, group = nil, page = 1, source = nil)
+  def call(sort_type, group = nil, page = 1, source = nil, options = {})
+    @options = options
+    @source = source
+
     if page && page.to_i > 250
       return Status.none
     end
@@ -46,7 +49,8 @@ class SortingQueryBuilder < BaseService
 
     return sorted_id_page.map { |id| statuses[id] }.compact
   end
-private
+
+  private
 
   def set_atts(sort_type, group = nil, page = 1, source = nil)
     @sort_type = sort_type
@@ -59,22 +63,28 @@ private
     @statuses = Status.
       page(@page).
       per(LIMIT).
-      without_replies.without_reblogs.
+      without_replies.
       joins(:account).
       where(accounts: { is_flagged_as_spam: false })
 
-    # All sort types except "newest" require at least 1 comment
-    @statuses = @statuses.joins(:status_stat) unless @sort_type == 'newest'
+    if @sort_type == 'newest' && is_account_timeline?
+      # include reblogs on newest (default sort) account timelines
+    else 
+      @statuses = @statuses.without_reblogs
+    end
+
+    # All sort types except "newest", "no-reposts" require at least 1 comment
+    @statuses = @statuses.joins(:status_stat) unless ['newest', 'no-reposts'].include?(@sort_type)
 
     @statuses = @statuses.none unless valid_page?
   end
 
   def max_page
     case @sort_type
-    when 'newest'
+    when 'newest', 'no-reposts'
       Float::INFINITY
     else
-      8
+      12
     end
   end
 
@@ -84,7 +94,14 @@ private
 
   def apply_conditions!
     @statuses = @statuses.not_tombstoned
-    @statuses = @statuses.with_public_visibility if @group.nil?
+    
+    if is_my_account_timeline?
+      # show all on mine
+    elsif is_account_timeline?
+      @statuses = @statuses.where(visibility: [:public, :unlisted])
+    elsif @group.nil?
+      @statuses = @statuses.with_public_visibility
+    end
 
     if @source == 'explore'
       # no posts from groups in the explore feed
@@ -120,7 +137,7 @@ private
 
   def apply_sort!
     @statuses = case @sort_type
-    when 'newest'
+    when 'newest', 'no-reposts'
       @statuses.recent
     when 'recent'
       @statuses.reorder('status_stats.updated_at desc')
@@ -139,19 +156,38 @@ private
       8.hours
     when 'recent'
       @source == 'group_collection' ? 14.days : 5.years
-    when 'newest'
+    when 'newest', 'no-reposts'
       :unlimited
-    when 'top_today'
+    when 'most_votes_today', 'top_today'
       1.day
-    when 'top_weekly'
+    when 'most_votes_weekly', 'top_weekly'
       7.days
-    when 'top_monthly'
+    when 'most_votes_monthly', 'top_monthly'
       30.days
-    when 'top_yearly'
+    when 'most_votes_yearly', 'top_yearly'
       1.year
-    when 'top_all_time'
+    when 'most_votes_all_time', 'top_all_time'
       5.years
     end
+  end
+
+  def is_account_timeline?
+    !@source.nil? && @source.starts_with?('account:')
+  end
+
+  def is_my_account_timeline?
+    return false if !is_account_timeline?
+  
+    if !@options[:current_account].nil?
+      current_account = @options[:current_account]
+    end
+    if !@options[:source_account_id].nil?
+      source_account_id = @options[:source_account_id]
+    end
+
+    return false if !current_account || !source_account_id
+
+    return current_account.id.to_s == source_account_id.to_s
   end
 
 end

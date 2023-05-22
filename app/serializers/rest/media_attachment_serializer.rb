@@ -43,22 +43,14 @@ class REST::MediaAttachmentSerializer < ActiveModel::Serializer
       return clean_migrated_url[1]
     end
 
-    if object.needs_redownload?
-      media_proxy_url(object.id, :original)
-    else
-      full_asset_url(object.file.url(:original))
-    end
+    full_asset_url(object.file.url(:original))
   end
 
   def source_mp4
     if object.type == "image" || object.type == "gifv" || object.type == "unknown"
       return nil
     else 
-      if object.needs_redownload?
-        media_proxy_url(object.id, :playable)
-      else
-        full_asset_url(object.file.url(:playable))
-      end
+      full_asset_url(object.file.url(:playable))
     end
   end
 
@@ -71,11 +63,7 @@ class REST::MediaAttachmentSerializer < ActiveModel::Serializer
       return clean_migrated_url[0]
     end
 
-    if object.needs_redownload?
-      media_proxy_url(object.id, :small)
-    else
-      full_asset_url(object.file.url(:small))
-    end
+    full_asset_url(object.file.url(:small))
   end
 
   def meta

@@ -24,23 +24,7 @@ class ReactionsDisplayBlock extends ImmutablePureComponent {
     const formattedNumber = shortNumberFormat(totalCount)
     if (isBasicText) return formattedNumber
 
-    const firstReaction = reactions.get(0)
-    const firstReactionCount = firstReaction.get('count')
-    const firstReact = this.getReaction(firstReaction.get('reactionId'))
-    const { name, name_plural } = (firstReact || {})
-
-    if (count === 1 && firstReactionCount === 1) {
-      // has only ONE reaction type with only ONE reaction with it
-      // e.g. '1 dislike' --- (it's singular)
-      return <>{formattedNumber} {name.toLowerCase()}</>
-    } else if (count === 1 && firstReactionCount > 1) {
-      // has only ONE reaction type but MANY reactions with that type
-      // e.g. '2 dislikes' --- (it's plural)
-      return <>{formattedNumber} {name_plural.toLowerCase()}</>
-    }
-    // else, has many reactions with varying counts per reaction
-    // e.g. '5 reactions'
-    return <>{formattedNumber} reactions</>
+    return <>{formattedNumber}</>
   }
 
   getReaction(id) {
@@ -59,6 +43,7 @@ class ReactionsDisplayBlock extends ImmutablePureComponent {
       iconSize,
       textSize,
       textColor,
+      maxCount,
     } = this.props
 
     if (!reactions) return null
@@ -79,6 +64,7 @@ class ReactionsDisplayBlock extends ImmutablePureComponent {
       underline_onHover: !isDisabled,
       flexRow: hasIcons,
       jcCenter: hasIcons,
+      aiCenter: hasIcons,
     })
 
     const iconContainerClasses = CX({
@@ -99,7 +85,7 @@ class ReactionsDisplayBlock extends ImmutablePureComponent {
           hasIcons && 
           <div className={iconContainerClasses}>
             {
-              reactions.splice(Math.min(3, count)).map((block) => (
+              reactions.splice(Math.min(2, maxCount)).map((block) => (
                 <div
                   key={`reaction-${block.get('reactionId')}`}
                   className={_s.d}
@@ -133,11 +119,13 @@ ReactionsDisplayBlock.propTypes = {
   totalCount: PropTypes.number,
   textSize: PropTypes.string,
   textColor: PropTypes.string,
+  maxCount: PropTypes.number,
 }
 
 ReactionsDisplayBlock.defaultProps = {
   textSize: 'small',
   textColor: 'secondary',
+  maxCount: 2,
 }
 
 export default ReactionsDisplayBlock

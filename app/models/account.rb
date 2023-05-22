@@ -51,6 +51,7 @@
 #  is_flagged_as_spam      :boolean          default(FALSE), not null
 #  spam_flag               :integer
 #  weighted_tsv            :tsvector
+#  is_parody               :boolean
 #
 
 class Account < ApplicationRecord
@@ -468,7 +469,6 @@ class Account < ApplicationRecord
 
   before_validation :prepare_contents
   before_validation :prepare_username, on: :create
-  before_destroy :clean_feed_manager
 
   private
 
@@ -489,20 +489,4 @@ class Account < ApplicationRecord
     [note, display_name, fields.map(&:value)].join(' ')
   end
 
-  def clean_feed_manager
-    Redis.current.with do |conn|
-      reblog_key       = FeedManager.instance.key(:home, id, 'reblogs')
-      reblogged_id_set = conn.zrange(reblog_key, 0, -1)
-
-      conn.pipelined do |pipeline|
-        pipeline.del(FeedManager.instance.key(:home, id))
-        pipeline.del(reblog_key)
-
-        reblogged_id_set.each do |reblogged_id|
-          reblog_set_key = FeedManager.instance.key(:home, id, "reblogs:#{reblogged_id}")
-          pipeline.del(reblog_set_key)
-        end
-      end
-    end
-  end
 end

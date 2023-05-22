@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class HomeFeed < Feed
+class HomeFeed
   ALLQUERY = <<-SQL
     with my_groups as (
       select ga.group_id as id
@@ -21,11 +21,15 @@ class HomeFeed < Feed
        left join statuses r
          on s.reblog_of_id = r.id
        where
-        s.id > :hard_limit_id
+        (s.account_id = :id or s.account_id IN (select ff.target_account_id from follows ff where ff.account_id = :id))
+        and s.id > :hard_limit_id
         and s.reply is false
         and s.in_reply_to_id IS NULL
         and s.tombstoned_at IS NULL
+        and r.tombstoned_at IS NULL
         and (
+          s.account_id = :id
+          or 
           case
             WHEN s.reblog_of_id is null THEN exists(
               select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id
@@ -34,7 +38,6 @@ class HomeFeed < Feed
               select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id and ff.show_reblogs is true
             )
           END
-          or s.account_id = :id
         )
         and not exists(select mm.target_account_id from mutes mm where mm.account_id = :id and mm.target_account_id in (s.account_id, r.account_id))
         and not exists(select bb.target_account_id from blocks bb where bb.account_id = :id and bb.target_account_id in (s.account_id, r.account_id))
@@ -74,17 +77,12 @@ class HomeFeed < Feed
         s.id
       from statuses s
       where
-        s.id > :hard_limit_id
+        (s.account_id = :id or s.account_id IN (select ff.target_account_id from follows ff where ff.account_id = :id))
+        and s.id > :hard_limit_id
         and s.reblog_of_id is null
         and s.reply is false
         and s.in_reply_to_id IS NULL
         and s.tombstoned_at IS NULL
-        and (
-          exists(
-            select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id
-          )
-          or s.account_id = :id
-        )
         and not exists(select mm.target_account_id from mutes mm where mm.account_id = :id and mm.target_account_id = s.account_id)
         and not exists(select bb.target_account_id from blocks bb where bb.account_id = :id and bb.target_account_id = s.account_id)
         and (
@@ -121,17 +119,12 @@ class HomeFeed < Feed
       from statuses s
       join status_stats ss on s.id = ss.status_id
       where
-        ss.status_id > :hard_limit_id
+        (s.account_id = :id or s.account_id IN (select ff.target_account_id from follows ff where ff.account_id = :id))
+        and ss.status_id > :hard_limit_id
         and s.reblog_of_id is null
         and s.reply is false
         and s.in_reply_to_id IS NULL
         and s.tombstoned_at IS NULL
-        and (
-          exists(
-            select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id
-          )
-          or s.account_id = :id
-        )
         and not exists(select mm.target_account_id from mutes mm where mm.account_id = :id and mm.target_account_id = s.account_id)
         and not exists(select bb.target_account_id from blocks bb where bb.account_id = :id and bb.target_account_id = s.account_id)
         and (
@@ -156,6 +149,7 @@ class HomeFeed < Feed
     'newest' => [ALLQUERY, 7.days],
     'no-reposts' => [OCQUERY, 7.days],
     'top' => [TOPQUERY, 1.day],
+    'hot' => [TOPQUERY, 8.hours],
   }
 
   def initialize(account)
@@ -173,7 +167,7 @@ class HomeFeed < Feed
 
     opts = { id: @id, limit: limit, min_id: min_id, max_id: max_id }
     opts[:hard_limit_id] = GabSocial::Snowflake.id_at(duration.ago)
-    opts[:page] = page if sort_by_value == 'top'
+    opts[:page] = page if ['top', 'hot'].include?(sort_by_value)
 
     ActiveRecord::Base.connected_to(role: :reading) do
       Status.find_by_sql([query, opts])

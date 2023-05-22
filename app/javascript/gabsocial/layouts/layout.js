@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Sticky from 'react-stickynode'
 import {
   CX,
   BREAKPOINT_EXTRA_SMALL,
@@ -140,9 +141,11 @@ class Layout extends React.PureComponent {
                   !noRightSidebar &&
                   <Responsive min={BREAKPOINT_EXTRA_SMALL}>
                     <div className={[_s.d, _s.w340PX, _s.ml15].join(' ')}>
-                      <div className={[_s.d, _s.w340PX].join(' ')}>
-                        <SidebarPanelGroup layout={layout} page={page} />
-                      </div>
+                      <Sticky top={73} enabled>
+                        <div className={[_s.d, _s.w340PX].join(' ')}>
+                          <SidebarPanelGroup layout={layout} page={page} />
+                        </div>
+                      </Sticky>
                     </div>
                   </Responsive>
                 }

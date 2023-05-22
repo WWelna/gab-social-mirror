@@ -80,6 +80,12 @@ class Notification extends ImmutablePureComponent {
           message = `${actionTaken} your post`
         }
         break
+      case 'quote':
+        icon = 'quote'
+        message = intl.formatMessage(count > 1 ? messages.quotedStatusMultiple : messages.quotedStatusOne, {
+          count: count - 1,
+        })
+        break
       case 'repost':
         icon = 'repost'
         message = intl.formatMessage(count > 1 ? messages.repostedStatusMultiple : messages.repostedStatusOne, {
@@ -259,6 +265,8 @@ const messages = defineMessages({
   likedStatusMultiple: { id: 'liked_status_multiple', defaultMessage: 'and {count} others liked your post' },
   repostedStatusOne: { id: 'reposted_status_one', defaultMessage: 'reposted you' },
   repostedStatusMultiple: { id: 'reposted_status_multiple', defaultMessage: 'and {count} others reposted you' },
+  quotedStatusOne: { id: 'quoted_status_one', defaultMessage: 'quoted you' },
+  quotedStatusMultiple: { id: 'quoted_status_multiple', defaultMessage: 'and {count} others quoted you' },
 })
 
 Notification.propTypes = {

@@ -4,51 +4,23 @@ import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
-import { fetchGroupsByTab } from '../../actions/groups'
 import PanelLayout from './panel_layout'
 import GroupListItem from '../group_list_item'
 import ScrollableList from '../scrollable_list'
 import GroupListItemPlaceholder from '../placeholder/group_list_item_placeholder'
 
 class GroupsPanel extends ImmutablePureComponent {
-
-  state = {
-    fetched: false,
-  }
-
-  static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.shouldLoad && !prevState.fetched) {
-      return { fetched: true }
-    }
-
-    return null
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (!prevState.fetched && this.state.fetched) {
-      this.props.onFetchGroupsByTab(this.props.groupType)
-    }
-  }
-
-  componentDidMount() {
-    if (!this.props.isLazy) {
-      this.props.onFetchGroupsByTab(this.props.groupType)
-      this.setState({ fetched: true })
-    }
-  }
-  
   render() {
     const {
       intl,
       groupIds,
       groupType,
     } = this.props
-    const { fetched } = this.state
 
     const count = !!groupIds ? groupIds.count() : 0
     const maxCount = 12
 
-    if (count === 0 && fetched) return null
+    if (count === 0) return null
 
     return (
       <PanelLayout
@@ -61,7 +33,6 @@ class GroupsPanel extends ImmutablePureComponent {
       >
         <ScrollableList
           scrollKey='groups_panel'
-          showLoading={!fetched}
           placeholderComponent={GroupListItemPlaceholder}
           placeholderCount={6}
         >
@@ -91,14 +62,9 @@ const mapStateToProps = (state, { groupType }) => ({
   groupIds: state.getIn(['group_lists', groupType, 'items']),
 })
 
-const mapDispatchToProps = (dispatch) => ({
-  onFetchGroupsByTab: (type) => dispatch(fetchGroupsByTab(type))
-})
-
 GroupsPanel.propTypes = {
   groupIds: ImmutablePropTypes.list,
   isLazy: PropTypes.bool, 
-  onFetchGroupsByTab: PropTypes.func.isRequired,
   shouldLoad: PropTypes.bool,
   groupType: PropTypes.string,
 }
@@ -107,4 +73,4 @@ GroupsPanel.defaultProps = {
   groupType: 'member'
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(GroupsPanel))
+export default injectIntl(connect(mapStateToProps)(GroupsPanel))

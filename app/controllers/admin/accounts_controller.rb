@@ -2,7 +2,7 @@
 
 module Admin
   class AccountsController < BaseController
-    before_action :set_account, only: [:show, :redownload, :remove_avatar, :remove_header, :enable, :unsilence, :unsuspend, :memorialize, :approve, :reject, :verify, :unverify, :add_donor_badge, :remove_donor_badge, :add_investor_badge, :remove_investor_badge, :edit_pro, :save_pro, :edit, :update, :reset_spam]
+    before_action :set_account, only: [:show, :redownload, :remove_avatar, :remove_header, :enable, :unsilence, :unsuspend, :memorialize, :approve, :reject, :verify, :unverify, :add_donor_badge, :remove_donor_badge, :add_investor_badge, :remove_investor_badge, :edit_pro, :save_pro, :edit, :update, :reset_spam, :spam, :reset_parody, :parody]
     before_action :require_remote_account!, only: [:redownload]
     before_action :require_local_account!, only: [:enable, :memorialize, :approve, :reject]
 
@@ -181,6 +181,22 @@ module Admin
     def reset_spam
       @account.spam_flag = Account::SPAM_FLAG_CLASS_MAP[:safe]
       @account.save!
+      redirect_to admin_account_path(@account.id)
+    end
+
+    def spam
+      @account.spam_flag = Account::SPAM_FLAG_CLASS_MAP[:spam]
+      @account.save!
+      redirect_to admin_account_path(@account.id)
+    end
+
+    def reset_parody
+      @account.update!(is_parody: false)
+      redirect_to admin_account_path(@account.id)
+    end
+
+    def parody
+      @account.update!(is_parody: true)
       redirect_to admin_account_path(@account.id)
     end
 

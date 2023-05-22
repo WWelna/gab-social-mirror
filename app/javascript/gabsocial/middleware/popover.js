@@ -7,7 +7,7 @@ import {
   openPopover,
 } from '../actions/popover'
 
-import get from 'lodash.get'
+import get from 'lodash/get'
 
 /**
  * The idea is that a user can hover over multiple elements that open a

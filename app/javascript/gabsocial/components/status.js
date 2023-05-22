@@ -264,6 +264,8 @@ class Status extends ImmutablePureComponent {
       showSpam = false,
       disableCanShow = false,
       highlightStatusId,
+      isLoading,
+      expanded,
     } = this.props
     let { status } = this.props
     const { isExpired } = this.state
@@ -433,11 +435,11 @@ class Status extends ImmutablePureComponent {
 
                   {
                     (!csd.label && !csd.nulled) &&
-                    <div className={CX({ d: true })}>
+                    <div className={_s.d}>
                       <StatusContent
                         status={status}
                         reblogContent={reblogContent}
-                        onClick={isClickable ? this.handleClick : undefined}
+                        onClick={isClickable && !expanded ? this.handleClick : undefined}
                         expanded={!status.get('hidden')}
                         onExpandedToggle={this.handleExpandedToggle}
                         collapsable={contextType !== 'feature'}
@@ -452,11 +454,8 @@ class Status extends ImmutablePureComponent {
                       isComposeModalOpen={isComposeModalOpen}
                       status={status}
                       onOpenMedia={this.props.onOpenMedia}
-                      cacheWidth={this.props.cacheMediaWidth}
-                      defaultWidth={this.props.cachedMediaWidth}
                       visible={this.state.showMedia}
                       onToggleVisibility={this.handleToggleMediaVisibility}
-                      width={this.props.cachedMediaWidth}
                       onOpenVideo={this.handleOpenVideo}
                     />
                   }
@@ -532,6 +531,7 @@ class Status extends ImmutablePureComponent {
                 {
                   contextType == 'feature' &&
                   <ComposeForm
+                    key={status.get('id')}
                     composerId={`reply-${status.get('id')}`}
                     replyToId={status.get('id')}
                     feature={true}
@@ -542,7 +542,7 @@ class Status extends ImmutablePureComponent {
                 {
                   status.get('direct_replies_count') > 0 && !isChild && !isNotification && !commentsLimited &&
                   <React.Fragment>
-                    <div className={[_s.d, _s.mr10, _s.ml10, _s.mb10, _s.borderColorSecondary, _s.borderBottom1PX].join(' ')} />
+                    <div className={[_s.d, _s.mr10, _s.ml10, _s.borderColorSecondary, _s.borderBottom1PX].join(' ')} />
 
                     <SortBlock
                       value={sortByTitle}
@@ -569,6 +569,7 @@ class Status extends ImmutablePureComponent {
                         onViewComments={this.handleOnExpandComments}
                         ancestorStatusId={status.get('id')}
                         highlightStatusId={highlightStatusId}
+                        isLoading={isLoading}
                       />
                     }
                   </React.Fragment>
@@ -617,8 +618,6 @@ Status.propTypes = {
   onMoveDown: PropTypes.func,
   onFetchComments: PropTypes.func,
   onFetchContext: PropTypes.func,
-  cacheMediaWidth: PropTypes.func,
-  cachedMediaWidth: PropTypes.number,
   contextType: PropTypes.string,
   commentsLimited: PropTypes.bool,
   onOpenLikes: PropTypes.func,
@@ -636,6 +635,8 @@ Status.propTypes = {
   hoveringReactionId: PropTypes.string,
   reactionPopoverOpenForStatusId: PropTypes.string,
   highlightStatusId: PropTypes.string,
+  isLoading: PropTypes.bool,
+  expanded: PropTypes.bool,
 }
 
 export default withRouter(injectIntl(Status))

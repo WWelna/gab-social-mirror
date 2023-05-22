@@ -2,7 +2,8 @@
 
 class BootstrapTimelineWorker
   include Sidekiq::Worker
-  sidekiq_options retry: false
+
+  sidekiq_options queue: 'pull', retry: false
 
   def perform(account_id)
     ActiveRecord::Base.connected_to(role: :writing) do

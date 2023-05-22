@@ -1,6 +1,6 @@
-import noop from 'lodash.noop'
+import noop from 'lodash/noop'
 import api, { getLinks } from '../api'
-import { me } from '../initial_state'
+import { me, newUnreadWarningsCount } from '../initial_state'
 
 export const WARNINGS_EXPAND_REQUEST = 'WARNINGS_EXPAND_REQUEST'
 export const WARNINGS_EXPAND_SUCCESS = 'WARNINGS_EXPAND_SUCCESS'
@@ -10,7 +10,6 @@ export const WARNING_CLEAR_REQUEST = 'WARNING_CLEAR_REQUEST'
 export const WARNING_CLEAR_SUCCESS = 'WARNING_CLEAR_SUCCESS'
 export const WARNING_CLEAR_FAIL = 'WARNING_CLEAR_FAIL'
 
-export const WARNINGS_UNREAD_COUNT_FETCH_REQUEST = 'WARNINGS_UNREAD_COUNT_FETCH_REQUEST'
 export const WARNINGS_UNREAD_COUNT_FETCH_SUCCESS = 'WARNINGS_UNREAD_COUNT_FETCH_SUCCESS'
 export const WARNINGS_UNREAD_COUNT_FETCH_FAIL = 'WARNINGS_UNREAD_COUNT_FETCH_FAIL'
 
@@ -96,18 +95,8 @@ const clearWarningFail = (error) => ({
 export const fetchUnreadWarningsCount = () => (dispatch, getState) => {
   if (!me) return
 
-  dispatch(fetchUnreadWarningsCountRequest())
-
-  api(getState).get('/api/v1/warnings/new_unread_warnings_count').then((response) => {
-    dispatch(fetchUnreadWarningsCountSuccess(response.data))
-  }).catch((error) => {
-    dispatch(fetchUnreadWarningsCountFail(error))
-  })
+  dispatch(fetchUnreadWarningsCountSuccess(newUnreadWarningsCount))
 }
-
-const fetchUnreadWarningsCountRequest = () => ({
-  type: WARNINGS_UNREAD_COUNT_FETCH_REQUEST,
-})
 
 const fetchUnreadWarningsCountSuccess = (count) => ({
   type: WARNINGS_UNREAD_COUNT_FETCH_SUCCESS,

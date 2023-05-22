@@ -5,13 +5,29 @@ export const CUSTOM_EMOJIS_FETCH_SUCCESS = 'CUSTOM_EMOJIS_FETCH_SUCCESS'
 export const CUSTOM_EMOJIS_FETCH_FAIL = 'CUSTOM_EMOJIS_FETCH_FAIL'
 
 export const fetchCustomEmojis = () => (dispatch, getState) => {
-  dispatch(fetchCustomEmojisRequest())
+  let needFetch = true
+  let customEmojisData = localStorage.getItem('custom_emojis')
+  if (customEmojisData) {
+    customEmojisData = JSON.parse(customEmojisData)
+    if (customEmojisData && customEmojisData.timestamp > Date.now() - 14400000) {
+      needFetch = false
+      dispatch(fetchCustomEmojisSuccess(customEmojisData.custom_emojis))
+    }
+  }
 
-  api(getState).get('/api/v1/custom_emojis').then((response) => {
-    dispatch(fetchCustomEmojisSuccess(response.data))
-  }).catch((error) => {
-    dispatch(fetchCustomEmojisFail(error))
-  })
+  if (needFetch) {
+    dispatch(fetchCustomEmojisRequest())
+
+    api(getState).get('/api/v1/custom_emojis').then((response) => {
+      localStorage.setItem('custom_emojis', JSON.stringify({
+        timestamp: Date.now(),
+        custom_emojis: response.data,
+      }))
+      dispatch(fetchCustomEmojisSuccess(response.data))
+    }).catch((error) => {
+      dispatch(fetchCustomEmojisFail(error))
+    })
+  }
 }
 
 const fetchCustomEmojisRequest = () => ({

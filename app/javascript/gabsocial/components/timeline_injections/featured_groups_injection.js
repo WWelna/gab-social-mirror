@@ -3,70 +3,48 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import { fetchGroupsByTab } from '../../actions/groups'
 import GroupCollectionItem from '../group_collection_item'
 import TimelineInjectionLayout from './timeline_injection_layout'
 
 class FeaturedGroupsInjection extends ImmutablePureComponent {
-
-  componentDidMount() {
-    if (!this.props.isFetched) {
-      this.props.onFetchGroupsByTab('featured')
-    }
-  }
-  
   render() {
-    const {
-      groupIds,
-      isLoading,
-      isFetched,
-      isXS,
-      injectionId,
-		} = this.props
+    const { groupIds, isFetched, isXS, injectionId } = this.props
 
     if (isFetched && groupIds.size === 0) {
-			return <div />
+      return <div />
     }
-    
+
     return (
       <TimelineInjectionLayout
         id={injectionId}
-        title='Featured groups'
-        buttonLink='/groups/browse/featured'
-        buttonTitle='See more featured groups'
+        title="Featured groups"
+        buttonLink="/groups/browse/featured"
+        buttonTitle="See more featured groups"
         isXS={isXS}
-        >
-          {
-            groupIds.map((groupId, i) => (
-              <GroupCollectionItem
-                isAddable
-                id={groupId}
-                key={`featured-group-${i}-${groupId}`}
-              />
-            ))
-          }
-        </TimelineInjectionLayout>
+      >
+        {groupIds.map((groupId, i) => (
+          <GroupCollectionItem
+            isAddable
+            id={groupId}
+            key={`featured-group-${i}-${groupId}`}
+          />
+        ))}
+      </TimelineInjectionLayout>
     )
   }
-
 }
 
-const mapStateToProps = (state) => ({
-	groupIds: state.getIn(['group_lists', 'featured', 'items']),
-	isFetched: state.getIn(['group_lists', 'featured', 'isFetched']),
-	isLoading: state.getIn(['group_lists', 'featured', 'isLoading']),
-})
-
-const mapDispatchToProps = (dispatch) => ({
-	onFetchGroupsByTab: (tab) => dispatch(fetchGroupsByTab(tab)),
+const mapStateToProps = state => ({
+  groupIds: state.getIn(['group_lists', 'featured', 'items']),
+  isFetched: state.getIn(['group_lists', 'featured', 'isFetched']),
+  isLoading: state.getIn(['group_lists', 'featured', 'isLoading'])
 })
 
 FeaturedGroupsInjection.propTypes = {
-	groupIds: ImmutablePropTypes.list,
-	isFetched: PropTypes.bool.isRequired,
-  isLoading: PropTypes.bool.isRequired,
-  onFetchGroupsByTab: PropTypes.func.isRequired,
-  injectionId: PropTypes.string.isRequired,
+  groupIds: ImmutablePropTypes.list,
+  isFetched: PropTypes.bool,
+  isLoading: PropTypes.bool,
+  injectionId: PropTypes.string
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(FeaturedGroupsInjection)
+export default connect(mapStateToProps)(FeaturedGroupsInjection)

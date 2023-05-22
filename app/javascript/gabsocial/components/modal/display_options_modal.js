@@ -51,8 +51,8 @@ class DisplayOptions extends ImmutablePureComponent {
       intl,
       theme,
       onClose,
-      showOptions = true,
-      showDone = true
+      showOptions,
+      showDone,
     } = this.props
 
     const fontSizeNames = Object.keys(FONT_SIZES)
@@ -60,7 +60,6 @@ class DisplayOptions extends ImmutablePureComponent {
 
     // Options and done are optional and hidden on Introduction to simplify
     const optionsOuterClasses = showOptions ? [_s.d, _s.mb15].join(' ') : _s.displayNone
-    const doneOuterClasses = showDone ? [_s.mlAuto, _s.my10, _s.mrAuto].join(' ') : _s.displayNone
 
     return (
       <>
@@ -183,14 +182,14 @@ class DisplayOptions extends ImmutablePureComponent {
 
           </div>
         </div>
-
-        <div className={doneOuterClasses}>
-          <Button onClick={onClose}>
-            <Text size='medium' color='inherit' className={_s.px10}>
+        {
+          showDone &&
+          <Button onClick={onClose} isBlock radiusSmall>
+            <Text size='medium' color='inherit' align='center' className={_s.px10}>
               Done
             </Text>
           </Button>
-        </div>
+        }
 
       </>
     )
@@ -210,6 +209,11 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(saveSettings())
   },
 })
+
+DisplayOptions.defaultProps = {
+  showOptions: true,
+  showDone: true,
+}
 
 DisplayOptions.propTypes = {
   fontSize: PropTypes.string,

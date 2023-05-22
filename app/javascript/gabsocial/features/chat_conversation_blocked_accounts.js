@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { me } from '../initial_state'
 import {
   fetchChatMessengerBlocks,
@@ -47,7 +47,7 @@ class ChatConversationBlockedAccounts extends ImmutablePureComponent {
             onLoadMore={this.handleLoadMore}
             hasMore={hasMore}
             isLoading={isLoading}
-            showLoading={isLoading}
+            showLoading={isLoading && (accountIds === undefined || accountIds.size === 0)}
             emptyMessage={emptyMessage}
             placeholderComponent={AccountPlaceholder}
             placeholderCount={3}

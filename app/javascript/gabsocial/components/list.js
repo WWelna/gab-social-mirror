@@ -18,6 +18,7 @@ class List extends ImmutablePureComponent {
       hasMore,
       size,
       onLoadMore,
+      isLoading,
       showLoading,
     } = this.props
 
@@ -41,6 +42,7 @@ class List extends ImmutablePureComponent {
           hasMore={hasMore}
           scrollKey={scrollKey}
           emptyMessage={emptyMessage}
+          isLoading={isLoading}
           showLoading={showLoading}
           placeholderComponent={ListItemPlaceholder}
           placeholderCount={5}
@@ -68,6 +70,7 @@ List.propTypes = {
   ]),
   onLoadMore: PropTypes.func,
   hasMore: PropTypes.bool,
+  isLoading: PropTypes.bool,
   showLoading: PropTypes.bool,
 }
 

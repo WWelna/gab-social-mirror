@@ -4,12 +4,17 @@ import { FormattedMessage } from 'react-intl'
 import { CX, TIMELINES_MAX_QUEUE_ITEMS } from '../constants'
 import Button from './button'
 import Text from './text'
+import { timelineDequeue } from '../store/timelines'
+import reduxStore from '../store'
 
 class TimelineQueueButtonHeader extends React.PureComponent {
 
   handleOnClick = () => {
-    window.location.reload();
-    //this.props.onClick()
+    if (this.props.timelineId) {
+      reduxStore.dispatch(timelineDequeue(this.props.timelineId))
+    } else {
+      window.location.reload();
+    }
   }
 
   render() {
@@ -69,6 +74,7 @@ TimelineQueueButtonHeader.propTypes = {
   count: PropTypes.number,
   itemType: PropTypes.string,
   top: PropTypes.string,
+  timelineId: PropTypes.string,
 }
 
 TimelineQueueButtonHeader.defaultProps = {

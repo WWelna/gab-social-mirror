@@ -89,6 +89,7 @@ class StatusActionBar extends ImmutablePureComponent {
     const quotesLabel = quotesCount === 1 ? 'quote' : 'quotes'
 
     const hasInteractions = favoriteCount > 0 || replyCount > 0 || repostCount > 0 || quotesCount > 0
+    const hasLots = favoriteCount > 99 && replyCount > 99 && repostCount > 99 && quotesCount > 99
     const shouldCondense = (
       !!status.get('card') ||
       status.get('media_attachments').size > 0 ||
@@ -101,6 +102,8 @@ class StatusActionBar extends ImmutablePureComponent {
     const initialState = getWindowDimension()
     const width = initialState.width
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
+    const isTiny = width <= 400
+    const maxCount = isTiny ? (hasLots ? 1 : 2) : 3
 
     const innerContainerClasses = CX({
       d: 1,
@@ -117,8 +120,10 @@ class StatusActionBar extends ImmutablePureComponent {
       noUnderline: 1,
       bgTransparent: 1,
       outlineNone: 1,
-      mr10: 1,
       py5: 1,
+      ml10: !isTiny,
+      ml7: isTiny && !hasLots,
+      ml5: isTiny && hasLots,
       cursorPointer: !nulled,
       underline_onHover: !nulled,
       cursorNotAllowed: nulled,
@@ -128,7 +133,10 @@ class StatusActionBar extends ImmutablePureComponent {
       d: 1,
       flexRow: 1,
       aiEnd: 1,
-      px15: 1,
+      px15: !(isTiny && hasLots),
+      px10: (isTiny && hasLots),
+      minHeight26px: hasInteractions,
+      minHeight16px: !hasInteractions,
     })
 
     const isReactingOnThisStatus = isReacting && !!status && reactionPopoverOpenForStatusId === status.get('id')
@@ -146,9 +154,8 @@ class StatusActionBar extends ImmutablePureComponent {
     const myReaction = status.get('reaction')
 
     return (
-      <div className={[_s.d, _s.mt10, _s.pb2].join(' ')}>
+      <div className={[_s.d, _s.mt5, _s.pb2].join(' ')}>
         {
-          hasInteractions && 
           <div className={interactionContainerClasses}>
             <div className={[_s.mrAuto, _s.py5].join(' ')}>
               { favoriteCount > 0 &&
@@ -161,6 +168,7 @@ class StatusActionBar extends ImmutablePureComponent {
                   reactions={reactionsMap}
                   onClick={this.openLikesList}
                   isDisabled={nulled}
+                  maxCount={maxCount}
                 />
               }
             </div>

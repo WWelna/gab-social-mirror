@@ -37,6 +37,7 @@ import CommentSubReplyLoadMoreButton from './comment_sub_reply_load_more_button'
 import SensitiveMediaItem from './sensitive_media_item'
 import ReactionsPopoverInitiator from './reactions_popover_initiator'
 import ReactionsDisplayBlock from './reactions_display_block'
+import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_component'
 
 class Comment extends ImmutablePureComponent {
   state = {
@@ -140,10 +141,6 @@ class Comment extends ImmutablePureComponent {
     this.floatingReactionsRef = c
   }
 
-  setContainerNode = c => {
-    this.containerNode = c
-  }
-
   render() {
     const {
       indent,
@@ -198,6 +195,27 @@ class Comment extends ImmutablePureComponent {
       highlightedComment: isHighlighted
     })
 
+    const mediaSize = status.get('media_attachments').size
+    const contentLength = status.get('content').length
+
+    const innerContainerClasses = CX({
+      d: 1,
+      flexShrink1: 1,
+      maxW100PC42PX: 1,
+      minW252PX: 1,
+      w100PC: mediaSize > 1 && contentLength >= 60,
+      w75PC: mediaSize > 1 && contentLength < 60,
+      w50PC: mediaSize === 1,
+    })
+
+    const innerContainerClassesLarge = CX({
+      d: 1,
+      flexShrink1: 1,
+      maxW100PC42PX: 1,
+      minW162PX: 1,
+      w100PC: mediaSize > 0,
+    })
+
     const AvatarComponent = !csd.label && !csd.nulled ? NavLink : Dummy
     const reaction = status.get('reaction')
     const likeBtnTitle = !!reaction
@@ -211,7 +229,6 @@ class Comment extends ImmutablePureComponent {
       <div
         className={containerClasses}
         data-comment={status.get('id')}
-        ref={this.setContainerNode}
       >
         {indent > 0 && (
           <div
@@ -287,13 +304,9 @@ class Comment extends ImmutablePureComponent {
               )}
             </AvatarComponent>
 
-            <div
-              className={[
-                _s.d,
-                _s.flexShrink1,
-                _s.maxW100PC42PX,
-                _s.minW252PX
-              ].join(' ')}
+            <ResponsiveClassesComponent
+              classNames={innerContainerClasses}
+              classNamesLarge={innerContainerClassesLarge}
             >
               {csd.nulled && (
                 <div className={contentClasses}>
@@ -331,11 +344,8 @@ class Comment extends ImmutablePureComponent {
                       isComment
                       status={status}
                       onOpenMedia={this.props.onOpenMedia}
-                      cacheWidth={this.props.cacheMediaWidth}
-                      defaultWidth={this.props.cachedMediaWidth}
                       visible={this.state.showMedia}
                       onToggleVisibility={this.handleToggleMediaVisibility}
-                      width={this.props.cachedMediaWidth}
                     />
                   </div>
                 </div>
@@ -363,13 +373,15 @@ class Comment extends ImmutablePureComponent {
                   onClick={this.handleOnRepost}
                   isDisabled={!!csd.label && !status.get('reblogged')}
                 />
-                <div ref={this.setMoreNode}>
-                  <CommentButton
-                    title="···"
-                    onClick={this.handleOnOpenStatusOptions}
-                    isDisabled={!!csd.label}
-                  />
-                </div>
+                { !!me && (
+                  <div ref={this.setMoreNode}>
+                    <CommentButton
+                      title="···"
+                      onClick={this.handleOnOpenStatusOptions}
+                      isDisabled={!!csd.label}
+                    />
+                  </div>
+                )}
                 {status.get('favourites_count') > 0 && (
                   <div
                     ref={this.setFloatingReactionsRef}
@@ -402,7 +414,7 @@ class Comment extends ImmutablePureComponent {
                   </div>
                 )}
               </div>
-            </div>
+            </ResponsiveClassesComponent>
           </div>
 
           {replyCount > 0 && !isDetached && (
@@ -534,7 +546,7 @@ const mapDispatchToProps = dispatch => ({
     dispatch(openModal(MODAL_MEDIA, { media, index }))
   },
   onFetchComments(statusId) {
-    dispatch(fetchComments(statusId, true))
+    dispatch(fetchComments(statusId, true, true))
   },
   onShowStatusAnyways(statusId) {
     dispatch(showStatusAnyways(statusId))

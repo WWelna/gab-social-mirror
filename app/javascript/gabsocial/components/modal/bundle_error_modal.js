@@ -32,7 +32,6 @@ const messages = defineMessages({
 })
 
 BundleErrorModal.propTypes = {
-  onRetry: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
   intl: PropTypes.object.isRequired,
 }

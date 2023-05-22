@@ -34,6 +34,7 @@ class PreviewCard < ApplicationRecord
   enum type: [:link, :photo, :video, :rich]
 
   has_and_belongs_to_many :statuses
+  has_and_belongs_to_many :chat_messages
 
   has_attached_file :image, styles: ->(f) { image_styles(f) }, convert_options: { all: '-quality 96 -strip' }
 
@@ -65,9 +66,9 @@ class PreviewCard < ApplicationRecord
   class << self
     SEARCH_FIELDS = %i[title description url].freeze
 
-    def search_for(term, offset = 0, limit = 25)
-      SEARCH_FIELDS.inject(none) { |r, f| r.or(matching(f, :contains, term)) }.
-        order(updated_at: :desc).limit(limit).offset(offset)
+    def search_for(term)
+      SEARCH_FIELDS.inject(none) { |r, f| r.or(matching(f, :contains, term)) }
+        .pluck(:id)
     end
 
     private
@@ -96,6 +97,8 @@ class PreviewCard < ApplicationRecord
     width, height = FastImage.size(file.path)
 
     return nil if width.nil?
+
+    raise GabSocial::NotPermittedError, 'Media could not be attached.' if width > 8192 || height > 8192
 
     self.width  = width
     self.height = height

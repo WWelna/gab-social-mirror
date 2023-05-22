@@ -17,7 +17,7 @@ class Api::V1::Accounts::FollowingAccountsController < Api::BaseController
   end
 
   def load_accounts
-    return [] if hide_results?
+    return [] if hide_results? || current_account.nil? || @account.suspended?
 
     default_accounts.merge(paginated_follows).to_a
   end
@@ -27,7 +27,11 @@ class Api::V1::Accounts::FollowingAccountsController < Api::BaseController
   end
 
   def default_accounts
-    Account.includes(:passive_relationships, :account_stat).references(:passive_relationships)
+    if @account.verified? && @account.id != current_account.id
+      Account.includes(:passive_relationships, :account_stat).references(:passive_relationships).where(is_verified: true)
+    else      
+      Account.includes(:passive_relationships, :account_stat).references(:passive_relationships)
+    end
   end
 
   def paginated_follows

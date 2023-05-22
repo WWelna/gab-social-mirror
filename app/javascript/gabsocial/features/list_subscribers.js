@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { me } from '../initial_state'
 import {
   fetchListSubscribers,
@@ -49,7 +49,7 @@ class ListSubscribers extends ImmutablePureComponent {
         emptyMessage='This feed has zero subscribers.'
         onLoadMore={this.handleLoadMore}
         hasMore={hasMore}
-        isLoading={isLoading && accountIdCount === 0}
+        isLoading={isLoading}
         showLoading={isLoading && accountIdCount === 0}
         placeholderComponent={AccountPlaceholder}
         placeholderCount={3}

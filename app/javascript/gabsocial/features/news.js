@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import throttle from 'lodash.throttle'
+import throttle from 'lodash/throttle'
 import { fetchPopularLinks } from '../actions/links'
 import {
   BREAKPOINT_EXTRA_SMALL,

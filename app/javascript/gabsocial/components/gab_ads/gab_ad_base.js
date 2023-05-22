@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import axios from 'axios'
 import {
   GAB_AD_PLACEMENTS
@@ -20,12 +20,6 @@ const REQUIRED_KEYS = [
 
 // TODO configurable URL for gab grow such as dotenv and url-join
 const growBaseUrl = 'https://grow.gab.com/get/'
-
-// half of element is visible
-const observerOpts = { threshold: 0.1 }
-
-// Time after switch an ad will reload (2min)
-const freshenAfterMs = 120000
 
 class GabAdBase extends React.Component {
 
@@ -48,8 +42,6 @@ class GabAdBase extends React.Component {
     const { pageKey, position } = this.props
     return `${pageKey}-${position}`
   }
-
-  get hasObserver () { return this.observer !== undefined }
 
   get isAdBlank() {
     const { ad } = this.state
@@ -97,6 +89,8 @@ class GabAdBase extends React.Component {
       adUrl = `${growBaseUrl}status`
     } else if (placement === GAB_AD_PLACEMENTS.panel) {
       adUrl = `${growBaseUrl}sidebar`
+    } else if (placement === GAB_AD_PLACEMENTS.buyout) {
+      adUrl = `${growBaseUrl}buyout`
     }
 
     if (groupCategory && groupCategory != '') {
@@ -116,68 +110,6 @@ class GabAdBase extends React.Component {
     })
   }
 
-  /**
-   * The ad has been visible some amount of time and needs to be replaced.
-   */
-  freshen = () => {
-    this.props.onRemovePosition(this.pagePositionKey)
-    this.loadFreshAd()
-  }
-
-  /**
-   * Ad is intersecting the visible area
-   */
-  intersecting = () => {
-    if (this.isAdBlank) {
-      return
-    }
-    const { ad } = this.state
-    const { firstViewedAt } = ad
-
-    if (firstViewedAt === undefined) {
-      // first time viewed
-      ad.firstViewedAt = Date.now()
-      this.setState({ ad })
-      return
-    }
-
-    const now = Date.now()
-    const diff = now - firstViewedAt
-    if (diff >= freshenAfterMs) {
-      // the ad has been visible long enough, switch it out
-      this.freshen()
-    }
-  }
-
-  /**
-   * Callback for when ad is going on or off screen
-   */
-  observing = entries => {
-    if (entries.some(item => item.isIntersecting)) {
-      this.intersecting()
-    }
-  }
-
-  bindObserver = () => {
-    if (
-      this.hasObserver ||
-      typeof window.IntersectionObserver !== 'function'
-    ) {
-      return
-    }
-    const observer = new IntersectionObserver(this.observing, observerOpts)
-    observer.observe(this.node)
-    this.observer = observer
-  }
-
-  unbindObserver = () => {
-    if (!this.hasObserver) {
-      return
-    }
-    this.observer.disconnect()
-    this.observer = undefined
-  }
-
   componentDidMount() {
     const ad = this.cachedAd()
     if (ad !== undefined) {
@@ -187,18 +119,9 @@ class GabAdBase extends React.Component {
     this.loadFreshAd()
   }
 
-  componentWillUnmount() {
-    this.unbindObserver()
-  }
-
-  setRef = el => {
-    this.node = el
-    this.bindObserver()
-  }
-
   render() {
     const { ad } = this.state
-    const { children } = this.props
+    const { children, bottomPanelUrl } = this.props
 
     if (this.isAdBlank) {
       return null
@@ -220,10 +143,9 @@ class GabAdBase extends React.Component {
       <Button
         noClasses
         className={[_s.d, _s.bgTransparent, _s.cursorPointer, _s.outlineNone, _s.w100PC, _s.hAuto, _s.noUnderline].join(' ')}
-        href={ad.url}
+        href={ bottomPanelUrl ? (ad.url + bottomPanelUrl) : ad.url }
         target='_blank'
         rel='noopener'
-        buttonRef={this.setRef}
       >
         {children(ad)}
       </Button>
@@ -249,6 +171,7 @@ const mapDispatchToProps = (dispatch) => ({
 GabAdBase.propTypes = {
   children: PropTypes.func.isRequired,
   placement: PropTypes.oneOf(Object.keys(GAB_AD_PLACEMENTS)),
+  bottomPanelUrl: PropTypes.string,
   onPagePosition: PropTypes.func.isRequired,
   onRemovePosition: PropTypes.func.isRequired,
   pageKey: PropTypes.string,

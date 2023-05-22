@@ -11,7 +11,6 @@
 #  visibility       :integer          default("private"), not null
 #  subscriber_count :integer          default(0), not null
 #  slug             :string
-#  order            :integer
 #  is_featured      :boolean
 #
 
@@ -42,6 +41,8 @@ class List < ApplicationRecord
   scope :recent, -> { reorder(id: :desc) }
   scope :alphabetical, -> { order(arel_table['title'].lower.asc) }
   scope :public_only, -> { where(visibility: :public) }
+  scope :reasonable_title, -> { where('length(title) < 250') }
+  scope :has_list_accounts, -> { joins(:list_accounts).distinct }
   scope :is_featured, -> { where(is_featured: :true) }
 
   scope :is_member, ->(accountId) { left_outer_joins(:list_accounts).where('list_accounts.account_id=?', accountId) }
@@ -53,14 +54,14 @@ class List < ApplicationRecord
     record.errors.add(:base, I18n.t('lists.errors.limit')) if List.where(account_id: value).count >= PER_ACCOUNT_LIMIT
   end
 
-  before_destroy :clean_feed_manager
-
   class << self
     SEARCH_FIELDS = %i[title].freeze
 
     def search_for(term, offset = 0, limit = 25)
       SEARCH_FIELDS.inject(none) { |r, f| r.or(matching(f, :contains, term)) }
         .public_only
+        .reasonable_title
+        .has_list_accounts
         .order(
           updated_at: :desc,
           is_featured: :desc,
@@ -74,22 +75,4 @@ class List < ApplicationRecord
     "lists/#{id}-#{cache_version}"
   end
 
-  private
-
-  def clean_feed_manager
-    Redis.current.with do |conn|
-      reblog_key       = FeedManager.instance.key(:list, id, 'reblogs')
-      reblogged_id_set = conn.zrange(reblog_key, 0, -1)
-
-      conn.pipelined do
-        conn.del(FeedManager.instance.key(:list, id))
-        conn.del(reblog_key)
-
-        reblogged_id_set.each do |reblogged_id|
-          reblog_set_key = FeedManager.instance.key(:list, id, "reblogs:#{reblogged_id}")
-          conn.del(reblog_set_key)
-        end
-      end
-    end
-  end
 end

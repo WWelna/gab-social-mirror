@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import {
   CX,
   MARKETPLACE_LISTING_VIEW_TAB_TYPE_LIST,
@@ -48,12 +48,12 @@ class MarketplaceListingsCollection extends ImmutablePureComponent {
         flexRow: 1,
         flexWrap: 1,
         py15: !hasListings,
-     }) :
-     CX({
-       px10: 1,
-       marketplaceItemGrid: isLoading || hasListings,
-       py15: 1,
-     })
+      }) :
+        CX({
+        px10: 1,
+        marketplaceItemGrid: isLoading || hasListings,
+        py15: 1,
+      })
 
     return (
       <div className={[_s.d, _s.w100PC].join(' ')}>
@@ -65,6 +65,7 @@ class MarketplaceListingsCollection extends ImmutablePureComponent {
             </div>
           </div>
           <ScrollableList
+            scrollKey="marketplace_listings_collection"
             role='feed'
             onLoadMore={this.handleLoadMore}
             placeholderComponent={Placeholder}

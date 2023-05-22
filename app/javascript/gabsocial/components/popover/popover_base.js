@@ -6,7 +6,8 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { Popper } from 'react-popper'
 import { withRouter } from 'react-router-dom'
-import get from 'lodash.get'
+import get from 'lodash/get'
+import debounce from 'lodash/debounce'
 import {
   CX,
   POPOVER_SHARE,
@@ -127,7 +128,7 @@ class PopoverBase extends ImmutablePureComponent {
    * @param {number} evt.clientX from DOM mouse event
    * @param {number} evt.clientY
    */
-  mouseMove = ({ clientX: mouseX, clientY: mouseY }) => {
+  mouseMove = debounce(({ clientX: mouseX, clientY: mouseY }) => {
     const { outerRef } = this
     const { useProximity } = this.props
 
@@ -149,7 +150,7 @@ class PopoverBase extends ImmutablePureComponent {
     ) {
       this.handleClose()
     }
-  }
+  }, 200, { trailing: true })
 
   /**
    * The user clicks somewhere in the document and we'll figure out if we
@@ -261,6 +262,7 @@ class PopoverBase extends ImmutablePureComponent {
         innerRef={(node) => this.popperNode = node}
         placement={position}
         referenceElement={targetRef}
+        strategy='fixed'
       >
         {({ ref, style, placement, arrowProps, isReferenceHidden }) => {
           if (isReferenceHidden) return null

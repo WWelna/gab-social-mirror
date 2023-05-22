@@ -43,6 +43,7 @@ import {
   MODAL_MUTE,
   MODAL_PRO_UPGRADE,
   MODAL_REPORT,
+  MODAL_REMOVE_REPLY,
   MODAL_STATUS,
   MODAL_STATUS_LIKES,
   MODAL_STATUS_REPOSTS,
@@ -96,7 +97,8 @@ import {
   StatusRevisionsModal,
   UnauthorizedModal,
   UnfollowModal,
-  VideoModal
+  VideoModal,
+  RemoveReplyModal
 } from '../../features/ui/util/async_components'
 
 const MODAL_COMPONENTS = {
@@ -140,7 +142,8 @@ const MODAL_COMPONENTS = {
   [MODAL_STATUS_REVISIONS]: StatusRevisionsModal,
   [MODAL_UNAUTHORIZED]: UnauthorizedModal,
   [MODAL_UNFOLLOW]: UnfollowModal,
-  [MODAL_VIDEO]: VideoModal
+  [MODAL_VIDEO]: VideoModal,
+  [MODAL_REMOVE_REPLY]: RemoveReplyModal,
 }
 
 const CENTERED_XS_MODALS = [

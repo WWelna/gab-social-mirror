@@ -1,0 +1,16 @@
+- content_for :page_title do
+  = 'New Context'
+
+= simple_form_for @status_context, url: admin_status_contexts_path do |f|
+  = render 'shared/error_messages', object: @status_context
+  
+  .fields-row
+    .fields-row__column.fields-row__column-4.fields-group
+      = f.input :name, wrapper: :with_label, label: 'Name', required: true
+  .fields-group
+    = f.input :index, wrapper: :with_label, label: 'Index in list. Starting at 0 (zero)', as: :numeric
+  .fields-group
+    = f.input :is_enabled, as: :boolean, wrapper: :with_label, label: 'Is Enabled?'
+
+  .actions
+    = f.button :button, 'Submit', type: :submit

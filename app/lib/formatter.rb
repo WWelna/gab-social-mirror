@@ -85,7 +85,7 @@ class Formatter
 
     return '' if raw_content.blank?
 
-    html = raw_content
+    html = Nokogiri::HTML(raw_content).text
     html = encode_and_link_urls(html, nil, keep_html: false)
     html = reformat(html, true)
     html = encode_custom_emojis(html, chatMessage.emojis)
@@ -100,7 +100,7 @@ class Formatter
 
     return '' if raw_content.blank?
 
-    html = raw_content
+    html = Nokogiri::HTML(raw_content).text
     html = encode_and_link_urls(html, nil, keep_html: false)
     html = reformat(html, true)
     html = encode_custom_emojis(html, comment.emojis)
@@ -111,6 +111,7 @@ class Formatter
   end
 
   def format(status, **options)
+
     if options[:use_markdown]
       raw_content = status.markdown
       return '' if raw_content.blank?
@@ -132,7 +133,7 @@ class Formatter
 
     linkable_accounts = status.active_mentions.map(&:account)
 
-    html = raw_content
+    html = Nokogiri::HTML(raw_content).text
     html = format_markdown(html) if options[:use_markdown]
     html = encode_and_link_urls(html, linkable_accounts, keep_html: options[:use_markdown])
     html = reformat(html, true) unless options[:use_markdown]
@@ -151,7 +152,7 @@ class Formatter
   def formatGroupDescription(raw_content)
     return '' if raw_content.blank?
 
-    html = raw_content
+    html = Nokogiri::HTML(raw_content).text
     html = format_markdown(html)
     html = encode_and_link_urls(html, nil, keep_html: true)
     html = html.gsub(/(?:\n\r?|\r\n?)/, '<br />')

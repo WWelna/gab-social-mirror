@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { FormattedMessage } from 'react-intl'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { fetchLikes, expandLikes } from '../actions/interactions'
 import { CX } from '../constants'
 import { shortNumberFormat } from '../utils/numbers'
@@ -14,6 +14,7 @@ import Text from '../components/text'
 import ColumnIndicator from '../components/column_indicator'
 import ScrollableList from '../components/scrollable_list'
 import AccountPlaceholder from '../components/placeholder/account_placeholder'
+import { fetchStatusReactions } from '../actions/statuses'
 
 const getStatusLikesTabClasses = (tab, activeTab) => CX({
   d: 1,
@@ -39,22 +40,26 @@ class StatusLikes extends ImmutablePureComponent {
   }
 
   componentDidMount () {
-    this.props.dispatch(fetchLikes(this.props.statusId, this.state.activeTab))
+    if (this.props.statusId) {
+      this.props.onFetchStatusReactions(this.props.statusId)
+    }
+    this.props.onFetchLikes(this.props.statusId, this.state.activeTab)
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.statusId !== this.props.statusId && nextProps.statusId) {
-      this.props.dispatch(fetchLikes(nextProps.statusId, this.state.activeTab))
+      this.props.onFetchStatusReactions(nextProps.statusId)
+      this.props.onFetchLikes(nextProps.statusId, this.state.activeTab)
     }
   }
 
   handleLoadMore = debounce(() => {
-    this.props.dispatch(expandLikes(this.props.statusId, this.state.activeTab))
+    this.props.onExpandLikes(this.props.statusId, this.state.activeTab)
   }, 300, { leading: true })
 
   handleOnChangeTab = (reactionId) => {
     this.setState({ activeTab: reactionId })
-    this.props.dispatch(fetchLikes(this.props.statusId, reactionId))
+    this.props.onFetchLikes(this.props.statusId, reactionId)
   }
 
   render () {
@@ -104,7 +109,7 @@ class StatusLikes extends ImmutablePureComponent {
           emptyMessage={<FormattedMessage id='status.likes.empty' defaultMessage='No one has liked this gab yet. When someone does, they will show up here.' />}
           onLoadMore={this.handleLoadMore}
           hasMore={hasMore}
-          isLoading={isLoading && accountIdCount === 0}
+          isLoading={isLoading}
           showLoading={isLoading && accountIdCount === 0}
           placeholderComponent={AccountPlaceholder}
           placeholderCount={3}
@@ -125,6 +130,18 @@ class StatusLikes extends ImmutablePureComponent {
 
 }
 
+const mapDispatchToProps = (dispatch) => ({
+  onFetchStatusReactions(statusId) {
+    dispatch(fetchStatusReactions(statusId))
+  },
+  onFetchLikes(statusId, activeTab) {
+    dispatch(fetchLikes(statusId, activeTab))
+  },
+  onExpandLikes(statusId, activeTab) {
+    dispatch(expandLikes(statusId, activeTab))
+  },
+})
+
 const mapStateToProps = (state, props) => {
   const statusId = props.params ? props.params.statusId : props.statusId
   return {
@@ -139,4 +156,4 @@ StatusLikes.propTypes = {
   statusId: PropTypes.string.isRequired,
 }
 
-export default connect(mapStateToProps)(StatusLikes)
+export default connect(mapStateToProps, mapDispatchToProps)(StatusLikes)

@@ -20,19 +20,19 @@ class SearchServiceV3 < BaseService
       if !defined?(type) || type.nil? || type.empty? || type == 'account'
         results[:accounts] = perform_accounts_search!
       
-      elsif type == 'status' && !@account.nil?
+      elsif type == 'status'
         results[:statuses] = perform_statuses_search!(@query, @page, @limit)
       
       elsif type == 'group'
         results[:groups] = perform_groups_search!
       
-      elsif type == 'hashtag' && !@account.nil?
+      elsif type == 'hashtag'
         results[:hashtags] = perform_hashtags_search! if hashtag_searchable?
       
-      elsif type == 'link' && !@account.nil?
+      elsif type == 'link'
         results[:links] = perform_links_search!
       
-      elsif type == 'feed' && !@account.nil?
+      elsif type == 'feed'
         results[:lists] = perform_lists_search!
       end
     end
@@ -72,11 +72,13 @@ class SearchServiceV3 < BaseService
   end
 
   def perform_links_search!
-    links = PreviewCard.search_for(
-      @query.gsub(/\A#/, ''),
-      @offset,
-      @limit,
+    ids = PreviewCard.search_for(
+      @query.gsub(/\A#/, '')
     )
+    if ids.nil? || ids.empty?
+      return []
+    end
+    links = PreviewCard.where(id: ids).order(created_at: :desc).limit(@limit).offset(@offset)
     links.reject { |link| 
       LinkBlock.block?(link.url)
     }
@@ -113,11 +115,14 @@ class SearchServiceV3 < BaseService
       results << result
     end    
 
-    account_ids         = results.map(&:account_id)
-    account_domains     = results.map(&:account_domain)
-    preloaded_relations = relations_map_for_account(@account, account_ids, account_domains)
+    if !@account.nil?
+      account_ids         = results.map(&:account_id)
+      account_domains     = results.map(&:account_domain)
+      preloaded_relations = relations_map_for_account(@account, account_ids, account_domains)
 
-    results.reject { |status| StatusFilter.new(status, @account, preloaded_relations).filtered? }
+      results.reject { |status| StatusFilter.new(status, @account, preloaded_relations).filtered? }
+    end
+    results
   rescue Faraday::ConnectionFailed
     []
   end

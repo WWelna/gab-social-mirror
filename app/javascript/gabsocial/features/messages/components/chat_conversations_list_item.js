@@ -114,6 +114,7 @@ class ChatConversationsListItem extends ImmutablePureComponent {
     const isBlockedByLastChatMessageAccount = !!lastChatMessageFromAccountId && isBlockedById(lastChatMessageFromAccountId)
     const isMutingLastChatMessageAccount = !!lastChatMessageFromAccountId && isMutingId(lastChatMessageFromAccountId)
     const isFilteredLastChatMessage = !!lastMessage && lastChatMessageFromAccountId !== me && lastMessage.get('filtered')
+    const hasMedia = !!lastMessage && lastMessage.get('media_attachments').size > 0
 
     const lastMessageSentAt = chatConversation.get('last_chat_message_sent_at', null)
     let lastMessageText = !!lastMessage ? lastMessage.get('text', '') : ''
@@ -121,7 +122,11 @@ class ChatConversationsListItem extends ImmutablePureComponent {
     let alteredLastMessageText = false
     if (!lastMessageText && !!lastMessageSentAt || chatMessageIsExpired) {
       // deleted or expired
-      lastMessageText = 'Message deleted'
+      if (hasMedia) {
+        lastMessageText = 'Media attached'
+      } else {
+        lastMessageText = 'Message deleted'
+      }
       alteredLastMessageText = true
     } else if (isBlockedByLastChatMessageAccount) {
       lastMessageText = 'Blocked by messenger. Chat message unavailable.'

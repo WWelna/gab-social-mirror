@@ -36,6 +36,7 @@ class Api::V1::Timelines::ListController < Api::BaseController
 
   def set_statuses
     @statuses = cached_list_statuses
+    @statuses = @statuses.reject { |status| status.proper.nil? }
   end
 
   def cached_list_statuses

@@ -2,22 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { Map as ImmutableMap } from 'immutable';
-import get from 'lodash.get'
+import get from 'lodash/get'
 import StatusList from '../components/status_list'
 import GroupSortBlock from '../components/group_sort_block'
 import {
-  GROUP_TIMELINE_SORTING_TYPE_TOP,
-  groupSorts,
-  groupSortTops,
+  EXPLORE_SORT_CREATE_PARAMS,
+  GROUP_SORTS,
+  GROUP_SORT_TOPS,
 } from '../constants'
-
-function createParams({ sortByValue, sortByTopValue }) {
-  if (sortByValue === GROUP_TIMELINE_SORTING_TYPE_TOP) {
-    // see app/controllers/api/v1/timelines/group_controller.rb
-    return { sort_by: `top_${sortByTopValue}` }
-  }
-  return { sort_by: sortByValue }
-}
 
 function GroupTimeline({ params, isAdminOrMod, groupCategory }) {
   const timelineId = `group:${params.id}`
@@ -29,9 +21,9 @@ function GroupTimeline({ params, isAdminOrMod, groupCategory }) {
       pinsEndpoint={`/api/v1/timelines/group_pins/${params.id}`}
       showPins
       showAds
-      sorts={groupSorts}
-      topSorts={groupSortTops}
-      createParams={createParams}
+      sorts={GROUP_SORTS}
+      topSorts={GROUP_SORT_TOPS}
+      createParams={EXPLORE_SORT_CREATE_PARAMS}
       disableCanShow={isAdminOrMod}
       groupCategory={groupCategory}
     />

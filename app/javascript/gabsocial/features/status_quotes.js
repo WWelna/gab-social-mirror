@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { FormattedMessage } from 'react-intl'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { fetchQuotes, expandQuotes } from '../actions/interactions'
 import { fetchStatus } from '../actions/statuses'
 import { makeGetStatus } from '../selectors'
@@ -38,20 +38,20 @@ class StatusQuotes extends ImmutablePureComponent {
       list,
       statusId,
     } = this.props
- 
+
     if (!statusId) {
       return <ColumnIndicator type='missing' />
     }
 
     const quoteIdCount = !!quoteIds ? quoteIds.count() : 0
- 
+
     return (
       <ScrollableList
         scrollKey='quotes'
         emptyMessage={<FormattedMessage id='status.reposts.empty' defaultMessage='No one has quote posted this gab yet. When someone does, they will show up here.' />}
         onLoadMore={this.handleLoadMore}
         hasMore={hasMore}
-        isLoading={isLoading && quoteIdCount === 0}
+        isLoading={isLoading}
         showLoading={isLoading && quoteIdCount === 0}
         placeholderComponent={StatusPlaceholder}
         placeholderCount={1}

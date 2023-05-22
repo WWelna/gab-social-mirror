@@ -36,8 +36,9 @@ class ProfileOptionsPopover extends React.PureComponent {
     let menu = [];
 
     if (!account) return menu
-    if (account.get('id') === me) return menu
 
+    const isMyProfile = !account ? false : account.get('id') === me
+    
     menu.push({
       hideArrow: true,
       icon: 'share',
@@ -45,54 +46,63 @@ class ProfileOptionsPopover extends React.PureComponent {
       onClick: this.handleShare
     });
 
-    const isBlockedBy = account.getIn(['relationship', 'blocked_by'])
-    if (!isBlockedBy) {
-      menu.push({
-        hideArrow: true,
-        icon: 'comment',
-        title: intl.formatMessage(messages.mention, { name: account.get('acct') }),
-        onClick: this.handleOnMention
-      });
-    }
+    if (!isMyProfile) {
+      const isBlockedBy = account.getIn(['relationship', 'blocked_by'])
+      if (!isBlockedBy) {
+        menu.push({
+          hideArrow: true,
+          icon: 'comment',
+          title: intl.formatMessage(messages.mention, { name: account.get('acct') }),
+          onClick: this.handleOnMention
+        });
+      }
+      
+      if (account.getIn(['relationship', 'following'])) {
+        const showingReblogs = account.getIn(['relationship', 'showing_reblogs'])
+        menu.push({
+          hideArrow: true,
+          icon: 'repost',
+          title: intl.formatMessage(showingReblogs ? messages.hideReposts : messages.showReposts, {
+            name: account.get('username')
+          }),
+          onClick: this.handleRepostToggle,
+        })
+      }
 
-    if (account.getIn(['relationship', 'following'])) {
-      const showingReblogs = account.getIn(['relationship', 'showing_reblogs'])
+      
+      const isMuting = account.getIn(['relationship', 'muting'])
       menu.push({
         hideArrow: true,
-        icon: 'repost',
-        title: intl.formatMessage(showingReblogs ? messages.hideReposts : messages.showReposts, {
+        icon: 'audio-mute',
+        title: intl.formatMessage(isMuting ? messages.unmute : messages.mute, {
           name: account.get('username')
         }),
-        onClick: this.handleRepostToggle,
+        onClick: this.handleMute,
+      })
+
+      const isBlocking = account.getIn(['relationship', 'blocking'])
+      menu.push({
+        hideArrow: true,
+        icon: 'block',
+        title: intl.formatMessage(isBlocking ? messages.unblock : messages.block, {
+          name: account.get('username')
+        }),
+        onClick: this.handleBlock
+      })
+
+      menu.push({
+        hideArrow: true,
+        icon: 'error',
+        title: intl.formatMessage(messages.report, { name: account.get('username') }),
+        onClick: this.handleReport
+      })
+      menu.push({
+        hideArrow: true,
+        icon: 'star',
+        title: intl.formatMessage(isShortcut ? messages.remove_from_shortcuts : messages.add_to_shortcuts),
+        onClick: this.handleToggleShortcuts,
       })
     }
-
-    const isMuting = account.getIn(['relationship', 'muting'])
-    menu.push({
-      hideArrow: true,
-      icon: 'audio-mute',
-      title: intl.formatMessage(isMuting ? messages.unmute : messages.mute, {
-        name: account.get('username')
-      }),
-      onClick: this.handleMute,
-    })
-
-    const isBlocking = account.getIn(['relationship', 'blocking'])
-    menu.push({
-      hideArrow: true,
-      icon: 'block',
-      title: intl.formatMessage(isBlocking ? messages.unblock : messages.block, {
-        name: account.get('username')
-      }),
-      onClick: this.handleBlock
-    })
-
-    menu.push({
-      hideArrow: true,
-      icon: 'error',
-      title: intl.formatMessage(messages.report, { name: account.get('username') }),
-      onClick: this.handleReport
-    })
 
     // menu.push({
     //   hideArrow: true,
@@ -101,22 +111,24 @@ class ProfileOptionsPopover extends React.PureComponent {
     //   onClick: this.handleAddToList
     // })
 
-    menu.push({
-      hideArrow: true,
-      icon: 'star',
-      title: intl.formatMessage(isShortcut ? messages.remove_from_shortcuts : messages.add_to_shortcuts),
-      onClick: this.handleToggleShortcuts,
-    })
-
     if (isStaff) {
       menu.push({
-        hideArrow: true,
-        icon: 'circle',
+        icon: 'ellipsis',
         title: intl.formatMessage(messages.admin_account),
         href: `/admin/accounts/${account.get('id')}`,
         openInNewTab: true,
       })
     }
+
+    if (isMyProfile) {
+      menu.push({
+        icon: 'search',
+        title: 'Search my posts',
+        href: '/settings/statuses',
+        openInNewTab: true,
+      });   
+    }
+
 
     return menu
   }

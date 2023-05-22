@@ -73,6 +73,8 @@ class PreviewCardItem extends ImmutablePureComponent {
       noUnderline: 1,
     })
 
+    const linkSearchUrl = `/search/links?q=${encodeURIComponent(provider)}`
+
     return (
       <Wrapper
         noClasses
@@ -107,11 +109,17 @@ class PreviewCardItem extends ImmutablePureComponent {
               </div>
             }
 
-            <Text size='small' color='secondary' className={_s.mt5}>
-              {provider}
-            </Text>
+            <Button
+              isText              
+              backgroundColor='none'
+              to={linkSearchUrl}
+            >
+              <Text size='small' color='secondary' className={[_s.mt10, _s.underline]}>
+                See more links from {provider}
+              </Text>
+            </Button>
             
-            <div className={[_s.d, _s.flexRow, _s.pt5].join(' ')}>
+            <div className={[_s.mt5, _s.d, _s.flexRow, _s.pt5].join(' ')}>
               <Text color='secondary' size='small'>
                 <RelativeTimestamp timestamp={updated} />
               </Text>

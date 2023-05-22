@@ -28,17 +28,7 @@ class BatchedRemoveStatusService < BaseService
 
     sync_status_stats
 
-    return if options[:skip_side_effects]
-
-    # Batch by source account
-    statuses.group_by(&:account_id).each_value do |account_statuses|
-      account = account_statuses.first.account
-
-      next unless account
-
-      unpush_from_home_timelines(account, account_statuses)
-      unpush_from_list_timelines(account, account_statuses)
-    end
+    return # if options[:skip_side_effects]
 
   end
 
@@ -48,26 +38,6 @@ class BatchedRemoveStatusService < BaseService
     account_stat = AccountStat.where(account_id: @account.id).first
     if !account_stat.nil?
       account_stat.resync_gabs!
-    end
-  end
-
-  def unpush_from_home_timelines(account, statuses)
-    recipients = account.followers_for_local_distribution.to_a
-
-    recipients << account if account.local?
-
-    recipients.each do |follower|
-      statuses.each do |status|
-        FeedManager.instance.unpush_from_home(follower, status)
-      end
-    end
-  end
-
-  def unpush_from_list_timelines(account, statuses)
-    account.lists_for_local_distribution.select(:id, :account_id).each do |list|
-      statuses.each do |status|
-        FeedManager.instance.unpush_from_list(list, status)
-      end
     end
   end
 

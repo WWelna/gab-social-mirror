@@ -1,5 +1,5 @@
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
-import noop from 'lodash.noop'
+import noop from 'lodash/noop'
 import api, { getLinks } from '../api'
 import { me } from '../initial_state'
 import { importFetchedChatMessages } from './importer'

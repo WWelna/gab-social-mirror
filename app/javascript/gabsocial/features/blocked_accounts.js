@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import debounce from 'lodash.debounce'
 import { me } from '../initial_state'
 import { fetchBlocks, expandBlocks } from '../actions/blocks'
 import Account from '../components/account'
@@ -18,10 +17,6 @@ class Blocks extends ImmutablePureComponent {
   componentDidMount() {
     this.props.onFetchBlocks()
   }
-
-  handleLoadMore = debounce(() => {
-    this.props.onExpandBlocks()
-  }, 300, { leading: true })
 
   render() {
     const {
@@ -38,10 +33,10 @@ class Blocks extends ImmutablePureComponent {
         <BlockHeading title={intl.formatMessage(messages.blocks)} />
         <ScrollableList
           scrollKey='blocked_accounts'
-          onLoadMore={this.handleLoadMore}
+          onLoadMore={this.props.onExpandBlocks}
           hasMore={hasMore}
           isLoading={isLoading}
-          showLoading={isLoading}
+          showLoading={isLoading && (accountIds === undefined || accountIds.size === 0)}
           emptyMessage={emptyMessage}
           placeholderComponent={AccountPlaceholder}
           placeholderCount={3}

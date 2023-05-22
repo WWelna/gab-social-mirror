@@ -8,7 +8,7 @@ import { withRouter } from 'react-router-dom'
 import { openPopover } from '../../actions/popover'
 import { fetchShortcuts } from '../../actions/shortcuts'
 import { routerReset } from '../../actions/router'
-import { me } from '../../initial_state'
+import { me, isPro } from '../../initial_state'
 import Responsive from '../../features/ui/util/responsive_component'
 import Button from '../button'
 import Text from '../text'
@@ -108,10 +108,15 @@ class DefaultSidebar extends ImmutablePureComponent {
           )
         }
 
+        const unreadCount = s.get('unread_count')
+        let count = Math.min(unreadCount, 99)
+        if (count === 99) count = '99+'
+
         shortcutItems.push({
           to: s.get('to'),
           title: s.get('title'),
           image: s.get('image'),
+          count,
           shortcutComponent,
         })
       })
@@ -189,8 +194,17 @@ class DefaultSidebar extends ImmutablePureComponent {
         <SidebarSectionItem title='Groups' icon='group' to={groupsTo} onClick={groupsOnClick} />
         <SidebarSectionItem title='Feeds' icon='list' to='/feeds' />
         <SidebarSectionItem title='Explore' icon='explore' to='/explore' />
-        <SidebarSectionItem title='Pro Feed' icon='explore' to='/timeline/pro' />
+        <SidebarSectionItem title='Pro Feed' icon='pro' to='/timeline/pro' />
+        <SidebarSectionItem title='Polls Feed' icon='poll' to='/timeline/polls' />
+        <SidebarSectionItem title='Photos Feed' icon='media' to='/timeline/photos' />
+        <SidebarSectionItem title='Videos Feed' icon='tv' to='/timeline/videos' />
+        {
+          !!me && isPro && (
+            <SidebarSectionItem title='Voice' icon='audio' href='https://voice.gab.com/user/login' />
+          )
+        }
         <SidebarSectionItem title='News' icon='news' to='/news' />
+
         <SidebarSectionItem title='More' icon='more' onClick={this.handleOpenSidebarMorePopover} buttonRef={this.setMoreButtonRef} active={moreOpen} />
 
         {
@@ -230,6 +244,7 @@ class DefaultSidebar extends ImmutablePureComponent {
         }
 
         <SidebarSectionTitle>{intl.formatMessage(messages.explore)}</SidebarSectionTitle>
+        <SidebarSectionItem title='Gab TV' icon='tv' href='https://tv.gab.com' />
         <SidebarSectionItem title='Shop' icon='shop' href='https://shop.dissenter.com' />
         <SidebarSectionItem title='Trends' icon='trends' href='https://trends.gab.com' />
         <SidebarSectionItem title='GabPRO' icon='pro' href='https://pro.gab.com' />

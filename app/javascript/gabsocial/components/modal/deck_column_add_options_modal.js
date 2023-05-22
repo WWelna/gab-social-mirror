@@ -75,7 +75,15 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
   }
 
   getContentForColumn = () => {
-    const { column, lists, groups, suggestionsIds, ownList } = this.props
+    const {
+      column,
+      lists,
+      groups,
+      groupsIsLoading,
+      groupsIsFetched,
+      suggestionsIds,
+      ownList
+    } = this.props
     const { hashtagValue, usernameValue } = this.state
 
     if (column === 'hashtag') {
@@ -97,7 +105,9 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
         title: list.get('title'),
       }))
 
-      const showLoading = ownList.get('isLoading') &&
+      const isLoading = ownList.get('isLoading')
+
+      const showLoading = isLoading &&
         ownList.get('isFetched') === false &&
         lists.size === 0
   
@@ -105,6 +115,7 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
         <div className={[_s.d, _s.maxH340PX, _s.overflowYScroll].join(' ')}>
           <List
             scrollKey='lists-deck-add'
+            isLoading={isLoading}
             showLoading={showLoading}
             emptyMessage="You don't have any lists yet."
             items={listItems}
@@ -116,12 +127,12 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
         onClick: () => this.handleAdd(`group.${group.get('id')}`),
         title: group.get('title'),
       }))
-  
+
       return (
         <div className={[_s.d, _s.maxH340PX, _s.overflowYScroll].join(' ')}>
           <List
             scrollKey='groups-deck-add'
-            showLoading={groups.size === 0}
+            showLoading={groupsIsLoading && !groupsIsFetched && groups.size === 0}
             emptyMessage="You are not a member of any groups yet."
             items={listItems}
           />
@@ -217,6 +228,8 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
 const mapStateToProps = (state) => ({
   lists: getOrderedLists(state, LIST_TYPE_OWN),
   groups: getListOfGroups(state, { type: 'member' }),
+  groupsIsLoading: state.getIn(['group_lists', 'member', 'isLoading']),
+  groupsIsFetched: state.getIn(['group_lists', 'member', 'isFetched']),
   suggestionsIds: state.getIn(['deck', 'accountSuggestions']),
   ownList: state.getIn(['lists_lists', LIST_TYPE_OWN]),
 })

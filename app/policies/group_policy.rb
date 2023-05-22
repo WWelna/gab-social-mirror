@@ -55,26 +55,6 @@ class GroupPolicy < ApplicationPolicy
     return true
   end
 
-  def update_pin?
-    is_group_admin_or_moderator?
-  end
-  
-  def update_account?
-    is_group_admin_or_moderator?
-  end
-
-  def show_removed_accounts?
-    is_group_admin_or_moderator?
-  end
-  
-  def create_removed_account?
-    is_group_admin_or_moderator?
-  end
-
-  def destroy_removed_account?
-    is_group_admin_or_moderator?
-  end
-
   def allow_if_is_group_admin_or_moderator?
     staff? || is_group_admin_or_moderator?
   end

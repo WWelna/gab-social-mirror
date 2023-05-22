@@ -30,3 +30,29 @@ export const getRandomInt = (min, max) => {
   max = Math.floor(max)
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
+
+/**
+ * Randomize the items in an array. Warning: mutates existing array. It does
+ * not return anything. Array.prototype.sort also mutates.
+ *
+ * Usage:
+ * const items = [1, 2, 3]
+ * shuffle(items)
+ *
+ * Alternatively you can try: [1, 2, 3].sort(() => 0.5 - Math.random())
+ *
+ * It will not be really random like that. Fisher-Yates algorithm explained:
+ * http://www.robweir.com/blog/2010/02/microsoft-random-browser-ballot.html
+ * https://dev.to/codebubb/how-to-shuffle-an-array-in-javascript-2ikj
+ *
+ * TODO replace with lodash shuffle
+ * @param {array} arr
+ */
+export function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const temp = arr[i]
+    arr[i] = arr[j]
+    arr[j] = temp
+  }
+}

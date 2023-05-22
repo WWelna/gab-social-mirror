@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import { me } from '../initial_state'
 import PageTitle from '../features/ui/util/page_title'
 import DefaultLayout from '../layouts/default_layout'

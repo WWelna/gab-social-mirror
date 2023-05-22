@@ -163,7 +163,7 @@ class Carousel extends React.PureComponent {
         {
           size > 1 &&
           <div className={[_s.d, _s.posAbs, _s.bottom0, _s.mb15].join(' ')}>
-            <div className={[_s.d, _s.saveAreaInsetMB, _s.bgBlackOpaque, _s.circle, _s.py10, _s.px15].join(' ')}>
+            <div className={[_s.d, _s.saveAreaInsetMB, _s.bgBlackOpaquer, _s.circle, _s.py10, _s.px15].join(' ')}>
               <Pagination
                 count={size}
                 activeIndex={index}

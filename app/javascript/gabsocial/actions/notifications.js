@@ -1,7 +1,10 @@
 import api, { getLinks } from '../api'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import IntlMessageFormat from 'intl-messageformat'
-import noop from 'lodash.noop'
+import { CancelToken, isCancel } from 'axios'
+import noop from 'lodash/noop'
+import get from 'lodash/get'
+import isNil from 'lodash/isNil'
 import { fetchRelationships } from './accounts'
 import {
   importFetchedAccount,
@@ -18,8 +21,6 @@ import { NOTIFICATION_FILTERS } from '../constants'
 import { fetchGroupRelationships } from './groups'
 
 export const NOTIFICATIONS_UPDATE = 'NOTIFICATIONS_UPDATE'
-export const NOTIFICATIONS_UPDATE_QUEUE = 'NOTIFICATIONS_UPDATE_QUEUE'
-export const NOTIFICATIONS_DEQUEUE = 'NOTIFICATIONS_DEQUEUE'
 
 export const NOTIFICATIONS_EXPAND_REQUEST = 'NOTIFICATIONS_EXPAND_REQUEST'
 export const NOTIFICATIONS_EXPAND_SUCCESS = 'NOTIFICATIONS_EXPAND_SUCCESS'
@@ -30,8 +31,7 @@ export const NOTIFICATIONS_FILTER_SET = 'NOTIFICATIONS_FILTER_SET'
 export const NOTIFICATIONS_CLEAR = 'NOTIFICATIONS_CLEAR'
 export const NOTIFICATIONS_SCROLL_TOP = 'NOTIFICATIONS_SCROLL_TOP'
 export const NOTIFICATIONS_MARK_READ = 'NOTIFICATIONS_MARK_READ'
-
-export const MAX_QUEUED_NOTIFICATIONS = 40
+export const NOTIFICATIONS_INCREMENT_UNREAD = 'NOTIFICATIONS_INCREMENT_UNREAD'
 
 defineMessages({
   mention: { id: 'notification.mention', defaultMessage: '{name} mentioned you' },
@@ -47,6 +47,7 @@ const fetchRelatedRelationships = (dispatch, notifications) => {
 }
 
 const excludeTypesFromFilter = filter => {
+  if (filter === 'quote') filter = 'reblog'
   const allTypes = ImmutableList(['follow', 'favourite', 'reblog', 'mention', 'poll', 'group_moderation_event'])
   return allTypes.filterNot(item => item === filter).toJS()
 }
@@ -103,96 +104,20 @@ export const updateNotifications = (notification, intlMessages, intlLocale) => (
   }
 }
 
-/**
- * 
- */
-export const updateNotificationsQueue = (notification, intlMessages, intlLocale, curPath) => (dispatch, getState) => {
-  // : todo :
-  // const showAlert = getState().getIn(['settings', 'notifications', 'alerts', notification.type], true)
-  const filters = getFilters(getState(), { contextType: 'notifications' })
-
-  let filtered = false
-
-  const isOnNotificationsPage = curPath === '/notifications'
-
-  if (notification.type === 'mention') {
-    const regex = regexFromFilters(filters)
-    const searchIndex = notification.status.spoiler_text + '\n' + unescapeHTML(notification.status.content)
-    filtered = regex && regex.test(searchIndex)
-  }
-
-  // Desktop notifications
-  // : todo :
-  // if (typeof window.Notification !== 'undefined' && showAlert && !filtered) {
-  //   const title = new IntlMessageFormat(intlMessages[`notification.${notification.type}`], intlLocale).format({ name: notification.account.display_name.length > 0 ? notification.account.display_name : notification.account.username })
-  //   const body = (notification.status && notification.status.spoiler_text.length > 0) ? notification.status.spoiler_text : unescapeHTML(notification.status ? notification.status.content : '')
-
-  //   const notify = new Notification(title, { body, icon: notification.account.avatar, tag: notification.id })
-
-  //   notify.addEventListener('click', () => {
-  //     window.focus()
-  //     notify.close()
-  //   })
-  // }
-
-  if (isOnNotificationsPage) {
-    dispatch({
-      type: NOTIFICATIONS_UPDATE_QUEUE,
-      notification,
-      intlMessages,
-      intlLocale,
-    })
-  } else {
-    dispatch(updateNotifications(notification, intlMessages, intlLocale))
-  }
-
-}
+let expandCancel = null
 
 /**
  * 
  */
-export const forceDequeueNotifications = () => (dispatch) => {
-  dispatch({
-    type: NOTIFICATIONS_DEQUEUE,
-  })
-}
-
-/**
- * 
- */
-export const dequeueNotifications = () => (dispatch, getState) => {
-  const queuedNotifications = getState().getIn(['notifications', 'queuedNotifications'], ImmutableList())
-  const totalQueuedNotificationsCount = getState().getIn(['notifications', 'totalQueuedNotificationsCount'], 0)
-
-  if (totalQueuedNotificationsCount === 0) {
-    return
-  } else if (totalQueuedNotificationsCount > 0 && totalQueuedNotificationsCount <= MAX_QUEUED_NOTIFICATIONS) {
-    queuedNotifications.forEach((block) => {
-      dispatch(updateNotifications(block.notification, block.intlMessages, block.intlLocale))
-    })
-  } else {
-    dispatch(expandNotifications())
-  }
-
-  dispatch({
-    type: NOTIFICATIONS_DEQUEUE,
-  })
-}
-
-/**
- * 
- */
-export const expandNotifications = ({ maxId } = {}, done = noop) => (dispatch, getState) => {
+export const expandNotifications = ({ maxId } = {}) => (dispatch, getState) => {
   if (!me) return
 
   const onlyVerified = getState().getIn(['notifications', 'filter', 'onlyVerified'])
   const onlyFollowing = getState().getIn(['notifications', 'filter', 'onlyFollowing'])
   const activeFilter = getState().getIn(['notifications', 'filter', 'active'])
   const notifications = getState().get('notifications')
-  const isLoadingMore = !!maxId
 
-  if (notifications.get('isLoading') || notifications.get('isError')|| activeFilter === 'follow_requests') {
-    done()
+  if (notifications.get('isLoading') || notifications.get('isError')) {
     return
   }
 
@@ -201,6 +126,7 @@ export const expandNotifications = ({ maxId } = {}, done = noop) => (dispatch, g
     exclude_types: activeFilter === 'all' ? null : excludeTypesFromFilter(activeFilter),
   }
 
+  if (activeFilter === 'quote') params.quote = true
   if (!!onlyVerified) params.only_verified = onlyVerified
   if (!!onlyFollowing) params.only_following = onlyFollowing
 
@@ -210,9 +136,26 @@ export const expandNotifications = ({ maxId } = {}, done = noop) => (dispatch, g
 
   const operation = params.since_id !== undefined ? 'load-prev' : 'load-next'
 
-  dispatch(expandNotificationsRequest(isLoadingMore))
+  dispatch(expandNotificationsRequest())
 
-  api(getState).get('/api/v1/notifications', { params }).then(response => {
+  const cancelWarn = err =>
+    console.warn("error canceling notification request", err)
+
+  if (typeof expandCancel === 'function') {
+    try {
+      expandCancel()
+      expandCancel = null
+    } catch (cancelErr) {
+      cancelWarn(cancelErr)
+    }
+  }
+
+  const getOpts = {
+    params,
+    cancelToken: new CancelToken(c => (expandCancel = c))
+  }
+
+  api(getState).get('/api/v1/notifications', getOpts).then(response => {
     let next = getLinks(response).refs.find(link => link.rel === 'next')
     next = next && next.uri
     const notifications = response.data
@@ -232,44 +175,32 @@ export const expandNotifications = ({ maxId } = {}, done = noop) => (dispatch, g
       dispatch(importFetchedStatuses(statuses))
     }
 
-    dispatch(expandNotificationsSuccess({
-      notifications,
-      next,
-      isLoadingMore,
-      operation
-    }))
+    dispatch(expandNotificationsSuccess({ notifications, next, operation }))
     fetchRelatedRelationships(dispatch, notifications)
-    done()
   }).catch((error) => {
+    if (isCancel(error)) {
+      return cancelWarn(error)
+    }
     console.log(error)
-    dispatch(expandNotificationsFail(error, isLoadingMore))
-    done()
+    dispatch(expandNotificationsFail(error))
   })
 }
 
-const expandNotificationsRequest = (isLoadingMore) => ({
-  type: NOTIFICATIONS_EXPAND_REQUEST,
-  skipLoading: !isLoadingMore,
+const expandNotificationsRequest = () => ({
+  type: NOTIFICATIONS_EXPAND_REQUEST
 })
 
-const expandNotificationsSuccess = ({
-  notifications,
-  next,
-  isLoadingMore,
-  operation
-}) => ({
+const expandNotificationsSuccess = ({ notifications, next, operation }) => ({
   type: NOTIFICATIONS_EXPAND_SUCCESS,
   notifications,
   next,
-  skipLoading: !isLoadingMore,
   operation
 })
 
-const expandNotificationsFail = (error, isLoadingMore) => ({
+const expandNotificationsFail = error => ({
   type: NOTIFICATIONS_EXPAND_FAIL,
   error,
-  showToast: true,
-  skipLoading: !isLoadingMore,
+  showToast: true
 })
 
 /**
@@ -313,4 +244,16 @@ export const setFilter = (path, value) => (dispatch) => {
     value: value,
   })
   dispatch(expandNotifications())
+}
+
+/**
+ * When a notification arrives via altstream this increments the notification
+ * count and updates status reactions, quotes, and reports counts.
+ */
+export const streamingNotification = notification => dispatch => {
+  const statusId = get(notification, 'status.id')
+  if (isNil(statusId) === false) {
+    dispatch(importFetchedStatus(notification.status))
+  }
+  dispatch({ type: NOTIFICATIONS_INCREMENT_UNREAD })
 }

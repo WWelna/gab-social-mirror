@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { NavLink } from 'react-router-dom'
 import { connect } from 'react-redux'
 import { makeGetChatConversation } from '../../../selectors'
 import { openPopover } from '../../../actions/popover'
@@ -44,12 +45,16 @@ class ChatMessageHeader extends React.PureComponent {
 
         {
           !!otherAccounts && otherAccounts.size === 1 &&
-          <React.Fragment>
+          <NavLink
+            className={[_s.d, _s.flexRow, _s.flexGrow1, _s.noUnderline].join(' ')}
+            to={`/${otherAccounts.get(0).get('acct')}`}
+            title={otherAccounts.get(0).get('acct')}
+          >
             <Avatar account={otherAccounts.get(0)} size={34} />
             <div className={[_s.d, _s.pl10, _s.maxW100PC86PX, _s.overflowHidden].join(' ')}>
               <DisplayName account={otherAccounts.get(0)} isMultiline />
             </div>
-          </React.Fragment>
+          </NavLink>
         }
         {
           !!otherAccounts && otherAccounts.size > 1 &&

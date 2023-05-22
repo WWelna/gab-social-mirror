@@ -1,5 +1,6 @@
 import api, { getLinks } from '../api'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
+import isNil from 'lodash/isNil'
 import { importFetchedMarketplaceListings } from './importer'
 
 export const MARKETPLACE_LISTINGS_FETCH_BY_SEARCH_REQUEST = 'MARKETPLACE_LISTINGS_FETCH_BY_SEARCH_REQUEST'
@@ -136,6 +137,10 @@ const expandMarketplaceListingsBySearchFail = (error) => ({
 
 export const setParamsForMarketplaceListingSearch = (qs) => (dispatch) => {
   if (!isObject(qs)) return
+
+  if (isNil(qs.query)) {
+    qs.query = ''
+  }
 
   for (const key in qs) {
     if (Object.hasOwnProperty.call(qs, key)) {

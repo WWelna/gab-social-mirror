@@ -1,10 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { injectIntl } from 'react-intl'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import StatusCard from './status_card'
-import { MediaGallery, Video } from '../features/ui/util/async_components'
+import { MediaGallery } from '../features/ui/util/async_components'
 import Poll from './poll'
 
 // We use the component (and not the container) since we do not want
@@ -19,7 +18,6 @@ class StatusMedia extends ImmutablePureComponent {
     'status',
     'isChild',
     'isComment',
-    'cacheWidth',
     'defaultWidth',
     'visible',
     'width',
@@ -41,7 +39,6 @@ class StatusMedia extends ImmutablePureComponent {
       onToggleVisibility,
       visible,
       defaultWidth,
-      cacheWidth,
       isComposeModalOpen,
       isStatusCard,
     } = this.props
@@ -52,73 +49,38 @@ class StatusMedia extends ImmutablePureComponent {
     const statusId = status.get('id')
 
     if (status.get('media_attachments').size > 0) {
-      if (status.getIn(['media_attachments', 0, 'type']) === 'video') {
-        const video = status.getIn(['media_attachments', 0])
-
-        media.push(
-          <Bundle
-              key={`status-${statusId}-attachments`}
-              fetchComponent={Video}
-              loading={this.renderLoadingMedia}
-            >
-            {Component => (
-              <Component
-                inline
-                isComment={isComment}
-                preview={video.get('preview_url')}
-                blurhash={video.get('blurhash')}
-                src={video.get('url')}
-                sourceMp4={video.get('source_mp4')}
-                alt={video.get('description')}
-                aspectRatio={video.getIn(['meta', 'small', 'aspect'])}
-                fileContentType={video.get('file_content_type')}
-                sensitive={status.get('sensitive')}
-                height={110}
-                width={width}
-                onOpenVideo={onOpenVideo}
-                cacheWidth={cacheWidth}
-                visible={visible}
-                onToggleVisibility={onToggleVisibility}
-                meta={video.get('meta')}
-              />
-            )}
-          </Bundle>
-        )
-      } else {
-        media.push(
-          <Bundle
-             key={`status-${statusId}-gallery`}
-            fetchComponent={MediaGallery}
-            loading={this.renderLoadingMedia}
-          >
-            {Component => (
-              <Component
-                isComment={isComment}
-                reduced={isChild}
-                media={status.get('media_attachments')}
-                sensitive={status.get('sensitive')}
-                onOpenMedia={onOpenMedia}
-                cacheWidth={cacheWidth}
-                defaultWidth={defaultWidth}
-                visible={visible}
-                onToggleVisibility={onToggleVisibility}
-              />
-            )}
-          </Bundle>
-        )
-      }
+      media.push(
+        <Bundle
+          key={`status-${statusId}-gallery`}
+          fetchComponent={MediaGallery}
+          loading={this.renderLoadingMedia}
+        >
+          {Component => (
+            <Component
+              isComment={isComment}
+              reduced={isChild}
+              media={status.get('media_attachments')}
+              sensitive={status.get('sensitive')}
+              onOpenMedia={onOpenMedia}
+              defaultWidth={defaultWidth}
+              visible={visible}
+              onToggleVisibility={onToggleVisibility}
+            />
+          )}
+        </Bundle>
+      )
     } else {
       if (status.get('spoiler_text').length === 0 && status.get('card')) {
         media.push(
-          <StatusCard
-             key={`status-${statusId}-card`}
-            card={status.get('card')}
-            onOpenMedia={onOpenMedia}
-            cacheWidth={cacheWidth}
-            defaultWidth={defaultWidth}
-            isVertical={isComment || isChild}
-            isReduced={isStatusCard || isComposeModalOpen}
-          />
+          <div key={`status-${statusId}-card`} className={[_s.d, _s.px10].join(' ')}>
+            <StatusCard
+              card={status.get('card')}
+              onOpenMedia={onOpenMedia}
+              defaultWidth={defaultWidth}
+              isVertical={isComment || isChild}
+              isReduced={isStatusCard || isComposeModalOpen}
+            />
+          </div>
         )
       }
     }
@@ -127,17 +89,19 @@ class StatusMedia extends ImmutablePureComponent {
       media.push(<Poll  key={`status-${statusId}-poll`} pollId={status.get('poll')} />)
     }
 
+    if (!media.length) return null
+
     if (media.length > 1) {
       // if you have multiple elements space them out
       media = media.map((item, index) =>
         <div
           key={`status-${statusId}-spacer-${index}`}
-          className={_s.mt10}
+          className={_s.mt5}
         >{item}</div>
       )
     }
 
-    return <div className={_s.mt10}>{media}</div>
+    return <div className={_s.mt5}>{media}</div>
   }
 
 }
@@ -152,7 +116,6 @@ StatusMedia.propTypes = {
   onToggleVisibility: PropTypes.func,
   visible: PropTypes.bool,
   defaultWidth: PropTypes.number,
-  cacheWidth: PropTypes.func,
   isComposeModalOpen: PropTypes.bool,
   isStatusCard: PropTypes.bool,
 }

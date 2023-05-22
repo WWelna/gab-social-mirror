@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class Api::V1::Timelines::ProController < Api::BaseController
-  before_action :require_user!, only: [:show]
-  after_action :insert_pagination_headers, unless: -> { @statuses.empty? }
+  before_action :set_sort_type
 
   def show
     @statuses = load_statuses
+    @statuses.reject { |status| status.proper.nil? }
     render json: @statuses, each_serializer: REST::StatusSerializer, relationships: StatusRelationshipsPresenter.new(@statuses, current_user&.account_id)
   end
 
@@ -18,47 +18,44 @@ class Api::V1::Timelines::ProController < Api::BaseController
   end
 
   def pro_statuses
-    statuses = pro_timeline_statuses.paginate_by_id(
-      limit_param(DEFAULT_STATUSES_LIMIT),
-      params_slice(:max_id, :since_id, :min_id)
-    )
+    statuses = Status.popular_accounts
 
-    if truthy_param?(:only_media)
-      # `SELECT DISTINCT id, updated_at` is too slow, so pluck ids at first, and then select id, updated_at with ids.
-      status_ids = statuses.joins(:media_attachments).distinct(:id).pluck(:id)
-      statuses = statuses.where(id: status_ids)
+    timeline_id = 'pro'
+
+    if params[:media_type] == 'videos'
+      timeline_id = 'pro:videos'
+      statuses = statuses.joins(:media_attachments).where(media_attachments: {type: [:gifv, :video]})
+    elsif params[:media_type] == 'photos'
+      timeline_id = 'pro:photos'
+      statuses = statuses.joins(:media_attachments).where(media_attachments: {type: [:image]})
     end
 
-    statuses = statuses.uniq { |s| s.account_id }
+    # only show 1 page if no user
+    page = if current_account
+      params[:page].to_i
+    else
+      [params[:page].to_i.abs, MIN_UNAUTHENTICATED_PAGES].min
+    end
+    
+    statuses = statuses.merge(SortingQueryBuilder.new.call(@sort_type, nil, page, timeline_id))
 
     statuses
   end
 
-  def pro_timeline_statuses
-    Status.as_pro_timeline(current_account)
-  end
+  def set_sort_type
+    @sort_type = 'newest'
+    @sort_type = 'top_today' if current_user.nil?
+    @sort_type = params[:sort_by] if [
+      'hot',
+      'newest',
+      'recent',
+      'top_today',
+      'top_weekly',
+      'top_monthly',
+      'top_yearly',
+      'top_all_time',
+    ].include? params[:sort_by]
 
-  def insert_pagination_headers
-    set_pagination_headers(next_path, prev_path)
-  end
-
-  def pagination_params(core_params)
-    params.slice(:limit, :only_media).permit(:limit, :only_media).merge(core_params)
-  end
-
-  def next_path
-    api_v1_timelines_pro_url pagination_params(max_id: pagination_max_id)
-  end
-
-  def prev_path
-    api_v1_timelines_pro_url pagination_params(min_id: pagination_since_id)
-  end
-
-  def pagination_max_id
-    @statuses.last.id
-  end
-
-  def pagination_since_id
-    @statuses.first.id
+    return @sort_type
   end
 end

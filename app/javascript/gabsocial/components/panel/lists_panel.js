@@ -105,6 +105,7 @@ class ListsPanel extends ImmutablePureComponent {
           <List
             scrollKey='lists_sidebar_panel'
             items={listItems}
+            isLoading={isLoading}
             showLoading={(lists.size === 0 && !isFetched) || isLoading}
           />
           }

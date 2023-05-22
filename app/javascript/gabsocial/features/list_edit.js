@@ -4,8 +4,8 @@ import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { injectIntl, defineMessages } from 'react-intl'
-import isObject from 'lodash.isobject'
-import throttle from 'lodash.throttle'
+import isObject from 'lodash/isObject'
+import throttle from 'lodash/throttle'
 import {
   setupListEditor,
   resetListEditor,

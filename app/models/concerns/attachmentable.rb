@@ -55,7 +55,7 @@ module Attachmentable
     self.class.attachment_definitions.each_key do |attachment_name|
       attachment = send(attachment_name)
 
-      next if attachment.blank? || !/image.*/.match?(attachment.content_type) || attachment.queued_for_write[:original].blank?
+      next if attachment.blank? || !/image.*/.match?(attachment.content_type) || attachment.queued_for_write[:original].blank? || account.nil?
 
       if ENV['CHECK_NSFW_SERVICE'] && attachment.content_type.start_with?('image/') && account.created_at > 1.month.ago
         begin

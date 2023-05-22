@@ -3,7 +3,7 @@ import {
   TIMELINE_INJECTION_FEATURED_GROUPS,
   TIMELINE_INJECTION_PROGRESS,
   TIMELINE_INJECTION_PRO_UPGRADE,
-  TIMELINE_INJECTION_PWA,
+  // TIMELINE_INJECTION_PWA,
   TIMELINE_INJECTION_SHOP,
   TIMELINE_INJECTION_USER_SUGGESTIONS,
   TIMELINE_INJECTION_GAB_TV_EXPLORE,
@@ -13,7 +13,7 @@ import {
   // GroupCategoriesInjection,
   ProgressInjection,
   ProUpgradeInjection,
-  PWAInjection,
+  // PWAInjection,
   ShopInjection,
   UserSuggestionsInjection,
   GabTVVideosInjection,
@@ -24,18 +24,28 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import Bundle from '../../features/ui/util/bundle'
 
-const INJECTION_COMPONENTS = {}
-INJECTION_COMPONENTS[TIMELINE_INJECTION_FEATURED_GROUPS] = FeaturedGroupsInjection
-// INJECTION_COMPONENTS[TIMELINE_INJECTION_GROUP_CATEGORIES] = GroupCategoriesInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_PROGRESS] = ProgressInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_PRO_UPGRADE] = ProUpgradeInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_PWA] = PWAInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_SHOP] = ShopInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_USER_SUGGESTIONS] = UserSuggestionsInjection
-INJECTION_COMPONENTS[TIMELINE_INJECTION_GAB_TV_EXPLORE] = GabTVVideosInjection
+import {
+  showVideos,
+  showSuggestedUsers,
+  showGroups
+} from '../../initial_state'
+
+/**
+ * These injections always load but the others only load if the user preference
+ * is turned on.
+ */
+const INJECTION_COMPONENTS = {
+  [TIMELINE_INJECTION_PROGRESS]: ProgressInjection,
+  [TIMELINE_INJECTION_PRO_UPGRADE]: ProUpgradeInjection,
+  [TIMELINE_INJECTION_SHOP]: ShopInjection,
+  [TIMELINE_INJECTION_FEATURED_GROUPS]: showGroups && FeaturedGroupsInjection,
+  [TIMELINE_INJECTION_USER_SUGGESTIONS]:showSuggestedUsers && UserSuggestionsInjection,
+  [TIMELINE_INJECTION_GAB_TV_EXPLORE]: showVideos && GabTVVideosInjection,
+  // [TIMELINE_INJECTION_PWA]: PWAInjection,
+  // [TIMELINE_INJECTION_GROUP_CATEGORIES]: GroupCategoriesInjection,
+}
 
 class TimelineInjectionRoot extends React.PureComponent {
-
   renderLoading = () => {
     return <div />
   }
@@ -45,21 +55,15 @@ class TimelineInjectionRoot extends React.PureComponent {
   }
 
   render() {
-    const { props, type, width } = this.props
-    const visible = typeof type === 'string' &&
-      typeof INJECTION_COMPONENTS[type] === 'string'
+    const { width, type, index } = this.props
 
-    if (!visible) return null
+    const injectionKey = type || combinedInjections[index]
+    if (!injectionKey) return
+
+    const comp = INJECTION_COMPONENTS[injectionKey]
+    if (!comp) return null // not loaded yet
 
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-
-    //If is not XS and popover is pwa, dont show
-    //Since not on mobile this should not be visible
-    if (!isXS && type === TIMELINE_INJECTION_PWA) return null
-
-    const comp = INJECTION_COMPONENTS[type]
-
-    if (!comp) return null // not loaded yet
 
     return (
       <div>
@@ -67,36 +71,25 @@ class TimelineInjectionRoot extends React.PureComponent {
           fetchComponent={comp}
           loading={this.renderLoading}
           error={this.renderError}
-          renderDelay={150}
         >
-          {
-            (Component) => (
-              <Component
-                isXS={isXS}
-                injectionId={type}
-                {...props}
-              />
-            )
-          }
+          {Component => (
+            <Component isXS={isXS} injectionId={injectionKey} />
+          )}
         </Bundle>
       </div>
     )
   }
-
 }
 
-const mapStateToProps = (state) => ({
-  width: state.getIn(['settings', 'window_dimensions', 'width']),
+const mapStateToProps = state => ({
+  width: state.getIn(['settings', 'window_dimensions', 'width'])
 })
 
 TimelineInjectionRoot.propTypes = {
-  // type is not supposed to be an object but while loading it is inexplicably
-  type: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-  props: PropTypes.object,
-}
-
-TimelineInjectionRoot.defaultProps = {
-  props: {},
+  width: PropTypes.number,
+  index: PropTypes.number,
+  type: PropTypes.string,
+  subProps: PropTypes.object,
 }
 
 export default connect(mapStateToProps)(TimelineInjectionRoot)

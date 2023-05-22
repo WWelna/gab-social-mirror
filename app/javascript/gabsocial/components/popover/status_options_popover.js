@@ -23,7 +23,9 @@ import {
   deleteStatus,
   editStatus,
   muteStatus,
-  unmuteStatus
+  unmuteStatus,
+  fetchConversationOwner,
+  removeReply,
 } from '../../actions/statuses'
 import {
   fetchBookmarkCollections,
@@ -43,7 +45,9 @@ import { closePopover, openPopover } from '../../actions/popover'
 import {
   MODAL_PRO_UPGRADE,
   POPOVER_SHARE,
-  MODAL_COMPOSE
+  MODAL_COMPOSE,
+  MODAL_BLOCK_ACCOUNT,
+  MODAL_REMOVE_REPLY,
 } from '../../constants'
 import PopoverLayout from './popover_layout'
 import Button from '../button'
@@ -57,6 +61,12 @@ class StatusOptionsPopover extends ImmutablePureComponent {
 
   componentDidMount() {
     const { status, statusId, groupRelationships } = this.props
+
+    if (!!status.get('conversation_id')) {
+      if (!status.get('conversation_owner')) {
+        this.props.fetchOwner(statusId, status.get('conversation_id'))
+      }
+    }
 
     if (status.get('pinnable')) {
       this.props.fetchIsPin(statusId)
@@ -169,6 +179,14 @@ class StatusOptionsPopover extends ImmutablePureComponent {
     this.props.onClosePopover()
   }
 
+  handleRemoveClick = () => {
+    this.props.onRemove(this.props.status.get('id'), this.props.status.get('account'))
+  }
+
+  handleRemoveAndBlockClick = () => {
+    this.props.onRemoveAndBlock(this.props.status.get('id'), this.props.status.get('account_id'))
+  }
+
   render() {
     const {
       isXS,
@@ -272,14 +290,31 @@ class StatusOptionsPopover extends ImmutablePureComponent {
           }),
           onClick: this.handleMuteClick
         })
+
         menu.push({
           icon: 'block',
           hideArrow: true,
           title: intl.formatMessage(messages.block, {
             name: status.getIn(['account', 'username'])
           }),
-          onClick: this.handleBlockClick
+          onClick: this.handleBlockClick,
         })
+
+        if (status.get('account').get('id') != me && status.get('conversation_owner') == me && !!status.get('in_reply_to_id')) {
+          menu.push({
+            icon: 'trash',
+            hideArrow: true,
+            title: 'Remove Reply',
+            onClick: this.handleRemoveClick
+          })
+          menu.push({
+            icon: 'block',
+            hideArrow: true,
+            title: 'Remove Reply and Block',
+            onClick: this.handleRemoveAndBlockClick,
+          })
+        }
+
         menu.push({
           icon: 'warning',
           hideArrow: true,
@@ -292,28 +327,29 @@ class StatusOptionsPopover extends ImmutablePureComponent {
     }
 
     if (withGroupAdmin || (!!groupRelationships && isStaff)) {
+      let pinned = status.get('pinned_by_group')
       menu.push(null)
-      menu.push({
-        icon: 'trash',
-        hideArrow: true,
-        title: intl.formatMessage(messages.group_remove_account),
-        onClick: this.handleGroupRemoveAccount
-      })
-      menu.push({
-        icon: 'trash',
-        hideArrow: true,
-        title: intl.formatMessage(messages.group_remove_post),
-        onClick: this.handleGroupRemovePost
-      })
-      menu.push(null)
+      if (!pinned) {
+        if (status.getIn(['account', 'id']) !== me) {
+          menu.push({
+            icon: 'trash',
+            hideArrow: true,
+            title: intl.formatMessage(messages.group_remove_account),
+            onClick: this.handleGroupRemoveAccount
+          })
+        }
+        menu.push({
+          icon: 'trash',
+          hideArrow: true,
+          title: intl.formatMessage(messages.group_remove_post),
+          onClick: this.handleGroupRemovePost
+        })
+        menu.push(null)
+      }
       menu.push({
         icon: 'pin',
         hideArrow: true,
-        title: intl.formatMessage(
-          status.get('pinned_by_group')
-            ? messages.groupUnpin
-            : messages.groupPin
-        ),
+        title: intl.formatMessage(pinned ? messages.groupUnpin : messages.groupPin),
         onClick: this.handleGroupPinStatus
       })
     }
@@ -425,7 +461,7 @@ const messages = defineMessages({
   delete: { id: 'status.delete', defaultMessage: 'Delete' },
   edit: { id: 'status.edit', defaultMessage: 'Edit' },
   mute: { id: 'account.mute', defaultMessage: 'Mute @{name}' },
-  block: { id: 'account.block', defaultMessage: 'Block @{name}' },
+  block: { id: 'account.block', defaultMessage: 'Remove Reply & Block @{name}' },
   reply: { id: 'status.reply', defaultMessage: 'Reply' },
   more: { id: 'status.more', defaultMessage: 'More' },
   share: { id: 'status.share', defaultMessage: 'Share' },
@@ -501,6 +537,10 @@ const mapStateToProps = (state, { statusId }) => {
 }
 
 const mapDispatchToProps = dispatch => ({
+  fetchOwner(statusId, conversationId) {
+    dispatch(fetchConversationOwner(statusId, conversationId))
+  },
+
   fetchIsPin(statusId) {
     dispatch(isPin(statusId))
   },
@@ -595,8 +635,9 @@ const mapDispatchToProps = dispatch => ({
     dispatch(closePopover())
     const account = status.get('account')
     dispatch(
-      openModal('BLOCK_ACCOUNT', {
-        accountId: account.get('id')
+      openModal(MODAL_BLOCK_ACCOUNT, {
+        accountId: account.get('id'),
+        block: true,
       })
     )
   },
@@ -676,7 +717,31 @@ const mapDispatchToProps = dispatch => ({
     dispatch(updateBookmarkCollectionStatus(statusId, bookmarkCollectionId))
     dispatch(closePopover())
   },
-  onClosePopover: () => dispatch(closePopover())
+  onClosePopover: () => dispatch(closePopover()),
+  onRemoveAndBlock(statusId, accountId) {
+    dispatch(closePopover())
+    dispatch(
+      openModal(MODAL_REMOVE_REPLY, {
+        statusId,
+        accountId,
+        block: true,
+      })
+    )
+  },
+  onRemove(statusId, account) {
+    dispatch(closePopover())
+    if (account.getIn(['relationship', 'blocking'])) {
+      dispatch(removeReply(statusId, false))
+    } else {
+      dispatch(
+        openModal(MODAL_REMOVE_REPLY, {
+          statusId,
+          accountId: account.get('id'),
+          block: false,
+        })
+      )
+    }
+  },
 })
 
 StatusOptionsPopover.propTypes = {
@@ -698,6 +763,7 @@ StatusOptionsPopover.propTypes = {
   fetchIsPinnedGroupStatus: PropTypes.func.isRequired,
   fetchIsBookmark: PropTypes.func.isRequired,
   fetchIsPin: PropTypes.func.isRequired,
+  fetchOwner: PropTypes.func.isRequired,
   onFetchBookmarkCollections: PropTypes.func.isRequired,
   onUpdateBookmarkCollectionStatus: PropTypes.func.isRequired,
   onUnmention: PropTypes.func.isRequired,

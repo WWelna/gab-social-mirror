@@ -2,10 +2,22 @@
 
 class PostChatMessageService < BaseService
 
+
+  # copied from FetchLinkCardService
+  URL_PATTERN = %r{
+    (                                                                                                 #   $1 URL
+      (https?:\/\/)                                                                                   #   $2 Protocol (required)
+      (#{Twitter::Regex[:valid_domain]})                                                              #   $3 Domain(s)
+      (?::(#{Twitter::Regex[:valid_port_number]}))?                                                   #   $4 Port number (optional)
+      (/#{Twitter::Regex[:valid_url_path]}*)?                                                         #   $5 URL Path and anchor
+      (\?#{Twitter::Regex[:valid_url_query_chars]}*#{Twitter::Regex[:valid_url_query_ending_chars]})? #   $6 Query String
+    )
+  }iox
+
   def call(account, options = {})
     @account = account
 
-    # : todo : might contain media or other non-text message
+    @options = options
     @text = options[:text] || ''
     @chat_conversation_account = options[:chat_conversation_account]
     @marketplace_listing = options[:marketplace_listing]
@@ -14,6 +26,7 @@ class PostChatMessageService < BaseService
     preprocess_attributes!
 
     validate!
+    validate_media!
 
     set_chat_conversation_participants!
 
@@ -27,6 +40,15 @@ class PostChatMessageService < BaseService
 
   private
 
+  def parse_urls
+    urls = @text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
+    return urls.reject { |uri| bad_url?(uri) }.first
+  end
+
+  def bad_url?(uri)
+    uri.host.blank? || !%w(http https).include?(uri.scheme)
+  end
+  
   def preprocess_attributes!
     @text = ActionController::Base.helpers.strip_tags(@text)
     unless @chat_conversation_account
@@ -42,17 +64,40 @@ class PostChatMessageService < BaseService
       raise GabSocial::NotPermittedError, "Please confirm your email before sending chats"
     end
 
-    if @text.blank?
+    if @text.blank? && @options[:media_ids].nil?
       raise GabSocial::NotPermittedError, 'Message required'
     end
 
-    if ChatMessageSimilarityService.new.call?(@text, @account.id)
+    if ENV['AUTHCODE_FROM_USER']
+      if @account.username == ENV['AUTHCODE_FROM_USER']
+        return
+      end
+    end
+
+    if !@account.is_pro? && ChatMessageSimilarityService.new.call?(@text, @account.id)
       raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
     end
 
     if LinkBlock.block?(@text)
       raise GabSocial::NotPermittedError, "A link you are trying to share has been flagged as spam, if you believe this is a mistake please contact support@gab.com and let us know."
     end
+  end
+
+  def validate_media!
+    max_media = 8
+    return if @options[:media_ids].blank? || !@options[:media_ids].is_a?(Enumerable)
+
+    raise GabSocial::ValidationError, "Cannot attach more than #{max_media} files" if @options[:media_ids].size > max_media
+
+    # Check Image Blocks for each media fingerprint md5
+    @options[:media_ids].each do |media_id|
+      media = MediaAttachment.find(media_id)
+      if media.image? && ImageBlock.where(md5: media.file_fingerprint).exists?
+        raise GabSocial::ValidationError, 'Media could not be attached.'
+      end
+    end
+
+    @media = @account.media_attachments.unattached.where(id: @options[:media_ids].take(max_media).map(&:to_i))
   end
 
   def set_chat_conversation_participants!
@@ -66,11 +111,16 @@ class PostChatMessageService < BaseService
       from_account: @account,
       chat_conversation: @chat_conversation_account.chat_conversation,
       text: @text,
-      expires_at: message_expiration
+      expires_at: message_expiration,
+      media_attachments: @media || [],
     )
   end
 
   def postprocess_chat!
+    if !parse_urls.nil?
+      ChatMessageLinkCrawlWorker.perform_async(@chat.id)
+    end
+
     @chat_conversation_participants_accounts.each do |participant|
       # get not mine
       if @chat_conversation_account.id != participant.id

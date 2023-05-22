@@ -16,7 +16,7 @@ import List from './list'
 import { closeSidebar } from '../actions/sidebar'
 import { openModal } from '../actions/modal'
 import { shortNumberFormat } from '../utils/numbers'
-import { me } from '../initial_state'
+import { me, isPro } from '../initial_state'
 import { makeGetAccount } from '../selectors'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import {
@@ -60,7 +60,7 @@ class SidebarXS extends ImmutablePureComponent {
         
     return (
       <div className={containerClasses}>
-        <div className={[_s.d, _s.posFixed, _s.top0, _s.left0, _s.right0, _s.bgBlackOpaque, _s.bottom0].join(' ')} role='button' onClick={this.handleSidebarClose} />
+        <div className={[_s.d, _s.posFixed, _s.top0, _s.left0, _s.right0, _s.bgBlackOpaquer, _s.bottom0].join(' ')} role='button' onClick={this.handleSidebarClose} />
         <div className={[_s.defaut, _s.posFixed, _s.right0, _s.top0, _s.bottom0, _s.bgSecondary, _s.saveAreaInsetPT, _s.saveAreaInsetPB, _s.saveAreaInsetPL, _s.minW330PX, _s.borderRight1PX, _s.borderColorSecondary, _s.maxW80PC, _s.overflowYScroll].join(' ')}>
 
           <div
@@ -105,34 +105,82 @@ class SidebarXS extends ImmutablePureComponent {
             </div>
           </div>
 
-          <div className={[_s.d, _s.w100PC].join(' ')}>
-            <div className={[_s.d, _s.boxShadowNone].join(' ')}>
-              <List
-                items={[
-                  {
-                    to: `/${acct}`,
-                    onClick: this.handleSidebarClose,
-                    title: intl.formatMessage(messages.profile),
-                  },
-                  {
-                    to: '/feeds',
-                    onClick: this.handleSidebarClose,
-                    title: 'Feeds',
-                  },
-                  {
-                    to: '/shortcuts',
-                    onClick: this.handleSidebarClose,
-                    title: intl.formatMessage(messages.shortcuts),
-                  },
-                  {
-                    to: '/news',
-                    onClick: this.handleSidebarClose,
-                    title: 'News',
-                  },
-                ]}
-              />
+          { isPro && (
+            <div className={[_s.d, _s.w100PC].join(' ')}>
+              <div className={[_s.d, _s.boxShadowNone].join(' ')}>
+                <List
+                  items={[
+                    {
+                      to: `/${acct}`,
+                      onClick: this.handleSidebarClose,
+                      title: intl.formatMessage(messages.profile),
+                    },
+                    {
+                      to: '/feeds',
+                      onClick: this.handleSidebarClose,
+                      title: 'Feeds',
+                    },
+                    {
+                      to: '/shortcuts',
+                      onClick: this.handleSidebarClose,
+                      title: intl.formatMessage(messages.shortcuts),
+                    },
+                    {
+                      to: `/${acct}/bookmarks`,
+                      onClick: this.handleSidebarClose,
+                      title: 'Bookmarks',
+                    },
+                    {
+                      to: '/news',
+                      onClick: this.handleSidebarClose,
+                      title: 'News',
+                    },
+                    {
+                      href: 'https://voice.gab.com/user/login',
+                      onClick: this.handleSidebarClose,
+                      title: 'Voice',
+                    },                    
+                  ]}
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          { !isPro && (
+            <div className={[_s.d, _s.w100PC].join(' ')}>
+              <div className={[_s.d, _s.boxShadowNone].join(' ')}>
+                <List
+                  items={[
+                    {
+                      to: `/${acct}`,
+                      onClick: this.handleSidebarClose,
+                      title: intl.formatMessage(messages.profile),
+                    },
+                    {
+                      to: '/feeds',
+                      onClick: this.handleSidebarClose,
+                      title: 'Feeds',
+                    },
+                    {
+                      to: '/shortcuts',
+                      onClick: this.handleSidebarClose,
+                      title: intl.formatMessage(messages.shortcuts),
+                    },
+                    {
+                      to: `/${acct}/bookmarks`,
+                      onClick: this.handleSidebarClose,
+                      title: 'Bookmarks',
+                    },
+                    {
+                      to: '/news',
+                      onClick: this.handleSidebarClose,
+                      title: 'News',
+                    },
+                  ]}
+                />
+              </div>
+            </div>          
+          )}
 
           <div className={[_s.d, _s.w100PC].join(' ')}>
             <div className={[_s.d, _s.mt5, _s.boxShadowNone].join(' ')}>
@@ -178,6 +226,26 @@ class SidebarXS extends ImmutablePureComponent {
                     to: '/timeline/pro',
                     onClick: this.handleSidebarClose,
                     title: intl.formatMessage(messages.proFeed),
+                  },
+                  {
+                    to: '/timeline/polls',
+                    onClick: this.handleSidebarClose,
+                    title: 'Polls feed'
+                  },
+                  {
+                    to: '/timeline/photos',
+                    onClick: this.handleSidebarClose,
+                    title: 'Photos feed'
+                  },
+                  {
+                    to: '/timeline/videos',
+                    onClick: this.handleSidebarClose,
+                    title: 'Videos feed'
+                  },
+                  {
+                    href: 'https://tv.gab.com',
+                    onClick: this.handleSidebarClose,
+                    title: 'Gab TV',
                   },
                   {
                     href: 'https://pro.gab.com',

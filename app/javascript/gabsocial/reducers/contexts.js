@@ -6,6 +6,10 @@ import {
   COMMENTS_FETCH_SUCCESS,
   CONTEXT_FETCH_SUCCESS,
   CLEAR_ALL_COMMENTS,
+  COMMENTS_FETCH_REQUEST,
+  COMMENTS_FETCH_FAIL,
+  REMOVE_REPLY_SUCCESS,
+  STATUS_DELETE_SUCCESS,
 } from '../actions/statuses'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
 import compareId from '../utils/compare_id'
@@ -14,6 +18,7 @@ const initialState = ImmutableMap({
   inReplyTos: ImmutableMap(),
   replies: ImmutableMap(),
   nexts: ImmutableMap(),
+  isLoading: ImmutableMap()
 })
 
 const normalizeContext = (immutableState, id, ancestors, descendants) => immutableState.withMutations(state => {
@@ -87,14 +92,25 @@ export default function replies(state = initialState, action) {
   case CLEAR_ALL_COMMENTS:
     state = state.withMutations((mutable) => {
       mutable.setIn(['nexts', action.id], null)
+      mutable.setIn(['fetchedStatusParts', action.id], false)
     })
     const thisReplies = state.getIn(['replies', action.id])
     return deleteFromContexts(state, thisReplies)
   case COMMENTS_FETCH_SUCCESS:
     state = state.withMutations((mutable) => {
-      mutable.setIn(['nexts', action.id], action.next);
+      mutable.setIn(['nexts', action.id], action.next)
+      mutable.setIn(['isLoading', action.id], false)
+      mutable.setIn(['fetchedStatusParts', action.id], true)
     })
     return normalizeContext(state, action.id, ImmutableList(), action.descendants);
+  case COMMENTS_FETCH_REQUEST:
+    return state.setIn(['isLoading', action.id], true)
+  case COMMENTS_FETCH_FAIL:
+    return state.setIn(['isLoading', action.id], false)
+  case REMOVE_REPLY_SUCCESS:
+    return deleteFromContexts(state, [action.statusId]) 
+  case STATUS_DELETE_SUCCESS:
+    return deleteFromContexts(state, [action.id])
   default:
     return state;
   }

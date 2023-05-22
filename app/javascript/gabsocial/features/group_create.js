@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import { withRouter } from 'react-router-dom'
 import {
 	changeGroupTitle,

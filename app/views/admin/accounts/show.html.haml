@@ -182,8 +182,24 @@
                 %span YES
               - else
                 %span no
-            - if @account.is_spam?
-              %td= table_link_to 'ban', 'Reset', reset_spam_admin_account_path(@account.id), method: :post
+            %td
+              - if @account.is_spam?
+                = table_link_to '', 'Mark as safe', reset_spam_admin_account_path(@account.id), class: 'button', method: :post
+              - else
+                = table_link_to '', 'Mark as spam', spam_admin_account_path(@account.id), class: 'button', method: :post
+
+          %tr
+            %th Is parody/commentary/fan account
+            %td
+              - if @account.is_parody
+                %span YES
+              - else
+                %span no
+            %td
+              - if @account.is_parody
+                = table_link_to '', 'Remove parody', reset_parody_admin_account_path(@account.id), class: 'button', method: :post
+              - else
+                = table_link_to '', 'Mark as parody', parody_admin_account_path(@account.id), class: 'button', method: :post
 
 
           %tr

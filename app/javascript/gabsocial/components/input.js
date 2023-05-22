@@ -19,6 +19,7 @@ class Input extends React.PureComponent {
       value,
       hasClear,
       onChange,
+      onKeyPress,
       onKeyUp,
       onFocus,
       onBlur,
@@ -112,6 +113,7 @@ class Input extends React.PureComponent {
             ref={inputRef}
             value={value}
             onChange={this.handleOnChange}
+            onKeyPress={onKeyPress}
             onKeyUp={onKeyUp}
             onFocus={onFocus}
             onBlur={onBlur}
@@ -145,6 +147,7 @@ Input.propTypes = {
   value: PropTypes.string,
   hasClear: PropTypes.bool,
   onChange: PropTypes.func,
+  onKeyPress: PropTypes.func,
   onKeyUp: PropTypes.func,
   onFocus: PropTypes.func,
   onBlur: PropTypes.func,

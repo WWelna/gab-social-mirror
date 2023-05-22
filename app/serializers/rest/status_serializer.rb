@@ -6,7 +6,7 @@ class REST::StatusSerializer < ActiveModel::Serializer
              :url, :direct_replies_count, :replies_count, :reblogs_count, :pinnable, :pinnable_by_group,
              :favourites_count, :quote_of_id, :expires_at, :has_quote, :bookmark_collection_id,
              :quotes_count, :reaction_id, :reactions_counts, :is_reply, :account_id,
-             :media_attachment_ids
+             :media_attachment_ids, :conversation_id
 
   attribute :favourited, if: :current_user?
   attribute :reblogged, if: :current_user?
@@ -17,9 +17,10 @@ class REST::StatusSerializer < ActiveModel::Serializer
   attribute :markdown, if: :owned_by_user
 
   belongs_to :reblog, serializer: REST::StatusSerializer
-  belongs_to :quote, serializer: REST::StatusSerializer
+  belongs_to :quote, serializer: REST::QuotedStatusSerializer
   belongs_to :account, serializer: REST::AccountSerializer, unless: :exclude_account?
   belongs_to :group, serializer: REST::GroupSerializer
+  belongs_to :status_context, serializer: REST::StatusContextSerializer
 
   has_many :media_attachments, serializer: REST::MediaAttachmentSerializer, unless: :exclude_media?
   has_many :ordered_mentions, key: :mentions
@@ -43,12 +44,12 @@ class REST::StatusSerializer < ActiveModel::Serializer
     end
   end
 
+  def conversation_id
+    object.conversation_id.to_s if !object.conversation_id.nil?
+  end
+
   def direct_replies_count
-    if instance_options && instance_options[:relationships]
-      instance_options[:relationships].direct_replies_count_map[object.id] || 0
-    else
-      object.direct_replies_count
-    end
+    object.direct_replies_count
   end
 
   def quotes_count

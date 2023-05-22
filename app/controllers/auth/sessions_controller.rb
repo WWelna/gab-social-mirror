@@ -32,10 +32,12 @@ class Auth::SessionsController < Devise::SessionsController
   end
 
   def destroy
-    tmp_stored_location = stored_location_for(:user)
-    super
-    flash.delete(:notice)
-    store_location_for(:user, tmp_stored_location) if continue_after?
+    ActiveRecord::Base.connected_to(role: :writing) do
+      tmp_stored_location = stored_location_for(:user)
+      super
+      flash.delete(:notice)
+      store_location_for(:user, tmp_stored_location) if continue_after?
+    end
   end
 
   protected

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import isEqual from 'lodash.isequal'
+import isEqual from 'lodash/isEqual'
 import { APP_NAME } from '../../../constants'
 import { loggedIn } from '../../../initial_state'
 

@@ -16,7 +16,7 @@ export default class TermsOfService extends React.PureComponent {
             <Heading>GAB AI INC</Heading>
             <br />
             <Heading>Website Terms of Service</Heading>
-            <Heading size='h4'>Last Updated: 7 June 2022</Heading>
+            <Heading size='h4'>Last Updated: 18 January 2023</Heading>
             <br />
             <Heading size='h2'>Acceptance of the Terms of Service</Heading>
             <br />
@@ -225,7 +225,7 @@ export default class TermsOfService extends React.PureComponent {
                 <Text tagName='p' size='medium'>If we provide desktop, mobile, or other applications for download, you may download one copy to each of your computers or mobile devices solely for your own personal use, provided you agree to be bound by our end user license agreement for such applications.</Text>
               </li>
               <li className={_s.mt10}>
-                <Text tagName='p' size='medium'>Where we provide social media features with certain content on Gab.com, OnGab.com and Dissenter.com, you may take such actions as are enabled by such features.</Text>
+                <Text tagName='p' size='medium'>Where we provide social media features with certain content on Gab.com and Dissenter.com, you may take such actions as are enabled by such features.</Text>
               </li>
             </ul>
 
@@ -286,6 +286,9 @@ export default class TermsOfService extends React.PureComponent {
               </li>
               <li className={_s.mt10}>
                 <Text tagName='p' size='medium'>Use any device, software, or routine that interferes with the proper working of the Website.</Text>
+              </li>
+              <li className={_s.mt10}>
+                <Text tagName='p' size='medium'>Attempt to sell, buy, or solicit other forms of payment in exchange for Gab usernames. This may result in permanent account suspension. </Text>
               </li>
               <li className={_s.mt10}>
                 <Text tagName='p' size='medium'>Introduce any viruses, Trojan horses, worms, logic bombs, or other material that is malicious or technologically harmful.</Text>

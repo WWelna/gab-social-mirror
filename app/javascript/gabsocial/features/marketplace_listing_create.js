@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import {
   changeMarketplaceListingTitle,
   changeMarketplaceListingDescription,

@@ -11,7 +11,7 @@ const nonTogglePopovers = [
   POPOVER_SHARE
 ]
 
-import get from 'lodash.get'
+import get from 'lodash/get'
 
 const initialState = Immutable.Map({
   popoverType: null,

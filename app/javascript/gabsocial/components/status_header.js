@@ -9,7 +9,7 @@ import moment from 'moment-mini'
 import { openPopover } from '../actions/popover'
 import { openModal } from '../actions/modal'
 import { me } from '../initial_state'
-import { CX } from '../constants'
+import { ACCOUNT_IS_PARODY_DESCRIPTION, CX } from '../constants'
 import RelativeTimestamp from './relative_timestamp'
 import DisplayName from './display_name'
 import Text from './text'
@@ -141,6 +141,22 @@ class StatusHeader extends ImmutablePureComponent {
             </div>
 
             <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.lineHeight15].join(' ')}>
+              {
+                status.getIn(['account', 'is_parody']) &&
+                <>
+                  <Button
+                    isText
+                    underlineOnHover
+                    backgroundColor='none'
+                    color='none'
+                    tooltip={ACCOUNT_IS_PARODY_DESCRIPTION}
+                  >
+                    <Text size='small' color='secondary'>Parody</Text>
+                  </Button>
+                  <Text size='small' color='secondary' className={[_s.ml5, _s.mr5].join(' ')}>·</Text>
+                </>
+              }
+
               <Button
                 isText
                 underlineOnHover
@@ -169,6 +185,25 @@ class StatusHeader extends ImmutablePureComponent {
                   })} className={[_s.d, _s.displayInline, _s.ml5].join(' ')}>
                     <Icon id='stopwatch' size='13px' className={[_s.d, _s.cSecondary].join(' ')} />
                   </span>
+                </React.Fragment>
+              }
+
+              {
+                !!status.get('status_context') &&
+                <React.Fragment>
+                  <DotTextSeperator />
+                  <Button
+                    isText
+                    underlineOnHover
+                    backgroundColor='none'
+                    color='secondary'
+                    to={`/timeline/context/${status.getIn(['status_context', 'id'])}`}
+                    className={[_s.ml5, _s.bgSubtle, _s.radiusSmall].join(' ')}
+                  >
+                    <Text size='small' color='inherit' className={_s.px5}>
+                      {status.getIn(['status_context', 'name'])}
+                    </Text>
+                  </Button>
                 </React.Fragment>
               }
 

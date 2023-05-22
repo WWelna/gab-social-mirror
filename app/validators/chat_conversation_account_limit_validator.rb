@@ -2,13 +2,6 @@
 
 class ChatConversationAccountLimitValidator < ActiveModel::Validator
   CHAT_CONVERSATION_ACCOUNT_LIMITS = {
-    PRO: {
-      weekly: 200,
-      daily: 40,
-      hourly: 10,
-      semi_hourly: 6,
-      minute: 3,
-    },
     BASE: {
       weekly: 100,
       daily: 25,
@@ -27,6 +20,7 @@ class ChatConversationAccountLimitValidator < ActiveModel::Validator
 
   def validate(chatConversationAccount)
     return if chatConversationAccount.account.nil?
+    return if chatConversationAccount.account.is_pro?
     
     # continue if this chatConversationAccount was created
     # automatically by means of another user starting a conversation
@@ -44,6 +38,12 @@ class ChatConversationAccountLimitValidator < ActiveModel::Validator
     # continue if new only
     return unless chatConversationAccount.created_at.nil?
 
+    if ENV['AUTHCODE_FROM_USER']
+      if chatConversationAccount.account.acct == ENV['AUTHCODE_FROM_USER']
+        return
+      end
+    end
+
     # not allowed if not confirmed
     if !chatConversationAccount.account.user&.confirmed?
       chatConversationAccount.errors.add(:base, 'You must confirm your email before starting any chat conversations')
@@ -51,9 +51,7 @@ class ChatConversationAccountLimitValidator < ActiveModel::Validator
     end
 
     @key = :BASE
-    if chatConversationAccount.account.is_pro?
-      @key = :PRO
-    elsif chatConversationAccount.account.created_at < 7.days.ago
+    if chatConversationAccount.account.created_at < 7.days.ago
       @key = :NEW
     end
 

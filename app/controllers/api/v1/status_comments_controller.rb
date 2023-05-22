@@ -70,13 +70,13 @@ class Api::V1::StatusCommentsController < Api::BaseController
 
   def next_path
     unless @comments.empty?
-      api_v1_comment_path pagination_params(max_id: pagination_max_id)
+      api_v1_status_comment_path pagination_params(max_id: pagination_max_id)
     end
   end
 
   def prev_path
     unless @comments.empty?
-      api_v1_comment_path pagination_params(min_id: pagination_since_id)
+      api_v1_status_comment_path pagination_params(min_id: pagination_since_id)
     end
   end
 

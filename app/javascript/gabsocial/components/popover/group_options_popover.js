@@ -9,6 +9,10 @@ import {
   addShortcut,
   removeShortcut,
 } from '../../actions/shortcuts'
+import { blockGroup, unblockGroup } from '../../actions/groups'
+import {
+  isBlockingGroupId,
+} from '../../utils/local_storage_blocks_mutes'
 import {
   openPopover,
   closePopover,
@@ -36,6 +40,16 @@ class GroupOptionsPopover extends ImmutablePureComponent {
     this.props.onShare(this.props.group)
   }
 
+  handleOnBlock = () => {
+    this.handleOnClosePopover()
+    this.props.onBlock(this.props.group.get('id'))
+  }
+
+  handleOnUnBlock = () => {
+    this.handleOnClosePopover()
+    this.props.onUnBlock(this.props.group.get('id'))
+  }
+
   render() {
     const {
       group,
@@ -43,6 +57,7 @@ class GroupOptionsPopover extends ImmutablePureComponent {
       isAdmin,
       isShortcut,
       isXS,
+      isMember,
     } = this.props
 
     if (!group) return <div/>
@@ -101,6 +116,22 @@ class GroupOptionsPopover extends ImmutablePureComponent {
       })
     }
 
+    if (!isBlockingGroupId(groupId)) {
+      listItems.push({})
+      listItems.push({
+        title: 'Mute Group',
+        onClick: this.handleOnBlock,
+        hideArrow: true,
+      })
+    } else {
+      listItems.push({})
+      listItems.push({
+        title: 'Unmute Group',
+        onClick: this.handleOnUnBlock,
+        hideArrow: true,
+      })
+    }
+
     return (
       <PopoverLayout
         width={240}
@@ -151,11 +182,18 @@ const mapDispatchToProps = (dispatch, { innerRef }) => ({
       position: 'top',
     }))
   },
+  onBlock(groupId) {
+    dispatch(blockGroup(groupId))
+  },
+  onUnBlock(groupId) {
+    dispatch(unblockGroup(groupId))
+  },
 })
 
 GroupOptionsPopover.defaultProps = {
   group: ImmutablePropTypes.map.isRequired,
   isAdmin: PropTypes.bool,
+  isMember: PropTypes.bool,
   intl: PropTypes.object.isRequired,
   isXS: PropTypes.bool,
   isShortcut: PropTypes.bool,

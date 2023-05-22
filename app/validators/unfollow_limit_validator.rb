@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class UnfollowLimitValidator < ActiveModel::Validator
-  DAILY_UNFOLLOW_LIMIT = 50
-  HOURLY_UNFOLLOW_LIMIT = 10
+  DAILY_UNFOLLOW_LIMIT = 500
+  HOURLY_UNFOLLOW_LIMIT = 50
 
   def validate(unfollow)
     return if unfollow.account.nil?
+    return if unfollow.account.is_pro?
     unfollow.errors.add(:base, 'Daily unfollow limit reached. Please slow down.') if daily_limit_reached?(unfollow.account)
     unfollow.errors.add(:base, 'Hourly unfollow limit reached. Please slow down.') if hourly_limit_reached?(unfollow.account)
   end

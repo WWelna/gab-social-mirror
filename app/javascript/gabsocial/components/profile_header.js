@@ -378,6 +378,16 @@ class ProfileHeader extends ImmutablePureComponent {
                             {intl.formatMessage(messages.editProfile)}
                           </Text>
                         </Button>
+                        <Button
+                          isOutline
+                          icon='search'
+                          iconSize='18px'
+                          iconClassName={[_s.inheritFill, _s.px2].join(' ')}
+                          color='brand'
+                          backgroundColor='none'
+                          className={[_s.jcCenter, _s.aiCenter, _s.ml10, _s.px10].join(' ')}
+                          href='/settings/statuses'
+                        />
                       </div>
                     }
 

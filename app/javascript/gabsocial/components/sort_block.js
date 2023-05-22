@@ -17,7 +17,7 @@ class SortBlock extends React.PureComponent {
     const { value, subValue } = this.props
 
     return (
-      <div className={[_s.d, _s.px15, _s.py5, _s.mb5, _s.flexRow].join(' ')}>
+      <div className={[_s.d, _s.px15, _s.py15, _s.flexRow].join(' ')}>
         <Text color='secondary' size='small'>
           <FormattedMessage id='comment_sort.title' defaultMessage='Sort by' />
         </Text>

@@ -11,7 +11,7 @@ import { length } from 'stringz'
 import { connect } from 'react-redux'
 import { supportsPassiveEvents } from 'detect-it'
 import { CancelToken, isCancel } from 'axios'
-import get from 'lodash.get'
+import get from 'lodash/get'
 import { withRouter } from 'react-router-dom'
 import queryString from 'query-string'
 import { countableText } from '../../ui/util/counter'
@@ -19,7 +19,7 @@ import {
   CX,
   MAX_POST_CHARACTER_COUNT,
   BREAKPOINT_EXTRA_SMALL,
-  composeMaxAttachments,
+  COMPOSE_MAX_MEDIA_ATTACHMENTS_LIMIT,
   TOAST_TYPE_SUCCESS,
   TOAST_TYPE_ERROR,
   MODAL_UNAUTHORIZED
@@ -41,12 +41,15 @@ import {
   loggedOut
 } from '../../../initial_state'
 import api from '../../../api'
-import { importFetchedAccounts, importStatus } from '../../../actions/importer'
+import {
+  importFetchedAccounts,
+  importFetchedStatuses,
+} from '../../../actions/importer'
 import { closeModal, openModal } from '../../../actions/modal'
 import { showToast } from '../../../actions/toasts'
-import { importFetchedStatuses } from '../../../actions/importer'
+import { fetchStatusStats, fetchCommentsSuccess, fetchConversationOwner } from '../../../actions/statuses'
 import reduxStore from '../../../store'
-import { timelinePrependItem } from '../../../store/timelines'
+import { timelinePrependItem, timelineQueue } from '../../../store/timelines'
 import UploadButton from './media_upload_button'
 import EmojiPickerButton from './emoji_picker_button'
 import PollButton from './poll_button'
@@ -117,7 +120,8 @@ const initialStateDefaults = {
   isUploading: false,
   anyMedia: false,
   uploadProgress: 0,
-  firstFocusText: null
+  firstFocusText: null,
+  selectedStatusContextId: null,
 }
 
 const initialPoll = { options: ['', ''], expires_in: 86400 }
@@ -126,9 +130,10 @@ function formatServerAttachment({
   id,
   description,
   file_content_type: type,
-  url
+  url,
+  preview_url,
 }) {
-  return { id, description, type, url }
+  return { id, description, type, url, preview_url }
 }
 
 // arguments override the defaults
@@ -193,6 +198,11 @@ function createInitialState({
       in_reply_to_id: 'in_reply_to',
       visibility: 'privacy'
     }
+    
+    if (!!original.status_context) {
+      overrides.selectedStatusContextId = original.status_context.id
+    }
+
     // if these come from the server override with it
     ;[
       'id',
@@ -204,7 +214,7 @@ function createInitialState({
       'spoiler_text',
       'visibility',
       'in_reply_to_id',
-      'quote_of_id'
+      'quote_of_id',
     ].forEach(function (key) {
       const val = original[key]
       if (
@@ -277,8 +287,15 @@ function timelineInjectLive({ data }) {
   const state = reduxStore.getState()
   const timelineSort = timelineId =>
     state.getIn(['timelines', timelineId, 'sortByValue'])
-  const prepend = timelineId =>
+  function prepend(timelineId) {
+    if (window.scrollY > 400) {
+      // when scrolled down queue the item and prevent scroll jumps
+      reduxStore.dispatch(timelineQueue(timelineId, [statusId]))
+      return
+    }
+    // scrolled to the top inject it into the timeline visible
     reduxStore.dispatch(timelinePrependItem(timelineId, statusId))
+  }
   const newSorts = [null, 'newest', 'no-reposts']
   const deckConfig = state.getIn(['settings', 'gabDeckOrder'])
   const deckHasHome =
@@ -450,7 +467,8 @@ class ComposeForm extends React.Component {
       spoiler_text,
       privacy: visibility,
       poll,
-      group_id
+      group_id,
+      selectedStatusContextId,
     } = this.state
 
     const { autoJoinGroup } = this.props
@@ -468,7 +486,8 @@ class ComposeForm extends React.Component {
       visibility,
       poll,
       group_id,
-      media_ids
+      media_ids,
+      status_context_id: selectedStatusContextId,
     }
   }
 
@@ -530,6 +549,9 @@ class ComposeForm extends React.Component {
         vm.props.onImport(data)
         if (!isEdit) {
           timelineInjectLive({ data })
+        }
+        if (data.in_reply_to_id) {
+          vm.props.onFetchStatusStats(data.in_reply_to_id, [data])
         }
       }
       const group_id = vm.props.isMember ? vm.props.groupId : null
@@ -848,7 +870,7 @@ class ComposeForm extends React.Component {
           item.size === file.size &&
           item.type === file.type
       )
-      if (found === false && newAttachments.length < composeMaxAttachments) {
+      if (found === false && newAttachments.length < COMPOSE_MAX_MEDIA_ATTACHMENTS_LIMIT) {
         file.description = ''
         newAttachments.push(file)
       } else {
@@ -917,6 +939,10 @@ class ComposeForm extends React.Component {
 
   onPollChange = poll => this.setState({ poll })
 
+  onStatusContextChange = (selectedStatusContextId) => {
+    this.setState({ selectedStatusContextId })
+  }
+
   onDestination = evt => {
     const group_id = evt.groupId
     this.setState({ group_id })
@@ -979,7 +1005,8 @@ class ComposeForm extends React.Component {
       uploadProgress,
       sensitive,
       rte_controls_visible,
-      expires_at
+      expires_at,
+      selectedStatusContextId,
     } = this.state
 
     const {
@@ -1051,6 +1078,7 @@ class ComposeForm extends React.Component {
 
     const innerClasses = CX({
       d: 1,
+      pt5: 1,
       calcMaxH410PX: 1,
       minH200PX: ['standalone', 'modal'].indexOf(formLocation) > -1
     })
@@ -1062,6 +1090,8 @@ class ComposeForm extends React.Component {
         isModal={isModal}
         groupId={group_id}
         onDestination={this.onDestination}
+        onStatusContextChange={this.onStatusContextChange}
+        selectedStatusContextId={selectedStatusContextId}
         isComment={isComment}
         isEdit={isEdit}
         text={text}
@@ -1115,13 +1145,13 @@ class ComposeForm extends React.Component {
 
     const replyBox = isComment && isModalOpen && (
       <div className={[_s.d, _s.px15, _s.py10, _s.mt5].join(' ')}>
-        <StatusContainer contextType="compose" id={in_reply_to} isChild />
+        <StatusContainer contextType="compose" id={in_reply_to} isChild expanded />
       </div>
     )
 
     const quoteBox = isQuote && isModalOpen && (
       <div className={[_s.d, _s.px15, _s.py10, _s.mt5].join(' ')}>
-        <StatusContainer contextType="compose" id={quote_of_id} isChild />
+        <StatusContainer contextType="compose" id={quote_of_id} isChild expanded />
       </div>
     )
 
@@ -1166,7 +1196,7 @@ class ComposeForm extends React.Component {
             resetFileKey={resetFileKey}
             onUpload={this.onUpload}
             disabled={
-              isSubmitting || media_attachments.length >= composeMaxAttachments
+              isSubmitting || media_attachments.length >= COMPOSE_MAX_MEDIA_ATTACHMENTS_LIMIT
             }
             small={small}
           />
@@ -1174,7 +1204,6 @@ class ComposeForm extends React.Component {
             small={small}
             composerId={composerId}
             disabled={isSubmitting}
-            small={small}
           />
           {!isEdit && !isComment && (
             <PollButton
@@ -1280,7 +1309,8 @@ ComposeForm.propTypes = {
   replyStatus: ImmutablePropTypes.map,
   mentionAccount: ImmutablePropTypes.map,
   initialText: PropTypes.string,
-  onContentUpdated: PropTypes.func
+  onContentUpdated: PropTypes.func,
+  onFetchStatusStats: PropTypes.func,
 }
 
 function mapStateToProps(state, props) {
@@ -1338,16 +1368,27 @@ const mapDispatchToProps = dispatch => ({
       showToast(TOAST_TYPE_SUCCESS, { type: 'status_edited_successfully' })
     ),
   onSubmitError(err) {
-    const { message } = err
-    const status = err.status || err.statusCode
-    let msg = '⚠️ error posting status'
-    if (status) {
-      msg = `${msg}, ${status}`
+    const code =
+      err.status ||
+      err.statusCode ||
+      get(err, 'response.status') ||
+      err.code
+    let message = '⚠️ error posting status'
+    const serverMessage = get(err, 'response.data.error')
+    if (typeof serverMessage === 'string') {
+      message = `${message}, message: ${serverMessage}`
+    } else if (typeof err.message === 'string') {
+      message = `${message}, message: ${err.message}`
     }
-    if (message) {
-      msg = `${msg}, ${message}`
+    if (code !== undefined) {
+      message = `${message}, code: ${code}`
     }
-    dispatch(showToast(TOAST_TYPE_ERROR, { type: msg }))
+    dispatch(showToast(TOAST_TYPE_ERROR, { type: message }))
+  },
+  onFetchStatusStats(id, data) {
+    dispatch(fetchStatusStats(id))
+    dispatch(fetchCommentsSuccess(id, data))
+    setTimeout(() => { dispatch(fetchConversationOwner(id, data[0].conversation_id, true)) }, 2000)
   },
   onUploadError(err, file) {
     const { message } = err

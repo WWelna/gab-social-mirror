@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import get from 'lodash.get'
+import get from 'lodash/get'
 
 import {
   BREAKPOINT_EXTRA_SMALL,
@@ -10,6 +10,8 @@ import {
   POPOVER_CHAT_MESSAGE_OPTIONS,
   POPOVER_CHAT_SETTINGS,
   POPOVER_COMMENT_SORTING_OPTIONS,
+  POPOVER_COMPOSE_MEDIA_DESCRIPTION,
+  POPOVER_COMPOSE_POST_CONTEXT,
   POPOVER_COMPOSE_POST_DESTINATION,
   POPOVER_DATE_PICKER,
   POPOVER_EMOJI_PICKER,
@@ -38,7 +40,7 @@ import {
   POPOVER_STATUS_VISIBILITY,
   POPOVER_TIMELINE_INJECTION_OPTIONS,
   POPOVER_USER_INFO,
-  POPOVER_VIDEO_STATS
+  POPOVER_VIDEO_STATS,
 } from '../../constants'
 
 import {
@@ -47,6 +49,8 @@ import {
   ChatMessageOptionsPopover,
   ChatSettingsPopover,
   CommentSortingOptionsPopover,
+  ComposeMediaDescriptionPopover,
+  ComposePostContextPopover,
   ComposePostDesinationPopover,
   DatePickerPopover,
   EmojiPickerPopover,
@@ -86,12 +90,13 @@ import ErrorPopover from './error_popover'
 import LoadingPopover from './loading_popover'
 
 const POPOVER_COMPONENTS = {
-  [POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS]:
-    ChatConversationExpirationOptionsPopover,
+  [POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS]: ChatConversationExpirationOptionsPopover,
   [POPOVER_CHAT_CONVERSATION_OPTIONS]: ChatConversationOptionsPopover,
   [POPOVER_CHAT_MESSAGE_OPTIONS]: ChatMessageOptionsPopover,
   [POPOVER_CHAT_SETTINGS]: ChatSettingsPopover,
   [POPOVER_COMMENT_SORTING_OPTIONS]: CommentSortingOptionsPopover,
+  [POPOVER_COMPOSE_MEDIA_DESCRIPTION]: ComposeMediaDescriptionPopover,
+  [POPOVER_COMPOSE_POST_CONTEXT]: ComposePostContextPopover,
   [POPOVER_COMPOSE_POST_DESTINATION]: ComposePostDesinationPopover,
   [POPOVER_DATE_PICKER]: DatePickerPopover,
   [POPOVER_EMOJI_PICKER]: EmojiPickerPopover,
@@ -101,14 +106,11 @@ const POPOVER_COMPONENTS = {
   [POPOVER_GROUP_TIMELINE_SORT_OPTIONS]: GroupTimelineSortOptionsPopover,
   [POPOVER_GROUP_TIMELINE_SORT_TOP_OPTIONS]: GroupTimelineSortTopOptionsPopover,
   [POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS]: ExploreTimelineSortOptionsPopover,
-  [POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS]:
-    ExploreTimelineSortTopOptionsPopover,
+  [POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS]: ExploreTimelineSortTopOptionsPopover,
   [POPOVER_HOME_TIMELINE_SORT_OPTIONS]: HomeTimelineSortOptionsPopover,
   [POPOVER_LISTS_SORT_OPTIONS]: ListsSortOptionsPopover,
-  [POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS]:
-    MarketplaceListingChangeStatusPopover,
-  [POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS]:
-    MarketplaceListingDashboardStatusOptionsPopover,
+  [POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS]: MarketplaceListingChangeStatusPopover,
+  [POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS]: MarketplaceListingDashboardStatusOptionsPopover,
   [POPOVER_MARKETPLACE_LISTING_OPTIONS]: MarketplaceListingOptionsPopover,
   [POPOVER_NAV_SETTINGS]: NavSettingsPopover,
   [POPOVER_NOTIFICATION_SETTINGS]: NotificationSettingsPopover,

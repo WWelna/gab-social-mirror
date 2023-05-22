@@ -27,9 +27,6 @@ module GabSocial
     desc 'accounts SUBCOMMAND ...ARGS', 'Manage accounts'
     subcommand 'accounts', GabSocial::AccountsCLI
 
-    desc 'feeds SUBCOMMAND ...ARGS', 'Manage feeds'
-    subcommand 'feeds', GabSocial::FeedsCLI
-
     desc 'search SUBCOMMAND ...ARGS', 'Manage the search engine'
     subcommand 'search', GabSocial::SearchCLI
 

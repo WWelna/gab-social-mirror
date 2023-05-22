@@ -11,14 +11,14 @@ class Api::V1::Groups::RemovedAccountsController < Api::BaseController
   after_action :insert_pagination_headers, only: :show
 
   def show
-    authorize @group, :show_removed_accounts?
+    authorize @group, :allow_if_is_group_admin_or_moderator?
 
     @accounts = load_accounts
     render json: @accounts, each_serializer: REST::AccountSerializer
   end
 
   def create
-    authorize @group, :create_removed_account?
+    authorize @group, :allow_if_is_group_admin_or_moderator?
 
     begin
       @account = Account.find(params[:account_id])
@@ -32,7 +32,7 @@ class Api::V1::Groups::RemovedAccountsController < Api::BaseController
   end
 
   def destroy
-    authorize @group, :destroy_removed_account?
+    authorize @group, :allow_if_is_group_admin_or_moderator?
 
     begin
       @account = @group.removed_accounts.find(params[:account_id])

@@ -18,6 +18,8 @@ import {
   UserSuggestionsPanel,
   GabTVVideosPanel,
   LinkFooter,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 
 class ExploreLayout extends ImmutablePureComponent {
@@ -25,14 +27,16 @@ class ExploreLayout extends ImmutablePureComponent {
   render() {
     const { children, title, showVideos, showSuggestedUsers, showGroups } = this.props
 
+    // removing this from being used...
     const pageTitleBlock = (
-      <div className={[_s.d, _s.pl15, _s.pb10].join(' ')}>
+      <div className={[_s.d, _s.pl15, _s.pb15].join(' ')}>
         <Heading size='h2'>Popular posts across Gab</Heading>
       </div>
     )
 
     const layout = [
       SignUpLogInPanel,
+      <WrappedBundle key='explore-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'explore.sidebar', position: 1 }} />,
     ]
     if (!!me) {
       if(showGroups) {
@@ -49,6 +53,7 @@ class ExploreLayout extends ImmutablePureComponent {
     }
     
     layout.push(<WrappedBundle key='explore-layout-link-footer' component={LinkFooter} />)
+    layout.push(<WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />)
 
     return (
       <Layout
@@ -61,11 +66,13 @@ class ExploreLayout extends ImmutablePureComponent {
         <Responsive max={BREAKPOINT_EXTRA_SMALL}>
           <div className={[_s.d, _s.w100PC].join(' ')}>
 
-            <div className={[_s.d, _s.w100PC, _s.z1].join(' ')}>
-              <div className={[_s.d, _s.mt15, _s.px10].join(' ')}>
-                <WrappedBundle component={SignUpLogInPanel} componentParams={{ isXS: true }} />
-              </div>
-              {pageTitleBlock}
+            <div className={[_s.d, _s.w100PC, _s.z1, _s.pt10].join(' ')}>
+              {
+                !me &&
+                <div className={[_s.d, _s.mt15, _s.px10].join(' ')}>
+                  <WrappedBundle component={SignUpLogInPanel} componentParams={{ isXS: true }} />
+                </div>
+              }
               {children}
             </div>
 
@@ -79,7 +86,6 @@ class ExploreLayout extends ImmutablePureComponent {
               <div className={[_s.d, _s.w645PX, _s.z1].join(' ')}>  
 
                 <div className={_s.d}>
-                  {pageTitleBlock}
                   {children}
                 </div>
               </div>

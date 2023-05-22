@@ -1,3 +1,14 @@
+//t = current time
+//b = start value
+//c = change in value
+//d = duration
+function easeInOutQuad(t, b, c, d) {
+  t /= d / 2
+  if (t < 1) return c / 2 * t * t + b
+  t--
+  return -c / 2 * (t * (t - 2) - 1) + b
+}
+
 // https://gist.github.com/andjosh/6764939
 export const scrollTo = (element, to, duration = 0) => {
   var start = element.scrollTop,
@@ -7,7 +18,7 @@ export const scrollTo = (element, to, duration = 0) => {
 
   var animateScroll = function () {
     currentTime += increment
-    var val = Math.easeInOutQuad(currentTime, start, change, duration)
+    var val = easeInOutQuad(currentTime, start, change, duration)
     element.scrollTop = val
     if (currentTime < duration) {
       setTimeout(animateScroll, increment)
@@ -15,18 +26,6 @@ export const scrollTo = (element, to, duration = 0) => {
   }
 
   animateScroll()
-}
-
-
-//t = current time
-//b = start value
-//c = change in value
-//d = duration
-Math.easeInOutQuad = function (t, b, c, d) {
-  t /= d / 2
-  if (t < 1) return c / 2 * t * t + b
-  t--
-  return -c / 2 * (t * (t - 2) - 1) + b
 }
 
 /*

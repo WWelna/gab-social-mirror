@@ -41,6 +41,7 @@ class Settings::PreferencesController < Settings::BaseController
       :setting_unfollow_modal,
       :setting_boost_modal,
       :setting_show_videos,
+      :setting_show_voice_rooms,
       :setting_show_suggested_users,
       :setting_show_groups,
       :setting_delete_modal,
@@ -54,6 +55,7 @@ class Settings::PreferencesController < Settings::BaseController
       :setting_pro_wants_ads,
       :setting_show_pro_life,
       :setting_remote_rss_feed,
+      :setting_telegram_channel,
       notification_emails: %i(follow follow_request reblog favourite mention digest report pro_reminder emails_from_gabcom),
       interactions: %i(must_be_follower must_be_following)
     )

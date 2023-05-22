@@ -20,6 +20,14 @@ module Settings
         if current_user.validate_and_consume_otp!(confirmation_params[:code])
           flash[:notice] = I18n.t('two_factor_authentication.enabled_success')
 
+          if params[:revoke_all_sessions] == '1'
+            # the user clicked "Yes" to revoke other sessions
+            sid = current_session.id
+            current_user.forget_me!
+            current_user.remember_me!
+            current_user.session_activations.where.not(id: sid).destroy_all
+          end
+
           current_user.otp_required_for_login = true
           @recovery_codes = current_user.generate_otp_backup_codes!
           current_user.save!

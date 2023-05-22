@@ -3,12 +3,11 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { closePopover } from '../../actions/popover'
 import { timelineSortTop } from '../../store/timelines'
-import { exploreSortTops } from '../../constants'
+import { EXPLORE_SORT_TOPS } from '../../constants'
 import PopoverLayout from './popover_layout'
 import List from '../list'
 
 const hideArrow = true
-const timelineId = 'explore'
 
 function ExploreTimelineSortTopOptionsPopover({
   sortByTopValue,
@@ -16,7 +15,7 @@ function ExploreTimelineSortTopOptionsPopover({
   onSort,
   onClosePopover,
 }) {
-  const items = exploreSortTops.map(function({ key, title }) {
+  const items = EXPLORE_SORT_TOPS.map(function({ key, title }) {
     return {
       hideArrow,
       isActive: sortByTopValue === key,
@@ -39,11 +38,11 @@ function ExploreTimelineSortTopOptionsPopover({
   )
 }
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state, { timelineId }) => ({
   sortByTopValue: state.getIn(['timelines', timelineId, 'sortByTopValue']),
 })
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch, { timelineId }) => ({
   onSort(sortByTopValue) {
     dispatch(timelineSortTop(timelineId, sortByTopValue))
     dispatch(closePopover())
@@ -56,6 +55,7 @@ ExploreTimelineSortTopOptionsPopover.propTypes = {
   isXS: PropTypes.bool,
   onClosePopover: PropTypes.func.isRequired,
   onSort: PropTypes.func.isRequired,
+  timelineId: PropTypes.string,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(ExploreTimelineSortTopOptionsPopover)

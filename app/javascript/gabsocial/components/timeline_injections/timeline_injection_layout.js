@@ -2,32 +2,28 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { openPopover } from '../../actions/popover'
-import {
-  CX,
-  POPOVER_TIMELINE_INJECTION_OPTIONS,
-} from '../../constants'
+import { CX, POPOVER_TIMELINE_INJECTION_OPTIONS } from '../../constants'
 import Button from '../button'
 import Text from '../text'
 
 class TimelineInjectionLayout extends React.PureComponent {
-
-  state = {
-    dismissed: false,
-  }
+  state = { dismissed: false }
 
   handleOnOptionsClick = () => {
-    this.props.dispatch(openPopover(POPOVER_TIMELINE_INJECTION_OPTIONS, {
-      targetRef: this.optionsBtn,
-      timelineInjectionId: this.props.id,
-      onDismiss: this.handleOnDismiss,
-    }))
+    this.props.dispatch(
+      openPopover(POPOVER_TIMELINE_INJECTION_OPTIONS, {
+        targetRef: this.optionsBtn,
+        timelineInjectionId: this.props.id,
+        onDismiss: this.handleOnDismiss
+      })
+    )
   }
 
   handleOnDismiss = () => {
     this.setState({ dismissed: true })
   }
 
-  setOptionsBtn = (n) => {
+  setOptionsBtn = n => {
     this.optionsBtn = n
   }
 
@@ -41,6 +37,7 @@ class TimelineInjectionLayout extends React.PureComponent {
       buttonTitle,
       isXS,
       isDeckConnected,
+      showMenu = true
     } = this.props
     const { dismissed } = this.state
 
@@ -56,58 +53,86 @@ class TimelineInjectionLayout extends React.PureComponent {
       radiusSmall: !isXS && !isDeckConnected,
       borderColorSecondary: 1,
       bgPrimary: 1,
-      overflowHidden: 1,
+      overflowHidden: 1
     })
+
+    const hasButton =
+      (typeof buttonLink === 'string' || typeof buttonHref === 'string') &&
+      typeof buttonTitle === 'string'
 
     return (
       <div className={containerClasses}>
-        <div className={[_s.d, _s.px15, _s.py5, _s.flexRow, _s.jcCenter, _s.aiCenter].join(' ')}>
+        <div
+          className={[
+            _s.d,
+            _s.px15,
+            _s.py5,
+            _s.flexRow,
+            _s.jcCenter,
+            _s.aiCenter
+          ].join(' ')}
+        >
           <div className={[_s.d, _s.pr10].join(' ')}>
-            <Text size='medium'>
-              {title}
-            </Text>
-            {
-              !!subtitle &&
-              <Text size='small' weight='medium' color='secondary' className={[_s.pt5, _s.pb10].join(' ')}>
+            {title && <Text size="medium">{title}</Text>}
+            {!!subtitle && (
+              <Text
+                size="small"
+                weight="medium"
+                color="secondary"
+                className={[_s.pt5, _s.pb10].join(' ')}
+              >
                 {subtitle}
               </Text>
-            }
+            )}
           </div>
-          <Button
-            backgroundColor='none'
-            color='secondary'
-            iconSize='16px'
-            icon='ellipsis'
-            onClick={this.handleOnOptionsClick}
-            buttonRef={this.setOptionsBtn}
-            className={[_s.mlAuto].join(' ')}
-          />
+          {showMenu && (
+            <Button
+              backgroundColor="none"
+              color="secondary"
+              iconSize="16px"
+              icon="ellipsis"
+              onClick={this.handleOnOptionsClick}
+              buttonRef={this.setOptionsBtn}
+              className={[_s.mlAuto].join(' ')}
+            />
+          )}
         </div>
-        <div className={[_s.d, _s.px10, _s.flexRow, _s.width100PC, _s.overflowHidden, _s.overflowXScroll, _s.noScrollbar, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
+        <div
+          className={[
+            _s.d,
+            _s.px10,
+            _s.flexRow,
+            _s.width100PC,
+            _s.overflowHidden,
+            _s.overflowXScroll,
+            _s.noScrollbar,
+            _s.borderBottom1PX,
+            _s.borderColorSecondary
+          ].join(' ')}
+        >
           {children}
         </div>
-        <div className={_s.d}>
+        {hasButton && <div className={_s.d}>
           <Button
             isText
-            color='none'
-            backgroundColor='none'
+            color="none"
+            backgroundColor="none"
             to={buttonLink}
             href={buttonHref}
             className={[_s.px15, _s.py15, _s.bgSubtle_onHover].join(' ')}
           >
-            <Text color='brand' align='center' size='medium'>
+            <Text color="brand" align="center" size="medium">
               {buttonTitle}
             </Text>
           </Button>
-        </div>
+        </div>}
       </div>
     )
   }
-
 }
 
-const mapStateToProps = (state) => ({
-  isDeckConnected: state.getIn(['deck', 'connected'], false),
+const mapStateToProps = state => ({
+  isDeckConnected: state.getIn(['deck', 'connected'], false)
 })
 
 TimelineInjectionLayout.propTypes = {
@@ -119,6 +144,7 @@ TimelineInjectionLayout.propTypes = {
   subtitle: PropTypes.string,
   isXS: PropTypes.bool,
   isDeckConnected: PropTypes.bool,
+  showMenu: PropTypes.bool
 }
 
 export default connect(mapStateToProps)(TimelineInjectionLayout)

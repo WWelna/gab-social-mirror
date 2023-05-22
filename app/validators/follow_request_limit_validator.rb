@@ -14,7 +14,7 @@ class FollowRequestLimitValidator < ActiveModel::Validator
 
   class << self
     def limit_for_account(account)
-      return(0) if account.is_spam?
+      return(0) if account.is_spam? || account.user.nil?
       return(25) unless account.user.confirmed?
       return(MAX_FOLLOW_REQUESTS_LIMIT)
     end

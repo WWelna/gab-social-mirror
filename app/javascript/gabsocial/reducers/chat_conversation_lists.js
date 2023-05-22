@@ -101,23 +101,53 @@ export default function chat_conversation_lists(state = initialState, action) {
   switch (action.type) {
   case CHAT_CONVERSATIONS_APPROVED_FETCH_REQUEST:
   case CHAT_CONVERSATIONS_APPROVED_EXPAND_REQUEST:
-    return state.setIn(['approved', 'isLoading'], true)
+    const mapKey = (action.pinned ? 'approved_pinned' : 'approved')
+    return state.setIn([mapKey, 'isLoading'], true)
   case CHAT_CONVERSATIONS_APPROVED_FETCH_FAIL:
   case CHAT_CONVERSATIONS_APPROVED_EXPAND_FAIL:
     return state.setIn(['approved', 'isLoading'], false)
   case CHAT_CONVERSATIONS_APPROVED_FETCH_SUCCESS:
-    if (Array.isArray(action.chatConversations)) {
-      state = normalizeList(state, 'approved', action.chatConversations.filter((c) => !c.is_pinned), action.next)
-      return normalizeList(state, 'approved_pinned', action.chatConversations.filter((c) => c.is_pinned), action.next)
-    }
-    return state
   case CHAT_CONVERSATIONS_APPROVED_EXPAND_SUCCESS:
-    if (Array.isArray(action.chatConversations)) {
-      state = appendToList(state, 'approved', action.chatConversations.filter((c) => !c.is_pinned), action.next)
-      return appendToList(state, 'approved_pinned', action.chatConversations.filter((c) => c.is_pinned), action.next)
-    }
-    return state
+    const { chatConversations = [], next, pinned } = action
+    const pinnedItemsPath = ['approved_pinned', 'items']
 
+    if (pinned) {
+      const pinnedItems = chatConversations
+        .filter(c => c.is_pinned)
+        .map(c => c.chat_conversation_id)
+        // not already in pinned
+        .filter(id => !state.getIn(pinnedItemsPath).includes(id))
+
+      if (pinnedItems.length > 0) {
+        state = state.setIn(
+          pinnedItemsPath,
+          state.getIn(pinnedItemsPath).concat(ImmutableList(pinnedItems)) // combined
+        )
+      }
+
+      state = state.setIn(['approved_pinned', 'isLoading'], false)
+      return state
+    }
+
+    const approvedItemsPath = ['approved', 'items']
+    const approvedItems = chatConversations
+      .filter(c => !c.is_pinned)
+      .map(c => c.chat_conversation_id)
+      // not in pinned list
+      .filter(id => !state.getIn(pinnedItemsPath).includes(id))
+      // not in existing approved
+      .filter(id => !state.getIn(approvedItemsPath).includes(id))
+
+    if (approvedItems.length > 0) {
+      state = state.setIn(
+        approvedItemsPath,
+        state.getIn(approvedItemsPath).concat(ImmutableList(approvedItems)) // combined
+      )
+    }
+    state = state.setIn(['approved', 'isLoading'], false)
+      .setIn(['approved', 'next'], next)
+
+    return state
   case CHAT_CONVERSATIONS_REQUESTED_FETCH_REQUEST:
   case CHAT_CONVERSATIONS_REQUESTED_EXPAND_REQUEST:
     return state.setIn(['requested', 'isLoading'], true)

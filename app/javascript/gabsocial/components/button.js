@@ -185,6 +185,11 @@ class Button extends React.PureComponent {
       cWhite_onHover: color === COLORS.brand && isOutline && !isDisabled,
     })
 
+    const style = isDisabled ? {
+      opacity: 0.6,
+      cursor: 'not-allowed'
+    } : undefined
+
     const tagName = !!href ? 'a' : !!to ? 'NavLink' : 'button'
 
     const theIcon = !!icon ? (
@@ -227,6 +232,7 @@ class Button extends React.PureComponent {
           to={to}
           aria-label={title}
           {...handlers}
+          style={style}
         >
           {theChildren}
         </NavLink>
@@ -248,6 +254,7 @@ class Button extends React.PureComponent {
       ref: this.setRef,
       'data-method': dataMethod,
       ...handlers,
+      style
     }
 
     return React.createElement(tagName, options, theChildren)

@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 import queryString from 'query-string'
 import { openModal } from '../actions/modal'
 import PageTitle from '../features/ui/util/page_title'
+import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import DefaultLayout from '../layouts/default_layout'
 import {
   LIST_TYPE_FEATURED,
@@ -18,6 +19,8 @@ import {
   LinkFooter,
   GabTVVideosPanel,
   UserSuggestionsPanel,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 import { parseQuerystring } from '../utils/querystring'
 
@@ -80,7 +83,9 @@ class ListsPage extends React.PureComponent {
       to: '/feeds',
     }]
 
-    let sidebarLayout = []
+    let sidebarLayout = [
+      <WrappedBundle key='feed-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'feed.sidebar', position: 1 }} />,
+    ]
     
     if(showVideos) {
       sidebarLayout.push(GabTVVideosPanel)
@@ -91,6 +96,7 @@ class ListsPage extends React.PureComponent {
     }
 
     sidebarLayout.push(LinkFooter)
+    sidebarLayout.push(<WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />)
 
     return (
       <DefaultLayout

@@ -47,15 +47,6 @@ class User < ApplicationRecord
   include Settings::Extend
   include UserRoles
 
-  # The home and list feeds will be stored in Redis for this amount
-  # of time, and status fan-out to followers will include only people
-  # within this time frame. Lowering the duration may improve performance
-  # if lots of people sign up, but not a lot of them check their feed
-  # every day. Raising the duration reduces the amount of expensive
-  # RegenerationWorker jobs that need to be run when those people come
-  # to check their feed
-  ACTIVE_DURATION = ENV.fetch('USER_ACTIVE_DAYS', 7).to_i.days.freeze
-
   devise :two_factor_authenticatable,
          otp_secret_encryption_key: Rails.configuration.x.otp_secret
 
@@ -94,8 +85,6 @@ class User < ApplicationRecord
   scope :approved, -> { where(approved: true) }
   scope :confirmed, -> { where.not(confirmed_at: nil) }
   scope :enabled, -> { where(disabled: false) }
-  scope :inactive, -> { where(arel_table[:current_sign_in_at].lt(ACTIVE_DURATION.ago)) }
-  scope :active, -> { confirmed.where(arel_table[:current_sign_in_at].gteq(ACTIVE_DURATION.ago)).joins(:account).where.not(accounts: { suspended_at: nil }) }
   scope :matches_email, ->(value) { matching(:email, :contains, value) }
   scope :emailable, -> { confirmed.enabled.joins(:account).merge(Account.old_searchable) }
 
@@ -111,9 +100,9 @@ class User < ApplicationRecord
   has_many :session_activations, dependent: :destroy
 
   delegate :auto_play_gif, :default_sensitive, :unfollow_modal, :boost_modal, :delete_modal, 
-           :show_videos, :show_suggested_users, :show_groups, :default_status_expiration,
+           :show_videos, :show_voice_rooms, :show_suggested_users, :show_groups, :default_status_expiration,
            :noindex, :display_media, :hide_network, :pro_wants_ads,
-           :expand_spoilers, :default_language, :aggregate_reblogs, :show_pro_life, :remote_rss_feed,
+           :expand_spoilers, :default_language, :aggregate_reblogs, :show_pro_life, :remote_rss_feed, :telegram_channel,
            :group_in_home_feed, to: :settings, prefix: :setting, allow_nil: false
 
   attr_writer :external
@@ -227,7 +216,7 @@ class User < ApplicationRecord
   end
 
   def hides_network?
-    @hides_network ||= account.verified? || settings.hide_network
+    @hides_network ||= settings.hide_network
   end
 
   def pro_wants_ads?
@@ -305,6 +294,10 @@ class User < ApplicationRecord
     # Redis.current.set("account:#{account_id}:regeneration", true)
   end
 
+  def all_settings
+    all = Setting.unscoped.where(thing_type: 'User', thing_id: id)
+  end
+
   protected
 
   def send_devise_notification(notification, *args)
@@ -335,18 +328,6 @@ class User < ApplicationRecord
 
   def prepare_returning_user!
     ActivityTracker.record('activity:logins', id)
-    regenerate_feed! if needs_feed_update?
-  end
-
-  def regenerate_feed!
-    # return unless Redis.current.setnx("account:#{account_id}:regeneration", true)
-    # Redis.current.expire("account:#{account_id}:regeneration", 1.day.seconds)
-    # RegenerationWorker.perform_async(account_id)
-    return
-  end
-
-  def needs_feed_update?
-    last_sign_in_at < ACTIVE_DURATION.ago
   end
 
   def validate_email_dns?

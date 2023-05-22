@@ -30,10 +30,11 @@
 #  has_quote              :boolean
 #  tombstoned_at          :datetime
 #  group_moderation       :boolean
+#  status_context_id      :bigint(8)
 #
 
 class Status < ApplicationRecord
-  before_destroy :unlink_from_conversations
+  # before_destroy :unlink_from_conversations
 
   include Paginable
   include Cacheable
@@ -58,6 +59,7 @@ class Status < ApplicationRecord
   belongs_to :conversation, optional: true
   belongs_to :preloadable_poll, class_name: 'Poll', foreign_key: 'poll_id', optional: true
   belongs_to :group, optional: true
+  belongs_to :status_context, optional: true
 
   belongs_to :thread, foreign_key: 'in_reply_to_id', class_name: 'Status', inverse_of: :replies, optional: true
   belongs_to :reblog, foreign_key: 'reblog_of_id', class_name: 'Status', inverse_of: :reblogs, optional: true
@@ -100,6 +102,7 @@ class Status < ApplicationRecord
   scope :tombstoned,  -> { where.not(tombstoned_at: nil) }
   scope :not_tombstoned,  -> { where(tombstoned_at: nil) }
 
+  scope :with_stats, -> { includes(:status_stat).references(:status_stat) }
   scope :only_replies, -> { where('statuses.reply IS TRUE AND statuses.in_reply_to_id IS NOT NULL') }
   scope :without_replies, -> { where('statuses.reply IS FALSE AND statuses.in_reply_to_id IS NULL') }
   scope :without_reblogs, -> { where('statuses.reblog_of_id IS NULL') }
@@ -107,7 +110,7 @@ class Status < ApplicationRecord
   scope :tagged_with, ->(tag) { joins(:statuses_tags).where(statuses_tags: { tag_id: tag }) }
   scope :excluding_silenced_accounts, -> { left_outer_joins(:account).where(accounts: { silenced_at: nil }) }
   scope :including_silenced_accounts, -> { left_outer_joins(:account).where.not(accounts: { silenced_at: nil }) }
-  scope :popular_accounts, -> { left_outer_joins(:account).where('accounts.is_verified=true OR accounts.is_pro=true AND accounts.locked=false') }
+  scope :popular_accounts, -> { left_outer_joins(:account).where('((accounts.is_verified=true OR accounts.is_pro=true) AND accounts.locked=false)') }
   scope :not_excluded_by_account, ->(account) { where.not(account_id: account.excluded_from_timeline_account_ids) }
   scope :not_domain_blocked_by_account, ->(account) { account.excluded_from_timeline_domains.blank? ? left_outer_joins(:account) : left_outer_joins(:account).where('accounts.domain IS NULL OR accounts.domain NOT IN (?)', account.excluded_from_timeline_domains) }
   scope :tagged_with_all, ->(tags) {
@@ -138,9 +141,9 @@ class Status < ApplicationRecord
     :media_attachments,
     :preview_cards,
     :conversation,
-    :status_stat,
     :preloadable_poll,
     :revisions,
+    :status_context,
     {
       account: :account_stat,
       active_mentions: { account: :account_stat },
@@ -290,36 +293,89 @@ class Status < ApplicationRecord
   end
 
   def direct_replies_count
-    replies.count
+    if reblog?
+      0
+    else
+      status_stat&.direct_replies_count || status_stat&.replies_count || 0
+    end
   end
 
   def quotes_count
-    # if there's no status_stat record, or the quotes_count is null, we still have to calculate.
-    # however, after this feature is launched, we can assume that quotes will create/increment a status_stat record,
-    # so we can also filter based loosely on when this was launched.
-    if created_at < Date.strptime("09/23/2022", "%m/%d/%Y") && (status_stat.nil? || status_stat.quotes_count.nil?)
-      @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 5.minutes) do
-        self.class.quotes_count_map(id)[id] || 0
-      end
+    if reblog?
+      0
     else
-      status_stat&.quotes_count || 0
+      # if there's no status_stat record, or the quotes_count is null, we still have to calculate.
+      # however, after this feature is launched, we can assume that quotes will create/increment a status_stat record,
+      # so we can also filter based loosely on when this was launched.
+      if created_at < Date.strptime("09/23/2022", "%m/%d/%Y") && (status_stat.nil? || status_stat.quotes_count.nil?)
+        if !status_stat.nil?
+          ActiveRecord::Base.connected_to(role: :writing) do
+            qc = self.class.quotes_count_map(id)[id] || 0
+            status_stat.update!(quotes_count: qc)
+            qc
+          end
+        else
+          @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 30.minutes) do
+            self.class.quotes_count_map(id)[id] || 0
+          end
+        end
+      else
+        status_stat&.quotes_count || 0
+      end
     end
   end
 
   def replies_count
-    status_stat&.replies_count || 0
+    if reblog?
+      0
+    else
+      status_stat&.replies_count || 0
+    end
   end
 
   def reblogs_count
-    status_stat&.reblogs_count || 0
+    if reblog?
+      0
+    else
+      status_stat&.reblogs_count || 0
+    end
   end
 
   def favourites_count
-    status_stat&.favourites_count || 0
+    if reblog?
+      0
+    else
+      status_stat&.favourites_count || 0
+    end
   end
 
   def reactions_counts
-    self.class.reactions_map(id) || {}
+    if reblog?
+      {}
+    else
+      target_id = reblog? ? reblog_of_id : id
+      if !status_stat.nil? && !status_stat.favourites_count.nil? && status_stat.favourites_count > 0
+        if status_stat.top_reactions.nil?
+          rm = self.class.reactions_map(target_id) || {}
+          top2 = rm.sort_by { |id, count| count }.reverse
+          top2 = top2[0..1].map { |id, count| id }.join(',')
+          ActiveRecord::Base.connected_to(role: :writing) do
+            status_stat.update!(top_reactions: top2)
+          end
+          rm
+        else
+          result = {}
+          ordering = 'z'
+          status_stat.top_reactions.split(',').each do |reaction|
+            result[reaction] = ordering
+            ordering = (ordering.ord - 1).chr
+          end
+          result
+        end
+      else
+        {}
+      end
+    end
   end
 
   def increment_count!(key)
@@ -372,7 +428,7 @@ class Status < ApplicationRecord
     end
 
     def as_pro_timeline(account = nil)
-      query = timeline_scope.without_replies.popular_accounts.where('statuses.updated_at > ?', 1.hours.ago)
+      query = timeline_scope.without_replies.popular_accounts.where('statuses.id > ?', GabSocial::Snowflake.id_at(8.hours.ago))
       apply_timeline_filters(query, account)
     end
 
@@ -472,28 +528,6 @@ class Status < ApplicationRecord
       end
     end
 
-    def permitted_for(target_account, account)
-      visibility = [:public, :unlisted]
-
-      if account.nil?
-        where(visibility: visibility)
-      elsif target_account.blocking?(account) # get rid of blocked peeps
-        none
-      elsif account.id == target_account.id # author can see own stuff
-        all
-      else
-        # followers can see followers-only stuff, but also things they are mentioned in.
-        # non-followers can see everything that isn't private/direct, but can see stuff they are mentioned in.
-        visibility.push(:private) if account.following?(target_account)
-
-        scope = left_outer_joins(:reblog)
-
-        scope.where(visibility: visibility)
-             .or(scope.where(id: account.mentions.select(:status_id)))
-             .merge(scope.where(reblog_of_id: nil).or(scope.where.not(reblogs_statuses: { account_id: account.excluded_from_timeline_account_ids })))
-      end
-    end
-
     private
 
     def timeline_scope
@@ -550,7 +584,11 @@ class Status < ApplicationRecord
     return if marked_for_destruction? || destroyed?
 
     record = status_stat || build_status_stat
-    record.update(attrs)
+    begin
+      record.update(attrs)
+    rescue ActiveRecord::RecordNotUnique
+      # do nothing
+    end
   end
 
   def store_uri

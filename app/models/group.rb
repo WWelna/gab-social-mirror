@@ -18,12 +18,18 @@
 #  member_count             :integer          default(0)
 #  slug                     :text
 #  is_private               :boolean          default(FALSE)
-#  is_visible               :boolean          default(FALSE)
+#  is_visible               :boolean          default(TRUE)
 #  tags                     :string           default([]), is an Array
 #  password                 :string
 #  group_category_id        :integer
 #  is_verified              :boolean          default(FALSE), not null
-#  is_moderated             :boolean          default(NULL)
+#  is_moderated             :boolean
+#  rules                    :json
+#  theme_color              :text
+#  is_admins_visible        :boolean
+#  paused_at                :datetime
+#  is_members_visible       :boolean
+#  is_questions_enabled     :boolean
 #
 
 class Group < ApplicationRecord
@@ -32,6 +38,7 @@ class Group < ApplicationRecord
   include Paginable
   include GroupInteractions
   include GroupCoverImage
+  include Attachmentable
 
   PER_ACCOUNT_LIMIT_PRO = 100
   PER_ACCOUNT_LIMIT_NORMAL = 10
@@ -50,6 +57,10 @@ class Group < ApplicationRecord
   has_many :group_removed_accounts, inverse_of: :group, dependent: :destroy
   has_many :removed_accounts, source: :account, through: :group_removed_accounts
 
+  has_many :group_questions, inverse_of: :group, dependent: :destroy
+  has_many :group_question_answers, inverse_of: :group, dependent: :destroy
+  has_many :group_account_badges, inverse_of: :group, dependent: :destroy
+
   belongs_to :group_categories, optional: true, foreign_key: 'group_category_id'
 
   validates :title, presence: true
@@ -63,7 +74,6 @@ class Group < ApplicationRecord
 
   before_save :set_slug
   before_save :set_password
-  before_destroy :clean_feed_manager
   after_create :add_owner_to_accounts
 
   scope :alphabetical, -> { order(arel_table['title'].lower.asc) }
@@ -95,6 +105,14 @@ class Group < ApplicationRecord
     self.password.present? && self.password != 'null'
   end
 
+  def is_paused?
+    self.paused_at.present?
+  end
+
+  def is_enabled_and_has_questions?
+    self.is_questions_enabled && group.group_questions.count > 0
+  end
+  
   private
 
   def set_password
@@ -115,20 +133,4 @@ class Group < ApplicationRecord
     group_accounts << GroupAccount.new(account: account, role: :admin, write_permissions: true)
   end
 
-  def clean_feed_manager
-    Redis.current.with do |conn|
-      reblog_key       = FeedManager.instance.key(:group, id, 'reblogs')
-      reblogged_id_set = conn.zrange(reblog_key, 0, -1)
-
-      conn.pipelined do |pipeline|
-        pipeline.del(FeedManager.instance.key(:group, id))
-        pipeline.del(reblog_key)
-
-        reblogged_id_set.each do |reblogged_id|
-          reblog_set_key = FeedManager.instance.key(:group, id, "reblogs:#{reblogged_id}")
-          pipeline.del(reblog_set_key)
-        end
-      end
-    end
-  end
 end

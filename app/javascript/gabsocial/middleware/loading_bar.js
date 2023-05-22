@@ -1,4 +1,4 @@
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import { showLoading, hideLoading } from 'react-redux-loading-bar'
 
 const defaultTypeSuffixes = ['PENDING', 'FULFILLED', 'REJECTED']

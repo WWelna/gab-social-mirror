@@ -4,18 +4,6 @@ require 'singleton'
 
 class FeedManager
   include Singleton
-  # include Redisable
-
-  MAX_ITEMS = 150
-
-  # Must be <= MAX_ITEMS or the tracking sets will grow forever
-  REBLOG_FALLOFF = 40
-
-  def key(type, id, subtype = nil)
-    return "feed:#{type}:#{id}" unless subtype
-
-    "feed:#{type}:#{id}:#{subtype}"
-  end
 
   # status or chatMessage
   def filter?(timeline_type, status, receiver_id)
@@ -30,51 +18,7 @@ class FeedManager
     end
   end
 
-  def push_to_home(account, status)
-    Redis.current.with do |conn|      
-      conn.publish("timeline:#{account.id}", Oj.dump(event: 'status', payload: status))
-    end
-    true
-  end
-
-  def unpush_from_home(account, status)
-    true
-    # return false unless remove_from_feed(:home, account.id, status)
-    # redis.publish("timeline:#{account.id}", Oj.dump(event: :delete, payload: status.id.to_s))
-    # true
-  end
-
-  def unpush_from_list(list, status)
-    # return false unless remove_from_feed(:list, list.id, status)
-    # redis.publish("timeline:list:#{list.id}", Oj.dump(event: :delete, payload: status.id.to_s))
-    # true
-  end
-
-  def trim(type, account_id)
-
-  end
-
-  def merge_into_timeline(from_account, into_account)
-
-  end
-
-  def unmerge_from_timeline(from_account, into_account)
-
-  end
-
-  def clear_from_timeline(account, target_account)
-
-  end
-
-  def populate_feed(account)
-
-  end
-
   private
-
-  def push_update_required?(timeline_id)
-
-  end
 
   def blocks_or_mutes?(receiver_id, account_ids, context)
     Block.where(account_id: receiver_id, target_account_id: account_ids).any? ||
@@ -186,22 +130,6 @@ class FeedManager
     combined_regex = active_filters.reduce { |memo, obj| Regexp.union(memo, obj) }
 
     !combined_regex.match(chat_message.text).nil?
-  end
-
-  # Adds a status to an account's feed, returning true if a status was
-  # added, and false if it was not added to the feed. Note that this is
-  # an internal helper: callers must call trim or push updates if
-  # either action is appropriate.
-  def add_to_feed(timeline_type, account_id, status, aggregate_reblogs = true)
-    true
-  end
-
-  # Removes an individual status from a feed, correctly handling cases
-  # with reblogs, and returning true if a status was removed. As with
-  # `add_to_feed`, this does not trigger push updates, so callers must
-  # do so if appropriate.
-  def remove_from_feed(timeline_type, account_id, status)
-
   end
 
 end

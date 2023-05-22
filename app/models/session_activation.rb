@@ -61,9 +61,13 @@ class SessionActivation < ApplicationRecord
     def deactivate(id)
       return unless id
 
-      where(session_id: id).each do |session|
-        DoorkeeperTokenCache.delete(session.token)
-        session.destroy
+      Redis.current.publish("altstream:main", Oj.dump(event: :session_deactivation, payload: { session_id: id.to_s }))
+
+      ActiveRecord::Base.connected_to(role: :writing) do
+        where(session_id: id).each do |session|
+          DoorkeeperTokenCache.delete(session.token)
+          session.destroy
+        end
       end
     end
 

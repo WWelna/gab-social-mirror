@@ -20,22 +20,25 @@
 #  scheduled_status_id       :bigint(8)
 #  blurhash                  :string
 #  media_attachment_album_id :bigint(8)
-#  processing                :integer
 #  marketplace_listing_id    :bigint(8)
 #  file_fingerprint          :string
 #
 
 class MediaAttachment < ApplicationRecord
   self.inheritance_column = nil
+  self.ignored_columns = ["chat_message_id"]
 
   enum type: [:image, :gifv, :video, :unknown]
 
-  IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.jfif'].freeze
-  VIDEO_FILE_EXTENSIONS = ['.webm', '.mp4', '.m4v', '.mov'].freeze
+  IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.jfif'].freeze
+  GIF_FILE_EXTENSIONS = ['.gif'].freeze
+  WEBM_FILE_EXTENSIONS = ['.webm'].freeze
+  VIDEO_FILE_EXTENSIONS = ['.mp4', '.m4v', '.mov'].freeze
 
-  IMAGE_MIME_TYPES             = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].freeze
-  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime', 'video/ogg', 'video/3gpp', 'audio/webm'].freeze
-  VIDEO_CONVERTIBLE_MIME_TYPES = ['video/webm', 'video/quicktime', 'audio/webm'].freeze
+  IMAGE_MIME_TYPES             = ['image/jpeg', 'image/png', 'image/webp'].freeze
+  GIF_MIME_TYPES = ['image/gif'].freeze
+  WEBM_MIME_TYPES = ['video/webm', 'audio/webm'].freeze
+  VIDEO_MIME_TYPES             = ['video/mp4', 'video/quicktime', 'video/ogg', 'video/3gpp'].freeze
 
   BLURHASH_OPTIONS = {
     x_comp: 4,
@@ -55,28 +58,34 @@ class MediaAttachment < ApplicationRecord
     },
   }.freeze
 
+  GIF_STYLES = {
+    original: {
+      pixels: 1_638_400, # 1280x1280px
+      file_geometry_parser: FastGeometryParser,
+    },
+    small: {
+      pixels: 160_000,
+      format: 'png',
+      convert_options: '-coalesce',
+      file_geometry_parser: FastGeometryParser,
+      blurhash: BLURHASH_OPTIONS,
+    },
+  }.freeze
+
   VIDEO_FORMAT_OUTPUT_OPTIONS = {
     'loglevel' => 'fatal',
-    'movflags' => 'faststart',
-    'pix_fmt'  => 'yuv420p',
-    'vf'       => 'scale=\'trunc(iw/2)*2:trunc(ih/2)*2\'',
-    'vsync'    => 'cfr',
-    'c:v'      => if ENV['NVENC_ENABLED'] == 'Y'
-                    'h264_nvenc'
-                  else
-                    'h264'
-                  end,
-    'b:v'      => '500K',
-    'maxrate'  => '1300K',
-    'bufsize'  => '1300K',
-    'crf'      => 18,
+    'movflags' => '+faststart',
+    'c:v'    => 'copy',
+    'c:a'    => 'copy',
+    'threads'  => '2',
+#    'map_metadata' => '-1',
   }
 
   VIDEO_STYLES = {
     small: {
       convert_options: {
         output: {
-          vf: 'scale=\'min(400\, iw):min(400\, ih)\':force_original_aspect_ratio=decrease',
+#          vf: 'scale=\'720:-1\'',
         },
       },
       format: 'png',
@@ -89,6 +98,26 @@ class MediaAttachment < ApplicationRecord
         output: VIDEO_FORMAT_OUTPUT_OPTIONS,
       },
       format: 'mp4',
+    },
+  }.freeze
+
+  WEBM_STYLES = {
+    small: {
+      convert_options: {
+        output: {
+#          vf: 'scale=\'720:-1\'',
+        },
+      },
+      format: 'png',
+      time: 0,
+      file_geometry_parser: FastGeometryParser,
+      blurhash: BLURHASH_OPTIONS,
+    },
+    playable: {
+      convert_options: {
+        output: VIDEO_FORMAT_OUTPUT_OPTIONS,
+      },
+      format: 'webm',
     },
   }.freeze
 
@@ -107,12 +136,14 @@ class MediaAttachment < ApplicationRecord
   belongs_to :scheduled_status, inverse_of: :media_attachments, optional: true
   belongs_to :marketplace_listing, inverse_of: :media_attachments, optional: true
 
+  has_and_belongs_to_many :chat_messages
+
   has_attached_file :file,
                     styles: ->(f) { file_styles f },
                     processors: ->(f) { file_processors f },
                     convert_options: { all: '-quality 96 -strip +set modify-date +set create-date' }
 
-  validates_attachment_content_type :file, content_type: IMAGE_MIME_TYPES + VIDEO_MIME_TYPES
+  validates_attachment_content_type :file, content_type: IMAGE_MIME_TYPES + GIF_MIME_TYPES + VIDEO_MIME_TYPES + WEBM_MIME_TYPES
   validates_attachment_size :file, less_than: SIZE_LIMIT
   remotable_attachment :file, SIZE_LIMIT
 
@@ -122,14 +153,22 @@ class MediaAttachment < ApplicationRecord
   validates :account, presence: true
   validates :description, length: { maximum: 420 }, if: :local?
 
-  scope :attached,   -> { where.not(status_id: nil).or(where.not(scheduled_status_id: nil)).or(where.not(marketplace_listing_id: nil)) }
-  scope :unattached, -> { where(status_id: nil, scheduled_status_id: nil, marketplace_listing_id: nil) }
+  scope :attached,   -> {
+    where.not(status_id: nil).or(
+      where.not(scheduled_status_id: nil)
+    ).or(
+      where.not(marketplace_listing_id: nil)
+    ).or(      
+      where("EXISTS (select 1 from chat_messages_media_attachments where chat_messages_media_attachments.media_attachment_id = media_attachments.id)")
+    )
+  }
+  scope :unattached, -> { where(status_id: nil, scheduled_status_id: nil, marketplace_listing_id: nil).left_joins(:chat_messages).where(chat_messages: { id: nil }) }
   scope :local,      -> { where(remote_url: '') }
   scope :remote,     -> { where.not(remote_url: '') }
-  scope :recent,     -> { reorder(created_at: :desc) }
+  scope :recent,     -> { reorder(id: :desc) }
   scope :excluding_scheduled, -> { where(scheduled_status_id: nil) }
   
-  default_scope { recent }
+  default_scope { order(id: :asc) }
 
   def is_pro
     return false if account_id.nil?
@@ -142,10 +181,6 @@ class MediaAttachment < ApplicationRecord
 
   def needs_redownload?
     file.blank? && remote_url.present?
-  end
-
-  def video_or_gifv?
-    video? || gifv? || (VIDEO_MIME_TYPES.include?(file_content_type) || VIDEO_CONVERTIBLE_MIME_TYPES.include?(file_content_type))
   end
 
   def to_param
@@ -178,37 +213,29 @@ class MediaAttachment < ApplicationRecord
 
   class << self
     def supported_mime_types
-      IMAGE_MIME_TYPES + VIDEO_MIME_TYPES
+      IMAGE_MIME_TYPES + GIF_MIME_TYPES + VIDEO_MIME_TYPES + WEBM_MIME_TYPES
     end
 
     def supported_file_extensions
-      IMAGE_FILE_EXTENSIONS + VIDEO_FILE_EXTENSIONS
+      IMAGE_FILE_EXTENSIONS + GIF_FILE_EXTENSIONS + VIDEO_FILE_EXTENSIONS + WEBM_FILE_EXTENSIONS
     end
 
     private
 
     def file_styles(f)
-      if f.instance.file_content_type == 'image/gif'
-        {
-          small: IMAGE_STYLES[:small],
-          original: VIDEO_FORMAT,
-        }
-      elsif IMAGE_MIME_TYPES.include? f.instance.file_content_type
+      if IMAGE_MIME_TYPES.include? f.instance.file_content_type
         IMAGE_STYLES
-      elsif VIDEO_CONVERTIBLE_MIME_TYPES.include?(f.instance.file_content_type)
-        {
-          small: VIDEO_STYLES[:small],
-          playable: VIDEO_STYLES[:playable],
-        }
+      elsif GIF_MIME_TYPES.include? f.instance.file_content_type
+        GIF_STYLES
+      elsif WEBM_MIME_TYPES.include? f.instance.file_content_type
+        WEBM_STYLES
       else
         VIDEO_STYLES
       end
     end
 
     def file_processors(f)
-      if f.file_content_type == 'image/gif'
-        [:gif_transcoder, :blurhash_transcoder]
-      elsif VIDEO_MIME_TYPES.include? f.file_content_type
+      if VIDEO_MIME_TYPES.include?(f.file_content_type) || WEBM_MIME_TYPES.include?(f.file_content_type)
         [:video_transcoder, :blurhash_transcoder, :type_corrector]
       else
         [:lazy_thumbnail, :blurhash_transcoder, :type_corrector]
@@ -234,7 +261,7 @@ class MediaAttachment < ApplicationRecord
   end
 
   def set_type_and_extension
-    self.type = (VIDEO_MIME_TYPES.include?(file_content_type) || VIDEO_CONVERTIBLE_MIME_TYPES.include?(file_content_type)) ? :video : :image
+    self.type = (VIDEO_MIME_TYPES.include?(file_content_type) || WEBM_MIME_TYPES.include?(file_content_type)) ? :video : :image
   end
 
   def set_meta

@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { FormattedMessage } from 'react-intl'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { fetchReposts, expandReposts } from '../actions/interactions'
 import { fetchStatus } from '../actions/statuses'
 import { makeGetStatus } from '../selectors'
@@ -50,7 +50,7 @@ class StatusReposts extends ImmutablePureComponent {
         emptyMessage={<FormattedMessage id='status.reposts.empty' defaultMessage='No one has reposted this gab yet. When someone does, they will show up here.' />}
         onLoadMore={this.handleLoadMore}
         hasMore={hasMore}
-        isLoading={isLoading && accountIdCount === 0}
+        isLoading={isLoading}
         showLoading={isLoading && accountIdCount === 0}
         placeholderComponent={AccountPlaceholder}
         placeholderCount={3}

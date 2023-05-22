@@ -1,0 +1,16 @@
+- content_for :page_title do
+  = 'Contexts'
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th Name
+        %th Index
+        %th Active
+        %th Edit
+        %th
+    %tbody
+      = render @status_contexts
+
+= link_to 'New Context', new_admin_status_context_path, class: 'button'

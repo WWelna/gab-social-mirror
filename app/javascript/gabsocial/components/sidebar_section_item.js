@@ -121,7 +121,7 @@ class SidebarSectionItem extends React.PureComponent {
           </div>
 
           {
-            count > 0 &&
+            (count > 0 || count === '99+') &&
             <span className={countClasses}>
               {count}
             </span>

@@ -70,7 +70,7 @@ class HomeTimelineSettingsModal extends ImmutablePureComponent {
               onChange={onChange}
               label={intl.formatMessage(messages.showVideos)}
             />
-         
+
          <SettingSwitch
               prefix='home_timeline'
               settings={settings}

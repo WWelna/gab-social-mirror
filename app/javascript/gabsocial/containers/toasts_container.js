@@ -22,7 +22,7 @@ class ToastsContainer extends React.PureComponent {
       d: 1,
       z5: 1,
       posFixed: 1,
-      bottom0: 1,
+      bottom55PX: 1,
       left0: 1,
       pl15: 1,
       pt15: 1,

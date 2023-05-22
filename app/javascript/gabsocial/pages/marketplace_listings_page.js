@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { me } from '../initial_state'
 import PageTitle from '../features/ui/util/page_title'
+import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import MarketplaceLayout from '../layouts/marketplace_layout'
 import { openModal } from '../actions/modal'
 import {
@@ -13,6 +14,8 @@ import {
   LinkFooter,
   MarketplaceListingCategoriesPanel,
   MarketplaceListingFilterPanel,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 
 class MarketplaceListingsPage extends React.PureComponent {
@@ -68,9 +71,11 @@ class MarketplaceListingsPage extends React.PureComponent {
         title='Marketplace'
         actions={actions}
         layout={[
+          <WrappedBundle key='marketplace-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'marketplace.sidebar', position: 1 }} />,
           MarketplaceListingFilterPanel,
           MarketplaceListingCategoriesPanel,
           LinkFooter,
+          <WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />,
         ]}
       >
         <PageTitle path='Marketplace' />

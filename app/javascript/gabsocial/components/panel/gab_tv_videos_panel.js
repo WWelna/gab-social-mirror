@@ -4,47 +4,16 @@ import { connect } from 'react-redux'
 import { injectIntl, defineMessages } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
+import { List as ImmutableList } from 'immutable'
 import { fetchGabTVExplore } from '../../actions/news'
 import PanelLayout from './panel_layout'
 import VideoItem from '../video_item'
 
 class GabTVVideosPanel extends ImmutablePureComponent {
-
-  state = {
-    fetched: false,
-  }
-
-  static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.shouldLoad && !prevState.fetched) {
-      return { fetched: true }
-    }
-
-    return null
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (!prevState.fetched && this.state.fetched && this.props.isLazy) {
-      this.props.dispatch(fetchGabTVExplore())
-    }
-  }
-
-  componentDidMount() {
-    if (!this.props.isLazy) {
-      this.props.dispatch(fetchGabTVExplore())
-      this.setState({ fetched: true })
-    }
-  }
-
   render() {
-    const {
-      intl,
-      isLoading,
-      items,
-    } = this.props
-    const { fetched } = this.state
-
-    const count = !!items ? items.count() : 0
-    if (count === 0 && fetched) return null
+    const { intl, items } = this.props
+    const count = !!items && items.slice ? items.count() : 0
+    if (count === 0) return null
 
     return (
       <PanelLayout
@@ -86,16 +55,11 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  isLoading: state.getIn(['news', 'gab_tv_explore', 'isLoading']),
-  isFetched: state.getIn(['news', 'gab_tv_explore', 'isFetched']),
-  items: state.getIn(['news', 'gab_tv_explore', 'items']),
+  items: state.getIn(['news', 'gab_tv_explore', 'items'], ImmutableList()),
 })
 
 GabTVVideosPanel.propTypes = {
   intl: PropTypes.object.isRequired,
-  isLazy: PropTypes.bool,
-  isLoading: PropTypes.bool,
-  isFetched: PropTypes.bool,
   items: ImmutablePropTypes.list,
 }
 

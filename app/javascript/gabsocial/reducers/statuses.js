@@ -16,6 +16,12 @@ import {
   STATUS_UNMUTE_SUCCESS,
   STATUS_SHOW_ANYWAYS,
   STATUS_SHOW_ACCOUNT_ANYWAYS,
+  STATUS_REACTIONS_FETCH_SUCCESS,
+  STATUS_REACTIONS_FETCH_FAIL,
+  CONVERSATION_OWNER_FETCH_SUCCESS,
+  CONVERSATION_OWNER_FETCH_FAIL,
+  REMOVE_REPLY_SUCCESS,
+  REMOVE_REPLY_FAIL,
 } from '../actions/statuses';
 import {
   ACCOUNT_BLOCK_REQUEST,
@@ -24,9 +30,9 @@ import {
   ACCOUNT_UNMUTE_REQUEST,
 } from '../actions/accounts'
 import normalizeReactionsCounts from '../utils/reactions_counts_sort'
-import { me } from '../initial_state'
+import { activeReactions, me } from '../initial_state'
 import { STATUS_IMPORT, STATUSES_IMPORT } from '../actions/importer';
-import { Map as ImmutableMap, fromJS } from 'immutable';
+import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable';
 
 const importStatus = (state, status) => state.set(status.id, fromJS(status));
 
@@ -95,12 +101,16 @@ export default function statuses(state = initialState, action) {
       if (action.data.reblogs_count !== undefined) map.setIn([status_id, 'reblogs_count'], action.data.reblogs_count)
       if (action.data.quotes_count !== undefined) map.setIn([status_id, 'quotes_count'], action.data.quotes_count)
       if (action.data.replies_count !== undefined) map.setIn([status_id, 'replies_count'], action.data.replies_count)
+      if (action.data.direct_replies_count !== undefined) map.setIn([status_id, 'direct_replies_count'], action.data.direct_replies_count)
       if (action.data.pinned !== undefined) map.setIn([status_id, 'pinned'], action.data.pinned)
       if (action.data.pinned_by_group !== undefined) map.setIn([status_id, 'pinned_by_group'], action.data.pinned_by_group)
       if (action.data.bookmarked !== undefined) map.setIn([status_id, 'bookmarked'], action.data.bookmarked)
 
-      map.setIn([status_id, 'reaction'], action.data.reaction_id) //set reaction not reaction_id since its setting in selectors/index
-      map.setIn([status_id, 'reactions_counts'], normalizeReactionsCounts(action.data.reactions_counts))
+      if (action.data.reaction_id !== undefined) map.setIn([status_id, 'reaction'], action.data.reaction_id) //set reaction not reaction_id since its setting in selectors/index
+
+      if (action.data.reactions_counts) {
+        map.setIn([status_id, 'reactions_counts'], normalizeReactionsCounts(action.data.reactions_counts))
+      }
     })
   
   case STATUS_SHOW_ANYWAYS:
@@ -131,6 +141,21 @@ export default function statuses(state = initialState, action) {
         }
       })
     })
+  case STATUS_REACTIONS_FETCH_SUCCESS:
+    return state.setIn([action.statusId, 'reactions_counts'], normalizeReactionsCounts(action.reactions))
+  case STATUS_REACTIONS_FETCH_FAIL:
+    return state
+  case CONVERSATION_OWNER_FETCH_SUCCESS:
+    return state.withMutations((map) => {
+      map.setIn([action.statusId, 'conversation_owner'], action.owner)
+      map.setIn([action.statusId, 'conversation_owner_status_id'], action.ownerStatusId)
+    })
+  case CONVERSATION_OWNER_FETCH_FAIL:
+    return state
+  case REMOVE_REPLY_SUCCESS:
+    return state.setIn([action.statusId, 'in_reply_to_id'], null)    
+  case REMOVE_REPLY_FAIL:
+    return state
   default:
     return state;
   }

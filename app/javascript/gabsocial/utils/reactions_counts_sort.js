@@ -1,4 +1,4 @@
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import {
   Map as ImmutableMap,
   List as ImmutableList,

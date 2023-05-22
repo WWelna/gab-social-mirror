@@ -24,7 +24,7 @@ const GlobalFooter = () => (
               <Icon id='logo' />
             </div>
             <div className={[_s.d, _s.pr15, _s.maxW640PX].join(' ')}>
-              <Text size='medium'>We build Freedom Of Speech Software. We champion free speech, individual liberty and the free flow of information online. All are welcome.</Text>
+              <Text size='medium'>Gab is the home of free speech and the parallel economy. Join our community and speak freely today! </Text>
             </div>
           </ResponsiveClassesComponent>
 
@@ -39,10 +39,6 @@ const GlobalFooter = () => (
                 {
                   href: 'https://gab.com',
                   title: 'Gab Social',
-                },
-                {
-                  href: 'https://chat.gab.com',
-                  title: 'Gab Chat',
                 },
               ]}
             />
@@ -71,10 +67,6 @@ const GlobalFooter = () => (
                 {
                   href: 'https://shop.dissenter.com',
                   title: 'Merch Store',
-                },
-                {
-                  href: 'https://news.gab.com/support-gab',
-                  title: 'Affiliates',
                 },
               ]}
             />
@@ -113,7 +105,7 @@ const GlobalFooter = () => (
 
           <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
             <Text weight='bold'>
-              © 2022
+              © 2023
             </Text>
             <Text>
               &nbsp;Copyright |&nbsp;

@@ -3,7 +3,7 @@
 class DigestMailerWorker
   include Sidekiq::Worker
 
-  sidekiq_options queue: 'mailers', retry: 3
+  sidekiq_options queue: 'mailers', retry: 0
 
   attr_reader :user
 

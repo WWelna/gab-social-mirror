@@ -36,10 +36,11 @@ class ProfileInfoPanel extends ImmutablePureComponent {
     const memberSinceDate = intl.formatDate(account.get('created_at'), { month: 'long', year: 'numeric' })
     const hasNote = !!content ? (account.get('note').length > 0 && account.get('note') !== '<p></p>') : false
     const isBot = !!account.get('bot')
+    const isParody = !!account.get('is_parody')
     const isPro = account.get('is_pro')
     const isDonor = account.get('is_donor')
     const isInvestor = account.get('is_investor')
-    const hasBadges = isPro || isDonor || isInvestor || isBot
+    const hasBadges = isPro || isDonor || isInvestor || isBot || isParody
     const proBadgeTitle = isPro && account.get('show_pro_life') ? 'PRO Life' : 'PRO'
 
     return (
@@ -73,6 +74,12 @@ class ProfileInfoPanel extends ImmutablePureComponent {
             <React.Fragment>
               <Divider isSmall />
               <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
+                { 
+                  isParody &&
+                  <div className={[_s.mr5, _s.radiusSmall, _s.bgTertiary, _s.py2, _s.px5].join(' ')}>
+                    <Text weight='bold' size='small' className={_s.cSecondary} isBadge>PARODY</Text>
+                  </div>
+                }
                 { 
                   isBot &&
                   <div className={[_s.mr5, _s.radiusSmall, _s.bgTertiary, _s.py2, _s.px5].join(' ')}>

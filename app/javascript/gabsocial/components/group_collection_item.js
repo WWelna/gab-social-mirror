@@ -28,7 +28,7 @@ class GroupCollectionItem extends ImmutablePureComponent {
     const isMember = relationships.get('member')
     const isAdmin = relationships.get('admin')
     const isModerator = relationships.get('moderator')
-    const coverSrc = group.get('cover_image_medium_url') || group.get('cover_image_url') || ''
+    const coverSrc = group.get('cover_image_thumbnail_url') || group.get('cover_image_medium_url') || group.get('cover_image_url') || ''
     const coverMissing = coverSrc.indexOf(PLACEHOLDER_MISSING_HEADER_SRC) > -1 || !coverSrc
 
     if (isHidden) {

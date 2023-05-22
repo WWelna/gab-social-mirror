@@ -9,7 +9,8 @@ class Api::V1::GroupsController < Api::BaseController
   before_action -> { doorkeeper_authorize! :write, :'write:groups' }, except: [:index, :show]
 
   before_action :require_user!, except: [:index, :show]
-  before_action :set_group, except: [:index, :create, :by_category, :by_tag]
+  before_action :set_group, except: [:index, :create, :by_category, :by_tag, :block, :unblock]
+  before_action :set_group_for_block, only: [:block, :unblock]
 
   def index
     case current_tab
@@ -128,6 +129,24 @@ class Api::V1::GroupsController < Api::BaseController
     render json: @accounts, each_serializer: REST::AccountSerializer
   end
 
+  def block
+    blocked = BlockedGroup.where(target_group_id: @group.id, account_id: current_account.id)
+    if !blocked.empty?
+      return render json: { error: 'You have already muted this group.' }, status: 403
+    end
+    BlockedGroup.create!(target_group_id: @group.id, account_id: current_account.id)
+    render_empty_success
+  end
+
+  def unblock
+    blocked = BlockedGroup.where(target_group_id: @group.id, account_id: current_account.id)
+    if blocked.empty?
+      return render json: { error: 'You are not muting this group.' }, status: 403
+    end
+    blocked.first.destroy!
+    render_empty_success
+  end
+
   private
 
   def current_tab
@@ -140,10 +159,31 @@ class Api::V1::GroupsController < Api::BaseController
     @group = Group.includes(:group_categories).find_by!(id: params[:id], is_archived: false)
   end
 
+  def set_group_for_block
+    @group = Group.find_by!(id: params[:group_id], is_archived: false)
+  end
+
   def group_params
-    thep = params.permit(:title, :password, :cover_image, :description, :is_private, :tags, :is_visible, :group_category_id, :slug, :is_moderated)
+    thep = params.permit(
+      :title,
+      :password,
+      :cover_image,
+      :description,
+      :tags,
+      :group_category_id,
+      :slug,
+      :paused_at,
+      :is_visible,
+      :is_private,
+      :is_moderated,
+      :is_members_visible,
+      :is_admins_visible,
+      :is_questions_enabled,
+      :theme_color,
+    )
     thep[:tags] = thep[:tags].split(",") unless thep[:tags].nil?
     thep[:cover_image] = nil if thep[:cover_image] == 'undefined'
+
     thep
   end
 end

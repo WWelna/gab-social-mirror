@@ -4,24 +4,23 @@ class Api::V1::ListRelationshipsController < Api::BaseController
   before_action :require_user!
 
   def relationships
-    lists = List.public_only.where(id: list_ids).select('id')
+    lists = List.where(id: list_ids)
 
     if lists.empty?
       render json: { error: true }, status: 503
     end
     
-    @lists = lists.index_by(&:id).values_at(*list_ids).compact
-    render json: @lists, each_serializer: REST::ListRelationshipSerializer, relationships: get_relationships
+    @lists = lists
+
+    render json: @lists,
+           each_serializer: REST::ListRelationshipSerializer,
+           relationships: ListRelationshipsPresenter.new(list_ids, current_account.id)
   end
 
   private
 
-  def get_relationships
-    ListRelationshipsPresenter.new(@lists, current_user.account_id)
-  end
-
   def list_ids
-    the_take = 1 #just individual results for now, maybe do mass in the future
+    the_take = 100 #just individual results for now, maybe do mass in the future
     params[:listIds].map(&:to_i).take(the_take)
   end
 end

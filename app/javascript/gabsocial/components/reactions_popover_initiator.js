@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { isTouch } from '../utils/is_mobile'
 import {
   REACTIONS_INITIATOR_DELAY,

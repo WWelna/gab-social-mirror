@@ -174,8 +174,10 @@ class ListsDirectory extends ImmutablePureComponent {
         </ResponsiveComponent>
         <List
           scrollKey='lists'
+          isLoading={isLoading}
           showLoading={(lists.size === 0 && !isFetched) || isLoading}
           items={listItems}
+          emptyMessage="There are no featured feeds."
         />
         {
           (activeList === 'own' && lists.size === 0 && isFetched) && emptyMessage

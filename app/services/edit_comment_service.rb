@@ -69,9 +69,13 @@ class EditCommentService < BaseService
   end
 
   def comment_attributes
+    english = @account.user&.locale == 'en'
+    lang = language_from_option(@options[:language])
+    lang ||= english ? 'en' : nil
+    lang ||= @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account)
     {
       text: @text,
-      language: language_from_option(@options[:language]) || @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account),
+      language: lang,
       revised_at: Time.now,
     }.compact
   end

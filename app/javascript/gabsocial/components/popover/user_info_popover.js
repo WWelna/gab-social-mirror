@@ -77,6 +77,7 @@ class UserInfoPopover extends ImmutablePureComponent {
             <UserStat
               title='Followers'
               value={shortNumberFormat(account.get('followers_count'))}
+              numvalue={account.get('followers_count')}
               to={`/${account.get('acct')}/followers`}
               isInline
             />
@@ -84,6 +85,7 @@ class UserInfoPopover extends ImmutablePureComponent {
               isLast
               title='Following'
               value={shortNumberFormat(account.get('following_count'))}
+              numvalue={account.get('following_count')}
               to={`/${account.get('acct')}/following`}
               isInline
             />

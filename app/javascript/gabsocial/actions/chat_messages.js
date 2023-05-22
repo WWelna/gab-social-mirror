@@ -20,19 +20,22 @@ export const CHAT_MESSAGE_SHOW_ANYWAYS   = 'CHAT_MESSAGE_SHOW_ANYWAYS'
 
 /**
  * Send a chat message with given text to given chatConversationId
- * @param {String} text
+ * @param {String} options.text
+ * @param {Array} options.mediaIds
  * @param {String} chatConversationId
  */
-export const sendChatMessage = (text = '', chatConversationId, marketplaceListingId) => (dispatch, getState) => {
+export const sendChatMessage = (options = {}, chatConversationId, marketplaceListingId) => (dispatch, getState) => {
   // must have current user and id
   if (!me || !chatConversationId) return
+  const { text, mediaIds } = options
   // cannot send message if no text
-  if (text.length === 0) return
+  if (text.length === 0 && mediaIds.length === 0) return
 
   dispatch(sendChatMessageRequest(chatConversationId))
 
   api(getState).post('/api/v1/chat_messages', {
     text,
+    media_ids: mediaIds,
     chat_conversation_id: chatConversationId,
     marketplace_listing_id: marketplaceListingId,
   }).then((response) => {

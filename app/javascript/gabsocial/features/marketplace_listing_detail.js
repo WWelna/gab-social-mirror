@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { NavLink, withRouter } from 'react-router-dom'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import moment from 'moment-mini'
 import {
 	openPopover,
@@ -595,7 +595,7 @@ const mapDispatchToProps = (dispatch) => ({
 			const spacer = !!message && message.length > 0 ? ' - ' : ' '
 			const text = `${message}${spacer}${listing.get('url')}`
 			if (chatConversationId) {
-				dispatch(sendChatMessage(text, chatConversationId, listing.get('id')))
+				dispatch(sendChatMessage({ text }, chatConversationId, listing.get('id')))
 			}
 		}))
 	},

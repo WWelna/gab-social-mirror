@@ -37,7 +37,8 @@ class ChatConversationAccount < ApplicationRecord
   validates_with ChatConversationAccountLimitValidator
 
   scope :by_recent_message, -> { 
-    joins(:chat_conversation).order('chat_conversations.last_chat_message_sent_at desc')
+    joins(:chat_conversation)
+    .order(Arel.sql("COALESCE(chat_conversations.last_chat_message_sent_at, chat_conversations.created_at) desc"))
   }
   scope :active, -> { where(is_hidden: false, is_approved: true, left_group_chat_at: nil) }
   scope :requests, -> { where(is_hidden: false, is_approved: false) }

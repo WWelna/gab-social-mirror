@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 class CommentRelationshipsPresenter
-  attr_reader :reactions_map, :mutes_map, :direct_replies_count_map, :blocked_by_map
+  attr_reader :reactions_map, :mutes_map, :blocked_by_map
 
   def initialize(comments, current_account_id = nil, **options)
     comments = comments.compact
     comment_ids = comments.flat_map { |s| [s.id] }.uniq.compact
 
-    if current_account_id.nil?
+    if current_account_id.nil? || comments.empty?
       @reactions_map = {}
       @mutes_map = {}
       @blocked_by_map = {}
@@ -20,6 +20,5 @@ class CommentRelationshipsPresenter
       @blocked_by_map = Account.blocked_by_map(comment_account_ids, current_account_id)
     end
 
-    @direct_replies_count_map = Comment.direct_replies_count_map(comment_ids)
   end
 end

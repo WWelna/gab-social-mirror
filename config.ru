@@ -2,4 +2,6 @@
 # This file is used by Rack-based servers to start the application.
 
 require ::File.expand_path('../config/environment', __FILE__)
+require 'utf8-cleaner'
+use UTF8Cleaner::Middleware
 run Rails.application

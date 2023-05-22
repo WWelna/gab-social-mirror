@@ -43,7 +43,6 @@ class PollForm extends ImmutablePureComponent {
   state = { poll: this.props.poll }
 
   handleSelectDuration = e => {
-    console.log("e.target.value", e.target.value)
     const poll = Object.assign({}, this.state.poll, {
       expires_in: e.target.value
     })

@@ -34,9 +34,11 @@ class GroupHeader extends ImmutablePureComponent {
     const { relationships } = this.props
     const isAdmin = !!relationships ? relationships.get('admin') : false
     const isModerator = !!relationships ? relationships.get('moderator') : false
+    const isMember = !!relationships ? relationships.get('member') || isAdmin || isModerator : false
     this.props.onOpenGroupOptions(this.infoBtn, this.props.group, {
       isAdmin,
       isModerator,
+      isMember,
     })
   }
 
@@ -168,14 +170,21 @@ class GroupHeader extends ImmutablePureComponent {
                       group={group}
                       relationships={relationships}
                     />
-                    
                     <Button
                       color='primary'
                       backgroundColor='tertiary'
-                      className={[_s.px10, _s.mr5, _s.ml5].join(' ')}
+                      className={[_s.px10, _s.ml10].join(' ')}
                       icon='ellipsis'
                       onClick={this.handleOnOpenGroupOptions}
                       buttonRef={this.setInfoBtn}
+                    />
+                    <Button
+                      iconSize='18px'
+                      color='brand'
+                      backgroundColor='none'
+                      className={[_s.ml10, _s.px10].join(' ')}
+                      icon={isShortcut ? 'star' : 'star-outline'}
+                      onClick={this.handleToggleShortcut}
                     />
                   </div>
                 }

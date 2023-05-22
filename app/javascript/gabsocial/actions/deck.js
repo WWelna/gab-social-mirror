@@ -1,4 +1,4 @@
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import api from '../api'
 import { me } from '../initial_state'
 import { saveSettings } from './settings'

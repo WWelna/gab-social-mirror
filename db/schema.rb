@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_10_06_005045) do
+ActiveRecord::Schema.define(version: 2022_12_23_230600) do
 
   # These are extensions that must be enabled in order to support this database
+  enable_extension "ltree"
   enable_extension "pg_stat_statements"
   enable_extension "pgstattuple"
   enable_extension "plpgsql"
@@ -147,6 +148,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.boolean "is_flagged_as_spam", default: false, null: false
     t.integer "spam_flag"
     t.tsvector "weighted_tsv"
+    t.boolean "is_parody"
     t.index "(((setweight(to_tsvector('simple'::regconfig, (display_name)::text), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, (username)::text), 'B'::\"char\")) || setweight(to_tsvector('simple'::regconfig, (COALESCE(domain, ''::character varying))::text), 'C'::\"char\")))", name: "search_index", using: :gin
     t.index "lower((username)::text), lower((domain)::text)", name: "index_accounts_on_username_and_domain_lower", unique: true
     t.index ["domain"], name: "index_accounts_on_domain"
@@ -189,6 +191,14 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.boolean "processed", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "blocked_groups", id: :serial, force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.integer "target_group_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "target_group_id"], name: "index_blocked_groups_on_account_id_and_target_group_id", unique: true
   end
 
   create_table "blocks", force: :cascade do |t|
@@ -251,6 +261,18 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.datetime "expires_at"
     t.text "text_ciphertext"
     t.index ["from_account_id", "chat_conversation_id"], name: "index_chat_messages_on_from_account_id_and_chat_conversation_id"
+  end
+
+  create_table "chat_messages_media_attachments", id: false, force: :cascade do |t|
+    t.bigint "media_attachment_id", null: false
+    t.bigint "chat_message_id", null: false
+    t.index ["chat_message_id", "media_attachment_id"], name: "index_chat_message_medias_on_cm_id_and_ma_id"
+  end
+
+  create_table "chat_messages_preview_cards", id: false, force: :cascade do |t|
+    t.bigint "preview_card_id", null: false
+    t.bigint "chat_message_id", null: false
+    t.index ["chat_message_id", "preview_card_id"], name: "index_chat_message_preview_cards_on_cm_id_and_pc_id"
   end
 
   create_table "comment_conversation_mutes", force: :cascade do |t|
@@ -401,6 +423,15 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.index ["target_account_id"], name: "index_follows_on_target_account_id"
   end
 
+  create_table "group_account_badges", force: :cascade do |t|
+    t.bigint "group_id"
+    t.string "name"
+    t.string "color"
+    t.string "icon"
+    t.string "description"
+    t.index ["group_id"], name: "index_group_account_badges_on_group_id"
+  end
+
   create_table "group_accounts", force: :cascade do |t|
     t.bigint "group_id", null: false
     t.bigint "account_id", null: false
@@ -409,7 +440,9 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "is_approved"
+    t.bigint "group_account_badge_id"
     t.index ["account_id", "group_id"], name: "index_group_accounts_on_account_id_and_group_id", unique: true
+    t.index ["group_account_badge_id"], name: "index_group_accounts_on_group_account_badge_id"
     t.index ["group_id", "account_id"], name: "index_group_accounts_on_group_id_and_account_id"
   end
 
@@ -464,6 +497,27 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.index ["status_id", "group_id"], name: "index_group_pinned_statuses_on_status_id_and_group_id", unique: true
   end
 
+  create_table "group_question_answers", force: :cascade do |t|
+    t.bigint "group_id"
+    t.bigint "account_id"
+    t.integer "group_question_id", null: false
+    t.string "answer", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_group_question_answers_on_account_id"
+    t.index ["group_id"], name: "index_group_question_answers_on_group_id"
+  end
+
+  create_table "group_questions", force: :cascade do |t|
+    t.bigint "group_id"
+    t.string "title"
+    t.string "description"
+    t.integer "index"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["group_id"], name: "index_group_questions_on_group_id"
+  end
+
   create_table "group_removed_accounts", force: :cascade do |t|
     t.bigint "group_id", null: false
     t.bigint "account_id", null: false
@@ -495,6 +549,12 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.integer "group_category_id"
     t.boolean "is_verified", default: false, null: false
     t.boolean "is_moderated"
+    t.json "rules"
+    t.text "theme_color"
+    t.boolean "is_admins_visible"
+    t.datetime "paused_at"
+    t.boolean "is_members_visible"
+    t.boolean "is_questions_enabled"
     t.index ["account_id"], name: "index_groups_on_account_id"
     t.index ["slug"], name: "index_groups_on_slug", unique: true
   end
@@ -916,6 +976,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.bigint "account_id", null: false
     t.bigint "shortcut_id", null: false
     t.string "shortcut_type", default: "", null: false
+    t.integer "unread_count", limit: 2, default: 0, null: false
     t.index ["account_id", "shortcut_id", "shortcut_type"], name: "index_shortcuts_on_account_id_and_shortcut_id_and_shortcut_type", unique: true
   end
 
@@ -947,6 +1008,17 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.index ["account_id", "status_id"], name: "index_status_bookmarks_on_account_id_and_status_id", unique: true
     t.index ["status_bookmark_collection_id"], name: "index_status_bookmarks_on_status_bookmark_collection_id"
     t.index ["status_id"], name: "index_status_bookmarks_on_status_id"
+  end
+
+  create_table "status_contexts", id: :bigint, default: -> { "timestamp_id('status_contexts'::text)" }, force: :cascade do |t|
+    t.bigint "owner_id", null: false
+    t.integer "owner_type", null: false
+    t.string "name"
+    t.boolean "is_global", default: false, null: false
+    t.boolean "is_enabled", default: false, null: false
+    t.integer "index"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "status_links", force: :cascade do |t|
@@ -981,12 +1053,23 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "quotes_count"
+    t.string "top_reactions"
+    t.integer "direct_replies_count"
     t.index ["created_at"], name: "index_status_stats_on_created_at"
     t.index ["favourites_count"], name: "index_status_stats_on_favourites_count"
     t.index ["reblogs_count"], name: "index_status_stats_on_reblogs_count"
     t.index ["replies_count"], name: "index_status_stats_on_replies_count"
     t.index ["status_id"], name: "index_status_stats_on_status_id", unique: true
     t.index ["updated_at"], name: "index_status_stats_on_updated_at"
+  end
+
+  create_table "status_threads", id: :bigint, default: -> { "timestamp_id('status_threads'::text)" }, force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "title", default: "", null: false
+    t.jsonb "statuses", default: [], null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_status_threads_on_account_id"
   end
 
   create_table "status_tombstones", force: :cascade do |t|
@@ -1023,6 +1106,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.boolean "has_quote"
     t.datetime "tombstoned_at"
     t.boolean "group_moderation"
+    t.bigint "status_context_id"
     t.index ["account_id", "id", "visibility", "created_at"], name: "index_statuses_20201206", order: { id: :desc }
     t.index ["account_id", "id", "visibility", "updated_at"], name: "index_statuses_20180106", order: { id: :desc }
     t.index ["created_at"], name: "index_statuses_on_created_at"
@@ -1032,6 +1116,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.index ["quote_of_id"], name: "index_statuses_on_quote_of_id"
     t.index ["reblog_of_id", "account_id"], name: "index_statuses_on_reblog_of_id_and_account_id"
     t.index ["reply"], name: "index_statuses_on_reply"
+    t.index ["status_context_id"], name: "index_statuses_on_status_context_id"
     t.index ["tombstoned_at"], name: "index_statuses_on_tombstoned_at"
     t.index ["updated_at"], name: "index_statuses_on_updated_at"
     t.index ["uri"], name: "index_statuses_on_uri", unique: true
@@ -1050,6 +1135,19 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
     t.datetime "updated_at", null: false
     t.index "lower((name)::text) text_pattern_ops", name: "hashtag_search_index"
     t.index ["name"], name: "index_tags_on_name", unique: true
+  end
+
+  create_table "timeline_presets", force: :cascade do |t|
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "account_id", null: false
+    t.string "timeline", null: false
+    t.string "timeline_id"
+    t.string "sort"
+    t.integer "index"
+    t.string "filters", array: true
+    t.string "name", default: "", null: false
+    t.index ["account_id"], name: "index_timeline_presets_on_account_id"
   end
 
   create_table "tombstones", force: :cascade do |t|
@@ -1191,6 +1289,7 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
   add_foreign_key "follows", "accounts", column: "target_account_id", name: "fk_745ca29eac", on_delete: :cascade
   add_foreign_key "follows", "accounts", name: "fk_32ed1b5560", on_delete: :cascade
   add_foreign_key "group_accounts", "accounts", on_delete: :cascade
+  add_foreign_key "group_accounts", "group_account_badges", on_delete: :nullify
   add_foreign_key "group_accounts", "groups", on_delete: :cascade
   add_foreign_key "group_join_requests", "accounts", on_delete: :cascade
   add_foreign_key "group_join_requests", "groups", on_delete: :cascade
@@ -1258,10 +1357,12 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
   add_foreign_key "status_pins", "accounts", name: "fk_d4cb435b62", on_delete: :cascade
   add_foreign_key "status_pins", "statuses", on_delete: :cascade
   add_foreign_key "status_stats", "statuses", on_delete: :cascade
+  add_foreign_key "status_threads", "accounts", on_delete: :cascade
   add_foreign_key "status_tombstones", "statuses", on_delete: :cascade
   add_foreign_key "statuses", "accounts", column: "in_reply_to_account_id", name: "fk_c7fa917661", on_delete: :nullify
   add_foreign_key "statuses", "accounts", name: "fk_9bda1543f7", on_delete: :cascade
   add_foreign_key "statuses", "groups", on_delete: :nullify
+  add_foreign_key "statuses", "status_contexts", on_delete: :nullify
   add_foreign_key "statuses", "statuses", column: "in_reply_to_id", on_delete: :nullify
   add_foreign_key "statuses", "statuses", column: "quote_of_id", on_delete: :nullify
   add_foreign_key "statuses", "statuses", column: "reblog_of_id", on_delete: :cascade
@@ -1334,9 +1435,123 @@ ActiveRecord::Schema.define(version: 2022_10_06_005045) do
       end
       $function$
   SQL
+  create_function :isnumeric, sql_definition: <<-SQL
+      CREATE OR REPLACE FUNCTION public.isnumeric(text)
+       RETURNS boolean
+       LANGUAGE plpgsql
+       IMMUTABLE STRICT
+      AS $function$
+      DECLARE x NUMERIC;
+      BEGIN
+          x = $1::NUMERIC;
+          RETURN TRUE;
+      EXCEPTION WHEN others THEN
+          RETURN FALSE;
+      END;
+      $function$
+  SQL
+  create_function :function_get_comment_count, sql_definition: <<-SQL
+      CREATE OR REPLACE FUNCTION public.function_get_comment_count(status_id bigint)
+       RETURNS integer
+       LANGUAGE plpgsql
+      AS $function$
+      DECLARE 
+        mypath varchar;
+      BEGIN
+      with recursive comment_counter AS (
+      select id, in_reply_to_id from statuses where in_reply_to_id = status_id
+      union select s.id, c.in_reply_to_id from statuses s
+        join comment_counter c on s.in_reply_to_id = c.id
+      )
+      select count(*) from comment_counter into mypath;
+      return mypath;
+      end;
+      $function$
+  SQL
+  create_function :function_update_all_comment_counts, sql_definition: <<-SQL
+      CREATE OR REPLACE FUNCTION public.function_update_all_comment_counts(child_status_id bigint)
+       RETURNS void
+       LANGUAGE plpgsql
+      AS $function$
+      DECLARE
+        status_ids bigint[];sid bigint;
+      BEGIN
+        if isnumeric(cast(child_status_id as text)) is false then
+          return;
+        end if;
+        select string_to_array(trim(trailing '.' from concat(child_status_id, '.', cast(function_get_parent_comment_tree(child_status_id) as text))), '.') into status_ids;
+        select array(select distinct unnest(status_ids)) into status_ids;
+        if status_ids is null then
+          return;
+        end if;
+        FOREACH sid IN ARRAY (status_ids)
+        LOOP
+          if isnumeric(cast(sid as text)) is false then
+            continue;
+          end if;
+          insert into status_stats as ss (status_id, replies_count, reblogs_count, favourites_count, created_at, updated_at)
+          VALUES (sid, function_get_comment_count(sid), 0, 0, now(), now())
+          on conflict (status_id) do update set replies_count = EXCLUDED.replies_count, updated_at = EXCLUDED.updated_at where ss.replies_count != EXCLUDED.replies_count;
+        END LOOP;
+      END;
+      $function$
+  SQL
+  create_function :trigger_sync_reply_counts, sql_definition: <<-SQL
+      CREATE OR REPLACE FUNCTION public.trigger_sync_reply_counts()
+       RETURNS trigger
+       LANGUAGE plpgsql
+      AS $function$
+      BEGIN
+      IF tg_op = 'INSERT' then
+        IF NEW.reply and isnumeric(cast(NEW.in_reply_to_id as text)) THEN  
+          PERFORM function_update_all_comment_counts(NEW.in_reply_to_id);
+          return NEW;
+        END IF;
+      END IF;
+      IF tg_op = 'UPDATE' then
+        IF OLD.in_reply_to_id is not null and isnumeric(cast(OLD.in_reply_to_id as text)) and NEW.in_reply_to_id is null then
+            PERFORM function_update_all_comment_counts(OLD.in_reply_to_id);
+            return NEW;
+        END IF;
+      END IF;
+      IF tg_op = 'DELETE' then
+        IF OLD.in_reply_to_id IS NOT NULL and isnumeric(cast(OLD.in_reply_to_id as text)) then
+            PERFORM function_update_all_comment_counts(OLD.in_reply_to_id);
+
+            return OLD;
+          END IF;
+          return OLD;
+      END IF;
+      return NEW;
+      EXCEPTION when others then
+        return null;
+      END;
+      $function$
+  SQL
+  create_function :function_get_parent_comment_tree, sql_definition: <<-SQL
+      CREATE OR REPLACE FUNCTION public.function_get_parent_comment_tree(child_status_id bigint)
+       RETURNS ltree
+       LANGUAGE plpgsql
+      AS $function$
+       declare mypath varchar; 
+      begin
+       WITH RECURSIVE cte AS(
+          select id as Child, in_reply_to_id as Parent, id || ''  as Tree from statuses where id = child_status_id
+          UNION ALL
+          select id as Child, in_reply_to_id as Parent, Parent || '.' || Tree  as Tree from statuses s
+          INNER JOIN cte c on c.Parent = s.id
+       ) 
+      select text2ltree(cte.Parent || '.' || Tree) as path from cte order by parent asc limit 1 into mypath;
+      return mypath;
+      end; 
+      $function$
+  SQL
 
 
   create_trigger :update_account_tsvector, sql_definition: <<-SQL
       CREATE TRIGGER update_account_tsvector BEFORE INSERT OR UPDATE ON public.accounts FOR EACH ROW EXECUTE FUNCTION account_weighted_tsv_trigger()
+  SQL
+  create_trigger :sync_reply_counts, sql_definition: <<-SQL
+      CREATE TRIGGER sync_reply_counts AFTER INSERT OR DELETE OR UPDATE ON public.statuses FOR EACH ROW EXECUTE FUNCTION trigger_sync_reply_counts()
   SQL
 end

@@ -22,6 +22,20 @@ class Auth::RegistrationsController < Devise::RegistrationsController
     super
   end
 
+  def update
+    if params[:revoke_all_sessions] == '1'
+      sid = current_session.id
+      current_user.forget_me!
+      current_user.remember_me!
+      other_sessions = current_user.session_activations.where.not(id: sid)
+      other_sessions.each do |session|
+        Redis.current.publish("altstream:main", Oj.dump(event: :session_deactivation, payload: { session_id: session.id.to_s }))
+      end
+      other_sessions.destroy_all
+    end
+    super
+  end
+
   def create
     set_challenge_buster
     super
@@ -145,7 +159,7 @@ class Auth::RegistrationsController < Devise::RegistrationsController
   end
 
   def set_sessions
-    @sessions = current_user.session_activations
+    @sessions = current_user.session_activations.order(id: :desc)
   end
 
   def set_cache_headers

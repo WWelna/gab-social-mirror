@@ -88,7 +88,7 @@ const mapDispatchToProps = (dispatch, { statusId }) => ({
     dispatch(changeSetting(['commentSorting'], type))
     dispatch(saveSettings())
     dispatch(clearAllComments(statusId))
-    dispatch(fetchComments(statusId))
+    dispatch(fetchComments(statusId, false, true))
     dispatch(closePopover())
   },
   onClosePopover: () => dispatch(closePopover()),

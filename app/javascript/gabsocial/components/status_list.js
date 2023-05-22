@@ -5,24 +5,25 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { List as ImmutableList } from 'immutable'
 import { FormattedMessage } from 'react-intl'
-import throttle from 'lodash.throttle'
+import throttle from 'lodash/throttle'
 import { loggedIn, loggedOut, isPro, proWantsAds } from '../initial_state'
 import {
+  TIMELINE_INJECTION_VOICE_PUBLIC_ROOMS,
+  TIMELINE_INJECTION_PROGRESS,
   TIMELINE_INJECTION_FEATURED_GROUPS,
-  TIMELINE_INJECTION_GROUP_CATEGORIES,
+  TIMELINE_INJECTION_PRO_UPGRADE,
+  TIMELINE_INJECTION_SHOP,
   TIMELINE_INJECTION_USER_SUGGESTIONS,
-  TIMELINES_MAX_QUEUE_ITEMS,
+  TIMELINE_INJECTION_GAB_TV_EXPLORE,
+  TIMELINES_MAX_QUEUE_ITEMS
 } from '../constants'
 import {
   timelineFetchPaged,
   timelineFetchPins,
-  timelineDequeue,
-  timelineUnloaded,
+  // timelineDequeue,
+  timelineUnloaded
 } from '../store/timelines'
-import {
-  SignUpPanel,
-  GabAdStatus,
-} from '../features/ui/util/async_components'
+import { SignUpPanel, GabAdStatus } from '../features/ui/util/async_components'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import { fetchStatus, fetchContext } from '../actions/statuses'
 import StatusContainer from '../containers/status_container'
@@ -31,13 +32,18 @@ import ScrollableList from './scrollable_list'
 import Comment from './comment'
 import Text from './text'
 import TimelineQueueButtonHeader from './timeline_queue_button_header'
-import TimelineInjectionBase from './timeline_injections/timeline_injection_base'
 import TimelineInjectionRoot from './timeline_injections/timeline_injection_root'
+import { shuffle } from '../utils/numbers'
+import {
+  showVideos,
+  showSuggestedUsers,
+  showGroups
+} from '../initial_state'
 
 const defaultEmptyMessage = (
   <FormattedMessage
-    id='timelines.empty'
-    defaultMessage='There are no gabs to display.'
+    id="timelines.empty"
+    defaultMessage="There are no gabs to display."
   />
 )
 
@@ -48,49 +54,72 @@ const defaultEmptyMessage = (
  */
 const getEmptySuggestions = () =>
   [
+    showSuggestedUsers && (
+      <TimelineInjectionRoot
+        key="empty-injection-0"
+        type={TIMELINE_INJECTION_USER_SUGGESTIONS}
+      />
+    ),
+    showGroups && (
+      <TimelineInjectionRoot
+        key="empty-injection-1"
+        type={TIMELINE_INJECTION_FEATURED_GROUPS}
+      />
+    ),
+    showSuggestedUsers && (
+      <TimelineInjectionRoot
+        key="empty-injection-2"
+        type={TIMELINE_INJECTION_USER_SUGGESTIONS}
+        subProps={{ suggestionType: 'verified' }}
+      />
+    ),
     <TimelineInjectionRoot
-      key='empty-injection-0'
-      type={TIMELINE_INJECTION_USER_SUGGESTIONS}
-    />,
-    <TimelineInjectionRoot
-      key='empty-injection-1'
-      type={TIMELINE_INJECTION_FEATURED_GROUPS}
-    />,
-    <TimelineInjectionRoot
-      key='empty-injection-2'
-      type={TIMELINE_INJECTION_USER_SUGGESTIONS}
-      props={{ suggestionType:'verified' }}
-    />,
-    <TimelineInjectionRoot
-      key='empty-injection-3'
+      key="empty-injection-3"
       type={TIMELINE_INJECTION_GROUP_CATEGORIES}
-    />,
-  ]
+    />
+  ].filter(Boolean)
+
+/**
+ * These are always in a fixed order on top.
+ */
+const fixedInjections = [TIMELINE_INJECTION_PROGRESS]
+
+/**
+ * These injections are randomized at page load. As the user scrolls
+ * they see each of these after the fixed injections.
+ */
+const randomizedInjections = [
+  showGroups && TIMELINE_INJECTION_FEATURED_GROUPS,
+  TIMELINE_INJECTION_PRO_UPGRADE,
+  TIMELINE_INJECTION_SHOP,
+  showSuggestedUsers && TIMELINE_INJECTION_USER_SUGGESTIONS,
+  showVideos && TIMELINE_INJECTION_GAB_TV_EXPLORE,
+].filter(Boolean)
+
+shuffle(randomizedInjections)
+
+const combinedInjections = []
+  .concat(fixedInjections)
+  .concat(randomizedInjections)
+  .concat([TIMELINE_INJECTION_VOICE_PUBLIC_ROOMS])
 
 class StatusList extends ImmutablePureComponent {
-
-  state = {
-    loadedFirstTime: false,
-    isRefreshing: false,
-    fetchedContext: false,
-  }
+  state = { fetchedContext: false }
 
   componentDidMount() {
-    const { isFetched, statusIds, queuedItems } = this.props
+    const { isFetched, statusIds } = this.props
 
-    // condition met when a user hits the back button 
+    // condition met when a user hits the back button
     if (statusIds && statusIds.size > 0) {
-      // bail out to avoid user complaints about losing their scrollY position after navigating back 
+      // bail out to avoid user complaints about losing their scrollY position after navigating back
       // (e.g., gab.com/groups -> scroll down and click comment -> scroll down -> navigate back)
       return
     }
 
     // when loading a timeline already in memory we can show what is available
     // and start queueing new items and prevent scroll jump.
-    const queueResults = isFetched &&
-      statusIds &&
-      statusIds.size > 0 &&
-      this.shouldQueue
+    const queueResults =
+      isFetched && statusIds && statusIds.size > 0 && this.shouldQueue
 
     this.loadPins()
     this.load({ queueResults })
@@ -108,14 +137,15 @@ class StatusList extends ImmutablePureComponent {
   }
 
   componentWillUnmount() {
-    this.unscheduleQueue()
+    //this.unscheduleQueue()
     this.props.onTimelineUnloaded()
   }
 
   componentDidUpdate(prevProps) {
-    const {  isLoading, isFetched } = this.props
+    const { isLoading, isFetched } = this.props
     const needsLoad = prevProps.isFetched && !isFetched && !isLoading
-    const timelineChange = typeof prevProps.timelineId === 'string' &&
+    const timelineChange =
+      typeof prevProps.timelineId === 'string' &&
       typeof this.props.timelineId === 'string' &&
       prevProps.timelineId !== this.props.timelineId
     if (needsLoad || timelineChange) {
@@ -125,46 +155,52 @@ class StatusList extends ImmutablePureComponent {
 
   loadPins = () => {
     const { showPins, endpoint, pinsEndpoint } = this.props
-    if (showPins) {
+    const params = new URLSearchParams(window.location.search)
+    const noPins = params.get('nopins')
+    if (showPins && !noPins) {
       const pinOpts = { endpoint, pinsEndpoint }
       this.props.onTimelineFetchPins(pinOpts)
     }
   }
 
-  load = throttle((opts = {}) => {
-    const maxId = typeof opts === 'number' ? opts : undefined
-    if (typeof this.props.onLoadMore === 'function') {
-      // loading is handled by the parent
-      this.props.onLoadMore(maxId)
-      return
-    }
-    const {
-      isComments,
-      maxPages,
-      endpoint,
-      pinsEndpoint,
-      sorts,
-      topSorts,
-      createParams,
-      limit,
-    } = this.props
+  load = throttle(
+    (opts = {}) => {
+      const maxId = typeof opts === 'number' ? opts : undefined
+      if (typeof this.props.onLoadMore === 'function') {
+        // loading is handled by the parent
+        this.props.onLoadMore(maxId)
+        return
+      }
+      const {
+        isComments,
+        maxPages,
+        endpoint,
+        pinsEndpoint,
+        sorts,
+        topSorts,
+        createParams,
+        limit
+      } = this.props
 
-    const { queueResults } = opts
-    const expandOpts = {
-      isComments,
-      maxPages,
-      endpoint,
-      pinsEndpoint,
-      sorts,
-      topSorts,
-      createParams,
-      queueResults,
-      limit,
-      maxId,
-    }
-    this.props.onTimelineFetchPaged(expandOpts)
-    this.rescheduleQueue()
-  }, 300, { leading: true })
+      const { queueResults } = opts
+      const expandOpts = {
+        isComments,
+        maxPages,
+        endpoint,
+        pinsEndpoint,
+        sorts,
+        topSorts,
+        createParams,
+        queueResults,
+        limit,
+        maxId
+      }
+      this.props.onTimelineFetchPaged(expandOpts)
+      //this.rescheduleQueue()
+    },
+    300,
+    { leading: true }
+  )
 
   refresh = () => {
     const { queuedItems } = this.props
@@ -178,10 +214,12 @@ class StatusList extends ImmutablePureComponent {
   }
 
   unscheduleQueue = () => {
+    /*
     if (this.queueTimer !== undefined) {
       clearInterval(this.queueTimer)
       this.queueTimer = undefined
     }
+    */
   }
 
   getSortByKey = key => (this.props.sorts || []).find(item => item.key === key)
@@ -189,10 +227,12 @@ class StatusList extends ImmutablePureComponent {
   get shouldQueue() {
     const { queue, queuedItems, hasPrev, sortByValue } = this.props
     const sort = this.getSortByKey(sortByValue)
-    return queue &&
+    return (
+      queue &&
       hasPrev &&
       (sort === undefined || sort.queue) &&
       queuedItems.size < TIMELINES_MAX_QUEUE_ITEMS
+    )
   }
 
   loadQueue = opts => {
@@ -203,11 +243,13 @@ class StatusList extends ImmutablePureComponent {
   }
 
   rescheduleQueue = () => {
+    /*
     this.unscheduleQueue()
     this.queueTimer = setInterval(this.loadQueue, 30000) // 30sec
+    */
   }
 
-  fetchContextsForInitialStatuses = (statusIds) => {
+  fetchContextsForInitialStatuses = statusIds => {
     for (let i = 0; i < statusIds.length; i++) {
       const statusId = statusIds[i]
       this.props.onFetchContext(statusId)
@@ -235,8 +277,9 @@ class StatusList extends ImmutablePureComponent {
 
   _selectChild(index, align_top) {
     const container = this.node.node
-    const element = container
-      .querySelector(`article:nth-of-type(${index + 1}) .focusable`)
+    const element = container.querySelector(
+      `article:nth-of-type(${index + 1}) .focusable`
+    )
 
     if (!element) {
       return
@@ -253,7 +296,7 @@ class StatusList extends ImmutablePureComponent {
     element.focus()
   }
 
-  setRef = c =>  this.node = c
+  setRef = c => (this.node = c)
 
   render() {
     const {
@@ -266,9 +309,7 @@ class StatusList extends ImmutablePureComponent {
       scrollKey,
       hasNext,
       emptyMessage,
-      promotions = [],
       isComments,
-      showPromoted,
       showInjections,
       showEmptyInjections,
       showAds,
@@ -281,25 +322,29 @@ class StatusList extends ImmutablePureComponent {
       showEllipsis,
       showSpam,
       disableCanShow,
+      sortByValue,
     } = this.props
 
-    const { isRefreshing } = this.state
-    
     const notInPins = statusId => pins.includes(statusId) === false
-    const allStatusIds = []
-      .concat(pins.toJS())
-      .concat(statusIds.toJS().filter(notInPins))
+    let allStatusIds = []
+
+    if (timelineId.startsWith('account:') && sortByValue !== 'newest') {
+      // no pins here
+    } else {
+      allStatusIds = allStatusIds.concat(pins.toJS())
+    }  
+    allStatusIds = allStatusIds.concat(statusIds.toJS().filter(notInPins))
 
     let scrollableContent = allStatusIds.map((statusId, index) => {
-      return (
-        isComments ?
+      return isComments ? (
         <Comment
           key={`comment-${statusId}-${index}`}
           id={statusId}
           ancestorAccountId={1}
           isDetached
           disableCanShow={disableCanShow}
-        /> :
+        />
+      ) : (
         <StatusContainer
           key={`status-${statusId}-${index}`}
           id={statusId}
@@ -316,7 +361,7 @@ class StatusList extends ImmutablePureComponent {
         />
       )
     })
-    
+
     if (AfterStatus) {
       scrollableContent = scrollableContent.reduce((acm, item, index) => {
         const statusId = allStatusIds[index]
@@ -327,36 +372,27 @@ class StatusList extends ImmutablePureComponent {
       }, [])
     }
 
-    const hasStatuses = scrollableContent.length> 0
-
-    if (showPromoted && Array.isArray(promotions) && hasStatuses) {
-      //
-      // intersperse promoted statuses
-      //
-      scrollableContent = scrollableContent.reduce(function(acm, item, index) {
-        const promotion = promotions.find(promotion =>
-          promotion.position === index && promotion.timeline_id === timelineId
-        )
-        if (promotion) {
-          acm.push(promotion)
-        }
-        acm.push(item)
-        return acm
-      }, [])
-    }
+    const hasStatuses = scrollableContent.length > 0
 
     if (showInjections && hasStatuses) {
       //
       // intersperse timeline injections, suggestions, who to follow
       //
-      scrollableContent = scrollableContent.reduce(function(acm, item, index) {
-        if (index !== 0 && index % 7 === 0) {
+      let injectionIndex = 0
+      scrollableContent = scrollableContent.reduce(function (acm, item, index) {
+        if (
+          index !== 0 &&
+          index % 7 === 0 &&
+          combinedInjections[injectionIndex] !== undefined
+        ) {
+          // each seven not including the top one
           acm.push(
-            <TimelineInjectionBase
+            <TimelineInjectionRoot
               key={`timeline-injection-${index}`}
-              index={index}
+              type={combinedInjections[injectionIndex]}
             />
           )
+          injectionIndex += 1
         }
         acm.push(item)
         return acm
@@ -367,13 +403,17 @@ class StatusList extends ImmutablePureComponent {
       //
       // intersperse ads
       //
-      scrollableContent = scrollableContent.reduce(function(acm, item, index) {
+      scrollableContent = scrollableContent.reduce(function (acm, item, index) {
         if (index !== 0 && index % 7 === 0) {
           acm.push(
             <WrappedBundle
               key={`gab-ad-status-timeline-injection-${index}`}
               component={GabAdStatus}
-              componentParams={{ pageKey: timelineId, position: index, groupCategory: groupCategory }}
+              componentParams={{
+                pageKey: timelineId,
+                position: index,
+                groupCategory: groupCategory
+              }}
             />
           )
         }
@@ -382,30 +422,29 @@ class StatusList extends ImmutablePureComponent {
       }, [])
     }
 
-    const sizesZero = statusIds.size === 0 &&
-      queuedItems.size === 0 &&
-      pins.size === 0
-    const busy = isLoading || !isFetched || isRefreshing
+    const sizesZero =
+      statusIds.size === 0 && queuedItems.size === 0 && pins.size === 0
+    const busy = isLoading || !isFetched
     const paginationAllowed = paginationLoggedIn ? loggedIn : true
 
     // client-side enforced max pages
-    const atMaxPage = typeof maxPages === 'number' &&
+    const atMaxPage =
+      typeof maxPages === 'number' &&
       typeof page === 'number' &&
       page >= maxPages
 
-    const hasMore = typeof page === 'number' &&
-      paginationAllowed &&
-      hasNext &&
-      !atMaxPage
+    const hasMore =
+      typeof page === 'number' && paginationAllowed && hasNext && !atMaxPage
 
     return (
       <div className={_s.posRel}>
         <TimelineQueueButtonHeader
           onClick={this.props.onTimelineDequeue}
           count={queuedItems.size}
-          itemType='gab'
-          top='calc(-1em)'
-        />        
+          itemType="gab"
+          top="calc(-1em)"
+          timelineId={timelineId}
+        />
         <ScrollableList
           scrollRef={this.setRef}
           isLoading={busy}
@@ -419,25 +458,24 @@ class StatusList extends ImmutablePureComponent {
         >
           {scrollableContent}
         </ScrollableList>
-        {
-          (showEmptyInjections && loggedIn) &&
+        {showEmptyInjections && loggedIn && (
           <div className={[_s.d, _s.mt15, _s.w100PC].join(' ')}>
             {getEmptySuggestions()}
           </div>
-        }
-        {
-          loggedOut &&
+        )}
+        {loggedOut && (
           <div className={[_s.d, _s.w100PC, _s.mt5, _s.aiCenter].join(' ')}>
-            <Text className={_s.py15} color='tertiary'>• • •</Text>
+            <Text className={_s.py15} color="tertiary">
+              • • •
+            </Text>
             <div className={[_s.d, _s.w100PC].join(' ')}>
               <WrappedBundle component={SignUpPanel} />
             </div>
           </div>
-        }
+        )}
       </div>
     )
   }
-
 }
 
 const mapStateToProps = (state, { timelineId }) => {
@@ -456,8 +494,7 @@ const mapStateToProps = (state, { timelineId }) => {
     hasPrev: timeline.get('hasPrev'),
     sortByValue: timeline.get('sortByValue'),
     sortByTopValue: timeline.get('sortByTopValue'),
-    page: timeline.get('page'),
-    promotions: state.get('promotions'),
+    page: timeline.get('page')
   }
 }
 
@@ -469,8 +506,8 @@ const mapDispatchToProps = (dispatch, { timelineId }) => ({
     dispatch(timelineFetchPins(timelineId, opts))
   },
   onTimelineDequeue() {
-    window.location.reload();
-    //dispatch(timelineDequeue(timelineId))
+    //window.location.reload()
+    dispatch(timelineDequeue(timelineId))
   },
   onFetchContext(statusId) {
     dispatch(fetchContext(statusId, true))
@@ -480,7 +517,7 @@ const mapDispatchToProps = (dispatch, { timelineId }) => ({
   },
   onTimelineUnloaded() {
     dispatch(timelineUnloaded(timelineId))
-  },
+  }
 })
 
 StatusList.propTypes = {
@@ -488,16 +525,9 @@ StatusList.propTypes = {
   scrollKey: PropTypes.string,
   onLoadMore: PropTypes.func,
   isComments: PropTypes.bool,
-  emptyMessage: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.node,
-  ]),
-  errorMessage: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.node,
-  ]),
+  emptyMessage: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  errorMessage: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   showPins: PropTypes.bool,
-  showPromoted: PropTypes.bool,
   showAds: PropTypes.bool,
   groupCategory: PropTypes.string,
   showInjections: PropTypes.bool,
@@ -523,7 +553,6 @@ StatusList.propTypes = {
   sortByTopValue: PropTypes.string,
   hasNext: PropTypes.bool,
   hasPrev: PropTypes.bool,
-  promotions: PropTypes.array,
   sorts: PropTypes.array,
   topSorts: PropTypes.array,
   createParams: PropTypes.func,
@@ -533,7 +562,7 @@ StatusList.propTypes = {
   onTimelinePins: PropTypes.func,
   onTimelineDequeue: PropTypes.func,
   onFetchContext: PropTypes.func,
-  onFetchStatus: PropTypes.func,
+  onFetchStatus: PropTypes.func
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(StatusList)

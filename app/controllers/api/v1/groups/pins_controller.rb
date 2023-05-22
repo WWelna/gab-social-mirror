@@ -9,7 +9,7 @@ class Api::V1::Groups::PinsController < Api::BaseController
   before_action :set_status
 
   def create
-    authorize @group, :update_pin?
+    authorize @group, :allow_if_is_group_admin_or_moderator?
 
     pin = GroupPinnedStatus.find_by(group: @group, status: @status)
     if pin.nil?
@@ -25,7 +25,7 @@ class Api::V1::Groups::PinsController < Api::BaseController
   end
 
   def destroy
-    authorize @group, :update_pin?
+    authorize @group, :allow_if_is_group_admin_or_moderator?
 
     pin = GroupPinnedStatus.find_by(group: @group, status: @status)
     if pin

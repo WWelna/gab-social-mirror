@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Api::V2::SearchController <  Api::BaseController
-  before_action :require_user!
   
   RESULTS_LIMIT = 25
 

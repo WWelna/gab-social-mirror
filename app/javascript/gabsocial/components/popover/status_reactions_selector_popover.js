@@ -1,17 +1,16 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { connect } from 'react-redux'
-import isObject from 'lodash.isobject'
-import get from 'lodash.get'
+import isObject from 'lodash/isObject'
+import get from 'lodash/get'
 import { isTouch } from '../../utils/is_mobile'
 import { favorite } from '../../actions/interactions';
 import {
   setIsHoveringReactionId,
   setReactionPopoverStatus,
 } from '../../actions/reactions'
-import { CX } from '../../constants'
+import { CX, BREAKPOINT_EXTRA_SMALL } from '../../constants'
 import { me } from '../../initial_state'
 import ReactionTypeImage from '../reaction_type_image'
 import { supportsPassiveEvents, primaryInput } from 'detect-it'
@@ -96,11 +95,14 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
   }
 
   render() {
-    const { hoveringId, reactions } = this.props
+    const { hoveringId, reactions, width } = this.props
 
     if (!me || !reactions || reactions.size < 1) return null
 
     const isTouchable = isTouch()
+    const isXS = width <= BREAKPOINT_EXTRA_SMALL
+    const isTiny = width <= 400
+    const iconSize = isTiny ? '25px' : isXS ? '30px' : '36px'
 
     const containerClasses = CX({
       d: 1,
@@ -155,7 +157,7 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
                 key={`reaction-${i}-${reaction.get('slug')}`}
                 onClick={() => this.handleOnClick(reaction.get('id'))}
               >
-                <ReactionTypeImage reactionTypeId={reaction.get('id')} size='36px' />
+                <ReactionTypeImage reactionTypeId={reaction.get('id')} size={iconSize} />
               </button>
             )
           })
@@ -166,6 +168,7 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state) => ({
+  width: state.getIn(['settings', 'window_dimensions', 'width']),
   reactions: state.getIn(['reactions', 'active_reactable']),
   hoveringId: state.getIn(['reactions', 'hovering_id']),
 })

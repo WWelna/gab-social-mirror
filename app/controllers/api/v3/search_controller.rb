@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Api::V3::SearchController <  Api::BaseController
-  before_action :require_user!
   after_action :insert_pagination_headers
 
   V3_SEARCH_RESULTS_LIMIT = 25

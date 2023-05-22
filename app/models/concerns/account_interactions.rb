@@ -75,6 +75,7 @@ module AccountInteractions
     has_many :blocking, -> { order('blocks.id desc') }, through: :block_relationships, source: :target_account
     has_many :blocked_by_relationships, class_name: 'Block', foreign_key: :target_account_id, dependent: :destroy
     has_many :blocked_by, -> { order('blocks.id desc') }, through: :blocked_by_relationships, source: :account
+    has_many :blocking_groups, class_name: 'BlockedGroup', foreign_key: :account_id, dependent: :destroy
 
     # Mute relationships
     has_many :mute_relationships, class_name: 'Mute', foreign_key: 'account_id', dependent: :destroy

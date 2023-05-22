@@ -5,43 +5,41 @@ import ReactSwipeableViews from 'react-swipeable-views'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { CX } from '../../constants'
-import Video from '../video'
-import ExtendedVideoPlayer from '../extended_video_player'
 import Button from '../button'
 import ImageLoader from '../image_loader'
 import Pagination from '../pagination'
-
-export const previewState = 'previewMediaModal'
+import MediaGalleryItem from '../media_gallery_item'
 
 class MediaModal extends ImmutablePureComponent {
 
   state = {
     index: null,
+    changed: false,
     navigationHidden: false,
   }
 
   handleSwipe = (index) => {
     if (!this.props.media) return
 
-    this.setState({ index: index % this.props.media.size })
+    this.setState({ index: index % this.props.media.size, changed: true })
   }
 
   handleNextClick = () => {
     if (!this.props.media) return
 
-    this.setState({ index: (this.getIndex() + 1) % this.props.media.size })
+    this.setState({ index: (this.getIndex() + 1) % this.props.media.size, changed: true })
   }
 
   handlePrevClick = () => {
     if (!this.props.media) return
 
-    this.setState({ index: (this.props.media.size + this.getIndex() - 1) % this.props.media.size })
+    this.setState({ index: (this.props.media.size + this.getIndex() - 1) % this.props.media.size, changed: true })
   }
 
   handleChangeIndex = (i) => {
     if (!this.props.media) return
 
-    this.setState({ index: i % this.props.media.size })
+    this.setState({ index: i % this.props.media.size, changed: true })
   }
 
   handleKeyDown = (e) => {
@@ -79,10 +77,10 @@ class MediaModal extends ImmutablePureComponent {
     }))
   }
 
-  handleStatusClick = e => {
-    if (e.button === 0 && !(e.ctrlKey || e.metaKey)) {
-      e.preventDefault()
-      this.props.history.push(`/${this.props.status.getIn(['account', 'acct'])}/posts/${this.props.status.get('id')}`)
+  handleOnClose = ({ target }) => {
+    if (!target) return
+    if (!!target.getAttribute('data-swipeable') || target.getAttribute('role') === 'presentation') {
+      this.props.onClose()
     }
   }
 
@@ -91,11 +89,11 @@ class MediaModal extends ImmutablePureComponent {
       media,
       src,
       alt,
-      status,
       intl,
       onClose,
+      index: propIndex,
     } = this.props
-    const { navigationHidden } = this.state
+    const { changed, navigationHidden } = this.state 
 
     const index = this.getIndex()
 
@@ -106,56 +104,43 @@ class MediaModal extends ImmutablePureComponent {
         alt={alt}
         key={src}
       /> :
-      media.map((image) => {
-        const width = image.getIn(['meta', 'original', 'width']) || null
-        const height = image.getIn(['meta', 'original', 'height']) || null
+      media.map((item, i) => {
+        const isVideo = item.get('type') === 'video'
+        const styles = isVideo ? {
+          display:'flex',
+          alignItems:'center',
+          justifyContent:'center',
+        } : {}
+        
+        let width = item.getIn(['meta', 'original', 'width'])
+        let height = item.getIn(['meta', 'original', 'height'])
 
-        if (image.get('type') === 'image') {
-          return (
-            <ImageLoader
-              previewSrc={image.get('preview_url')}
-              src={image.get('url')}
-              width={width}
-              height={height}
-              alt={image.get('description')}
-              key={image.get('url')}
-              onClick={this.toggleNavigation}
-            />
-          )
-        } else if (image.get('type') === 'video') {
-          const { time } = this.props
-
-          return (
-            <Video
-              preview={image.get('preview_url')}
-              blurhash={image.get('blurhash')}
-              src={image.get('url')}
-              sourceMp4={image.get('url')}
-              width={image.get('width')}
-              height={image.get('height')}
-              startTime={time || 0}
-              onCloseVideo={onClose}
-              detailed
-              alt={image.get('description')}
-              key={image.get('url')}
-            />
-          )
-        } else if (image.get('type') === 'gifv') {
-          return (
-            <ExtendedVideoPlayer
-              src={image.get('url')}
-              muted
-              controls={false}
-              width={width}
-              height={height}
-              key={image.get('preview_url')}
-              alt={image.get('description')}
-              onClick={this.toggleNavigation}
-            />
-          )
+        if (isVideo) {
+          width = `${Math.min(600, window.innerWidth)}px`
+          height = 'auto'
         }
 
-        return null
+        const autoplayVideo = isVideo && i === propIndex && propIndex !== undefined && !changed
+
+        return (
+          <MediaGalleryItem
+            onClick={this.toggleNavigation}
+            photo={{
+              width,
+              height,
+              styles: {
+                ...styles,
+                maxWidth: '100%',
+                maxHeight: '100vh',
+              },
+              src: isVideo ? item.get('preview_url') : item.get('url') || item.get('preview_url'),
+              attachment: item,
+              isInModal: 1,
+              noBlurhash: 1,
+              autoplayVideo,
+            }}
+          />
+        )
       }).toArray()
 
     // you can't use 100vh, because the viewport height is taller
@@ -180,7 +165,7 @@ class MediaModal extends ImmutablePureComponent {
         <div
           className={[_s.d, _s.posAbs, _s.top0, _s.right0, _s.bottom0, _s.left0].join(' ')}
           role='presentation'
-          onClick={onClose}
+          onClick={this.handleOnClose}
         >
           <ReactSwipeableViews
             style={swipeableViewsStyle}
@@ -190,6 +175,9 @@ class MediaModal extends ImmutablePureComponent {
               height: '100%',
             }}
             slideStyle={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               height: '100%',
             }}
             onChangeIndex={this.handleSwipe}
@@ -208,7 +196,7 @@ class MediaModal extends ImmutablePureComponent {
               backgroundColor='black'
               onClick={onClose}
               iconSize='14px'
-              className={_s.py15}
+              className={[_s.py15, _s.boxShadowWhiteGlow].join(' ')}
             />
           </div>
 
@@ -217,7 +205,7 @@ class MediaModal extends ImmutablePureComponent {
             <Button
               tabIndex='0'
               backgroundColor='black'
-              className={[_s.py15, _s.posFixed, _s.top50PC, _s.left0, _s.mt10, _s.ml10].join(' ')}
+              className={[_s.py15, _s.posFixed, _s.top50PC, _s.left0, _s.mt10, _s.ml10, _s.boxShadowWhiteGlow].join(' ')}
               onClick={this.handlePrevClick}
               aria-label={intl.formatMessage(messages.previous)}
               icon='arrow-left'
@@ -230,35 +218,26 @@ class MediaModal extends ImmutablePureComponent {
             <Button
               tabIndex='0'
               backgroundColor='black'
-              className={[_s.py15, _s.posFixed, _s.top50PC, _s.right0, _s.mt10, _s.mr10].join(' ')}
+              className={[_s.py15, _s.posFixed, _s.top50PC, _s.right0, _s.mt10, _s.mr10, _s.boxShadowWhiteGlow].join(' ')}
               onClick={this.handleNextClick}
               aria-label={intl.formatMessage(messages.next)}
               icon='arrow-right'
               iconSize='18px'
             />
           }
-
-          { /** : todo : 
-            status &&
-            <div className={classNames('media-modal__meta', { 'media-modal__meta--shifted': media.size > 1 })}>
-              <a href={status.get('url')} onClick={this.handleStatusClick}>
-                {intl.formatMessage(messages.viewContext)}
-              </a>
-            </div>
-            */
-          }
-
         </div>
 
         {
           !!media && media.size > 1 &&
           <div className={[_s.d, _s.posAbs, _s.bottom0, _s.mb15].join(' ')}>
-            <div className={[_s.d, _s.saveAreaInsetMB, _s.bgBlackOpaque, _s.circle, _s.py10, _s.px15].join(' ')}>
-              <Pagination
-                count={media.size}
-                activeIndex={index}
-                onClick={this.handleChangeIndex}          
-              />
+            <div className={navigationClasses}>
+              <div className={[_s.d, _s.saveAreaInsetMB, _s.boxShadowWhiteGlow, _s.bgBlackOpaquer, _s.circle, _s.py10, _s.px15].join(' ')}>
+                <Pagination
+                  count={media.size}
+                  activeIndex={index}
+                  onClick={this.handleChangeIndex}          
+                />
+              </div>
             </div>
           </div>
         }
@@ -277,7 +256,6 @@ const messages = defineMessages({
 
 MediaModal.propTypes = {
   media: ImmutablePropTypes.list.isRequired,
-  status: ImmutablePropTypes.map,
   index: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
   intl: PropTypes.object.isRequired,

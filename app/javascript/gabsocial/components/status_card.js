@@ -87,7 +87,6 @@ class StatusCard extends ImmutablePureComponent {
 
   setRef = c => {
     if (c) {
-      if (this.props.cacheWidth) this.props.cacheWidth(c.offsetWidth)
       this.setState({ width: c.offsetWidth })
     }
   }
@@ -113,6 +112,8 @@ class StatusCard extends ImmutablePureComponent {
       card,
       isReduced,
       isVertical,
+      isBorderless,
+      blurhashOnly,
     } = this.props
     const { width, embedded } = this.state
 
@@ -204,6 +205,18 @@ class StatusCard extends ImmutablePureComponent {
         </ResponsiveClassesComponent>
       )
 
+    const innerContainerClasses = CX({
+      d: 1,
+      overflowHidden: 1,
+      w100PC: 1,
+      borderColorSecondary: !isBorderless,
+      border1PX: !isBorderless,
+      radiusSmall: !isBorderless,
+      cursorPointer: !interactive,
+      noUnderline: !interactive,
+      bgSubtle_onHover: !interactive,
+    })
+    
     if (interactive) {
       if (embedded) {
         embed = this.renderVideo()
@@ -216,8 +229,8 @@ class StatusCard extends ImmutablePureComponent {
       }
 
       return (
-        <div className={[_s.d, _s.w100PC, _s.px10].join(' ')}>
-          <div className={[_s.d, _s.overflowHidden, _s.w100PC, _s.borderColorSecondary, _s.border1PX, _s.radiusSmall].join(' ')}>
+        <div className={[_s.d, _s.w100PC].join(' ')}>
+          <div className={innerContainerClasses}>
             {
               !isReduced &&
               <div className={[_s.d, _s.w100PC].join(' ')}>
@@ -227,7 +240,7 @@ class StatusCard extends ImmutablePureComponent {
                   {!embed &&
                     <div className={[_s.d, _s.posAbs, _s.top0, _s.right0, _s.left0, _s.bottom0, _s.aiCenter, _s.jcCenter].join(' ')}>
                       <button
-                        className={[_s.d, _s.cursorPointer, _s.bgBlackOpaque, _s.radiusSmall, _s.py15, _s.px15].join(' ')}
+                        className={[_s.d, _s.cursorPointer, _s.bgBlackOpaquer, _s.radiusSmall, _s.py15, _s.px15].join(' ')}
                         onClick={this.handleEmbedClick}
                       >
                         <Icon id={iconVariant} size='22px' className={[_s.cWhite].join(' ')} />
@@ -262,13 +275,13 @@ class StatusCard extends ImmutablePureComponent {
     })
 
     return (
-      <div className={[_s.d, _s.w100PC, _s.px10].join(' ')}>
+      <div className={[_s.d, _s.w100PC].join(' ')}>
         <a
           href={card.get('url')}
           rel={DEFAULT_REL}
           ref={this.setRef}
           target='_blank'
-          className={[_s.d, _s.cursorPointer, _s.overflowHidden, _s.noUnderline, _s.w100PC, _s.bgSubtle_onHover, _s.borderColorSecondary, _s.border1PX, _s.radiusSmall].join(' ')}
+          className={innerContainerClasses}
         >
           <ResponsiveClassesComponent
             classNames={containerClasses}
@@ -288,9 +301,9 @@ StatusCard.propTypes = {
   card: ImmutablePropTypes.map,
   onOpenMedia: PropTypes.func.isRequired,
   defaultWidth: PropTypes.number,
-  cacheWidth: PropTypes.func,
   isReduced: PropTypes.bool,
   isVertical: PropTypes.bool,
+  isBorderless: PropTypes.bool,
 }
 
 export default StatusCard

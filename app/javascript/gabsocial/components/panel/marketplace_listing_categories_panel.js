@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { List as ImmutableList } from 'immutable'
 import { fetchMarketplaceListingCategories } from '../../actions/marketplace_listing_categories'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
@@ -35,11 +36,10 @@ class MarketplaceListingCategoriesPanel extends ImmutablePureComponent {
   }
 
   render() {
-    const { categories } = this.props
+    const { categories = ImmutableList(), isLoading } = this.props
     const { fetched } = this.state
   
     const count = !!categories ? categories.count() : 0
-    if (count === 0 && fetched || !categories) return null
 
     const listItems = categories.map((category) => ({
       to: `/marketplace/listings?category_id=${category.get('id')}`,
@@ -55,7 +55,8 @@ class MarketplaceListingCategoriesPanel extends ImmutablePureComponent {
           <List
             scrollKey='marketplace_categories_sidebar_panel'
             items={listItems}
-            showLoading={!fetched}
+            isLoading={isLoading}
+            showLoading={isLoading && !fetched && count === 0}
           />
         </div>
       </PanelLayout>

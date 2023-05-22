@@ -14,7 +14,7 @@ import Button from '../button'
 import StatusCheckBox from '../status_check_box'
 import Text from '../text'
 import Textarea from '../textarea'
-import { reportCategories } from '../../initial_state'
+import ReportCategoriesSelect from '../report_categories_select'
 
 class ReportModal extends ImmutablePureComponent {
 
@@ -32,7 +32,7 @@ class ReportModal extends ImmutablePureComponent {
     }
   }
 
-  handleCategoryChange = (e) => {
+  handleOnSelectCategory = (e) => {
     this.props.dispatch(changeReportCategory(e.target.value))
   }
 
@@ -68,112 +68,63 @@ class ReportModal extends ImmutablePureComponent {
 
     return (
       <ModalLayout
-        width={760}
+        width={800}
         noPadding
         title={intl.formatMessage(messages.target, {
-          target: account.get('acct'),
+          target: `@${account.get('acct')}`,
         })}
         onClose={onClose}
       >
 
-        <ResponsiveClassesComponent
-          classNames={[_s.d, _s.flexRow].join(' ')}
-          classNamesSmall={[_s.d, _s.flexColumnReverse].join(' ')}
-        >
-          <ResponsiveClassesComponent
-            classNames={[_s.d, _s.maxW320PX, _s.py10, _s.px15, _s.borderRight1PX, _s.borderColorSecondary].join(' ')}
-            classNamesSmall={[_s.d, _s.w100PC, _s.py10, _s.px15, _s.borderTop1PX, _s.borderColorSecondary].join(' ')}
-          >
+        <div className={[_s.d].join(' ')}>
+          <div className={[_s.d, _s.w100PC, _s.py10, _s.px15, _s.borderTop1PX, _s.borderColorSecondary].join(' ')}>
             <Text color='secondary' size='small'>
               {intl.formatMessage(messages.description)}
             </Text>
 
-            <div className={[_s.mt10, _s.mb10, _s.pt10].join(' ')}>
-              <div className={[_s.d, _s.mb10].join(' ')}>
-                <Text
-                  color='secondary'
-                  size='small'
-                >
-                  {intl.formatMessage(messages.categoryHint)}:
-                </Text>
-              </div>
-              {reportCategories.map(function(category){
-                const id = `reporting-category-${category}`
-                const value = category
-
-                return (
-                  <ResponsiveClassesComponent
-                    classNames={[_s.d, _s.mb10].join(' ')}
-                    classNamesXS={[_s.d, _s.flexGrow1, _s.mb10].join(' ')}
-                    key={category}
-                  >
-                    <label className={[_s.d, _s.w100PC].join(' ')} htmlFor={id}>
-                      <div
-                        className={[_s.d, _s.aiCenter, _s.flexRow, _s.px15, _s.radiusSmall, _s.border1PX, _s.borderColorSecondary].join(' ')}
-                      >
-                        <input
-                          type='radio'
-                          name='category'
-                          value={value}
-                          id={id}
-                          checked={this.props.category === category}
-                          onChange={this.handleCategoryChange}
-                        />
-                        <Text
-                          align='center'
-                          size='medium'
-                          weight='bold'
-                          color='secondary'
-                          className={[_s.py10, _s.flexGrow1].join(' ')}
-                        >
-                          {category}
-                        </Text>
-                      </div>
-                    </label>
-                  </ResponsiveClassesComponent>
-                )
-              }, this)}
-            </div>
-
-            <div className={_s.my10}>
+            <div className={[_s.mt10, _s.mb10].join(' ')}>
               <div className={[_s.d, _s.mb10].join(' ')}>
                 <Text color='secondary' size='small'>
-                  {intl.formatMessage(messages.commentHint)}:
+                  {intl.formatMessage(messages.categoryHint)}
                 </Text>
               </div>
-
-              <Textarea
-                placeholder={intl.formatMessage(messages.placeholder)}
-                value={comment}
-                onChange={this.handleCommentChange}
-                onKeyDown={this.handleKeyDown}
-                disabled={isDisabled}
-                autoFocus
-              />
+              <ReportCategoriesSelect onSelect={this.handleOnSelectCategory}/>
             </div>
+
+            <Textarea
+              placeholder={intl.formatMessage(messages.placeholder)}
+              value={comment}
+              onChange={this.handleCommentChange}
+              onKeyDown={this.handleKeyDown}
+              disabled={isDisabled}
+              className={[_s.maxH56PX].join(' ')}
+              autoFocus
+            />
 
             <Button
               isDisabled={isDisabled}
               onClick={this.handleSubmit}
               className={_s.mt10}
             >
-              {intl.formatMessage(messages.submit)}
+              <Text align='center' weight='bold' size='medium' color='inherit'>
+                {intl.formatMessage(messages.submit)}
+              </Text>
             </Button>
-          </ResponsiveClassesComponent>
+          </div>
 
-          <ResponsiveClassesComponent
-            classNames={[_s.d, _s.flexNormal, _s.maxH80VH].join(' ')}
-            classNamesSmall={[_s.d, _s.w100PC, _s.h260PX].join(' ')}
-          >
-            <div className={[_s.d, _s.h100PC, _s.overflowYScroll].join(' ')}>
-              {
-                statusIds.map((statusId) => (
-                  <StatusCheckBox id={statusId} key={`reporting-${statusId}`} disabled={isDisabled} />
-                ))
-              }
+          {
+            !!statusIds && statusIds.size > 0 &&
+            <div className={[_s.d, _s.borderTop1PX, _s.borderColorSecondary, _s.w100PC].join(' ')}>
+              <div className={[_s.d, _s.h100PC, _s.overflowYScroll].join(' ')}>
+                {
+                  statusIds.map((statusId) => (
+                    <StatusCheckBox id={statusId} key={`reporting-${statusId}`} disabled={isDisabled} />
+                  ))
+                }
+              </div>
             </div>
-          </ResponsiveClassesComponent>
-        </ResponsiveClassesComponent>
+          }
+        </div>
 
       </ModalLayout>
     )
@@ -195,18 +146,18 @@ const messages = defineMessages({
 const makeMapStateToProps = () => {
   const getAccount = makeGetAccount()
 
-  const mapStateToProps = (state) => {
+  const mapStateToProps = (state, { noStatuses }) => {
     const accountId = state.getIn(['reports', 'new', 'account_id'])
     const category = state.getIn(['reports', 'new', 'category'])
     const isSubmitting = state.getIn(['reports', 'new', 'isSubmitting'])
-    const statusIds = OrderedSet(
-      state.getIn(['timelines', `account:${accountId}:with_replies`, 'items'])
+    const statusIds = noStatuses ? null : OrderedSet(
+      state.getIn(['timelines', `account:${accountId}`, 'items'])
     ).union(state.getIn(['reports', 'new', 'status_ids']))
     return {
       account: getAccount(state, accountId),
       comment: state.getIn(['reports', 'new', 'comment']),
       statusIds,
-      isDisabled: isSubmitting || !category,
+      isDisabled: isSubmitting,
       category,
     }
   }
@@ -223,6 +174,7 @@ ReportModal.propTypes = {
   intl: PropTypes.object.isRequired,
   onClose: PropTypes.func.isRequired,
   category: PropTypes.string.isRequired,
+  noStatuses: PropTypes.bool,
 }
 
 export default injectIntl(connect(makeMapStateToProps)(ReportModal))

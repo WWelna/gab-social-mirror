@@ -94,10 +94,6 @@ class Comment < ApplicationRecord
       return self.connection.query(sanitize_sql([sql, { ids: comment_ids }])).to_h
     end
 
-
-    def direct_replies_count_map(comment_ids)
-      unscoped.where(in_reply_to_id: comment_ids).group(:in_reply_to_id).count
-    end
   end
 
   def emojis
@@ -131,7 +127,7 @@ class Comment < ApplicationRecord
   end
 
   def direct_replies_count
-    replies.count
+    comment_stat&.replies_count || 0
   end
 
   def replies_count

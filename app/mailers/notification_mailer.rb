@@ -70,11 +70,17 @@ class NotificationMailer < ApplicationMailer
 
     @me                  = recipient
     @since               = opts[:since] || [@me.user.last_emailed_at, (@me.user.current_sign_in_at + 1.day)].compact.max
-    @notifications_count = Notification.where(account: @me, activity_type: 'Mention').where('created_at > ?', @since).count
+
+    @notifications = Notification
+      .where(account: @me, activity_type: 'Mention')
+      .where('created_at > ?', @since)
+      .limit(40)
+      .filter { |n| n.status.nil? == false }
+
+    @notifications_count = @notifications.length
 
     return if @notifications_count.zero?
 
-    @notifications = Notification.where(account: @me, activity_type: 'Mention').where('created_at > ?', @since).limit(40)
     @follows_since = Notification.where(account: @me, activity_type: 'Follow').where('created_at > ?', @since).count
 
     locale_for_account(@me) do

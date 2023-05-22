@@ -18,6 +18,10 @@ class ReblogService < BaseService
 
     return reblog unless reblog.nil?
 
+    @account = account
+    @target_account = reblogged_status.account
+    validate_blocked!
+
     visibility = options[:visibility] || account.user&.setting_default_privacy
     visibility = reblogged_status.visibility if reblogged_status.hidden?
     text = options[:status] || ''
@@ -28,10 +32,22 @@ class ReblogService < BaseService
     create_notification(reblog)
     bump_potential_friendship(account, reblog)
 
+    # Publish a post status event to altstream
+    payload = InlineRenderer.render(reblog, nil, :status)
+    Redis.current.publish("altstream:main", Oj.dump(event: :post_status, payload: payload))
+
     reblog
   end
 
   private
+
+  def validate_blocked!
+    if @account.blocking?(@target_account)
+      raise GabSocial::NotPermittedError, "You are blocking @#{@target_account.username} and are trying to repost their post."
+    elsif @target_account.blocking?(@account)
+      raise GabSocial::NotPermittedError, "@#{@target_account.username} has you blocked and you are trying to repost their post."
+    end
+  end
 
   def create_notification(reblog)
     reblogged_status = reblog.reblog

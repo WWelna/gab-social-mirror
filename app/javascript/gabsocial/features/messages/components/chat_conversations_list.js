@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import debounce from 'lodash.debounce'
-import noop from 'lodash.noop'
+import throttle from 'lodash/throttle'
+import noop from 'lodash/noop'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { List as ImmutableList } from 'immutable'
@@ -22,10 +22,14 @@ import ScrollableList from '../../../components/scrollable_list'
 class ChatConversationsList extends ImmutablePureComponent {
 
   componentDidMount() {
+    const { source } = this.props
+    if (source === 'approved') {
+      this.props.onFetchChatConversations(this.props.source, { pinned: true })
+    }
     this.props.onFetchChatConversations(this.props.source)
   }
 
-  handleLoadMore = debounce(() => {
+  handleLoadMore = throttle(() => {
     this.props.onExpandChatConversations(this.props.source)
   }, 300, { leading: true })
 
@@ -54,7 +58,7 @@ class ChatConversationsList extends ImmutablePureComponent {
             {
               pinnedChatConversationIds.map((chatConversationId, i) => (
                 <ChatConversationsListItem
-                  key={`chat-conversation-pinned-${i}`}
+                  key={`chat-conversation-pinned-${chatConversationId}`}
                   chatConversationId={chatConversationId}
                   source={source}
                 />
@@ -68,7 +72,7 @@ class ChatConversationsList extends ImmutablePureComponent {
           onLoadMore={this.handleLoadMore}
           hasMore={hasMore}
           isLoading={isLoading}
-          showLoading={isLoading}
+          showLoading={isLoading && chatConversationIds.size === 0}
           placeholderComponent={AccountPlaceholder}
           onScrollToTop={noop}
           placeholderCount={3}
@@ -77,7 +81,7 @@ class ChatConversationsList extends ImmutablePureComponent {
           {
             chatConversationIds.map((chatConversationId, i) => (
               <ChatConversationsListItem
-                key={`chat-conversation-${i}`}
+                key={`chat-conversation-${chatConversationId}`}
                 chatConversationId={chatConversationId}
                 source={source}
               />
@@ -114,9 +118,9 @@ const mapStateToProps = (state, { source }) => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  onFetchChatConversations(source) {
+  onFetchChatConversations(source, params) {
     if (source ==='approved') {
-      dispatch(fetchChatConversations())
+      dispatch(fetchChatConversations(params))
     } else if (source ==='requested') {
       dispatch(fetchChatConversationRequested())
     } else if (source ==='muted') {

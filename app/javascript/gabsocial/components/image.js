@@ -7,10 +7,20 @@ import { openModal } from '../actions/modal'
 const missingUrl = 'https://gab.com/headers/original/missing.png'
 
 class Image extends React.PureComponent {
-  state = { error: false }
+  state = {
+    error: false
+  }
 
   handleOnError = () => {
+    const { onError } = this.props
+    !!onError && onError()
+
     this.setState({ error: true })
+  }
+  
+  handleOnLoad = () => {
+    const { onLoad } = this.props
+    !!onLoad && onLoad()
   }
 
   render() {
@@ -34,6 +44,7 @@ class Image extends React.PureComponent {
     const classes = CX(className, {
       d: 1,
       objectFitCover: !!src && fit === 'cover',
+      objectFitContain: !!src && fit === 'contain',
       bgSecondary: !src || error,
       cursorPointer: expandOnClick
     })
@@ -60,6 +71,7 @@ class Image extends React.PureComponent {
     return (
       <img
         alt={alt}
+        title={alt}
         className={classes}
         ref={imageRef}
         src={imageUrl}
@@ -70,7 +82,7 @@ class Image extends React.PureComponent {
         height={height}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        onLoad={this.props.onLoad}
+        onLoad={this.handleOnLoad}
       />
     )
   }
@@ -98,7 +110,8 @@ Image.propTypes = {
   onOpenMediaModal: PropTypes.func.isRequired,
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
-  onLoad: PropTypes.func
+  onLoad: PropTypes.func,
+  onError: PropTypes.func,
 }
 
 Image.defaultProps = {

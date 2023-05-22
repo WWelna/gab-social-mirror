@@ -112,7 +112,7 @@ class ComposeModal extends React.Component {
     }
 
     return (
-      <div style={{ width: '580px' }} className={[_s.d, _s.modal].join(' ')}>
+      <div style={{ width: '640px' }} className={[_s.d, _s.modal].join(' ')}>
         <Block>
           <div
             className={[

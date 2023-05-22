@@ -17,14 +17,14 @@ export const REPORT_CATEGORY_CHANGE = 'REPORT_CATEGORY_CHANGE'
 /**
  * 
  */
-export const initReport = (account, status) => (dispatch) => {
+export const initReport = (account, status, options = {}) => (dispatch) => {
   dispatch({
     type: REPORT_INIT,
     account,
     status,
   })
 
-  dispatch(openModal(MODAL_REPORT))
+  dispatch(openModal(MODAL_REPORT, options))
 }
 
 /**
@@ -54,10 +54,10 @@ export const submitReport = () => (dispatch, getState) => {
     status_ids: getState().getIn(['reports', 'new', 'status_ids']),
     comment: getState().getIn(['reports', 'new', 'comment']),
     forward: getState().getIn(['reports', 'new', 'forward']),
-    category: getState().getIn(['reports', 'new', 'category']),
-  }).then((response) => {
+    category: getState().getIn(['reports', 'new', 'category'], 'other'),
+  }).then(() => {
     dispatch(closeModal());
-    dispatch(submitReportSuccess(response.data))
+    dispatch(submitReportSuccess())
   }).catch((error) => dispatch(submitReportFail(error)))
 }
 
@@ -65,10 +65,9 @@ const submitReportRequest = () => ({
   type: REPORT_SUBMIT_REQUEST,
 })
 
-const submitReportSuccess = (report) => ({
+const submitReportSuccess = () => ({
   type: REPORT_SUBMIT_SUCCESS,
   showToast: true,
-  report,
 })
 
 const submitReportFail = (error) => ({

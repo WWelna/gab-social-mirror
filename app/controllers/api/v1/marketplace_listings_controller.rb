@@ -22,19 +22,31 @@ class Api::V1::MarketplaceListingsController < Api::BaseController
   def update
     authorize @marketplace_listing, :update?
 
+    require_review = false
+    # do not require review if only the price/condition/shipping have changed
+    if @marketplace_listing.title != marketplace_listing_params[:title] || 
+      @marketplace_listing.description != marketplace_listing_params[:description] ||
+      @marketplace_listing.marketplace_listing_category_id != marketplace_listing_params[:marketplace_listing_category_id] ||
+      @marketplace_listing.tags != marketplace_listing_params[:tags] ||
+      @marketplace_listing.location != marketplace_listing_params[:location] ||
+      @marketplace_listing.media_attachments.pluck(:id).sort != marketplace_listing_params[:media_ids].map(&:to_i).sort
+      require_review = true
+    end
+
     updated_marketplace_listing = CreateMarketplaceListingService.new.call(
       current_account,
       marketplace_listing_params,
       @marketplace_listing
     )
 
-    # after editing, we need to change to pending review!
-    MarketplaceListingStatusChangeService.new.call(
-      @marketplace_listing,
-      :pending_admin_review,
-      nil,
-      current_account
-    )
+    if require_review
+      MarketplaceListingStatusChangeService.new.call(
+        @marketplace_listing,
+        :pending_admin_review,
+        nil,
+        current_account
+      )
+    end
 
     render json: updated_marketplace_listing, serializer: REST::MarketplaceListingSerializer
   end
@@ -68,7 +80,7 @@ class Api::V1::MarketplaceListingsController < Api::BaseController
   end
 
   def set_marketplace_listing
-    @marketplace_listing = MarketplaceListing.find(params[:id])
+    @marketplace_listing = MarketplaceListing.includes(:account).find(params[:id])
     # important!
     authorize @marketplace_listing, :show?
   end

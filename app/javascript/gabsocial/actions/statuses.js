@@ -1,4 +1,4 @@
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import api, { getLinks } from '../api'
 import openDB from '../storage/db'
 import { evictStatus } from '../storage/modifier'
@@ -6,6 +6,7 @@ import { importFetchedStatus, importFetchedStatuses, importAccount, importStatus
 import { openModal } from './modal'
 import { me } from '../initial_state'
 import { COMMENT_SORTING_TYPE_NEWEST, MODAL_COMPOSE } from '../constants'
+import { fetchBlocks } from './blocks'
 
 export const STATUS_FETCH_REQUEST = 'STATUS_FETCH_REQUEST'
 export const STATUS_FETCH_SUCCESS = 'STATUS_FETCH_SUCCESS'
@@ -42,6 +43,20 @@ export const STATUS_EDIT = 'STATUS_EDIT'
 export const UPDATE_STATUS_STATS = 'UPDATE_STATUS_STATS'
 
 export const CLEAR_ALL_COMMENTS = 'CLEAR_ALL_COMMENTS'
+
+export const STATUS_REACTIONS_FETCH_REQUEST = 'STATUS_REACTIONS_FETCH_REQUEST'
+export const STATUS_REACTIONS_FETCH_SUCCESS = 'STATUS_REACTIONS_FETCH_SUCCESS'
+export const STATUS_REACTIONS_FETCH_FAIL    = 'STATUS_REACTIONS_FETCH_FAIL'
+
+export const CONVERSATION_OWNER_FETCH_REQUEST = 'CONVERSATION_OWNER_FETCH_REQUEST'
+export const CONVERSATION_OWNER_FETCH_SUCCESS = 'CONVERSATION_OWNER_FETCH_SUCCESS'
+export const CONVERSATION_OWNER_FETCH_FAIL = 'CONVERSATION_OWNER_FETCH_FAIL'
+
+export const REMOVE_REPLY_REQUEST = 'REMOVE_REPLY_REQUEST'
+export const REMOVE_REPLY_SUCCESS = 'REMOVE_REPLY_SUCCESS'
+export const REMOVE_REPLY_FAIL = 'REMOVE_REPLY_FAIL'
+
+export const FETCH_STATUS_STATS_FAIL = 'FETCH_STATUS_STATS_FAIL'
 
 /**
  *
@@ -139,6 +154,7 @@ const fetchStatusFail = (id, error, skipLoading) => ({
   skipAlert: true,
 })
 
+
 /**
  *
  */
@@ -158,6 +174,8 @@ export const deleteStatus = (id) => (dispatch, getState) => {
   if (!me || !id) return
 
   let status = getState().getIn(['statuses', id])
+  let replyToId = status.get('in_reply_to_id')
+  let topLevelOPStatusId = status.get('conversation_owner_status_id')
 
   if (status.get('poll')) {
     status = status.set('poll', getState().getIn(['polls', status.get('poll')]))
@@ -168,7 +186,12 @@ export const deleteStatus = (id) => (dispatch, getState) => {
   api(getState).delete(`/api/v1/statuses/${id}`).then(() => {
     evictStatus(id)
     dispatch(deleteStatusSuccess(id))
-    // dispatch(deleteFromTimelines(id))
+    if (replyToId) {
+      setTimeout(() => { dispatch(fetchStatusStats(replyToId)) }, 5000)
+    }
+    if (topLevelOPStatusId && topLevelOPStatusId !== replyToId) {
+      setTimeout(() => { dispatch(fetchStatusStats(topLevelOPStatusId)) }, 5000)
+    }
   }).catch((error) => {
     dispatch(deleteStatusFail(id, error))
   })
@@ -190,6 +213,32 @@ const deleteStatusFail = (id, error) => ({
   error,
 })
 
+
+/**
+ *
+ */
+ export const fetchStatusStats = (id) => (dispatch, getState) => {
+  if (!me || !id) return
+
+  const skipLoading = getState().getIn(['statuses', id], null) == null
+  if (skipLoading) return
+
+  api(getState).get(`/api/v1/status_stats/${id}`).then((response) => {
+    dispatch(updateStatusStats(response.data))
+  }).catch((error) => {
+    console.log(error)
+    dispatch(fetchStatusStatsFail(id, error))
+  })
+}
+
+const fetchStatusStatsFail = (id, error) => ({
+  type: FETCH_STATUS_STATS_FAIL,
+  id: id,
+  error,
+})
+
+
+
 /**
  *
  */
@@ -204,7 +253,7 @@ export const fetchContext = (id, ensureIsReply) => (dispatch, getState) => {
   dispatch(fetchContextRequest(id))
 
   api(getState).get(`/api/v1/statuses/${id}/context`).then((response) => {
-    dispatch(importFetchedStatuses(response.data.ancestors.concat(response.data.descendants)))
+    dispatch(importFetchedStatuses(response.data.ancestors.concat(response.data.descendants).concat(response.data.quoted)))
     dispatch(fetchContextSuccess(id, response.data.ancestors, response.data.descendants))
   }).catch((error) => {
     dispatch(fetchContextFail(id, error))
@@ -237,17 +286,20 @@ const fetchContextFail = (id, error) => ({
 /**
  *
  */
-export const fetchComments = (id, forceNewest) => (dispatch, getState) => {
-  debouncedFetchComments(id, forceNewest, dispatch, getState)
+export const fetchComments = (id, forceNewest, ignoreFetched) => (dispatch, getState) => {
+  debouncedFetchComments(id, forceNewest, ignoreFetched, dispatch, getState)
 }
 
-export const debouncedFetchComments = debounce((id, forceNewest, dispatch, getState) => {
+export const debouncedFetchComments = debounce((id, forceNewest, ignoreFetched, dispatch, getState) => {
   if (!id) return
-
-  dispatch(fetchCommentsRequest(id))
 
   const sort = forceNewest ? COMMENT_SORTING_TYPE_NEWEST : getState().getIn(['settings', 'commentSorting'])
   const fetchNext = getState().getIn(['contexts', 'nexts', id])
+  const fetchedStatusParts = getState().getIn(['contexts', 'fetchedStatusParts', id])
+  if (fetchedStatusParts && !ignoreFetched) return
+
+  dispatch(fetchCommentsRequest(id))
+
   const url = !!fetchNext ? fetchNext : `/api/v1/status_comments/${id}?sort_by=${sort}`
 
   api(getState).get(url).then((response) => {
@@ -268,7 +320,7 @@ const fetchCommentsRequest = (id) => ({
   id,
 })
 
-const fetchCommentsSuccess = (id, descendants, next) => ({
+export const fetchCommentsSuccess = (id, descendants, next) => ({
   type: COMMENTS_FETCH_SUCCESS,
   id,
   descendants,
@@ -398,4 +450,112 @@ const unmuteStatusFail = (id, error) => ({
   type: STATUS_UNMUTE_FAIL,
   id,
   error,
+})
+
+export const fetchStatusReactions = (statusId) => (dispatch, getState) => {
+  dispatch(fetchReactionsRequest(statusId))
+
+  api(getState).get(`/api/v1/statuses/${statusId}/reactions`).then((response) => {
+    dispatch(fetchReactionsSuccess(statusId, response.data))
+  }).catch((error) => {
+    dispatch(fetchReactionsFail(statusId, error))
+  })
+}
+
+const fetchReactionsRequest = (statusId) => ({
+  type: STATUS_REACTIONS_FETCH_REQUEST,
+  statusId,
+})
+
+const fetchReactionsSuccess = (statusId, reactions) => ({
+  type: STATUS_REACTIONS_FETCH_SUCCESS,
+  statusId,
+  reactions,
+})
+
+const fetchReactionsFail = (statusId, error) => ({
+  type: STATUS_REACTIONS_FETCH_FAIL,
+  statusId,
+  error,
+})
+
+export const fetchConversationOwner = (statusId, conversationId, update_after) => (dispatch, getState) => {
+  dispatch(fetchConversationOwnerRequest(statusId, conversationId))
+
+  api(getState).get(`/api/v1/conversation_owner/${conversationId}`).then(({ data }) => {
+    dispatch(fetchConversationOwnerSuccess(statusId, conversationId, data.account_id, data.coversation_owner_status_id))
+    if (update_after && statusId != data.coversation_owner_status_id) {
+      dispatch(fetchStatusStats(data.coversation_owner_status_id))
+    }
+  }).catch((error) => {
+    dispatch(fetchConversationOwnerFail(statusId, conversationId, error))
+  })
+}
+
+const fetchConversationOwnerRequest = (statusId, conversationId) => ({
+  type: CONVERSATION_OWNER_FETCH_REQUEST,
+  statusId,
+  conversationId,
+})
+
+const fetchConversationOwnerSuccess = (statusId, conversationId, owner, ownerStatusId) => ({
+  type: CONVERSATION_OWNER_FETCH_SUCCESS,
+  statusId,
+  conversationId,
+  owner,
+  ownerStatusId,
+})
+
+const fetchConversationOwnerFail = (statusId, conversationId, error) => ({
+  type: CONVERSATION_OWNER_FETCH_FAIL,
+  statusId,
+  conversationId,
+  error,
+})
+
+
+/**
+ * 
+ */
+ export const removeReply = (statusId, block) => (dispatch, getState) => {
+  if (!me || !statusId) return
+  
+  const topLevelOPStatusId = getState().getIn(['statuses', `${statusId}`, 'conversation_owner_status_id'])
+  if (!topLevelOPStatusId) return
+
+  dispatch(removeReplyRequest(statusId, topLevelOPStatusId, block))
+
+  api(getState).post(`/api/v1/statuses/${statusId}/remove`, { block }).then((response) => {
+    dispatch(removeReplySuccess(statusId, topLevelOPStatusId, block))
+    dispatch(fetchStatusStats(topLevelOPStatusId))
+    if (block) {
+      dispatch(fetchBlocks())
+    }
+  }).catch((error) => {
+    console.log(error)
+    dispatch(removeReplyFail(statusId, block, error))
+  })
+}
+
+const removeReplyRequest = (statusId, topLevelOPStatusId, block) => ({
+  type: REMOVE_REPLY_REQUEST,
+  statusId,
+  topLevelOPStatusId,
+  block,
+})
+
+const removeReplySuccess = (statusId, topLevelOPStatusId, block) => ({
+  type: REMOVE_REPLY_SUCCESS,
+  showToast: true,
+  statusId,
+  topLevelOPStatusId,
+  block
+})
+
+const removeReplyFail = (statusId, block, error) => ({
+  type: REMOVE_REPLY_FAIL,
+  showToast: true,
+  statusId,
+  block,
+  error
 })

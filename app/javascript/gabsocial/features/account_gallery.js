@@ -77,7 +77,7 @@ class AccountGallery extends ImmutablePureComponent {
             {
               attachments.map((attachment, index) => (
                 <MediaItem
-                  key={`${attachment.get('id')}-${index}`}
+                  key={`attachment-${attachment.get('id')}`}
                   attachment={attachment}
                   account={account}
                 />

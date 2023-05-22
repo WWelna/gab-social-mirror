@@ -36,6 +36,18 @@
   .fields-group
     = f.input :setting_remote_rss_feed, placeholder: 'https://somedomain.com/rss', wrapper: :with_label
 
+  .fields-group
+    %p Publish new items from your Telegram channel to Gab (Pro/Verified/Donor/Investor Only)
+    %p 
+      Add the 
+      %a{ :href => "https://t.me/GabCrosspostBot" }
+        Gab Crosspost Bot
+      to your channel as admin
+    %p
+      Provide your public channel link here, must start with https://t.me/
+
+    = f.input :setting_telegram_channel, placeholder: 'https://t.me/mychannel'
+
   %hr#settings_web/
 
   .fields-row

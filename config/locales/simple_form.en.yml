@@ -23,6 +23,7 @@ en:
         irreversible: Filtered gabs will disappear irreversibly, even if filter is later removed
         locale: The language of the user interface, e-mails and push notifications
         locked: Requires you to manually approve followers
+        is_parody: A parody account depicts another person, group, or organization in their profile to discuss, satirize, or share information about that entity.
         password: Use at least 8 characters
         phrase: Will be matched regardless of casing in text or content warning of a gab
         scopes: Which APIs the application will be allowed to access. If you select a top-level scope, you don't need to select individual ones.
@@ -97,6 +98,7 @@ en:
         new_password: New password
         note: Bio
         otp_attempt: Two-factor code
+        is_parody: This is a parody, commentary, or fan account
         password: Password
         phrase: Keyword or phrase
         setting_aggregate_reblogs: Group reposts in timelines
@@ -106,6 +108,7 @@ en:
         setting_default_privacy: Post privacy
         setting_default_sensitive: Always mark media as sensitive
         setting_show_videos: Show Gab TV panel
+        setting_show_voice_rooms: Show Gab Voice panel
         setting_show_suggested_users: Show suggested users panel
         setting_show_groups: Show groups panel
         setting_delete_modal: Show confirmation dialog before deleting a gab
@@ -127,7 +130,8 @@ en:
         setting_reduce_motion: Reduce motion in animations
         setting_group_in_home_feed: Show posts from your groups
         setting_show_pro_life: Show "PRO Life" in your GabPRO badge instead of "PRO"
-        setting_remote_rss_feed: Publish new items from your RSS feed to Gab (Pro/Verified/Donor/Investor Only)
+        setting_remote_rss_feed: Publish new items from your RSS feed to Gab (Pro/Verified/Donor/Investor Only) (must start with https://)
+        setting_telegram_channel: Publish new items from your Telegram channel to Gab (Pro/Verified/Donor/Investor Only) (must start with https://t.me/ and must add the Gab Crosspost Bot to your channel as admin)
         setting_show_application: Disclose application used to send gabs
         setting_system_font_ui: Use system's default font
         setting_theme: Site theme

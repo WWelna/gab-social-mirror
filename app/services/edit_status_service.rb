@@ -3,6 +3,17 @@
 class EditStatusService < BaseService
   include Redisable
 
+  # copied from FetchLinkCardService
+  URL_PATTERN = %r{
+    (                                                                                                 #   $1 URL
+      (https?:\/\/)                                                                                   #   $2 Protocol (required)
+      (#{Twitter::Regex[:valid_domain]})                                                              #   $3 Domain(s)
+      (?::(#{Twitter::Regex[:valid_port_number]}))?                                                   #   $4 Port number (optional)
+      (/#{Twitter::Regex[:valid_url_path]}*)?                                                         #   $5 URL Path and anchor
+      (\?#{Twitter::Regex[:valid_url_query_chars]}*#{Twitter::Regex[:valid_url_query_ending_chars]})? #   $6 Query String
+    )
+  }iox
+
   # Post a text status update, fetch and notify remote users mentioned
   # @param [Status] status Status being edited
   # @param [Hash] options
@@ -19,8 +30,10 @@ class EditStatusService < BaseService
     @status      = status
     @account     = status.account
     @options     = options
-    @text        = @options[:text] || ''
-    @markdown    = @options[:markdown]
+    @text        = Nokogiri::HTML(@options[:text] || '').text
+    @markdown    = Nokogiri::HTML(@options[:markdown] || '').text
+
+    set_status_context
 
     # validate_similarity! unless @account.user&.staff? || @account.vpdi?
     validate_links! unless @account.user&.staff?
@@ -39,6 +52,15 @@ class EditStatusService < BaseService
   end
 
   private
+
+  def parse_urls
+    urls = @text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
+    return urls.reject { |uri| bad_url?(uri) }.first
+  end
+
+  def bad_url?(uri)
+    uri.host.blank? || !%w(http https).include?(uri.scheme)
+  end
 
   def preprocess_attributes!
     @text         = @options.delete(:spoiler_text) if @text.blank? && @options[:spoiler_text].present?
@@ -72,9 +94,25 @@ class EditStatusService < BaseService
     process_links_service.call(@status)
   end
 
+  def set_status_context
+    if !@options[:status_context_id].nil?
+      # : todo : if context id is associated with group, verify here
+      @status_context = StatusContext.is_enabled.find(@options[:status_context_id])
+    else
+      @status_context = nil
+    end
+  end
+
   def postprocess_status!
-    LinkCrawlWorker.perform_async(@status.id) unless @status.spoiler_text?
+    if !parse_urls.nil? || @status.preview_cards.any?
+      LinkCrawlWorker.perform_async(@status.id) unless @status.spoiler_text?
+    end
     ExpiringStatusWorker.perform_at(@status.expires_at, @status.id) if @status.expires_at
+    # publish edits to recent statuses to altstream
+    if @status.created_at > 8.hours.ago
+      payload = InlineRenderer.render(@status, nil, :status)
+      Redis.current.publish("altstream:main", Oj.dump(event: :edit_status, payload: payload))
+    end
   end
 
   def prepare_revision_text
@@ -85,6 +123,10 @@ class EditStatusService < BaseService
     if current_media_ids.sort != new_media_ids.sort
       text = "" if text == @options[:text]
       text += " [Media attachments changed]"
+    end
+    if @options[:status_context_id] != @status.status_context_id
+      text = "" if text == @options[:text]
+      text += " [Status context changed]"
     end
 
     text.strip()
@@ -97,14 +139,12 @@ class EditStatusService < BaseService
   end
 
   def validate_media!
+    max_media = 8
     return if @options[:media_ids].blank? || !@options[:media_ids].is_a?(Enumerable)
 
-    raise GabSocial::ValidationError, I18n.t('media_attachments.validations.too_many') if @options[:media_ids].size > 4
+    raise GabSocial::ValidationError, "Cannot attach more than #{max_media} files" if @options[:media_ids].size > max_media
 
-    @media = @account.media_attachments.where(id: @options[:media_ids].take(4).map(&:to_i))
-
-    hasVideoOrGif = @media.find(&:video?) || @media.find(&:gifv?)
-    raise GabSocial::ValidationError, I18n.t('media_attachments.validations.images_and_video') if @media.size > 1 && hasVideoOrGif
+    @media = @account.media_attachments.where(id: @options[:media_ids].take(max_media).map(&:to_i))
   end
 
   # def validate_similarity!
@@ -146,17 +186,22 @@ class EditStatusService < BaseService
   end
 
   def status_attributes
+    english = @account.user&.locale == 'en'
+    lang = language_from_option(@options[:language])
+    lang ||= english ? 'en' : nil
+    lang ||= @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account)
     {
       revised_at: Time.now,
       text: @text,
       markdown: @markdown,
       expires_at: @expires_at,
+      status_context: @status_context || nil,
       media_attachments: @media || [],
       sensitive: (@options[:sensitive].nil? ? @account.user&.setting_default_sensitive : @options[:sensitive]) || @options[:spoiler_text].present?,
       spoiler_text: @options[:spoiler_text] || '',
       visibility: @visibility,
-      language: language_from_option(@options[:language]) || @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account),
+      language: lang,
       application: @options[:application],
-    }.compact
+    }
   end
 end

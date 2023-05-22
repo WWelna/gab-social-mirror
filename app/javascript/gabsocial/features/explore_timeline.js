@@ -1,36 +1,29 @@
 import React from 'react'
 import ExploreSortBlock from '../components/explore_sort_block'
 import StatusList from '../components/status_list'
+import ExploreTimelinePills from '../components/explore_timelines_pills'
 import {
-  GROUP_TIMELINE_SORTING_TYPE_TOP,
-  exploreSorts,
-  exploreSortTops,
+  EXPLORE_SORTS,
+  EXPLORE_SORT_TOPS,
+  EXPLORE_SORT_CREATE_PARAMS,
 } from '../constants'
 
-const timelineId = 'explore'
-
-function createParams({ sortByValue, sortByTopValue }) {
-  if (sortByValue === GROUP_TIMELINE_SORTING_TYPE_TOP) {
-    // see app/controllers/api/v1/timelines/explore_controller.rb
-    return { sort_by: `top_${sortByTopValue}` }
-  }
-  return { sort_by: sortByValue }
-}
-
-const ExploreTimeline = () =>
-  (<>
-    <ExploreSortBlock />
+const ExploreTimeline = () => (
+  <>
+    <ExploreTimelinePills />
+    <ExploreSortBlock timelineId='explore' />
     <StatusList
-      timelineId={timelineId}
-      endpoint='/api/v1/timelines/explore'
+      timelineId='explore'
+      endpoint="/api/v1/timelines/explore"
+      showInjections
       paginationLoggedIn
       maxPages={8}
-      showPromoted
       showAds
-      sorts={exploreSorts}
-      topSorts={exploreSortTops}
-      createParams={createParams}
+      sorts={EXPLORE_SORTS}
+      topSorts={EXPLORE_SORT_TOPS}
+      createParams={EXPLORE_SORT_CREATE_PARAMS}
     />
-  </>)
+  </>
+)
 
-export default ExploreTimeline;
+export default ExploreTimeline

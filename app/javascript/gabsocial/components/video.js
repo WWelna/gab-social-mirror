@@ -60,13 +60,7 @@ class Video extends ImmutablePureComponent {
 
   setPlayerRef = (n) => {
     this.player = n
-
-    if (n) {
-      if (this.props.cacheWidth) this.props.cacheWidth(this.player.offsetWidth)
-      this.setState({
-        containerWidth: n.offsetWidth,
-      })
-    }
+    if (n) this.setState({ containerWidth: n.offsetWidth })
   }
 
   setVideoRef = (n) => {
@@ -82,6 +76,7 @@ class Video extends ImmutablePureComponent {
       muted,
       sourceMp4,
       src,
+      shouldStopAllOtherPlayers,
     } = this.props
     
     this.videoPlayer = videojs(this.video, getVideoJSOptions({
@@ -98,9 +93,17 @@ class Video extends ImmutablePureComponent {
         },
       ],
     }))
+
+    if (shouldStopAllOtherPlayers) {
+      this.videoPlayer.on('play', () => {
+        this.stopAllOtherPlayers()
+      })
+    }
   }
 
-  handleClickRoot = (e) => e.stopPropagation()
+  handleClickRoot = (e) => {
+    e.stopPropagation() 
+  }
 
   toggleReveal = () => {
     if (this.props.onToggleVisibility) {
@@ -108,6 +111,21 @@ class Video extends ImmutablePureComponent {
     } else {
       this.setState({ revealed: !this.state.revealed })
     }
+  }
+
+  stopAllOtherPlayers = () => {
+    if (!this.props.shouldStopAllOtherPlayers) return
+
+    const thisPlayerId = this.videoPlayer.id()
+    const allPlayers = document.querySelectorAll('.video-js')
+
+    allPlayers.forEach((playerEl) => {
+      const playerElId = playerEl.getAttribute('id')
+      if (playerElId !== thisPlayerId) {
+        const otherVideo = playerEl.querySelector('video')
+        if (otherVideo) otherVideo.pause()
+      }
+    })
   }
 
   render() {
@@ -170,7 +188,9 @@ class Video extends ImmutablePureComponent {
 
     const containerStyles = CX(className, {
       d: 1,
-      mt10: 1,
+      // mt10: 1,
+      w100PC: 1,
+      h100PC: 1,
       outlineNone: 1,
     })
 
@@ -224,7 +244,6 @@ const messages = defineMessages({
 
 Video.propTypes = {
   preview: PropTypes.string,
-  src: PropTypes.string.isRequired,
   sourceMp4: PropTypes.string,
   alt: PropTypes.string,
   width: PropTypes.number,
@@ -233,7 +252,6 @@ Video.propTypes = {
   startTime: PropTypes.number,
   detailed: PropTypes.bool,
   inline: PropTypes.bool,
-  cacheWidth: PropTypes.func,
   visible: PropTypes.bool,
   onToggleVisibility: PropTypes.func,
   intl: PropTypes.object.isRequired,
@@ -243,7 +261,8 @@ Video.propTypes = {
   meta: ImmutablePropTypes.map,
   fileContentType: PropTypes.string,
   autoplay: PropTypes.string,
-  muted: PropTypes.string
+  muted: PropTypes.string,
+  shouldStopAllOtherPlayers: PropTypes.bool,
 }
 
 export default injectIntl(Video)

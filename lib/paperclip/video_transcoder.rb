@@ -5,8 +5,8 @@ module Paperclip
   # to check when uploaded videos are actually gifv's
   class VideoTranscoder < Paperclip::Processor
     def make
-      meta = ::Av.cli.identify(@file.path)
-      attachment.instance.type = MediaAttachment.types[:gifv] unless !meta.nil? && meta[:audio_encode]
+      # meta = ::Av.cli.identify(@file.path)
+      # attachment.instance.type = MediaAttachment.types[:gifv] unless !meta.nil? && meta[:audio_encode]
 
       Paperclip::Transcoder.make(file, options, attachment)
     end

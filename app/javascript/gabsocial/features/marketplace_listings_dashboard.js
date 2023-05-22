@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { connect } from 'react-redux'
 import Block from '../components/block'

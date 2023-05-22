@@ -20,7 +20,7 @@ class CharacterCounter extends React.PureComponent {
     const circleClass = length(text) > max ? _s.strokeError : _s.strokeBrand
 
     return (
-      <div className={[_s.d, _s.mr10, _s.jcCenter, _s.aiCenter].join(' ')}>
+      <div className={[_s.d, _s.jcCenter, _s.aiCenter].join(' ')}>
         <svg
           width={actualRadius * 2}
           height={actualRadius * 2}

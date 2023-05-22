@@ -47,10 +47,13 @@ class SearchService < BaseService
   end
 
   def perform_links_search!
-    PreviewCard.search_for(
-      @query.gsub(/\A#/, ''),
-      @offset
+    ids = PreviewCard.search_for(
+      @query.gsub(/\A#/, '')
     )
+    if ids.nil? || ids.empty?
+      return []
+    end
+    PreviewCard.where(id: ids).order(created_at: :desc).limit(25).offset(@offset)
   end
 
   def perform_hashtags_search!

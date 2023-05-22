@@ -17,6 +17,7 @@ const makeMapStateToProps = () => {
     const isGME = props.notification && props.notification.get('type') == 'group_moderation_event'
     const isFollows = !!props.notification.get('follow')
     const isLikes = !!props.notification.get('like')
+    const isQuote = !!props.notification.get('quote')
     const isReposts = !!props.notification.get('repost')
     const isGrouped = isFollows || isLikes || isReposts
     const lastReadId = state.getIn(['notifications', 'lastReadId'])
@@ -42,8 +43,8 @@ const makeMapStateToProps = () => {
         statusId: undefined,
         isDeckConnected,
       }
-    } else if (isReposts) {
-      const list = props.notification.get('repost')
+    } else if (isQuote) {
+      const list = props.notification.get('quote')
       let lastUpdated = list.get('lastUpdated')
 
       let accounts = ImmutableList()
@@ -56,13 +57,13 @@ const makeMapStateToProps = () => {
       }
 
       return {
-        type: 'repost',
+        type: 'quote',
         accounts: accounts,
         createdAt: lastUpdated,
         status: state.getIn(['statuses', list.get('status')], null),
         isDeckConnected,
       }
-      } else if (isReposts) {
+    } else if (isReposts) {
       const list = props.notification.get('repost')
       let lastUpdated = list.get('lastUpdated')
 

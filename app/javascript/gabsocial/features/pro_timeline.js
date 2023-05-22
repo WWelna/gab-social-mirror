@@ -1,12 +1,32 @@
 import React from 'react'
 import StatusList from '../components/status_list'
+import ExploreTimelinePills from '../components/explore_timelines_pills'
+import ResponsiveClassesComponent from './ui/util/responsive_classes_component'
+import GroupSortBlock from '../components/group_sort_block'
+import {
+  PRO_TIMELINE_SORTS,
+  GROUP_SORT_TOPS,
+  EXPLORE_SORT_CREATE_PARAMS,
+} from '../constants'
 
-const ProTimeline = () =>
-  (<StatusList
-    timelineId='pro'
-    endpoint='/api/v1/timelines/pro'
-    queue
-    showAds
-  />)
+function ProTimeline() {
+  return (
+    <>
+      <ResponsiveClassesComponent classNamesXS={[_s.d, _s.pt10].join(' ')}>
+        <ExploreTimelinePills />
+      </ResponsiveClassesComponent>
+      <GroupSortBlock timelineId='pro' />
+      <StatusList
+        timelineId='pro'
+        endpoint='/api/v1/timelines/pro'
+        queue
+        showAds
+        sorts={PRO_TIMELINE_SORTS}
+        topSorts={GROUP_SORT_TOPS}
+        createParams={EXPLORE_SORT_CREATE_PARAMS}
+      />
+    </>
+  )
+}
 
 export default ProTimeline

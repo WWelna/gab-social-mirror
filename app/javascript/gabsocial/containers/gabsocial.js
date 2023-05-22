@@ -7,13 +7,13 @@ import store from '../store'
 import { BrowserRouter, Route } from 'react-router-dom'
 import { IntlProvider, addLocaleData } from 'react-intl'
 import { fetchCustomEmojis } from '../actions/custom_emojis'
-import { fetchPromotions } from '../actions/promotions'
 import { fetchChatConversationUnreadCount } from '../actions/chat_conversations'
 import { routerChange } from '../actions/router'
 import { hydrateStore } from '../actions/store'
 import { connectAltStream } from '../actions/streaming'
 import { saveWindowDimensions } from '../actions/settings'
 import { hydrateActiveReactions } from '../actions/reactions'
+import { hydrateGlobalStatusContexts } from '../actions/status_contexts'
 import { getLocale } from '../locales'
 import initialState from '../initial_state'
 import { me } from '../initial_state'
@@ -32,10 +32,10 @@ const hydrateAction = hydrateStore(initialState)
 
 store.dispatch(hydrateAction)
 store.dispatch(fetchCustomEmojis())
-store.dispatch(fetchPromotions())
 store.dispatch(fetchChatConversationUnreadCount())
 store.dispatch(saveWindowDimensions())
 store.dispatch(hydrateActiveReactions())
+if (me) store.dispatch(hydrateGlobalStatusContexts())
 
 class GabSocialMount extends React.PureComponent {
   componentDidMount() {
@@ -87,7 +87,7 @@ export default class GabSocial extends React.PureComponent {
 
   componentDidMount() {
     if (!!me) {
-      store.dispatch(connectAltStream(store.dispatch, messages))
+      store.dispatch(connectAltStream(store.dispatch))
     }
 
     console.log('%cGab Social ', [

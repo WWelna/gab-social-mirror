@@ -1,0 +1,13 @@
+- content_for :page_title do
+  = 'Edit Context'
+
+= simple_form_for @status_context, url: admin_status_context_path(@status_context.id), html: { method: :put } do |f|
+  = render 'shared/error_messages', object: @status_context
+
+  .fields-group
+    = f.input :index, wrapper: :with_label, label: 'Index in list. Starting at 0 (zero)', as: :numeric
+  .fields-group
+    = f.input :is_enabled, as: :boolean, wrapper: :with_label, label: 'Is Enabled?'
+
+  .actions
+    = f.button :button, 'Update', type: :submit

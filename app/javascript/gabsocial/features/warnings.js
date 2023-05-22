@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
@@ -35,7 +35,7 @@ class Warnings extends ImmutablePureComponent {
           onLoadMore={this.handleLoadMore}
           hasMore={false}
           isLoading={isLoading}
-          showLoading={isLoading}
+          showLoading={isLoading && warnings.size === 0}
           emptyMessage={'You do not have any account warnings'}
           placeholderCount={3}
         >

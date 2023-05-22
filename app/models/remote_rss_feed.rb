@@ -8,10 +8,10 @@
 #  active          :boolean          default(FALSE), not null
 #  last_scan_at    :datetime
 #  last_trigger_at :datetime
-#  fail_count      :integer          default(0), not null
-#  top_guid        :string
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
+#  fail_count      :integer          default(0), not null
+#  top_guid        :text
 #
 
 class RemoteRssFeed < ApplicationRecord

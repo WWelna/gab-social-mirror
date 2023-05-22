@@ -81,7 +81,7 @@ SchedulePostButton.propTypes = {
   small: PropTypes.bool,
   disabled: PropTypes.bool,
   scheduled_at: PropTypes.oneOfType([
-    PropTypes.date,
+    PropTypes.instanceOf(Date),
     PropTypes.string,
     PropTypes.number
   ]),

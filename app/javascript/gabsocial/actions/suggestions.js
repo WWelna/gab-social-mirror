@@ -33,13 +33,31 @@ export const fetchRelatedSuggestions = (unlimited = false) => (dispatch, getStat
  * 
  */
 const fetchSuggestions = (suggestionType, dispatch, getState, unlimited = false) => {
-  dispatch(fetchSuggestionsRequest(suggestionType))
+  let needFetch = true
+  let suggestionData = localStorage.getItem(`suggestions_${suggestionType}`)
+  if (suggestionData) {
+    suggestionData = JSON.parse(suggestionData)
+    if (suggestionData && suggestionData.timestamp > Date.now() - 7200000) {
+      needFetch = false
+      dispatch(importFetchedAccounts(suggestionData.accounts))
+      dispatch(fetchSuggestionsSuccess(suggestionData.accounts, suggestionType))
+      dispatch(fetchRelationships(suggestionData.accounts.map(item => item.id)))
+    }
+  }
 
-  api(getState).get(`/api/v1/suggestions?type=${suggestionType}&unlimited=${!!unlimited}`).then((response) => {
-    dispatch(importFetchedAccounts(response.data))
-    dispatch(fetchSuggestionsSuccess(response.data, suggestionType))
-    dispatch(fetchRelationships(response.data.map(item => item.id)))
-  }).catch(error => dispatch(fetchSuggestionsFail(error, suggestionType)))
+  if (needFetch) {
+    dispatch(fetchSuggestionsRequest(suggestionType))
+
+    api(getState).get(`/api/v1/suggestions?type=${suggestionType}&unlimited=${!!unlimited}`).then((response) => {
+      localStorage.setItem(`suggestions_${suggestionType}`, JSON.stringify({
+        timestamp: Date.now(),
+        accounts: response.data,
+      }))
+      dispatch(importFetchedAccounts(response.data))
+      dispatch(fetchSuggestionsSuccess(response.data, suggestionType))
+      dispatch(fetchRelationships(response.data.map(item => item.id)))
+    }).catch(error => dispatch(fetchSuggestionsFail(error, suggestionType)))
+  }
 }
 
 const fetchSuggestionsRequest = (suggestionType) => ({

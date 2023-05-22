@@ -11,19 +11,11 @@ class FetchLinkCardService < BaseService
     )
   }iox
 
-  def call(status)
-    @status = status
-    @url    = parse_urls
+  def call(text)
+    @text = text
+    @url = parse_urls
 
-    if @status.preview_cards.any?
-      if @url.nil?
-        detach_card
-        return
-      end
-      return if @status.preview_cards.first.url == @url
-    end
-
-    return if @url.nil?
+    return nil if @url.nil?
 
     @url = @url.to_s
 
@@ -37,7 +29,7 @@ class FetchLinkCardService < BaseService
       end
     end
 
-    attach_card if @card&.persisted?
+    return @card
   rescue HTTP::Error, Addressable::URI::InvalidURIError, GabSocial::HostValidationError, GabSocial::LengthValidationError => e
     Rails.logger.debug "Error fetching link #{@url}: #{e}"
     nil
@@ -59,44 +51,20 @@ class FetchLinkCardService < BaseService
     end
 
     if @html.nil?
-      detach_card
-      return
+      return nil
     end
 
     attempt_oembed || attempt_opengraph
   end
 
-  def attach_card
-    @status.preview_cards = [@card]
-    send_status_update_payload(@status)
-    Rails.cache.delete(@status)
-  end
-
-  def detach_card
-    @status.preview_cards = []
-    send_status_update_payload(@status)
-    Rails.cache.delete(@status)
-  end
-
   def parse_urls
-    urls = @status.text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
+    urls = @text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
     return urls.reject { |uri| bad_url?(uri) }.first
   end
 
   def bad_url?(uri)
     # Avoid invalid URLs
     uri.host.blank? || !%w(http https).include?(uri.scheme)
-  end
-
-  def mention_link?(a)
-    @status.mentions.any? do |mention|
-      a['href'] == TagManager.instance.url_for(mention.account)
-    end
-  end
-
-  def skip_link?(a)
-    # Avoid links for hashtags and mentions (microformats)
-    a['rel']&.include?('tag') || a['class']&.include?('u-url') || mention_link?(a)
   end
 
   def attempt_oembed
@@ -175,11 +143,5 @@ class FetchLinkCardService < BaseService
 
   def lock_options
     { redis: Redis.current, key: "fetch:#{@url}" }
-  end
-
-  def send_status_update_payload(status)
-    @payload = InlineRenderer.render(status, nil, :status)
-    @payload = Oj.dump(event: :update, payload: @payload)
-    Redis.current.publish("statuscard:#{status.account_id}", @payload)
   end
 end

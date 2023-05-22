@@ -1,4 +1,4 @@
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import {
   normalizeAccount,
   normalizeStatus,
@@ -109,11 +109,6 @@ export const importFetchedStatuses = (statuses) => (dispatch, getState) => {
   const reactions = []
 
   const processStatus = (status) => {
-    pushUnique(normalStatuses, normalizeStatus(status, getState().getIn(['statuses', status.id])))
-
-    if (isObject(status.account)) pushUnique(accounts, status.account)
-    if (isObject(status.group)) pushUnique(groups, status.group)
-    
     if (status.reblog && status.reblog.id) {
       processStatus(status.reblog)
     }
@@ -122,6 +117,11 @@ export const importFetchedStatuses = (statuses) => (dispatch, getState) => {
       processStatus(status.quote)
     }
 
+    pushUnique(normalStatuses, normalizeStatus(status, getState().getIn(['statuses', status.id])))
+
+    if (isObject(status.account)) pushUnique(accounts, status.account)
+    if (isObject(status.group)) pushUnique(groups, status.group)
+    
     if (status.poll) {
       if (status.poll.id === undefined) {
         fakePollId += 1

@@ -1,4 +1,4 @@
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import { showToast } from '../actions/toasts'
 import {
   TOAST_TYPE_ERROR,

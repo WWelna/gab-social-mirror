@@ -6,7 +6,7 @@ require 'feedjira'
 class RemoteRssFeedScanner
   include Sidekiq::Worker
 
-  sidekiq_options retry: 0
+  sidekiq_options lock: :until_executed, queue: 'pull', retry: 0
 
   def perform(id)
     if feed = RemoteRssFeed.find_by(id: id)
@@ -46,7 +46,7 @@ class RemoteRssFeedScanner
 
   def get_guid(feed)
     if feed.entries.count > 0
-        feed.entries.first.entry_id
+        feed.entries.first.entry_id || feed.entries.first.url
     end
   end
 

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { closePopover } from '../../actions/popover'
 import { timelineSort } from '../../store/timelines'
-import { homeSorts } from '../../constants'
+import { HOME_SORTS } from '../../constants'
 import PopoverLayout from './popover_layout'
 import List from '../list'
 
@@ -15,7 +15,7 @@ function HomeTimelineSortOptionsPopover({
   onSort,
   onClosePopover,
 }) {
-  const items = homeSorts.map(function({ key, title, subtitle }) {
+  const items = HOME_SORTS.map(function({ key, title, subtitle }) {
     return {
       hideArrow,
       isActive: sortByValue === key,

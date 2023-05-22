@@ -14,7 +14,7 @@ import {
   POPOVER_MARKETPLACE_LISTING_OPTIONS,
 } from '../../constants'
 import MarketplaceListingStatusTag from './marketplace_listing_status_tag'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import Text from '../text'
 import Button from '../button'
 import Icon from '../icon'

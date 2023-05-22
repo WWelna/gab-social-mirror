@@ -1,4 +1,4 @@
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 import api from '../api'
 import {
   me,
@@ -10,6 +10,8 @@ export const SAVE_USER_PROFILE_INFORMATION_FETCH_REQUEST = 'SAVE_USER_PROFILE_IN
 export const SAVE_USER_PROFILE_INFORMATION_FETCH_SUCCESS = 'SAVE_USER_PROFILE_INFORMATION_FETCH_SUCCESS'
 export const SAVE_USER_PROFILE_INFORMATION_FETCH_FAIL = 'SAVE_USER_PROFILE_INFORMATION_FETCH_FAIL'
 export const RESEND_USER_CONFIRMATION_EMAIL_SUCCESS = 'RESEND_USER_CONFIRMATION_EMAIL_SUCCESS'
+export const RESEND_USER_CONFIRMATION_EMAIL_FAIL = 'RESEND_USER_CONFIRMATION_EMAIL_FAIL'
+
 
 /**
  * 
@@ -60,8 +62,13 @@ const saveUserProfileInformationFail = (error) => ({
 export const resendUserConfirmationEmail = () => (dispatch, getState) => {
   if (!me || emailConfirmed) return
 
-  api(getState).post('/api/v1/accounts/resend_email_confirmation').then((response) => {
-    dispatch({ type: RESEND_USER_CONFIRMATION_EMAIL_SUCCESS })
-  })
-
+  api(getState).post('/api/v1/accounts/resend_email_confirmation')
+    .then((response) => {
+      dispatch({ type: RESEND_USER_CONFIRMATION_EMAIL_SUCCESS, showToast: true })
+    })
+    .catch(function(err) {
+      const { message, stack } = err;
+      console.error("error sending confirmation", message, stack)
+      dispatch({ type: RESEND_USER_CONFIRMATION_EMAIL_FAIL, showToast: true })
+    })
 }

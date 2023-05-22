@@ -39,14 +39,14 @@ class Api::V1::Lists::AccountsController < Api::BaseController
       @list.accounts << list_account
     end
 
-    render_empty_success
+    render json: @list, serializer: REST::ListMemberSerializer, member: true
   end
 
   def destroy
     # authorize either list owner of current account = params[:account_id]
     if @list.account_id === current_account.id || params[:account_id] === current_account.id
       ListAccount.where(list: @list, account_id: params[:account_id]).destroy_all
-      render_empty_success
+      render json: @list, serializer: REST::ListMemberSerializer, member: false
     else
       raise GabSocial::NotPermittedError, 'Unable to perform action.'
     end

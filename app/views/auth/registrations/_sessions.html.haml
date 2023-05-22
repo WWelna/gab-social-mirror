@@ -1,5 +1,13 @@
 %h4= t 'sessions.title'
-%p.muted-hint= t 'sessions.explanation'
+
+.simple_form
+  .fields-row{style: 'flex-wrap: wrap;'}
+    .fields-row__column.fields-group{style: 'text-align: left; align-self: flex-start;'}
+      %p.muted-hint= t 'sessions.explanation'
+    .fields-row__column.fields-group{style: 'text-align: right; align-self: flex-end;'}
+      %a#sessions_remove_all.table-action-link{href: 'javascript:void(0);'}
+        %i.fa.fa-times
+        %span Revoke all other sessions
 
 .table-wrapper
   %table.table.inline-table
@@ -27,3 +35,6 @@
           %td
             - if current_session.session_id != session.session_id
               = table_link_to 'times', t('sessions.revoke'), settings_session_path(session), method: :delete
+
+= simple_form_for(resource, as: resource_name, url: '/settings/sessions/all', html: { method: 'post', class: 'hidden-delete-all-form' }) do |f|
+  %div <!-- placeholder, just make it not error -->

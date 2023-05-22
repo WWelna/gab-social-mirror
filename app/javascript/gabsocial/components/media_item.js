@@ -174,7 +174,7 @@ class MediaItem extends ImmutablePureComponent {
                       }
                       {
                         !!badge &&
-                        <div className={[_s.d, _s.posAbs, _s.radiusSmall, _s.bgBlackOpaque, _s.px5, _s.py5, _s.mr5, _s.mt5, _s.mb5, _s.bottom0, _s.right0].join(' ')}>
+                        <div className={[_s.d, _s.posAbs, _s.radiusSmall, _s.bgBlackOpaquer, _s.px5, _s.py5, _s.mr5, _s.mt5, _s.mb5, _s.bottom0, _s.right0].join(' ')}>
                           <Text size='extraSmall' color='white'>
                             {badge}
                           </Text>

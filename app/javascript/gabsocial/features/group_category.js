@@ -38,7 +38,7 @@ class GroupCategory extends ImmutablePureComponent {
     const groups = groupIds.map((groupId, i) => (
       <GroupListItem
         isAddable
-        key={`group-collection-item-${i}`}
+        key={`group-collection-item-${groupId}`}
         id={groupId}
       />
     ))
@@ -58,7 +58,7 @@ class GroupCategory extends ImmutablePureComponent {
             onLoadMore={() => this.props.onFetchGroupsByCategory(sluggedCategory)}
             disableInfiniteScroll={false}
             isLoading={isLoading}
-            showLoading={false}
+            showLoading={isLoading && groups.size === 0}
             hasMore={hasMore}
             emptyMessage={emptyMessage}
           >

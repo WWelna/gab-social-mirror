@@ -29,6 +29,7 @@ class Pills extends React.PureComponent {
               prependIcon={tab.prependIcon}
               appendIcon={tab.appendIcon}
               isHidden={tab.isHidden}
+              disabled={tab.disabled}
             />
           ))
         }

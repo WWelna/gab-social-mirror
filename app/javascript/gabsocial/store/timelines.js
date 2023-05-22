@@ -1,11 +1,20 @@
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
-import get from 'lodash.get'
-import throttle from 'lodash.throttle'
+import get from 'lodash/get'
+import throttle from 'lodash/throttle'
 import Settings from '../settings'
 import { importFetchedStatuses } from '../actions/importer'
 import { fetchList } from '../actions/lists'
 import { STATUS_DELETE_SUCCESS, STATUS_DELETE_FAIL } from '../actions/statuses'
 import api, { getLinks } from '../api'
+import {
+  GROUP_TIMELINE_SORTING_TYPE_TOP,
+  PRO_POLLS_TIMELINE_SORTING_TYPE_MOST_VOTES,
+} from '../constants'
+
+import {
+  isBlockingGroupId,
+} from '../utils/local_storage_blocks_mutes'
+import { clearShortcutCountByTimelineId } from '../actions/shortcuts'
 
 const { isList } = ImmutableList
 const { isMap } = ImmutableMap
@@ -109,10 +118,11 @@ export const timelineSort = (timelineId, sortByValue) => ({
   sortByValue
 })
 
-export const timelineSortTop = (timelineId, sortByTopValue) => ({
+export const timelineSortTop = (timelineId, sortByTopValue, sortByValue = 'top') => ({
   type: TIMELINE_SORT_TOP,
   timelineId,
-  sortByTopValue
+  sortByTopValue,
+  sortByValue,
 })
 
 export const timelineRemoveStale = timelineId => ({
@@ -294,21 +304,21 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
         timeline = timeline.set('pins', existingPins)
       }
     }
-    if (sortByValue === 'top') {
+    if ([GROUP_TIMELINE_SORTING_TYPE_TOP, PRO_POLLS_TIMELINE_SORTING_TYPE_MOST_VOTES].indexOf(sortByValue) > -1) {
       timeline = timeline.set('sortByTopValue', 'today')
     } else {
       timeline = timeline.set('sortByTopValue', null)
     }
   }
 
-  function sortTop({ sortByTopValue }) {
+  function sortTop({ sortByValue = 'top', sortByTopValue }) {
     const currentSortTop = timeline.get('sortByTopValue')
     if (currentSortTop !== sortByTopValue) {
       const existingPins = timeline.get('pins')
       // the data is cleared if the sort changes
       timeline = createTimeline()
       timeline = timeline
-        .set('sortByValue', 'top')
+        .set('sortByValue', sortByValue)
         .set('sortByTopValue', sortByTopValue)
       if (existingPins.size > 0) {
         timeline = timeline.set('pins', existingPins)
@@ -483,6 +493,8 @@ export const timelinesMiddleware =
         }
 
         dispatch(timelineLoading(timelineId))
+        // if has shortcut for this timeline and if shortcut has unread count
+        dispatch(clearShortcutCountByTimelineId(timelineId))
 
         const defaultSort = sorts.find(item => item.isDefault) || {}
         const defaultTopSort = topSorts.find(item => item.isDefault) || {}
@@ -493,7 +505,7 @@ export const timelinesMiddleware =
           combined.sortByValue || settings.get('sortByValue') || defaultSort.key
 
         let sortByTopValue
-        if (sortByValue === 'top') {
+        if ([GROUP_TIMELINE_SORTING_TYPE_TOP, PRO_POLLS_TIMELINE_SORTING_TYPE_MOST_VOTES].indexOf(sortByValue) > -1) {
           sortByTopValue =
             combined.sortByTopValue ||
             settings.get('sortByTopValue') ||
@@ -544,7 +556,7 @@ export const timelinesMiddleware =
           sortByTopValue !== undefined &&
           sortByTopValue !== timeline.get('sortByTopValue')
         ) {
-          dispatch(timelineSortTop(timelineId, sortByTopValue))
+          dispatch(timelineSortTop(timelineId, sortByTopValue, sortByValue))
         }
 
         let pathname
@@ -594,7 +606,18 @@ export const timelinesMiddleware =
         api(getState)
           .get(pathname, { params })
           .then(function (res) {
-            const { data: statuses } = res
+            const { data: statusesTemp } = res
+            const statuses = statusesTemp.filter(status => {
+              if (timelineId !== 'home' && !timelineId.startsWith('group_collection:')) {
+                return true
+              }
+              if (!status.group || !status.group.id) return true
+              const groupId = status.group.id
+              if (groupId === undefined) {
+                return true
+              }
+              return !isBlockingGroupId(groupId)
+            })
             const ids = statuses.map(({ id }) => id)
             const prevUri = getLinkUri(res, 'prev') || combined.prevUri
             const hasPrev = hasCharacters(prevUri)
@@ -612,14 +635,15 @@ export const timelinesMiddleware =
               // loading new items at the bottom
               const nextUri = getLinkUri(res, 'next')
 
-              let a = new Set(ids)
-              let b = new Set(timeline.get('items'))
-              let diffIds = new Set([...a].filter(x => !b.has(x)))
-
-              const isIdenticalSet = diffIds.size === 0 ? true : false
+              /**
+               * Does the response have all items that are already in our list?
+               */
+              const alreadyHaveThese = ids.every(
+                id => timeline.get('items').includes(id)
+              )
 
               // is there a next page? items not blank
-              const hasNext = hasItems(ids) && !isIdenticalSet
+              const hasNext = hasItems(ids) && !alreadyHaveThese
 
               page += 1
               const configOpts = { nextUri, hasNext, page }

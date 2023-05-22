@@ -7,7 +7,7 @@ class ChatMessageRelationshipsPresenter
     chat_messages = chat_messages.compact
     chat_message_ids = chat_messages.map(&:id).uniq.compact
 
-    if current_account_id.nil?
+    if current_account_id.nil? || chat_messages.empty?
       @blocked_by_map = {}
     else
       chat_message_account_ids = chat_messages.map(&:from_account_id).compact.uniq.reject { |account_id| account_id.to_s == current_account_id.to_s }

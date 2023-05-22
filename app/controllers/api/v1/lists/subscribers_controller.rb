@@ -18,16 +18,26 @@ class Api::V1::Lists::SubscribersController < Api::BaseController
     if Block.where(account_id: params[:account_id], target_account: current_account).exists?
       raise GabSocial::NotPermittedError, 'Cannot add to list. That account has you blocked.'
     else
+      cur_subs = @list.subscriber_count
       ApplicationRecord.transaction do
         @list.subscribers << current_account
       end
-      render_empty_success
+      render json: {
+        id: @list.id.to_s,
+        subscriber_count: cur_subs + 1,
+        subscriber: true
+      }
     end
   end
 
   def destroy
+    cur_subs = @list.subscriber_count
     ListSubscriber.where(list: @list, account: current_account).destroy_all
-    render_empty_success
+    render json: {
+      id: @list.id.to_s,
+      subscriber_count: cur_subs - 1,
+      subscriber: false
+    }
   end
 
   private

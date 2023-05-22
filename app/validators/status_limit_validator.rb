@@ -17,19 +17,19 @@ class StatusLimitValidator < ActiveModel::Validator
   private
 
   def daily_limit_reached?(account)
-    Status.where(account: account).where('created_at > ?', 1.day.ago).count >= MAX_STATUSES_DAILY_LIMIT
+    Status.where(account: account).where('statuses.created_at > ?', 1.day.ago).count >= MAX_STATUSES_DAILY_LIMIT
   end
 
   def hourly_limit_reached?(account)
-    Status.where(account: account).where('created_at > ?', 1.hour.ago).count >= MAX_STATUSES_HOURLY_LIMIT
+    Status.where(account: account).where('statuses.created_at > ?', 1.hour.ago).count >= MAX_STATUSES_HOURLY_LIMIT
   end
 
   def half_hour_limit_reached?(account)
-    Status.where(account: account).where('created_at > ?', 30.minutes.ago).count >= MAX_STATUSES_HALF_HOUR_LIMIT
+    Status.where(account: account).where('statuses.created_at > ?', 30.minutes.ago).count >= MAX_STATUSES_HALF_HOUR_LIMIT
   end
 
   def minute_by_minute_limit_reached?(account)
-    Status.where(account: account).where('created_at > ?', 1.minute.ago).count >= MAX_STATUSES_MINUTE_LIMIT
+    Status.where(account: account).where('statuses.created_at > ?', 1.minute.ago).count >= MAX_STATUSES_MINUTE_LIMIT
   end
 
 end

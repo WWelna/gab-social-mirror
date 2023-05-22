@@ -6,7 +6,7 @@ class REST::AccountSerializer < ActiveModel::Serializer
   attributes :id, :username, :acct, :display_name, :locked, :bot, :created_at,
              :note, :url, :avatar, :avatar_static, :avatar_small, :avatar_static_small, :header, :header_static, :is_spam,
              :followers_count, :following_count, :statuses_count, :is_pro, :is_verified,
-             :is_donor, :is_investor, :show_pro_life
+             :is_donor, :is_investor, :show_pro_life, :is_parody
 
   has_one :moved_to_account, key: :moved, serializer: REST::AccountSerializer, if: :moved_and_not_nested?
   has_many :emojis, serializer: REST::CustomEmojiSerializer

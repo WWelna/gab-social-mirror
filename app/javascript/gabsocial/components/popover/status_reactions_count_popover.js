@@ -7,13 +7,21 @@ import { shortNumberFormat } from '../../utils/numbers'
 import PopoverLayout from './popover_layout'
 import ReactionTypeImage from '../reaction_type_image'
 import Text from '../text'
+import { fetchStatusReactions } from '../../actions/statuses'
 
 class StatusReactionsCountPopover extends ImmutablePureComponent {
 
+  componentDidMount() {
+    const { statusId } = this.props
+    if (statusId) {
+      this.props.onFetchStatusReactions(statusId)
+    }
+  }
+  
   render() {
     const { status, statusId, isXS } = this.props
     
-    const reactionsMap = status.get('reactions_counts')
+    let reactionsMap = status.get('reactions_counts')
     const selectedReactionTypeId = status.get('reaction')
     const totalCount = status.get('favourites_count')
     const titleReaction = `reaction${totalCount === 1 ? '' : 's'}`
@@ -56,6 +64,12 @@ class StatusReactionsCountPopover extends ImmutablePureComponent {
 
 }
 
+const mapDispatchToProps = (dispatch) => ({
+  onFetchStatusReactions(statusId) {
+    dispatch(fetchStatusReactions(statusId))
+  },
+})
+
 const mapStateToProps = (state, { statusId }) => ({
   status: state.getIn(['statuses', statusId]),
 })
@@ -66,4 +80,4 @@ StatusReactionsCountPopover.propTypes = {
   isXS: PropTypes.bool,
 }
 
-export default connect(mapStateToProps)(StatusReactionsCountPopover)
+export default connect(mapStateToProps, mapDispatchToProps)(StatusReactionsCountPopover)

@@ -4,6 +4,7 @@ import {
   SHORTCUTS_FETCH_FAIL,
   SHORTCUTS_ADD_SUCCESS,
   SHORTCUTS_REMOVE_SUCCESS,
+  SHORTCUTS_CLEAR_COUNT_REQUEST,
 } from '../actions/shortcuts'
 import { importFetchedAccount } from '../actions/importer'
 import { importGroup } from '../actions/groups'
@@ -25,9 +26,10 @@ const normalizeShortcut = (shortcut) => {
       id: shortcut.id,
       shortcut_type: 'account',
       shortcut_id: shortcut.shortcut_id,
+      unread_count: shortcut.unread_count || 0,
       title: shortcut.shortcut.acct,
       image: shortcut.shortcut.avatar_static_small,
-      to: `/${shortcut.shortcut.acct}`,
+      to: `/${shortcut.shortcut.acct}?nopins=1`,
     }
   } else if (shortcut.shortcut_type === 'group') {
     importGroup(shortcut.shortcut)
@@ -35,6 +37,7 @@ const normalizeShortcut = (shortcut) => {
       id: shortcut.id,
       shortcut_type: 'group',
       shortcut_id: shortcut.shortcut_id,
+      unread_count: shortcut.unread_count || 0,
       title: shortcut.shortcut.title,
       image: shortcut.shortcut.cover_image_url,
       to: `/groups/${shortcut.shortcut.id}`,
@@ -45,6 +48,7 @@ const normalizeShortcut = (shortcut) => {
       id: shortcut.id,
       shortcut_type: 'list',
       shortcut_id: shortcut.shortcut_id,
+      unread_count: shortcut.unread_count || 0,
       title: shortcut.shortcut.title,
       icon: 'list',
       to: `/feeds/${shortcut.shortcut.id}`,
@@ -55,6 +59,7 @@ const normalizeShortcut = (shortcut) => {
       id: shortcut.id,
       shortcut_type: 'tag',
       shortcut_id: shortcut.shortcut_id,
+      unread_count: shortcut.unread_count || 0,
       title: shortcut.shortcut.name,
       to: `/tags/${shortcut.shortcut.name}`,
     }
@@ -96,7 +101,15 @@ export default function shortcutsReducer(state = initialState, action) {
       return state.update('items', list => list.filterNot((item) => {
         return `${item.get('id')}` === `${action.shortcutId}`
       }))
+    case SHORTCUTS_CLEAR_COUNT_REQUEST:
+      const shortcutIndex = state.get('items').findLastIndex((item) => item.get('id') === action.shortcutId)
+      if (shortcutIndex < 0) return state
+      state = state.updateIn(['items', shortcutIndex], (s) => {
+        return s.set('unread_count', 0)
+      })
+      return state
     default:
       return state
   }
 }
+

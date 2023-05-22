@@ -18,6 +18,9 @@
              
       %div{ :style => "margin-top: 20px; line-height: 2rem; font-family: system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;" }
         %h1= yield :content
+
+        %h3 For support, please email <a href="mailto:support@gab.com">support@gab.com</a>
       
-      %a{:href=>"https://gab.com", :style=>"display:block;margin-top:30px;width:150px;padding:10px;height30px;text-decoration:none;cursor:pointer;font-family:system-ui, -apple-system, BlinkMacSystemFont, Roboto, Ubuntu;font-weight:600;border-radius:9999px;background-color:transparent;color:#21CF7A;border:2px solid #21CF7A;;text-align:center;" } Go Home
+      <a href="/home" style="display:inline;margin-top:30px;width:150px;padding:10px;height30px;text-decoration:none;cursor:pointer;font-family:system-ui, -apple-system, BlinkMacSystemFont, Roboto, Ubuntu;font-weight:600;border-radius:9999px;background-color:transparent;color:#21CF7A;border:2px solid #21CF7A;;text-align:center;">Go Home</a>
+      <a href="/auth/sign_out" data-method="delete" style="display:inline;margin-top:30px;width:150px;padding:10px;height30px;text-decoration:none;cursor:pointer;font-family:system-ui, -apple-system, BlinkMacSystemFont, Roboto, Ubuntu;font-weight:600;border-radius:9999px;background-color:transparent;color:#21CF7A;border:2px solid #21CF7A;;text-align:center;" rel="nofollow">Log Out</a>
 

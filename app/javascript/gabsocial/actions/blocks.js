@@ -1,13 +1,14 @@
 import api, { getLinks } from '../api'
 import { fetchRelationships } from './accounts'
 import { importFetchedAccounts } from './importer'
-import { me } from '../initial_state'
+import { me, blocking, blockedBy, muting, blockingGroups } from '../initial_state'
 import {
   setIsBlockingIds,
   setIsMutingIds,
   setIsBlockedByIds,
+  setIsBlockingGroupIds,
 } from '../utils/local_storage_blocks_mutes'
-import isObject from 'lodash.isobject'
+import isObject from 'lodash/isObject'
 
 export const BLOCKS_FETCH_REQUEST = 'BLOCKS_FETCH_REQUEST'
 export const BLOCKS_FETCH_SUCCESS = 'BLOCKS_FETCH_SUCCESS'
@@ -95,11 +96,8 @@ export const expandBlocksFail = (error) => ({
 export const fetchBlocksAndMutes = (dispatch, getState) => {
   if (!me) return
 
-  api(getState).get('/api/v1/blocks_and_mutes').then(({ data }) => {
-    if (isObject(data)) {
-      if (Array.isArray(data.bb)) setIsBlockedByIds(data.bb)
-      if (Array.isArray(data.b)) setIsBlockingIds(data.b)
-      if (Array.isArray(data.m)) setIsMutingIds(data.m)
-    }
-  })
+  if (Array.isArray(blockedBy)) setIsBlockedByIds(blockedBy)
+  if (Array.isArray(blocking)) setIsBlockingIds(blocking)
+  if (Array.isArray(muting)) setIsMutingIds(muting)
+  if (Array.isArray(blockingGroups)) setIsBlockingGroupIds(blockingGroups)
 }

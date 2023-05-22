@@ -1,0 +1,6 @@
+%tr
+  %td= status_context.name
+  %td= status_context.index.to_s
+  %td= status_context.is_enabled ? 'Y' : 'N'
+  %td
+    = table_link_to 'pencil', 'Edit', admin_status_context_path(status_context)

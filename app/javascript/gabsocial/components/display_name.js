@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { me } from '../initial_state'
 import {
   CX,
@@ -160,7 +160,7 @@ class DisplayName extends ImmutablePureComponent {
                 <Text
                   size='extraSmall'
                   isBadge
-                  color='tertiary'
+                  color='secondary'
                   className={[_s.bgSecondary, _s.py2].join(' ')}
                 >
                   {relationshipLabel}

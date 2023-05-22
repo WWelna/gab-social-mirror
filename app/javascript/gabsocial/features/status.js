@@ -18,7 +18,7 @@ import PageTitle from './ui/util/page_title'
 
 const { isMap } = ImmutableMap
 
-class Status extends ImmutablePureComponent {
+class Status extends React.PureComponent {
 
   componentDidMount() {
     const statusId = this.props.id || this.props.params.statusId
@@ -32,7 +32,7 @@ class Status extends ImmutablePureComponent {
 
   componentDidUpdate(prevProps) {
     const { status, account } = this.props
-    if (prevProps.status !== status && !!status) {
+    if (prevProps.status !== this.props.status && !!status) {
       this.shouldFetchStatusParts(status)
     }
     if (prevProps.statusId !== this.props.statusId && !this.props.status) {
@@ -56,11 +56,14 @@ class Status extends ImmutablePureComponent {
     if (!status) return
 
     const isComment = !!status.get('in_reply_to_account_id')
+    const isQuote = !!status.get('quote_of_id')
     const hasComments = status.get('replies_count') > 0 || status.get('direct_replies_count') > 0
+    const isOrphaned = status.get('is_reply') && !status.get('in_reply_to_id')
 
-    if (isComment) {
+    if (!isOrphaned && (isComment || isQuote)) {
       this.props.onFetchContext(status.get('id'))
-    } else if (!isComment && hasComments) {
+    } 
+    if (isOrphaned || (!isComment && hasComments)) {
       this.props.onFetchComments(status.get('id'))
     }
   }
@@ -73,7 +76,7 @@ class Status extends ImmutablePureComponent {
     }
 
     const { documentTitle } = this
-    const shouldShowGabAdStatus = status.get('direct_replies_count') < 3
+    const shouldShowGabAdStatus = status.get('direct_replies_count') < 4
 
     return (
       <React.Fragment>
@@ -104,7 +107,9 @@ const mapStateToProps = (state, props) => {
 const mapDispatchToProps = (dispatch) => ({
   onFetchStatus: (id) => dispatch(fetchStatus(id)),
   onFetchContext: (id) => dispatch(fetchContext(id)),
-  onFetchComments: (id) => dispatch(fetchComments(id)),
+  onFetchComments: (id) => {
+    dispatch(fetchComments(id))
+  },
 })
 
 Status.propTypes = {
@@ -113,7 +118,7 @@ Status.propTypes = {
   onFetchComments: PropTypes.func.isRequired,
   params: PropTypes.object,
   status: ImmutablePropTypes.map,
-  account: ImmutablePropTypes.map,  
+  account: ImmutablePropTypes.map,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Status)

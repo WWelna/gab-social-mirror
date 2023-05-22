@@ -30,7 +30,7 @@ class VerifiedSuggestions
           .limit(MAX_ITEMS)
           .pluck(:id)
 
-        set(account_ids) if account_ids.nil? || account_ids.empty?
+        set(account_ids) unless account_ids.nil? || account_ids.empty?
       else
         account_ids = JSON.parse(account_ids)
       end

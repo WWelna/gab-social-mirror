@@ -34,10 +34,9 @@ class LoggedOutSidebar extends React.PureComponent {
         <SidebarSectionItem title='About' icon='list' to='/about' />
         
         <SidebarSectionTitle>{intl.formatMessage(messages.explore)}</SidebarSectionTitle>
-        <SidebarSectionItem title='Apps' icon='apps' href='https://apps.gab.com' />
         <SidebarSectionItem title='Shop' icon='shop' href='https://shop.dissenter.com' />
+        <SidebarSectionItem title='Gab TV' icon='tv' href='https://tv.gab.com' />
         <SidebarSectionItem title='Trends' icon='trends' href='https://trends.gab.com' />
-        <SidebarSectionItem title='Dissenter' icon='dissenter' href='https://dissenter.com' />
       </SidebarLayout>
     )
   }

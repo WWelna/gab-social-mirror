@@ -77,7 +77,7 @@ class SignUpLogInPanel extends React.PureComponent {
 
 const messages = defineMessages({
   title: { id: 'signup_panel.welcome_title', defaultMessage: 'Welcome to Gab.com' },
-  subtitle: { id: 'signup_panel.welcome_subtitle', defaultMessage: 'A social network that champions free speech, individual liberty and the free flow of information online. All are welcome.' },
+  subtitle: { id: 'signup_panel.welcome_subtitle', defaultMessage: 'Gab is the home of free speech and the parallel economy. Join our community and speak freely today!' },
   register: { id: 'account.register', defaultMessage: 'Sign up' },
   login: { id: 'account.login', defaultMessage: 'Log in' },
 })

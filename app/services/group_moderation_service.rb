@@ -25,7 +25,7 @@ class GroupModerationService # < BaseService
       .where('created_at > ?', 1.week.ago)
       .count
     recent_group_posts = account.statuses.where.not(group_id: nil)
-      .where('id > ?', GabSocial::Snowflake.id_at(1.hour.ago))
+      .where('statuses.id > ?', GabSocial::Snowflake.id_at(1.hour.ago))
       .count
     likes = Favourite.where(account_id: account_id).count
 

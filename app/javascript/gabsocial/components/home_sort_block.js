@@ -4,14 +4,14 @@ import { connect } from 'react-redux'
 import { openPopover } from '../actions/popover'
 import {
   POPOVER_HOME_TIMELINE_SORT_OPTIONS,
-  homeSorts,
+  HOME_SORTS,
 } from '../constants'
 import SortBlock from '../components/sort_block'
 
 const timelineId = 'home'
 
 function HomeSortBlock({ sortByValue, onOpenSortingOptions }) {
-  const sort = homeSorts.find(item => item.key === sortByValue)
+  const sort = HOME_SORTS.find(item => item.key === sortByValue)
   const sortValueTitle = sort && sort.title
   return (
     <SortBlock

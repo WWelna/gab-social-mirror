@@ -7,6 +7,17 @@ class PostStatusService < BaseService
 
   MIN_SCHEDULE_OFFSET = 5.minutes.freeze
 
+  # copied from FetchLinkCardService
+  URL_PATTERN = %r{
+    (                                                                                                 #   $1 URL
+      (https?:\/\/)                                                                                   #   $2 Protocol (required)
+      (#{Twitter::Regex[:valid_domain]})                                                              #   $3 Domain(s)
+      (?::(#{Twitter::Regex[:valid_port_number]}))?                                                   #   $4 Port number (optional)
+      (/#{Twitter::Regex[:valid_url_path]}*)?                                                         #   $5 URL Path and anchor
+      (\?#{Twitter::Regex[:valid_url_query_chars]}*#{Twitter::Regex[:valid_url_query_ending_chars]})? #   $6 Query String
+    )
+  }iox
+
   # Post a text status update, fetch and notify remote users mentioned
   # @param [Account] account Account from which to post
   # @param [Hash] options
@@ -27,8 +38,8 @@ class PostStatusService < BaseService
   def call(account, options = {})
     @account     = account
     @options     = options
-    @text        = @options[:text] || ''
-    @markdown    = @options[:markdown]
+    @text        = Nokogiri::HTML(@options[:text] || '').text
+    @markdown    = Nokogiri::HTML(@options[:markdown] || '').text
     @in_reply_to = @options[:thread]
     @auto_join_group = @options[:autoJoinGroup] || false
     @status_hash = Digest::MD5.new << @text unless @text.blank?
@@ -37,6 +48,7 @@ class PostStatusService < BaseService
 
     set_linked_entities
     set_group
+    set_status_context
 
     validate_blocked!(@in_reply_to)
     validate_user_confirmation!
@@ -58,13 +70,21 @@ class PostStatusService < BaseService
       process_status!
       postprocess_status!
       bump_potential_friendship!
-      potentially_reset_parent_cache
     end
 
     @status
   end
 
   private
+
+  def parse_urls
+    urls = @text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
+    return urls.reject { |uri| bad_url?(uri) }.first
+  end
+
+  def bad_url?(uri)
+    uri.host.blank? || !%w(http https).include?(uri.scheme)
+  end
 
   def set_linked_entities
     if @options[:quote_of_id].nil? && @in_reply_to.nil?
@@ -99,6 +119,13 @@ class PostStatusService < BaseService
 
     # Write `group_id` back into `@options`, since scheduled statuses uses it
     @options[:group_id] = @group&.id
+  end
+
+  def set_status_context
+    if !@options[:status_context_id].nil?
+      # : todo : if context id is associated with group, verify here
+      @status_context = StatusContext.is_enabled.find(@options[:status_context_id])
+    end
   end
 
   def preprocess_attributes!
@@ -192,10 +219,40 @@ class PostStatusService < BaseService
   end
 
   def postprocess_status!
-    LinkCrawlWorker.perform_async(@status.id)
+    if !parse_urls.nil?
+      LinkCrawlWorker.perform_async(@status.id)
+    end
+
     # DistributionWorker.perform_async(@status.id)
     ExpiringStatusWorker.perform_at(@status.expires_at, @status.id) if @status.expires_at && @account.is_pro
     PollExpirationNotifyWorker.perform_at(@status.poll.expires_at, @status.poll.id) if @status.poll
+    
+    shortcut_exists = false
+    shortcut_exists ||= Rails.cache.fetch("shortcut:acct:#{@account.id}", expires_in: 30.minutes) do
+      Shortcut.where(shortcut_type: 'account', shortcut_id: @account.id).exists?
+    end
+    if !@group.nil? && !shortcut_exists
+      shortcut_exists ||= Rails.cache.fetch("shortcut:group:#{@group.id}", expires_in: 30.minutes) do
+        Shortcut.where(shortcut_type: 'group', shortcut_id: @group.id).exists?
+      end
+    end
+    if @status.in_reply_to_id.nil? && shortcut_exists
+      ShortcutStatusCountIncrementWorker.perform_async(@status.id)
+    end
+    # publish only top level statuses to altstream
+    parent_status = @status.in_reply_to_id.nil? ? nil : Status.find(@status.in_reply_to_id)
+    if parent_status.nil?
+      payload = InlineRenderer.render(@status, nil, :status)
+      if !@group.nil?
+        Redis.current.publish("altstream:main", Oj.dump(event: :post_group, payload: payload))
+      end
+      Redis.current.publish("altstream:main", Oj.dump(event: :post_status, payload: payload))
+    end
+    # if post is a direct reply to a recent status, publish the updated parent stats to altstream
+    if !parent_status.nil? && parent_status.created_at > 8.hours.ago && parent_status.in_reply_to_id.nil?
+      payload = InlineRenderer.render(parent_status, nil, :status_stat)
+      Redis.current.publish("altstream:main", Oj.dump(event: :status_stat, payload: payload))
+    end
   end
 
   def process_group_moderation!
@@ -215,26 +272,6 @@ class PostStatusService < BaseService
 
     if @group_spam_score > 5
       @moderated = true
-    end
-  end
-
-  def postprocess_status!
-    LinkCrawlWorker.perform_async(@status.id)
-    # DistributionWorker.perform_async(@status.id)
-    ExpiringStatusWorker.perform_at(@status.expires_at, @status.id) if @status.expires_at
-    PollExpirationNotifyWorker.perform_at(@status.poll.expires_at, @status.poll.id) if @status.poll
-  end
-
-  def potentially_reset_parent_cache
-    if !@status.quote_of_id.nil?
-      Rails.cache.delete("reactions_counts:#{@status.quote_of_id}")
-      Rails.cache.delete("statuses/#{@status.quote_of_id}")
-    elsif !@status.in_reply_to_id.nil?
-      Rails.cache.delete("reactions_counts:#{@status.in_reply_to_id}")
-      Rails.cache.delete("statuses/#{@status.in_reply_to_id}")
-    elsif !@status.reblog_of_id.nil?
-      Rails.cache.delete("reactions_counts:#{@status.reblog_of_id}")
-      Rails.cache.delete("statuses/#{@status.reblog_of_id}")
     end
   end
 
@@ -259,23 +296,32 @@ class PostStatusService < BaseService
 
   def validate_blocked!(reply_status)
     return unless reply_status
+    if reply_status.thread
+      return validate_blocked!(reply_status.thread)
+    end
     reply_account = reply_status.account
-    return validate_blocked!(reply_status.thread) unless reply_account.blocking?(@account)
-
-    raise GabSocial::NotPermittedError, "Cannot reply. @#{reply_account.username} has you blocked and you are trying to post undearneath one of their posts."
+    if reply_account.blocking?(@account) 
+      raise GabSocial::NotPermittedError, "@#{reply_account.username} has you blocked and you are trying to post under their post."
+    elsif @account.blocking?(reply_account)
+      raise GabSocial::NotPermittedError, "You have @#{reply_account.username} blocked and are trying to post under their post."
+    end
   end
 
   def validate_blocked_quote!
     quote = @options[:quote]
     if quote and quote.account and quote.account.blocking?(@account)
-      raise GabSocial::NotPermittedError, "Cannot quote. @#{quote.account.username} has you blocked and you are trying to quote one of their posts."
+      raise GabSocial::NotPermittedError, "@#{quote.account.username} has you blocked and you are trying to quote their post."
+    end
+    if quote and quote.account and @account.blocking?(quote.account)
+      raise GabSocial::NotPermittedError, "You have @#{quote.account.username} blocked and are trying to quote their post."
     end
   end
 
   def validate_media!
+    max_media = 8
     return if @options[:media_ids].blank? || !@options[:media_ids].is_a?(Enumerable)
 
-    raise GabSocial::ValidationError, I18n.t('media_attachments.validations.too_many') if @options[:media_ids].size > 4
+    raise GabSocial::ValidationError, "Cannot attach more than #{max_media} files" if @options[:media_ids].size > max_media
 
     # Check Image Blocks for each media fingerprint md5
     @options[:media_ids].each do |media_id|
@@ -285,10 +331,7 @@ class PostStatusService < BaseService
       end
     end
 
-    @media = @account.media_attachments.where(status_id: nil).where(id: @options[:media_ids].take(4).map(&:to_i))
-
-    hasVideoOrGif = @media.find(&:video?) || @media.find(&:gifv?)
-    raise GabSocial::ValidationError, I18n.t('media_attachments.validations.images_and_video') if @media.size > 1 && hasVideoOrGif
+    @media = @account.media_attachments.where(status_id: nil).where(id: @options[:media_ids].take(max_media).map(&:to_i))
   end
 
   def validate_user_confirmation!
@@ -366,11 +409,16 @@ class PostStatusService < BaseService
   end
 
   def status_attributes
+    english = @account.user&.locale == 'en'
+    lang = language_from_option(@options[:language])
+    lang ||= english ? 'en' : nil
+    lang ||= @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account)
     {
       text: @text,
       markdown: @markdown,
       expires_at: @expires_at,
       group: @group,
+      status_context: @status_context || nil,
       quote: @options[:quote],
       media_attachments: @media || [],
       thread: @in_reply_to,
@@ -378,7 +426,7 @@ class PostStatusService < BaseService
       sensitive: (@options[:sensitive].nil? ? @account.user&.setting_default_sensitive : @options[:sensitive]) || @options[:spoiler_text].present?,
       spoiler_text: @options[:spoiler_text] || '',
       visibility: @visibility,
-      language: language_from_option(@options[:language]) || @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account),
+      language: lang,
       application: @options[:application]
     }.compact
   end
@@ -408,6 +456,10 @@ class PostStatusService < BaseService
 
   # Store a subset of the content similar to scheduled but for group moderation
   def group_moderation_status_content
+    english = @account.user&.locale == 'en'
+    lang = language_from_option(@options[:language])
+    lang ||= english ? 'en' : nil
+    lang ||= @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account)
     {
       quote_of_id: (@options[:quote] && @options[:quote][:id]),
       media_ids: @options[:media_ids],
@@ -416,7 +468,7 @@ class PostStatusService < BaseService
       spoiler_text: @options[:spoiler_text] || '',
       visibility: @visibility,
       poll: @options[:poll],
-      language: language_from_option(@options[:language]) || @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account)
+      language: lang,
     }.compact
   end
 end

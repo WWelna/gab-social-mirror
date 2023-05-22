@@ -10,6 +10,9 @@ class BlockService < BaseService
 
     block = account.block!(target_account)
 
+    # publish all block events to altstream
+    Redis.current.publish("altstream:main", Oj.dump(event: :block, payload: { account_id: account.id.to_s, target_account_id: target_account.id.to_s }))
+
     BlockWorker.perform_async(account.id, target_account.id)
     block
   end

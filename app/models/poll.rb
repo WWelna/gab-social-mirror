@@ -32,8 +32,12 @@ class Poll < ApplicationRecord
   validates :expires_at, presence: true, if: :local?
   validates_with PollValidator, on: :create, if: :local?
 
+  scope :recent, -> { reorder(id: :desc) }
   scope :attached, -> { where.not(status_id: nil) }
   scope :unattached, -> { where(status_id: nil) }
+  scope :most_voted, -> { reorder(votes_count: :desc) }
+  scope :active, -> { where.not(expires_at: nil).where('expires_at >= ?', Time.now.utc) }
+  scope :expired, -> { where.not(expires_at: nil).where('expires_at < ?', Time.now.utc) }
 
   before_validation :prepare_options
   before_validation :prepare_votes_count

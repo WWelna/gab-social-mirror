@@ -5,8 +5,8 @@ import { openPopover } from '../actions/popover'
 import {
   POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS,
   POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS,
-  exploreSorts,
-  exploreSortTops,
+  EXPLORE_SORTS,
+  EXPLORE_SORT_TOPS,
 } from '../constants'
 import SortBlock from '../components/sort_block'
 
@@ -18,8 +18,8 @@ function ExploreSortBlock ({
   onOpenSortingOptions,
   onOpenSortingTopOptions,
 }) {
-  const sort = exploreSorts.find(item => item.key === sortByValue)
-  const top = exploreSortTops.find(item => item.key === sortByTopValue)
+  const sort = EXPLORE_SORTS.find(item => item.key === sortByValue)
+  const top = EXPLORE_SORT_TOPS.find(item => item.key === sortByTopValue)
   const sortValueTitle = sort && sort.title
   const sortValueTopTitle = top && top.title
   return (
@@ -32,21 +32,22 @@ function ExploreSortBlock ({
   )
 }
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state, { timelineId }) => ({
   sortByValue: state.getIn(['timelines', timelineId, 'sortByValue']),
   sortByTopValue: state.getIn(['timelines', timelineId, 'sortByTopValue']),
 })
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch, { timelineId }) => ({
   onOpenSortingOptions(targetRef) {
-    dispatch(openPopover(POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS, { targetRef }))
+    dispatch(openPopover(POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS, { targetRef, timelineId }))
   },
   onOpenSortingTopOptions(targetRef) {
-    dispatch(openPopover(POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS, { targetRef }))
+    dispatch(openPopover(POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS, { targetRef, timelineId }))
   },
 })
 
 ExploreSortBlock.propTypes = {
+  timelineId: PropTypes.string,
   sortByValue: PropTypes.string,
   sortByTopValue: PropTypes.string,
   onOpenSortingOptions: PropTypes.func,

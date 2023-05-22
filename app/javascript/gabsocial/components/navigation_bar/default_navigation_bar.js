@@ -51,6 +51,9 @@ class DefaultNavigationBar extends ImmutablePureComponent {
     if (emailConfirmationResends % 2 === 0 && emailConfirmationResends > 0) {
       this.props.onOpenEmailModal()
     }
+    if (emailConfirmationResends > 10) {
+      return console.warn("over the confirmation send limit")
+    }
     this.props.onResendUserConfirmationEmail()
   }
 
@@ -202,7 +205,7 @@ class DefaultNavigationBar extends ImmutablePureComponent {
                     <NavigationBarButton title='Marketplace' icon='shop' to='/marketplace' />
                     <NavigationBarButton title='News' icon='news' to='/news' />
                     <NavigationBarButton title='Groups' icon='group' to={groupsTo} onClick={groupsClick} />
-                    <NavigationBarButton title='TV' icon='tv' href='https://tv.gab.com' />
+                    <NavigationBarButton title='Videos' icon='tv' to='/timeline/videos' />
 
                     <div className={[_s.d, _s.h20PX, _s.w1PX, _s.mr10, _s.ml10, _s.bgNavigationBlend].join(' ')} />
 

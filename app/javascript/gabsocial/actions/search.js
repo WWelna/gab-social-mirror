@@ -1,5 +1,5 @@
 import api, { getLinks } from '../api'
-import noop from 'lodash.noop'
+import noop from 'lodash/noop'
 import { fetchRelationships } from './accounts';
 import { fetchGroupsSuccess, fetchGroupRelationships } from './groups'
 import {
@@ -8,7 +8,6 @@ import {
   importFetchedLists,
 } from './importer';
 import { importLinkCards } from './links'
-import { loggedOut } from '../initial_state'
 
 export const SEARCH_CHANGE = 'SEARCH_CHANGE';
 export const SEARCH_CLEAR  = 'SEARCH_CLEAR';
@@ -70,10 +69,6 @@ export const submitSearch = () => (dispatch, getState) => {
   const isLoading = state.getIn(['search', 'isLoading'])
   const tab = state.getIn(['search', 'tab']) || 'account'
   const onlyVerified = state.getIn(['search', 'filter', 'onlyVerified'])
-
-  if (loggedOut || value.trim().length === 0) {
-    return console.warn("can't search, user logged out or search blank")
-  }
 
   dispatch(fetchSearchRequest(tab))
 

@@ -176,11 +176,13 @@ const makeMapStateToProps = () => {
 
     //
 
-    if (status && (status.get('replies_count') > 0 || status.get('direct_replies_count') > 0) && !fetchedContext) {
+    const isOrphaned = !!status && status.get('is_reply') && !status.get('in_reply_to_id')
+
+    if (status && (status.get('replies_count') > 0 || status.get('direct_replies_count') > 0) && (!fetchedContext || isOrphaned)) {
       descendantsIds = getDescendants(state, status, null, commentSortingType)
     }
 
-    const isComment = !!status ? !!status.get('in_reply_to_id') : false
+    const isComment = !!status && !isOrphaned ? !!status.get('in_reply_to_id') : false
     const loadedDirectDescendants = !!ancestorStatus ? state.getIn(['contexts', 'replies', ancestorStatus.get('id')]) : state.getIn(['contexts', 'replies', statusId])
 
     return {
@@ -191,12 +193,13 @@ const makeMapStateToProps = () => {
       isComment,
       commentSortingType,
       contextType,
-      highlightStatusId: statusId,
+      highlightStatusId: isComment ? statusId : null,
       isComposeModalOpen: state.getIn(['modal', 'modalType']) === 'COMPOSE',
       isDeckConnected: state.getIn(['deck', 'connected'], false),
       isReacting: state.getIn(['popover', 'popoverType']) === POPOVER_STATUS_REACTIONS_SELECTOR,
       hoveringReactionId: state.getIn(['reactions', 'hovering_id']),
       reactionPopoverOpenForStatusId: state.getIn(['reactions', 'reactionPopoverOpenForStatusId']),
+      isLoading: state.getIn(['contexts', 'isLoading', statusId], false)
     }
   }
 
@@ -259,10 +262,10 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onOpenLikes(status, targetRef) {
-    if (!status) return
+    if (!status || !me) return
 
     const isMyStatus = status.getIn(['account', 'id']) === me
-    if (!isMyStatus || !me) {
+    if (!isMyStatus) {
       dispatch(openPopover(POPOVER_STATUS_REACTIONS_COUNT, {
         targetRef,
         statusId: status.get('id'),
@@ -359,7 +362,7 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onExpandComments(statusId) {
-    dispatch(fetchComments(statusId))
+    dispatch(fetchComments(statusId, false, true))
   },
 
   onShowStatusAnyways(statusId) {

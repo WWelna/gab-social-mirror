@@ -5,6 +5,7 @@ import Button from './button'
 import Icon from './icon'
 import Image from './image'
 import Text from './text'
+import Counter from './counter'
 
 class ListItem extends React.PureComponent {
 
@@ -30,6 +31,7 @@ class ListItem extends React.PureComponent {
       subtitle,
       isActive,
       openInNewTab,
+      count,
     } = this.props
 
     if (!title) {
@@ -53,6 +55,7 @@ class ListItem extends React.PureComponent {
     const iconSize = large ? '14px' : '10px'
     const imageSize = large ? '22px' : '18px'
     const showActive = isActive !== undefined
+    const hasCount = !isNaN(count) && count > 0
 
     const containerClasses = CX({
       d: 1,
@@ -87,8 +90,16 @@ class ListItem extends React.PureComponent {
     })
 
     const arrowClasses = CX({
-      mlAuto: !showActive,
+      mlAuto: !showActive && !hasCount,
       ml10: showActive,
+      cSecondary: 1,
+      flexShrink1: 1,
+    })
+
+    const countContainerClasses = CX({
+      mlAuto: 1,
+      ml10: 1,
+      mr10: 1,
       cSecondary: 1,
       flexShrink1: 1,
     })
@@ -148,6 +159,14 @@ class ListItem extends React.PureComponent {
         }
 
         {
+          hasCount && (
+            <div className={countContainerClasses}>
+              <Counter count={count} max={99}/>
+            </div>
+          )
+        }
+
+        {
           !hideArrow &&
           <Icon
             id={!!actionIcon ? actionIcon : 'angle-right'}
@@ -173,6 +192,7 @@ ListItem.propTypes = {
   isActive: PropTypes.bool,
   actionIcon: PropTypes.bool,
   onClick: PropTypes.func,
+  count: PropTypes.number,
   size: PropTypes.oneOf([
     'small',
     'normal',

@@ -9,6 +9,8 @@ import {
   UserSuggestionsPanel,
   ProgressPanel,
   GabTVVideosPanel,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 
 class ProPage extends React.PureComponent {
@@ -18,7 +20,10 @@ class ProPage extends React.PureComponent {
 
     const title = intl.formatMessage(messages.title)
 
-    let sidebarLayout = [ProgressPanel]
+    let sidebarLayout = [
+      <WrappedBundle key='pro-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'pro.sidebar', position: 1 }} />,
+      ProgressPanel,
+    ]
 
     if(showVideos) {
       sidebarLayout.push(GabTVVideosPanel)
@@ -29,6 +34,7 @@ class ProPage extends React.PureComponent {
     }
 
     sidebarLayout.push(LinkFooter)
+    sidebarLayout.push(<WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />)
 
     return (
       <DefaultLayout

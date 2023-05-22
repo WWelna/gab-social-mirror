@@ -21,6 +21,7 @@ defaults: &defaults
   preview_sensitive_media: false
   group_in_home_feed: true
   show_videos: true
+  show_voice_rooms: true
   show_suggested_users: true
   show_groups: true
   show_pro_life: false

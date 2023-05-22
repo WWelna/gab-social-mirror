@@ -51,7 +51,11 @@ class ModalLayout extends React.PureComponent {
               />
             }
           </div>
-          <div className={childrenContainerClasses}>
+          {/*
+            data-scrollable-parent tells the <ScrollableList> components
+            underneath that this is the element to watch for scroll and touchmove
+          */}
+          <div className={childrenContainerClasses} data-scrollable-parent={true}>
             {children}
           </div>
         </Block>

@@ -13,6 +13,7 @@ import Icon from './icon'
 import RelativeTimestamp from './relative_timestamp'
 import ReactionsDisplayBlock from './reactions_display_block'
 import Text from './text'
+import { ACCOUNT_IS_PARODY_DESCRIPTION } from '../constants'
 
 class CommentHeader extends ImmutablePureComponent {
 
@@ -88,6 +89,23 @@ class CommentHeader extends ImmutablePureComponent {
           }
 
           {
+            status.getIn(['account', 'is_parody']) &&
+            <>
+              <Text size='small' color='tertiary' className={[_s.ml5, _s.mr5].join(' ')}>·</Text>
+              <Button
+                isText
+                underlineOnHover
+                backgroundColor='none'
+                color='none'
+                tooltip={ACCOUNT_IS_PARODY_DESCRIPTION}
+              >
+                <Text size='small' color='tertiary'>Parody</Text>
+              </Button>
+            </>
+          }
+
+
+          {
             !!status.get('expires_at') &&
             <React.Fragment>
               <DotTextSeperator />
@@ -99,6 +117,25 @@ class CommentHeader extends ImmutablePureComponent {
             </React.Fragment>
           }
           
+          {
+            !!status.get('status_context') &&
+            <React.Fragment>
+              <DotTextSeperator />
+              <Button
+                isText
+                underlineOnHover
+                backgroundColor='primary'
+                color='tertiary'
+                to={`/timeline/context/${status.getIn(['status_context', 'id'])}`}
+                className={[_s.ml5, _s.radiusSmall].join(' ')}
+              >
+                <Text size='extraSmall' color='inherit' className={_s.px5}>
+                  {status.getIn(['status_context', 'name'])}
+                </Text>
+              </Button>
+            </React.Fragment>
+          }
+
           {
             !!status.get('group') &&
             <React.Fragment>
@@ -134,24 +171,6 @@ class CommentHeader extends ImmutablePureComponent {
                   {intl.formatMessage(messages.edited)}
                 </Text>
               </Button>
-            </React.Fragment>
-          }
-
-          {
-            favoriteCount > 0 &&
-            <React.Fragment>
-              <DotTextSeperator />
-              <div className={_s.ml5} ref={this.setLikeButton}>
-                <ReactionsDisplayBlock
-                  showText
-                  totalCount={favoriteCount}
-                  reactions={reactionsMap}
-                  onClick={this.openLikesList}
-                  iconSize='16px'
-                  textSize='extraSmall'
-                  textColor='tertiary'
-                />
-              </div>
             </React.Fragment>
           }
 

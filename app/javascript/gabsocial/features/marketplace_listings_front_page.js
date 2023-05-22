@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import {
   expandMarketplaceListingFrontPage,
 } from '../actions/marketplace_listings'

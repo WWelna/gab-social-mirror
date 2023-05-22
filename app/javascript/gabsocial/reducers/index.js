@@ -15,7 +15,6 @@ import chat_settings from './chat_settings'
 import contexts from './contexts'
 import custom_emojis from './custom_emojis'
 import deck from './deck'
-import expenses from './expenses'
 import filters from './filters'
 import groups from './groups'
 import group_categories from './group_categories'
@@ -44,7 +43,6 @@ import news from './news'
 import notifications from './notifications'
 import polls from './polls'
 import popover from './popover'
-import promotions from './promotions'
 import push_notifications from './push_notifications'
 import reactions from './reactions'
 import relationships from './relationships'
@@ -56,6 +54,7 @@ import shop from './shop'
 import shortcuts from './shortcuts'
 import sidebar from './sidebar'
 import statuses from './statuses'
+import status_contexts from './status_contexts'
 import status_lists from './status_lists'
 import status_revisions from './status_revisions'
 import suggestions from './suggestions'
@@ -66,6 +65,7 @@ import toasts from './toasts'
 import user from './user'
 import user_lists from './user_lists'
 import warnings from './warnings'
+import { voiceReducer } from '../store/voice_public_rooms'
 
 const reducers = {
   accounts,
@@ -83,7 +83,6 @@ const reducers = {
   contexts,
   custom_emojis,
   deck,
-  expenses,
   filters,
   groups,
   group_categories,
@@ -113,7 +112,6 @@ const reducers = {
   notifications,
   polls,
   popover,
-  promotions,
   push_notifications,
   reactions,
   relationships,
@@ -125,6 +123,7 @@ const reducers = {
   shortcuts,
   sidebar,
   statuses,
+  status_contexts,
   status_lists,
   status_revisions,
   suggestions,
@@ -134,7 +133,8 @@ const reducers = {
   toasts,
   user,
   user_lists,
-  warnings,
+  voice_pub_rooms: voiceReducer,
+  warnings
 }
 
 export default combineReducers(reducers)

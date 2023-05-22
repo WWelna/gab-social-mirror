@@ -19,6 +19,7 @@ class PillItem extends React.PureComponent {
       location,
       isActive,
       isHidden,
+      disabled
     } = this.props
 
     if (isHidden) return null
@@ -69,6 +70,7 @@ class PillItem extends React.PureComponent {
         className={containerClasses}
         to={to || undefined}
         noClasses
+        isDisabled={disabled}
       >
         <span className={textParentClasses}>
           { !!prependImage && <Image src={prependImage} width='26px' height='26px' className={[_s.circle, _s.ml10].join(' ')} /> }
@@ -92,6 +94,7 @@ PillItem.propTypes = {
   title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   to: PropTypes.string,
   isHidden: PropTypes.bool,
+  disabled: PropTypes.bool,
 }
 
 export default withRouter(PillItem)

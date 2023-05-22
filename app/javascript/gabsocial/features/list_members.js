@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { me } from '../initial_state'
 import {
   fetchListMembers,
@@ -70,7 +70,7 @@ class ListMembers extends ImmutablePureComponent {
         emptyMessage='This feed has zero members.'
         onLoadMore={this.handleLoadMore}
         hasMore={hasMore}
-        isLoading={isLoading && accountIdCount === 0}
+        isLoading={isLoading}
         showLoading={isLoading && accountIdCount === 0}
         placeholderComponent={AccountPlaceholder}
         placeholderCount={3}
@@ -107,7 +107,7 @@ ListMembers.propTypes = {
   dispatch: PropTypes.func.isRequired,
   listId: PropTypes.string.isRequired,
   hasMore: PropTypes.bool.isRequired,
-  isLoading: PropTypes.bool.isRequired,
+  isLoading: PropTypes.bool
 }
 
 export default connect(mapStateToProps)(ListMembers)

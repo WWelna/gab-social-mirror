@@ -21,7 +21,7 @@ class SettingsSidebar extends React.PureComponent {
         <SidebarSectionTitle>{intl.formatMessage(messages.menu)}</SidebarSectionTitle>
         <SidebarSectionItem title={intl.formatMessage(messages.blocks)} to='/settings/blocks' />
         <SidebarSectionItem title={intl.formatMessage(messages.mutes)} to='/settings/mutes' />
-        <SidebarSectionItem title={intl.formatMessage(messages.preferences)} to='/settings/preferences' />
+        <SidebarSectionItem title={intl.formatMessage(messages.preferences)} href='/settings/preferences' />
       </SidebarLayout>
     )
   }

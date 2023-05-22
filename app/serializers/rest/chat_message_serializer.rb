@@ -4,6 +4,9 @@ class REST::ChatMessageSerializer < ActiveModel::Serializer
   attributes :id, :text_html, :text, :language, :from_account_id,
              :chat_conversation_id, :created_at, :expires_at
 
+  has_many :media_attachments, serializer: REST::MediaAttachmentSerializer
+  has_one :preview_card, key: :card, serializer: REST::PreviewCardSerializer
+  
   def id
     object.id.to_s
   end

@@ -160,10 +160,6 @@ class ActivityPub::Activity::Create < ActivityPub::Activity
 
     @status.mentions.create(account: delivered_to_account, silent: true)
     @status.update(visibility: :limited) if @status.direct_visibility?
-
-    return unless delivered_to_account.following?(@account)
-
-    FeedInsertWorker.perform_async(@status.id, delivered_to_account.id, :home)
   end
 
   def attach_tags(status)
@@ -489,9 +485,9 @@ class ActivityPub::Activity::Create < ActivityPub::Activity
   end
 
   def forward_for_reply
-    return unless @json['signature'].present? && reply_to_local?
+    return # unless @json['signature'].present? && reply_to_local?
 
-    ActivityPub::RawDistributionWorker.perform_async(Oj.dump(@json), replied_to_status.account_id, [@account.preferred_inbox_url])
+    # ActivityPub::RawDistributionWorker.perform_async(Oj.dump(@json), replied_to_status.account_id, [@account.preferred_inbox_url])
   end
 
   def increment_voters_count!

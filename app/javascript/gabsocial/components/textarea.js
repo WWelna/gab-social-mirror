@@ -21,9 +21,10 @@ class Textarea extends React.PureComponent {
       isRequired,
       maxLength,
       isDisabled,
+      className,
     } = this.props
 
-    const inputClasses = CX({
+    const inputClasses = CX(className, {
       d: 1,
       text: 1,
       outlineNone: 1,
@@ -36,7 +37,7 @@ class Textarea extends React.PureComponent {
       maxH100VH: 1,
       resizeVertical: 1,
       cPrimary: 1,
-      minH106PX: 1,
+      minH106PX: !className,
       px5: !!prependIcon,
       pl15: !prependIcon,
       cursorNotAllowed: isDisabled,
@@ -85,6 +86,7 @@ Textarea.propTypes = {
   isRequired: PropTypes.bool,
   isDisabled: PropTypes.bool,
   maxLength: PropTypes.number,
+  className: PropTypes.string,
 }
 
 export default Textarea

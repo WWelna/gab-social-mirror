@@ -3,6 +3,8 @@
 class AuthorizeFollowWorker
   include Sidekiq::Worker
 
+  sidekiq_options queue: 'pull', retry: 2
+
   def perform(source_account_id, target_account_id)
     @source_account = Account.find_by(id: source_account_id)
     @target_account = Account.find_by(id: target_account_id)

@@ -19,10 +19,14 @@ class UnfollowService < BaseService
     return unless follow
 
     # attempt to unfollow, responds to validator
-    unfollow = Unfollow.create!(account: @source_account, target_account: @target_account)
+    unfollow = Unfollow.create!(account: @source_account, target_account: @target_account)    
     raise ActiveRecord::RecordInvalid unless unfollow.valid?
 
     follow.destroy!
+
+    # publish all unfollow events to altstream
+    Redis.current.publish("altstream:main", Oj.dump(event: :unfollow, payload: { account_id: @source_account.id.to_s, target_account_id: @target_account.id.to_s }))
+
     follow
   end
 

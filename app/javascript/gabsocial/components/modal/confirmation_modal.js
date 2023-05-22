@@ -32,6 +32,8 @@ class ConfirmationModal extends React.PureComponent {
       title,
       message,
       confirm,
+      cancelOverride,
+      cancel = <FormattedMessage id='confirmation_modal.cancel' defaultMessage='Cancel' />
     } = this.props
 
     return (
@@ -57,7 +59,7 @@ class ConfirmationModal extends React.PureComponent {
                     className={[_s.mr10, _s.flexGrow1].join(' ')}
                   >
                     <Text size='medium' weight='bold' align='center' color='inherit'>
-                      <FormattedMessage id='confirmation_modal.cancel' defaultMessage='Cancel' />
+                      {cancelOverride || cancel}
                     </Text>
                   </Button>
                 

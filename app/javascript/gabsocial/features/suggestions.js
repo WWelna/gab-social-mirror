@@ -30,7 +30,7 @@ class Suggestions extends ImmutablePureComponent {
         <ScrollableList
           scrollKey='related_user_suggestions'
           isLoading={isLoading}
-          showLoading={isLoading}
+          showLoading={isLoading && suggestions.size === 0}
           placeholderComponent={AccountPlaceholder}
           placeholderCount={4}
           emptyMessage={intl.formatMessage(messages.empty)}

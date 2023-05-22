@@ -2,7 +2,7 @@ import escapeTextContentForBrowser from 'escape-html'
 import emojify from '../../components/emoji/emoji'
 import { unescapeHTML } from '../../utils/html'
 import normalizeReactionsCounts from '../../utils/reactions_counts_sort'
-import { expandSpoilers } from '../../initial_state'
+import { allReactions, expandSpoilers } from '../../initial_state'
 
 const domParser = new DOMParser()
 
@@ -74,6 +74,25 @@ export const normalizeStatus = (status, normalOldStatus) => {
 
   if (status.reaction || status.reaction_id) {
     normalStatus.reaction = status.reaction_id || status.reaction.id
+  } else {
+
+    if (normalOldStatus && normalOldStatus.get('reaction')) {
+      normalStatus.reaction = normalOldStatus.get('reaction')
+      normalStatus.favourited = true
+    } else if (normalOldStatus && normalOldStatus.get('reaction_id')) {
+      normalStatus.reaction = allReactions.find(r => r.id == normalOldStatus.get('reaction_id'))
+      normalStatus.favourited = true
+    }
+
+  }
+
+  if (normalOldStatus && !normalStatus.favourited && normalOldStatus.get('favourited')) {
+    normalStatus.favourited = true
+    normalStatus.reaction = 1
+  }
+
+  if (normalOldStatus && normalOldStatus.get('reblogged')) {
+    normalStatus.reblogged = normalOldStatus.get('reblogged')
   }
 
   try {

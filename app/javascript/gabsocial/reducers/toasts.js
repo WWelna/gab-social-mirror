@@ -3,8 +3,8 @@ import {
   TOAST_DISMISS,
   TOAST_CLEAR,
 } from '../actions/toasts'
-import isObject from 'lodash.isobject'
-import get from 'lodash.get'
+import isObject from 'lodash/isObject'
+import get from 'lodash/get'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
 
 const makeMessageFromData = (data) => {

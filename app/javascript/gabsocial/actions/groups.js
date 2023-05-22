@@ -2,18 +2,21 @@ import {
   Map as ImmutableMap,
   List as ImmutableList,
 } from 'immutable'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import api, { getLinks } from '../api'
 import { me, createdAt } from '../initial_state'
 import { importFetchedAccounts, importFetchedStatuses } from './importer'
 import { fetchRelationships } from './accounts'
 import { updateStatusStats } from './statuses'
 import { timelineStatusDelete } from '../store/timelines'
+import { appendIsBlockingGroupId, removeIsBlockingGroupId } from '../utils/local_storage_blocks_mutes'
 import {
   ACCEPTED_GROUP_TABS,
   GROUP_LIST_SORTING_TYPE_ALPHABETICAL,
   GROUP_LIST_SORTING_TYPE_MOST_POPULAR,
+  TOAST_TYPE_ERROR,
 } from '../constants'
+import { showToast } from './toasts'
 
 export const GROUP_FETCH_REQUEST = 'GROUP_FETCH_REQUEST'
 export const GROUP_FETCH_SUCCESS = 'GROUP_FETCH_SUCCESS'
@@ -34,6 +37,14 @@ export const GROUP_JOIN_FAIL    = 'GROUP_JOIN_FAIL'
 export const GROUP_LEAVE_REQUEST = 'GROUP_LEAVE_REQUEST'
 export const GROUP_LEAVE_SUCCESS = 'GROUP_LEAVE_SUCCESS'
 export const GROUP_LEAVE_FAIL    = 'GROUP_LEAVE_FAIL'
+
+export const GROUP_MUTE_REQUEST = 'GROUP_MUTE_REQUEST'
+export const GROUP_MUTE_SUCCESS = 'GROUP_MUTE_SUCCESS'
+export const GROUP_MUTE_FAIL = 'GROUP_MUTE_FAIL'
+
+export const GROUP_UNMUTE_REQUEST = 'GROUP_UNMUTE_REQUEST'
+export const GROUP_UNMUTE_SUCCESS = 'GROUP_UNMUTE_SUCCESS'
+export const GROUP_UNMUTE_FAIL = 'GROUP_UNMUTE_FAIL'
 
 //
 
@@ -798,6 +809,7 @@ export const updateRole = (groupId, accountId, role) => (dispatch, getState) => 
   api(getState).patch(`/api/v1/groups/${groupId}/accounts?account_id=${accountId}`, { role }).then((response) => {
     dispatch(updateRoleSuccess(groupId, accountId))
   }).catch((error) => {
+    dispatch(showToast(TOAST_TYPE_ERROR, {type: error } ))
     dispatch(updateRoleFail(groupId, accountId, error))
   })
 }
@@ -817,7 +829,6 @@ const updateRoleSuccess = (groupId, accountId) => ({
 
 const updateRoleFail = (groupId, accountId, error) => ({
   type: GROUP_UPDATE_ROLE_FAIL,
-  showToast: true,
   groupId,
   accountId,
   error,
@@ -1259,3 +1270,66 @@ export const setGroupTimelineTopSort = (sortValue) => (dispatch) => {
     sortValue,
   })
 }
+
+/* Block Group functionality */
+export const blockGroup = (groupId) => (dispatch, getState) => {
+  if (!me || !groupId) return
+
+  dispatch(blockGroupRequest(groupId))
+
+  api(getState).post(`/api/v1/groups/${groupId}/block`).then((response) => {
+    dispatch(blockGroupSuccess(groupId))
+    appendIsBlockingGroupId(groupId)
+  }).catch((error) => {
+    dispatch(blockGroupFail(groupId, error))
+  })
+}
+
+export const unblockGroup = (groupId) => (dispatch, getState) => {
+  if (!me || !groupId) return
+
+  dispatch(unblockGroupRequest(groupId))
+
+  api(getState).post(`/api/v1/groups/${groupId}/unblock`).then((response) => {
+    dispatch(unblockGroupSuccess(groupId))
+    removeIsBlockingGroupId(groupId)
+  }).catch((error) => {
+    dispatch(unblockGroupFail(groupId, error))
+  })
+}
+
+const blockGroupRequest = (groupId) => ({
+  type: GROUP_MUTE_REQUEST,
+  groupId,
+})
+
+const blockGroupSuccess = (groupId) => ({
+  type: GROUP_MUTE_SUCCESS,
+  showToast: true,
+  groupId,
+})
+
+const blockGroupFail = (groupId, error) => ({
+  type: GROUP_MUTE_FAIL,
+  showToast: true,
+  groupId,
+  error,
+})
+
+const unblockGroupRequest = (groupId) => ({
+  type: GROUP_UNMUTE_REQUEST,
+  groupId,
+})
+
+const unblockGroupSuccess = (groupId) => ({
+  type: GROUP_UNMUTE_SUCCESS,
+  showToast: true,
+  groupId,
+})
+
+const unblockGroupFail = (groupId, error) => ({
+  type: GROUP_UNMUTE_FAIL,
+  showToast: true,
+  groupId,
+  error,
+})

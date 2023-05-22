@@ -25,8 +25,9 @@ class StatusPrepend extends ImmutablePureComponent {
     const isRepost = (status.get('reblog', null) !== null && typeof status.get('reblog') === 'object')
     const showRepostedComment = !!status.getIn(['reblog', 'in_reply_to_account_id'], null) && isRepost
     const reblogUrl = status.getIn(['reblog', 'url'], null)
+    const isOrphaned = status.get('is_reply', false) && !status.get('in_reply_to_id', null)
     
-    if (!isFeatured && !isPinnedInGroup && !isPromoted && !isRepost && !isComment) return null
+    if (!isFeatured && !isPinnedInGroup && !isPromoted && !isRepost && !isComment && !isOrphaned) return null
 
     let iconId
     if (isFeatured || isPinnedInGroup) iconId = 'pin'
@@ -137,6 +138,15 @@ class StatusPrepend extends ImmutablePureComponent {
               />
             </Text>
           }
+          {
+            isOrphaned &&
+            <Text color='secondary' size='small'>
+              <FormattedMessage
+                id='status.orphaned_comment'
+                defaultMessage='This was a reply to a status which is no longer available'
+              />
+            </Text>
+          }          
         </div>
         {
           isPromoted &&

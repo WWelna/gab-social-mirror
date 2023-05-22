@@ -19,6 +19,10 @@ class Api::V1::Groups::AccountsController < Api::BaseController
   def create
     authorize @group, :join?
 
+    if @group.is_paused?
+      render json: { error: true, message: 'Unable to join group. Group is paused.' }, status: 422
+    end
+
     if @group.has_password?
       # use the groups/password_controller to join group with password
       render json: { error: true, message: 'Unable to join group. Incorrect password.' }, status: 422
@@ -34,11 +38,17 @@ class Api::V1::Groups::AccountsController < Api::BaseController
   end
 
   def update
-    authorize @group, :update_account?
+    authorize @group, :allow_if_is_group_admin_or_moderator?
 
-    @account = @group.accounts.find(params[:account_id])
-    GroupAccount.where(group: @group, account: @account).update(group_account_params)
-    render_empty_success
+    current_group_account = GroupAccount.where(group: @group, account_id: current_account.id).first
+    target_role = group_account_params[:role]
+    if target_role == "admin" and current_group_account.role != "admin"
+      render json: { error: true, message: 'Unable to update role. You are not an admin.' }, status: 422
+    else
+      @account = @group.accounts.find(params[:account_id])
+      GroupAccount.where(group: @group, account: @account).update(group_account_params)
+      render_empty_success
+    end
   end
 
   def destroy
@@ -49,6 +59,9 @@ class Api::V1::Groups::AccountsController < Api::BaseController
       authorize @group, :leave?
       GroupAccount.where(group: @group, account_id: current_account.id, role: nil).destroy_all
     end
+
+    # : todo :
+    # if has GroupQuestionAnswers delete those too
 
     render json: @group, serializer: REST::GroupRelationshipSerializer, relationships: relationships
   end

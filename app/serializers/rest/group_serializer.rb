@@ -7,7 +7,8 @@ class REST::GroupSerializer < ActiveModel::Serializer
              :cover_image_url, :cover_image_thumbnail_url, :cover_image_medium_url,
              :is_archived, :member_count, :is_verified, :is_moderated,
              :created_at, :is_private, :is_visible, :slug, :url,
-             :tags, :group_category, :password, :has_password
+             :tags, :group_category, :password, :has_password, :is_paused,
+             :theme_color, :rules, :is_admins_visible, :is_members_visible,
 
   def id
     object.id.to_s
@@ -15,6 +16,14 @@ class REST::GroupSerializer < ActiveModel::Serializer
 
   def has_password
     object.has_password?
+  end
+
+  def is_paused
+    object.is_paused?
+  end
+
+  def rules
+    object.rules
   end
 
   def password
@@ -66,7 +75,7 @@ class REST::GroupSerializer < ActiveModel::Serializer
   end
 
   def cover_image_thumbnail_url
-    cover_image_url(cloudflare_options: { width: 168, fit: 'scale-down' })
+    cover_image_url(cloudflare_options: { width: 320, fit: 'scale-down' })
   end
 
   def url

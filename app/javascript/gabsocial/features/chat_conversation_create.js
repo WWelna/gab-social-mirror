@@ -59,7 +59,7 @@ class ChatConversationCreate extends ImmutablePureComponent {
         const newArr = selectedAccountIds.concat(`${accountId}`);
         this.setState({ selectedAccountIds: newArr })
       } else {
-        const msg = isPro ? 'You can only chat with a maximum of 50 people' : 'You can only select one account'
+        const msg = isPro ? 'You can only chat with a maximum of 50 people' : 'Group chats are a Gab PRO only feature'
         this.props.onShowToast(msg)
       }
     } else {
@@ -81,7 +81,7 @@ class ChatConversationCreate extends ImmutablePureComponent {
   }
 
   render() {
-    const { suggestionsIds } = this.props
+    const { suggestionsIds, isPro } = this.props
     const { query, selectedAccountIds, isDisabled } = this.state
 
     const pills = selectedAccountIds.map((accountId) => {
@@ -106,9 +106,12 @@ class ChatConversationCreate extends ImmutablePureComponent {
 
         {
           selectedAccountIds && selectedAccountIds.length > 0 &&
-          <div className={[_s.d, _s.px10, _s.mt10, _s.mb5, _s.pb5, _s.flexRow, _s.width100PC, _s.overflowHidden, _s.overflowXScroll, _s.noScrollbar, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
-            <AccountPills pills={pills} />
-          </div>
+          <>
+          { isPro && <Text className={[_s.mt10, _s.pl20].join(' ')}>Select more accounts to make a group conversation</Text> }
+            <div className={[_s.d, _s.px10, _s.mt10, _s.mb5, _s.pb5, _s.flexRow, _s.width100PC, _s.overflowHidden, _s.overflowXScroll, _s.noScrollbar, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
+              <AccountPills pills={pills} />
+            </div>
+          </>
         }
 
         <div className={[_s.d, _s.pt10].join(' ')}>

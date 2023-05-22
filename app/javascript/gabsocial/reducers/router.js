@@ -1,6 +1,6 @@
 import { ROUTER_CHANGE, ROUTER_RESET } from '../actions/router'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
-import get from 'lodash.get'
+import get from 'lodash/get'
 
 /**
  * Prevent growing memory for users who are navigating many pages in a single

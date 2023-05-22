@@ -5,7 +5,7 @@ import Text from '../../../components/text'
 const ChatConversationsListHeader = ({ title }) => {
   return (
     <div
-      className={[_s.d, _s.w100PC, _s.bgPrimary, _s.pl20, _s.py10, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}
+      className={[_s.d, _s.w100PC, _s.bgPrimary, _s.pl15, _s.py10, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}
     >
       <Text color='secondary' weight='medium'>
         {title}

@@ -260,3 +260,23 @@ function main ( ) {
 loadPolyfills().then(main).catch(error => {
   console.error(error);
 });
+
+const { pathname } = window.location
+
+if (pathname === '/auth' || pathname === '/auth/edit') {
+  import('../gabsocial/account-section/auth-edit.js')
+    .then(({ default: startAuthEdit }) => startAuthEdit())
+    .catch(function(err) {
+      const { message, stack } = err
+      console.error('error couldn\'t load auth-edit', message, stack)
+    })
+}
+
+if (pathname === '/settings/two_factor_authentication/confirmation/new') {
+  import('../gabsocial/account-section/two-factor.js')
+    .then(({ default: startTwoFactor }) => startTwoFactor())
+    .catch(function(err) {
+      const { message, stack } = err
+      console.error('error couldn\'t load two-factor', message, stack)
+    })
+}

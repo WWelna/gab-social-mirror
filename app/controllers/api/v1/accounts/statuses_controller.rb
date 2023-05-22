@@ -3,7 +3,8 @@
 class Api::V1::Accounts::StatusesController < Api::BaseController
   before_action -> { authorize_if_got_token! :read, :'read:statuses' }
   before_action :set_account
-  after_action :insert_pagination_headers
+  before_action :set_sort_type, if: -> { is_sorting_query_builder_able? }
+  after_action :insert_pagination_headers, if: -> { !is_sorting_query_builder_able? }
 
   def index
     if paginating && current_account.nil?
@@ -11,6 +12,8 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
     end
 
     @statuses = load_statuses
+    @statuses = @statuses.reject { |status| status.proper.nil? }
+
     render json: @statuses,
            each_serializer: REST::StatusSerializer,
            relationships: StatusRelationshipsPresenter.new(@statuses, current_user&.account_id)
@@ -38,7 +41,7 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
     # : todo : if no current_user, limit date and no: tagged, reblogs, comments
     statuses = truthy_param?(:pinned) ?
       @account.pinned_statuses :
-      @account.statuses.permitted_for(@account, current_account)
+      @account.statuses
 
     max_id = params[:max_id]
     min_id = params[:min_id]
@@ -54,15 +57,28 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
 
     if truthy_param?(:only_media) && logged_in
       statuses = statuses.where(id: account_media_status_ids)
-    end
-
-    if truthy_param?(:only_comments)
+    elsif truthy_param?(:only_comments)
       statuses = statuses.where(reply: true)
     else
       statuses = statuses.where(reply: false)
     end
 
-    statuses.limit(computed_limit)
+    if is_sorting_query_builder_able?
+      # only show 1 page if no user
+      page = if current_account
+        params[:page].to_i
+      else
+        [params[:page].to_i.abs, MIN_UNAUTHENTICATED_PAGES].min
+      end
+    
+      statuses = statuses.merge(SortingQueryBuilder.new.call(@sort_type, nil, page, "account:#{@account.id.to_s}", {
+        source_account_id: @account.id,
+        current_account: current_account,
+      }))
+      return statuses
+    else
+      return statuses.limit(computed_limit)
+    end
   end
 
   def account_media_status_ids
@@ -72,7 +88,6 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
     # and the table will be joined by `Merge Semi Join`, so the query will be slow.
     @account.statuses.joins(:media_attachments)
             .merge(account_media_ids_query)
-            .permitted_for(@account, current_account)
             .paginate_by_max_id(limit_param(DEFAULT_STATUSES_LIMIT), params[:max_id], params[:since_id])
             .reorder(id: :desc).distinct(:id).pluck(:id)
   end
@@ -128,4 +143,25 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
   def paginating
     return params[:max_id] || params[:since_id] || params[:min_id]
   end
+
+  def set_sort_type
+    @sort_type = 'newest'
+    @sort_type = params[:sort_by] if [
+      'newest',
+      'no-reposts',
+      'top_today',
+      'top_weekly',
+      'top_monthly',
+      'top_yearly',
+      'top_all_time',
+    ].include? params[:sort_by]
+
+    return @sort_type
+  end
+
+  # only SQB on main timeline. NOT media, comments or pinned
+  def is_sorting_query_builder_able?
+    !truthy_param?(:only_media) && !truthy_param?(:only_comments) && !truthy_param?(:pinned)
+  end
+
 end

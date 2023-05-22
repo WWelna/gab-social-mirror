@@ -1,5 +1,5 @@
 import api, { getLinks } from '../api'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import {
   importFetchedAccounts,
   importFetchedChatMessages,
@@ -88,34 +88,41 @@ export const SET_CHAT_CONVERSATION_EXPIRATION_SUCCESS = 'SET_CHAT_CONVERSATION_E
 export const SET_CHAT_CONVERSATION_EXPIRATION_FAIL    = 'SET_CHAT_CONVERSATION_EXPIRATION_FAIL'
 
 /**
- * @description Fetch paginated active chat conversations, import accounts and set chat converations
+ * @description Fetch paginated active chat conversations, import accounts and set chat conversations
  */
-export const fetchChatConversations = () => (dispatch, getState) => {
+export const fetchChatConversations = params => (dispatch, getState) => {
   if (!me) return
 
-  dispatch(fetchChatConversationsRequest())
+  dispatch(fetchChatConversationsRequest(params))
 
-  api(getState).get('/api/v1/chat_conversations/approved_conversations').then((response) => {
+  api(getState).get('/api/v1/chat_conversations/approved_conversations', { params }).then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
-    const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
+    const { data: convos } = response
+    const conversationsAccounts = [].concat.apply([], convos.map((c) => c.other_accounts))
+    const conversationsChatMessages = convos.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
     dispatch(importFetchedChatMessages(conversationsChatMessages))
-    dispatch(fetchChatConversationsSuccess(response.data, next ? next.uri : null))
+    dispatch(fetchChatConversationsSuccess({
+      chatConversations: convos,
+      next: next ? next.uri : null,
+      pinned: params && params.pinned
+    }))
   }).catch((error) => {
     dispatch(fetchChatConversationsFail(error))
   })
 }
 
-export const fetchChatConversationsRequest = () => ({
+export const fetchChatConversationsRequest = opts => ({
   type: CHAT_CONVERSATIONS_APPROVED_FETCH_REQUEST,
+  ...opts
 })
 
-export const fetchChatConversationsSuccess = (chatConversations, next) => ({
+export const fetchChatConversationsSuccess = ({ chatConversations, next, pinned }) => ({
   type: CHAT_CONVERSATIONS_APPROVED_FETCH_SUCCESS,
   chatConversations,
   next,
+  pinned
 })
 
 export const fetchChatConversationsFail = (error) => ({
@@ -125,7 +132,7 @@ export const fetchChatConversationsFail = (error) => ({
 })
 
 /**
- * @description Fetch single chat conversations, import accounts and set chat converation
+ * @description Fetch single chat conversations, import accounts and set chat conversation
  */
  export const fetchChatConversation = (chatConversationId) => (dispatch, getState) => {
   if (!me || !chatConversationId) return
@@ -155,7 +162,7 @@ export const fetchChatConversationFail = (error) => ({
 })
 
 /**
- * @description Expand paginated active chat conversations, import accounts and set chat converations
+ * @description Expand paginated active chat conversations, import accounts and set chat conversations
  */
 export const expandChatConversations = () => (dispatch, getState) => {
   if (!me) return
@@ -195,7 +202,7 @@ export const expandChatConversationsFail = (error) => ({
 })
 
 /**
- * @description Fetch paginated requested chat conversations, import accounts and set chat converations
+ * @description Fetch paginated requested chat conversations, import accounts and set chat conversations
  */
 export const fetchChatConversationRequested = () => (dispatch, getState) => {
   if (!me) return
@@ -232,7 +239,7 @@ export const fetchChatConversationRequestedFail = (error) => ({
 })
 
 /**
- * @description Expand paginated requested chat conversations, import accounts and set chat converations
+ * @description Expand paginated requested chat conversations, import accounts and set chat conversations
  */
 export const expandChatConversationRequested = () => (dispatch, getState) => {
   if (!me) return
@@ -274,7 +281,7 @@ export const expandChatConversationRequestedFail = (error) => ({
 })
 
 /**
- * @description Fetch paginated muted chat conversations, import accounts and set chat converations
+ * @description Fetch paginated muted chat conversations, import accounts and set chat conversations
  */
 export const fetchChatConversationMuted = () => (dispatch, getState) => {
   if (!me) return
@@ -311,7 +318,7 @@ export const fetchChatConversationMutedFail = (error) => ({
 })
 
 /**
- * @description Expand paginated muted chat conversations, import accounts and set chat converations
+ * @description Expand paginated muted chat conversations, import accounts and set chat conversations
  */
 export const expandChatConversationMuted = () => (dispatch, getState) => {
   if (!me) return

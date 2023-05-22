@@ -1,5 +1,5 @@
 import api from '../api'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { me } from '../initial_state'
 import { getWindowDimension } from '../utils/is_mobile'
 

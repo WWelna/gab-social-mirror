@@ -1,6 +1,5 @@
 import React from 'react'
 import classNames from 'classnames/bind'
-import { FormattedMessage } from 'react-intl'
 
 export const CX = classNames.bind(_s)
 
@@ -39,6 +38,8 @@ export const POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS =
   'CHAT_CONVERSATION_EXPIRATION_OPTIONS'
 export const POPOVER_CHAT_SETTINGS = 'CHAT_SETTINGS'
 export const POPOVER_COMMENT_SORTING_OPTIONS = 'COMMENT_SORTING_OPTIONS'
+export const POPOVER_COMPOSE_MEDIA_DESCRIPTION = 'COMPOSE_MEDIA_DESCRIPTION'
+export const POPOVER_COMPOSE_POST_CONTEXT = 'COMPOSE_POST_CONTEXT'
 export const POPOVER_COMPOSE_POST_DESTINATION = 'COMPOSE_POST_DESTINATION'
 export const POPOVER_DATE_PICKER = 'DATE_PICKER'
 export const POPOVER_EMOJI_PICKER = 'EMOJI_PICKER'
@@ -115,6 +116,7 @@ export const MODAL_STATUS_REVISIONS = 'STATUS_REVISIONS'
 export const MODAL_UNAUTHORIZED = 'UNAUTHORIZED'
 export const MODAL_UNFOLLOW = 'UNFOLLOW'
 export const MODAL_VIDEO = 'VIDEO'
+export const MODAL_REMOVE_REPLY = 'REMOVE_REPLY'
 
 export const COMMENT_SORTING_TYPE_NEWEST = 'newest'
 export const COMMENT_SORTING_TYPE_OLDEST = 'oldest'
@@ -189,6 +191,7 @@ export const EXPIRATION_OPTION_NAMES = {
 export const LOCAL_STORAGE_BLOCKS = 'blocks'
 export const LOCAL_STORAGE_MUTES = 'mutes'
 export const LOCAL_STORAGE_BLOCKED_BY = 'blockedby'
+export const LOCAL_STORAGE_GROUP_BLOCKS = 'group_blocks'
 
 /**
  * On timelines how many queue items should we load before stopping the queue
@@ -199,57 +202,35 @@ export const TIMELINES_MAX_QUEUE_ITEMS = 10
 export const HOME_TIMELINE_SORTING_TYPE_NEWEST = 'newest'
 export const HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS = 'no-reposts'
 export const HOME_TIMELINE_SORTING_TYPE_TOP = 'top'
+export const HOME_TIMELINE_SORTING_TYPE_HOT = 'hot'
 
-export const homeSorts = Object.freeze([
+export const HOME_SORTS = Object.freeze([
   {
     key: HOME_TIMELINE_SORTING_TYPE_NEWEST,
-    title: (
-      <FormattedMessage
-        id="home_timeline_sort.newest"
-        defaultMessage="Newest"
-      />
-    ),
-    subtitle: (
-      <FormattedMessage
-        id="home_timeline_sort.newest_subtitle"
-        defaultMessage="See all posts, reposts in chronological order"
-      />
-    ),
+    title: "Newest",
+    subtitle: "See all posts, reposts in chronological order",
     queue: true,
     isDefault: true
   },
   {
     key: HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS,
-    title: (
-      <FormattedMessage
-        id="home_timeline_sort.no_reposts"
-        defaultMessage="Newest, no reposts"
-      />
-    ),
-    subtitle: (
-      <FormattedMessage
-        id="home_timeline_sort.no_reposts_subtitle"
-        defaultMessage="See all posts in chronological order"
-      />
-    ),
+    title: "Newest, no reposts",
+    subtitle: "See all posts in chronological order",
     queue: true
   },
   {
+    key: HOME_TIMELINE_SORTING_TYPE_HOT,
+    title: "Hot posts",
+    subtitle: "See the most popular and recent gabs from people you follow",
+  },
+  {
     key: HOME_TIMELINE_SORTING_TYPE_TOP,
-    title: (
-      <FormattedMessage
-        id="home_timeline_sort.top"
-        defaultMessage="Top posts from 24 hours"
-      />
-    ),
-    subtitle: (
-      <FormattedMessage
-        id="home_timeline_sort.top_subtitle"
-        defaultMessage="See all posts sorted by most liked, commented and reposted"
-      />
-    )
+    title: "Top posts from 24 hours",
+    subtitle: "See all posts sorted by most liked, commented and reposted",
   }
 ])
+
+export const PRO_POLLS_TIMELINE_SORTING_TYPE_MOST_VOTES = 'most_votes'
 
 export const GROUP_TIMELINE_SORTING_TYPE_HOT = 'hot'
 export const GROUP_TIMELINE_SORTING_TYPE_NEWEST = 'newest'
@@ -264,181 +245,185 @@ export const GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_MONTHLY = 'monthly'
 export const GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_YEARLY = 'yearly'
 export const GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_ALL_TIME = 'all_time'
 
-export const groupSortMessages = {
-  hotTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.hot_title"
-      defaultMessage="Hot Posts"
-    />
-  ),
-  hotSubtitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.hot_subtitle"
-      defaultMessage="See the most popular and recent gabs"
-    />
-  ),
-  topTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_title"
-      defaultMessage="Top Posts"
-    />
-  ),
-  topSubtitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_subtitle"
-      defaultMessage="See gabs with most comments, likes and reposts first"
-    />
-  ),
-  topTodayTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_today_title"
-      defaultMessage="Today"
-    />
-  ),
-  topWeekTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_week_title"
-      defaultMessage="This Week"
-    />
-  ),
-  topMonthTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_month_title"
-      defaultMessage="This Month"
-    />
-  ),
-  topYearTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_year_title"
-      defaultMessage="This Year"
-    />
-  ),
-  topAllTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.top_all_title"
-      defaultMessage="All Time"
-    />
-  ),
-  recentTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.recent_title"
-      defaultMessage="Recent Activity"
-    />
-  ),
-  recentSubtitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.recent_subtitle"
-      defaultMessage="See gabs with most recent comments first"
-    />
-  ),
-  newTitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.new_title"
-      defaultMessage="New Posts"
-    />
-  ),
-  newSubtitle: (
-    <FormattedMessage
-      id="group_timeline_sorting.new_subtitle"
-      defaultMessage="See most recent gabs first"
-    />
-  )
+export const GROUP_SORT_MESSAGES = {
+  hotTitle: "Hot Posts",
+  hotSubtitle: "See the most popular and recent gabs",
+  topTitle: "Top Posts",
+  topSubtitle: "See gabs with most comments, likes and reposts first",
+  topTodayTitle: "Today",
+  topWeekTitle: "This Week",
+  topMonthTitle: "This Month",
+  topYearTitle: "This Year",
+  topAllTitle: "All Time",
+  recentTitle: "Recent Activity",
+  recentSubtitle: "See gabs with most recent comments first",
+  newTitle: "New Posts",
+  newSubtitle: "See most recent gabs first",
 }
 
-// ⚠️ groupSorts and exploreSorts are sharing titles and subtitles. If they need
+// ⚠️ GROUP_SORTS and EXPLORE_SORTS are sharing titles and subtitles. If they need
 // to change please make a copy of the labels for explore.
-export const groupSorts = Object.freeze([
+export const GROUP_SORTS = Object.freeze([
   {
     key: GROUP_TIMELINE_SORTING_TYPE_HOT,
-    title: groupSortMessages.hotTitle,
-    subtitle: groupSortMessages.hotSubtitle
+    title: GROUP_SORT_MESSAGES.hotTitle,
+    subtitle: GROUP_SORT_MESSAGES.hotSubtitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_NEWEST,
-    title: groupSortMessages.newTitle,
-    subtitle: groupSortMessages.newSubtitle,
+    title: GROUP_SORT_MESSAGES.newTitle,
+    subtitle: GROUP_SORT_MESSAGES.newSubtitle,
     isDefault: true,
     hideForFeatured: true,
     queue: true
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_RECENT_ACTIVITY,
-    title: groupSortMessages.recentTitle,
-    subtitle: groupSortMessages.recentSubtitle,
+    title: GROUP_SORT_MESSAGES.recentTitle,
+    subtitle: GROUP_SORT_MESSAGES.recentSubtitle,
     hideForFeatured: true
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP,
-    title: groupSortMessages.topTitle,
-    subtitle: groupSortMessages.topSubtitle,
+    title: GROUP_SORT_MESSAGES.topTitle,
+    subtitle: GROUP_SORT_MESSAGES.topSubtitle,
     usesTopSorts: true
   }
 ])
 
-export const groupSortTops = Object.freeze([
+export const GROUP_SORT_TOPS = Object.freeze([
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_TODAY,
-    title: groupSortMessages.topTodayTitle,
+    title: GROUP_SORT_MESSAGES.topTodayTitle,
     isDefault: true
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_WEEKLY,
-    title: groupSortMessages.topWeekTitle
+    title: GROUP_SORT_MESSAGES.topWeekTitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_MONTHLY,
-    title: groupSortMessages.topMonthTitle
+    title: GROUP_SORT_MESSAGES.topMonthTitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_YEARLY,
-    title: groupSortMessages.topYearTitle
+    title: GROUP_SORT_MESSAGES.topYearTitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_ALL_TIME,
-    title: groupSortMessages.topAllTitle
+    title: GROUP_SORT_MESSAGES.topAllTitle
   }
 ])
 
-// ⚠️ groupSorts and exploreSorts are sharing titles and subtitles. If they need
+// ⚠️ GROUP_SORTS and EXPLORE_SORTS are sharing titles and subtitles. If they need
 // to change please make a copy of the labels for explore.
-export const exploreSorts = Object.freeze([
+export const EXPLORE_SORTS = Object.freeze([
   {
     key: GROUP_TIMELINE_SORTING_TYPE_HOT,
-    title: groupSortMessages.hotTitle,
-    subtitle: groupSortMessages.hotSubtitle,
+    title: GROUP_SORT_MESSAGES.hotTitle,
+    subtitle: GROUP_SORT_MESSAGES.hotSubtitle,
     isDefault: true
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP,
-    title: groupSortMessages.topTitle,
-    subtitle: groupSortMessages.topSubtitle,
+    title: GROUP_SORT_MESSAGES.topTitle,
+    subtitle: GROUP_SORT_MESSAGES.topSubtitle,
     usesTopSorts: true
   }
 ])
 
-export const exploreSortTops = Object.freeze([
+export const EXPLORE_SORT_TOPS = Object.freeze([
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_TODAY,
-    title: groupSortMessages.topTodayTitle,
+    title: GROUP_SORT_MESSAGES.topTodayTitle,
     isDefault: true
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_WEEKLY,
-    title: groupSortMessages.topWeekTitle
+    title: GROUP_SORT_MESSAGES.topWeekTitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_MONTHLY,
-    title: groupSortMessages.topMonthTitle
+    title: GROUP_SORT_MESSAGES.topMonthTitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_YEARLY,
-    title: groupSortMessages.topYearTitle
+    title: GROUP_SORT_MESSAGES.topYearTitle
   },
   {
     key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_ALL_TIME,
-    title: groupSortMessages.topAllTitle
+    title: GROUP_SORT_MESSAGES.topAllTitle
   }
 ])
+
+// all group sort except "hot"
+export const ACCOUNT_TIMELINE_SORTS = [
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_NEWEST,
+    title: GROUP_SORT_MESSAGES.newTitle,
+    subtitle: GROUP_SORT_MESSAGES.newSubtitle,
+    isDefault: true,
+    hideForFeatured: true,
+    queue: true,
+  },
+  {
+    key: HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS,
+    title: "Newest, no reposts",
+    subtitle: "See all posts in chronological order",
+    queue: true
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP,
+    title: GROUP_SORT_MESSAGES.topTitle,
+    subtitle: GROUP_SORT_MESSAGES.topSubtitle,
+    usesTopSorts: true,
+  }
+]
+
+// all group sort plus "mote votes"
+export const PRO_POLLS_TIMELINE_SORTS = [
+  ...GROUP_SORTS,
+  {
+    key: PRO_POLLS_TIMELINE_SORTING_TYPE_MOST_VOTES,
+    title: "Most Votes",
+    subtitle: "See polls with most votes first",
+  },
+]
+
+// all groups but hot is default
+export const PRO_TIMELINE_SORTS = [
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_HOT,
+    title: GROUP_SORT_MESSAGES.hotTitle,
+    subtitle: GROUP_SORT_MESSAGES.hotSubtitle,
+    isDefault: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_NEWEST,
+    title: GROUP_SORT_MESSAGES.newTitle,
+    subtitle: GROUP_SORT_MESSAGES.newSubtitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_RECENT_ACTIVITY,
+    title: GROUP_SORT_MESSAGES.recentTitle,
+    subtitle: GROUP_SORT_MESSAGES.recentSubtitle,
+    hideForFeatured: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP,
+    title: GROUP_SORT_MESSAGES.topTitle,
+    subtitle: GROUP_SORT_MESSAGES.topSubtitle,
+    usesTopSorts: true,
+  }
+]
+
+export const EXPLORE_SORT_CREATE_PARAMS = ({ sortByValue, sortByTopValue }) => {
+  if ([GROUP_TIMELINE_SORTING_TYPE_TOP, PRO_POLLS_TIMELINE_SORTING_TYPE_MOST_VOTES].indexOf(sortByValue) > -1) {
+    // see app/controllers/api/v1/timelines/explore_controller.rb
+    return { sort_by: `${sortByValue}_${sortByTopValue}` }
+  }
+  return { sort_by: sortByValue }
+}
 
 export const TOAST_TYPE_ERROR = 'error'
 export const TOAST_TYPE_SUCCESS = 'success'
@@ -496,10 +481,11 @@ export const TIMELINE_INJECTION_FEATURED_GROUPS = 'TI_FEATURED_GROUPS'
 export const TIMELINE_INJECTION_GROUP_CATEGORIES = 'TI_GROUP_CATEGORIES'
 export const TIMELINE_INJECTION_PROGRESS = 'TI_PROGRESS'
 export const TIMELINE_INJECTION_PRO_UPGRADE = 'TI_PRO_UPGRADE'
-export const TIMELINE_INJECTION_PWA = 'TI_PWA'
+// export const TIMELINE_INJECTION_PWA = 'TI_PWA'
 export const TIMELINE_INJECTION_SHOP = 'TI_SHOP'
 export const TIMELINE_INJECTION_USER_SUGGESTIONS = 'TI_USER_SUGGESTIONS'
 export const TIMELINE_INJECTION_GAB_TV_EXPLORE = 'TI_GAB_TV_EXPLORE'
+export const TIMELINE_INJECTION_VOICE_PUBLIC_ROOMS = 'TI_VOICE_PUBLIC_ROOMS'
 
 export const TIMELINE_INJECTION_WEIGHT_DEFAULT = 1
 export const TIMELINE_INJECTION_WEIGHT_MULTIPLIER = 100
@@ -542,7 +528,8 @@ export const TRENDS_RSS_SOURCES = [
 export const GAB_AD_PLACEMENTS = {
   status: 'status',
   banner: 'banner',
-  panel: 'panel'
+  panel: 'panel',
+  buyout: 'buyout'
 }
 
 export const TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS = [
@@ -613,4 +600,6 @@ export const MARKETPLACE_LISTING_CONDITIONS = [
  */
 export const leadingAtMention = /^@\w+\s?$/
 
-export const composeMaxAttachments = 4
+export const COMPOSE_MAX_MEDIA_ATTACHMENTS_LIMIT = 8
+
+export const ACCOUNT_IS_PARODY_DESCRIPTION = "A parody account depicts another person, group, or organization in their profile to discuss, satirize, or share information about that entity."

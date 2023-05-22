@@ -3,8 +3,8 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import debounce from 'lodash.debounce'
-import noop from 'lodash.noop'
+import debounce from 'lodash/debounce'
+import noop from 'lodash/noop'
 import { me } from '../initial_state'
 import {
   fetchMarketplaceListingBuyers,
@@ -49,7 +49,7 @@ class MarketplaceListingBuyers extends ImmutablePureComponent {
           onLoadMore={this.handleLoadMore}
           hasMore={hasMore}
           isLoading={isLoading}
-          showLoading={isLoading}
+          showLoading={isLoading && (chatConversationIds !== undefined && chatConversationIds.size === 0)}
           placeholderComponent={AccountPlaceholder}
           onScrollToTop={noop}
           placeholderCount={3}
@@ -57,9 +57,9 @@ class MarketplaceListingBuyers extends ImmutablePureComponent {
         >
           {
             chatConversationIds && 
-            chatConversationIds.map((chatConversationId, i) => (
+            chatConversationIds.map((chatConversationId) => (
               <ChatConversationsListItem
-                key={`marketplace-listing-${marketplaceListingId}-chat-conversation-${i}`}
+                key={`marketplace-listing-${marketplaceListingId}-chat-conversation-${chatConversationId}`}
                 chatConversationId={chatConversationId}
                 maxTextLength={120}
               />

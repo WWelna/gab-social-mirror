@@ -1,5 +1,5 @@
 import api from '../api'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { me } from '../initial_state'
 
 export const CHAT_SETTING_CHANGE = 'CHAT_SETTING_CHANGE'

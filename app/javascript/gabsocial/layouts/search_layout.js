@@ -4,13 +4,14 @@ import Layout from '../layouts/layout'
 import PageTitle from '../features/ui/util/page_title'
 import FooterBar from '../components/footer_bar'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
-import { loggedIn } from '../initial_state'
 import {
   LinkFooter,
   TrendsBreakingPanel,
   SearchFilterPanel,
   SignUpPanel,
-  SidebarXS
+  SidebarXS,
+  GabAdTopPanel,
+  GabAdBottomPanel,
 } from '../features/ui/util/async_components'
 import Icon from '../components/icon'
 import Text from '../components/text'
@@ -18,18 +19,6 @@ import Block from '../components/block'
 import Search from '../components/search'
 import Pills from '../components/pills'
 import { parseQuerystring } from '../utils/querystring'
-
-const loggedOutMessage = (
-  <div className={CX('mt10')}>
-    <Block>
-      <Text className={CX('px10', 'py10')}>
-        <Icon id='warning' /> Search is available for users that are logged in.
-      </Text>
-    </Block>
-    <br/>
-    <WrappedBundle component={SignUpPanel} />
-  </div>
-)
 
 export default function SearchLayout({ children }) {
   const { q } = parseQuerystring({ q: '' })
@@ -44,7 +33,6 @@ export default function SearchLayout({ children }) {
   if (selectedTab) {
     pageTitle = `${pageTitle} ${selectedTab.title}`
   }
-  const inner = loggedIn ? children : loggedOutMessage
 
   if (window.innerWidth <= BREAKPOINT_EXTRA_SMALL) {
     return (
@@ -54,7 +42,7 @@ export default function SearchLayout({ children }) {
           <Search isInNav />
         </div>
         <Pills pills={tabs} />
-        {inner}
+        {children}
         <FooterBar />
       </>
     )
@@ -68,13 +56,15 @@ export default function SearchLayout({ children }) {
       page={`search.${q}`}
       layout={[
         SignUpPanel,
+        <WrappedBundle key='search-page-ad-panel' component={GabAdTopPanel} componentParams={{ pageKey: 'search.sidebar', position: 1 }} />,
         SearchFilterPanel,
         TrendsBreakingPanel,
-        LinkFooter
+        LinkFooter,
+        <WrappedBundle key='home-page-ad-panel-bottom' component={GabAdBottomPanel} componentParams={{ pageKey: 'home.sidebar.bottom', position: 2 }} />,
       ]}
     >
       <PageTitle path={pageTitle} />
-      {inner}
+      {children}
     </Layout>
   )
 }

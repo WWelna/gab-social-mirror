@@ -6,15 +6,23 @@ import { connect } from 'react-redux'
 // import { HotKeys } from 'react-hotkeys'
 import { defineMessages, injectIntl } from 'react-intl'
 import { Switch, Redirect, withRouter } from 'react-router-dom'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import queryString from 'query-string'
 import moment from 'moment-mini'
 import { MIN_ACCOUNT_CREATED_AT_ONBOARDING } from '../../constants'
-import { expandNotifications, setFilter } from '../../actions/notifications'
 import { fetchUnreadWarningsCount } from '../../actions/warnings'
 import LoadingBar from '../../components/loading_bar'
 import { clearHeight } from '../../actions/height_cache'
 import { openModal } from '../../actions/modal'
+import { fetchGroupsByTab } from '../../actions/groups'
+import { fetchGabTVExplore } from '../../actions/news'
+import { fetchGroupCategories } from '../../actions/group_categories'
+import { fetchFeaturedProducts } from '../../actions/shop'
+import {
+  fetchRelatedSuggestions,
+  fetchPopularSuggestions,
+} from '../../actions/suggestions'
+import { fetchPublicRooms } from '../../store/voice_public_rooms'
 import WrappedRoute from './util/wrapped_route'
 import ModalRoot from '../../components/modal/modal_root'
 import ToastsContainer from '../../containers/toasts_container'
@@ -45,7 +53,7 @@ import IntroductionPage from '../../pages/introduction_page'
 import MarketplaceListingCategoriesPage from '../../pages/marketplace_listing_categories_page'
 import MarketplaceListingsPage from '../../pages/marketplace_listings_page'
 import EmptyPage from '../../pages/empty_page'
-import { dispatchWindowEvent } from '../../utils/events'
+
 
 import {
   About,
@@ -107,11 +115,15 @@ import {
   News,
   NewsView,
   Notifications,
+  PollsTimeline,
   Press,
   PrivacyPolicy,
   ProTimeline,
+  ProPhotosTimeline,
+  ProVideosTimeline,
   Search,
   Shortcuts,
+  StatusContextTimeline,
   StatusFeature,
   StatusLikes,
   StatusReposts,
@@ -216,7 +228,6 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/about/ccpa/contact' publicRoute exact page={AboutPage} component={CaliforniaConsumerProtectionContact} content={children} componentParams={{ title: 'Terms of Service' }} />
         <WrappedRoute path='/about/introduction' page={IntroductionPage} component={Introduction} content={children} />
 
-
         <WrappedRoute path='/explore' publicRoute page={ExplorePage} component={ExploreTimeline} content={children} componentParams={{ title: 'Explore', showVideos, showSuggestedUsers, showGroups }} />
         <WrappedRoute path='/suggestions' exact page={BasicPage} component={Suggestions} content={children} componentParams={{ title: 'Suggestions', showSuggestedUsers }} />
         <WrappedRoute path='/compose' exact page={ComposePage} component={Compose} content={children} componentParams={{ title: 'Compose', page: 'compose' }} />
@@ -232,7 +243,12 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/messages/muted_conversations' exact page={MessagesPage} component={ChatConversationMutes} content={children} componentParams={{ isSettings: true }} />
         <WrappedRoute path='/messages/:chatConversationId' exact page={MessagesPage} component={Messages} content={children} componentParams={{ source: 'approved' }} />
 
-        <WrappedRoute path='/timeline/pro' exact page={ProPage} component={ProTimeline} content={children} componentParams={{ title: 'Pro Feed', showVideos, showSuggestedUsers }} />
+        <WrappedRoute path='/timeline/pro' publicRoute exact page={ProPage} component={ProTimeline} content={children} componentParams={{ title: 'Pro Feed', showVideos, showSuggestedUsers }} />
+        <WrappedRoute path='/timeline/polls' publicRoute exact page={BasicPage} component={PollsTimeline} content={children} componentParams={{ title: 'Pro Polls Feed', showSuggestedUsers }} />
+        <WrappedRoute path='/timeline/videos' publicRoute exact page={BasicPage} component={ProVideosTimeline} content={children} componentParams={{ title: 'Pro Videos Feed', showSuggestedUsers }} />
+        <WrappedRoute path='/timeline/photos' publicRoute exact page={BasicPage} component={ProPhotosTimeline} content={children} componentParams={{ title: 'Pro Photos Feed', showSuggestedUsers }} />
+
+        <WrappedRoute path='/timeline/context/:statusContextId' exact page={BasicPage} component={StatusContextTimeline} content={children} componentParams={{ title: 'Status Context Feed', showSuggestedUsers }} />
 
         <WrappedRoute path='/groups' publicRoute exact page={GroupsPage} component={GroupCollectionTimeline} content={children} componentParams={{ activeTab: 'timeline', collectionType: 'member' }} />
         { /* <WrappedRoute path='/groups/browse/new' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'new' }} /> */ }
@@ -333,8 +349,7 @@ SwitchingArea.propTypes = {
 class UI extends React.PureComponent {
 
   state = {
-    fetchedHome: false,
-    fetchedNotifications: false
+    fetchedHome: false
   }
 
   handleLayoutChange = () => {
@@ -353,6 +368,8 @@ class UI extends React.PureComponent {
   componentDidMount() {
     if (!me) return
 
+    const { dispatch } = this.props
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', this.handleServiceWorkerPostMessage)
     }
@@ -365,15 +382,6 @@ class UI extends React.PureComponent {
 
     if (pathname === '/home') {
       this.props.dispatch(fetchUnreadWarningsCount())
-    } else if (pathname.startsWith('/notifications')) {
-      const qp = parseQuerystring({ view: '' })
-      let view = `${qp.view}`.toLowerCase()
-      if (pathname.startsWith('/notifications/follow_requests')) {
-        view = 'follow_requests'
-      }
-      this.props.dispatch(setFilter('active', view))
-      this.setState({ fetchedNotifications: true })
-      this.props.dispatch(expandNotifications())
     }
 
     const introductionPath = '/about/introduction'
@@ -391,6 +399,23 @@ class UI extends React.PureComponent {
         this.props.history.push(introductionPath)
       }
     }
+
+    if (showGroups) {
+      dispatch(fetchGroupsByTab('featured'))
+      dispatch(fetchGroupsByTab('member'))
+    }
+
+    if (showVideos) {
+      dispatch(fetchGabTVExplore())
+    }
+
+    if (showSuggestedUsers) {
+      dispatch(fetchRelatedSuggestions())
+      dispatch(fetchPopularSuggestions())
+    }
+
+    dispatch(fetchGroupCategories())
+    dispatch(fetchFeaturedProducts())
   }
 
   componentDidUpdate(prevProps) {
@@ -400,9 +425,6 @@ class UI extends React.PureComponent {
       if (pathname === '/home' && !this.state.fetchedHome) {
         this.setState({ fetchedHome: true })
         this.props.dispatch(fetchUnreadWarningsCount())
-      } else if (pathname.startsWith('/notifications') && !this.state.fetchedNotifications) {
-        this.setState({ fetchedNotifications: true })
-        this.props.dispatch(expandNotifications())
       }
     }
   }

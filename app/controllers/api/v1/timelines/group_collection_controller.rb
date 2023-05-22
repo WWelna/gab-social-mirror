@@ -53,6 +53,7 @@ class Api::V1::Timelines::GroupCollectionController < Api::BaseController
 
   def set_statuses
     @statuses = cached_group_collection_statuses
+    @statuses = @statuses.reject { |status| status.proper.nil? }
   end
 
   def cached_group_collection_statuses

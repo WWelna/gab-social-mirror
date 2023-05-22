@@ -7,7 +7,7 @@ class Api::V1::StatusesController < Api::BaseController
   before_action -> { doorkeeper_authorize! :write, :'write:statuses' }, only:   [:create, :update, :destroy]
   before_action :require_user!, except:  [:show, :comments, :context, :card]
   before_action :set_status, only:       [:show, :comments, :context, :card, :update, :revisions]
-  after_action :update_stream, only: [:create, :update]
+  #after_action :update_stream, only: [:create, :update]
 
   # This API was originally unlimited, pagination cannot be introduced without
   # breaking backwards-compatibility. Arbitrarily high number to cover most
@@ -36,9 +36,10 @@ class Api::V1::StatusesController < Api::BaseController
     descendants_results = @status.descendants(CONTEXT_LIMIT, current_account)
     loaded_ancestors    = cache_collection(ancestors_results, Status)
     loaded_descendants  = cache_collection(descendants_results, Status)
+    quoted_result = !@status.quote_of_id.nil? && !@status.quote.nil? ? [@status.quote] : []
 
-    @context = Context.new(ancestors: loaded_ancestors, descendants: loaded_descendants)
-    statuses = [@status] + @context.ancestors + @context.descendants
+    @context = Context.new(ancestors: loaded_ancestors, descendants: loaded_descendants, quoted: quoted_result)
+    statuses = [@status] + @context.ancestors + @context.descendants + @context.quoted
 
     render json: @context, serializer: REST::ContextSerializer, relationships: StatusRelationshipsPresenter.new(statuses, current_user&.account_id)
   end
@@ -66,7 +67,9 @@ class Api::V1::StatusesController < Api::BaseController
                                          application: doorkeeper_token.application,
                                          poll: status_params[:poll],
                                          group_id: status_params[:group_id],
-                                         quote_of_id: status_params[:quote_of_id])
+                                         quote_of_id: status_params[:quote_of_id],
+                                         status_context_id: status_params[:status_context_id],
+                                        )
 
     if @status.is_a? ScheduledStatus
       render json: @status, serializer: REST::ScheduledStatusSerializer
@@ -89,7 +92,9 @@ class Api::V1::StatusesController < Api::BaseController
                                          sensitive: status_params[:sensitive],
                                          spoiler_text: status_params[:spoiler_text],
                                          visibility: status_params[:visibility],
-                                         application: doorkeeper_token.application)
+                                         application: doorkeeper_token.application,
+                                         status_context_id: status_params[:status_context_id],
+                                        )
 
     render json: @status, serializer: REST::StatusSerializer
   end
@@ -102,10 +107,40 @@ class Api::V1::StatusesController < Api::BaseController
     RemovalWorker.perform_async(@status.id)
   end
 
+  def remove
+    status = Status.find(params[:id])
+    conversation = status.conversation_id
+    owner = Status.unscoped.where(conversation_id: conversation).order(id: :asc).limit(1).pluck(:account_id).first
+    if owner != current_account.id
+      return render json: { error: 'You are not the owner of this conversation' }, status: 403
+    end
+    if status.account_id == current_account.id
+      return render json: { error: 'You cannot remove your own status with this action' }, status: 403
+    end
+    if !status.in_reply_to_id.nil?
+      opp = status.in_reply_to_id
+      status.update!(in_reply_to_id: nil)
+      Rails.cache.delete("statuses/#{opp}")
+      clear_parent_caches(opp)
+      mention = status.active_mentions.where(account_id: current_account.id).first
+      mention.update!(silent: true)
+    end
+    if params[:block]
+      BlockService.new.call(current_account, status.account)
+    end
+    render_empty_success
+  end 
+
   private
 
+  def clear_parent_caches(status_id)
+    parent = Status.where(id: status_id).pluck(:in_reply_to_id).first
+    Rails.cache.delete("statuses/#{parent}") unless parent.nil?
+    clear_parent_caches(parent) unless parent.nil?
+  end
+
   def update_stream
-    FeedManager.instance.push_to_home(@status.account, @status)
+    #
   end
 
   def set_status
@@ -128,6 +163,7 @@ class Api::V1::StatusesController < Api::BaseController
       :scheduled_at,
       :expires_at,
       :group_id,
+      :status_context_id,
       media_ids: [],
       poll: [
         :expires_in,

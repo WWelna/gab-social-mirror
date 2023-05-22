@@ -40,7 +40,7 @@ class MessagesLayout extends React.PureComponent {
       isSettings,
       showBackBtn,
       source,
-      currentConversationIsRequest,
+      isRequest,
       selectedChatConversationId,
     } = this.props
 
@@ -67,11 +67,11 @@ class MessagesLayout extends React.PureComponent {
             <main role='main' className={[_s.d, _s.w100PC, _s.flexGrow1, _s.bgPrimary, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
               <div className={[_s.d, _s.w100PC, _s.flexRow, _s.pb15].join(' ')}>
                 {
-                  (isSettings || currentConversationIsRequest) &&
+                  (isSettings || isRequest) &&
                   <ChatSettingsSidebar isXS />
                 }
                 {
-                  !isSettings && !currentConversationIsRequest &&
+                  !isSettings && !isRequest &&
                   <ChatApprovedConversationsSidebar source={source} />
                 }
               </div>
@@ -86,8 +86,8 @@ class MessagesLayout extends React.PureComponent {
             <main role='main' className={[_s.d, _s.w100PC, _s.flexGrow1, _s.bgPrimary].join(' ')}>
               <ChatMessageScrollingList chatConversationId={selectedChatConversationId} isXS={isXS} />
             </main>
-            { !currentConversationIsRequest && <ChatMessageComposeForm chatConversationId={selectedChatConversationId} isXS={isXS} /> }
-            { currentConversationIsRequest && <ChatConversationRequestApproveBar chatConversationId={selectedChatConversationId} isXS={isXS} /> }
+            { !isRequest && <ChatMessageComposeForm chatConversationId={selectedChatConversationId} isXS={isXS} /> }
+            { isRequest && <ChatConversationRequestApproveBar chatConversationId={selectedChatConversationId} isXS={isXS} /> }
           </div>
         )
       } else {
@@ -136,11 +136,11 @@ class MessagesLayout extends React.PureComponent {
               classNamesXS={[_s.d, _s.w100PC, _s.h100PC, _s.jcEnd].join(' ')}
             >
               {
-                (isSettings || currentConversationIsRequest) &&
+                (isSettings || isRequest) &&
                 <ChatSettingsSidebar />
               }
               {
-                !isSettings && !currentConversationIsRequest &&
+                !isSettings && !isRequest &&
                 <ChatApprovedConversationsSidebar source={source} />
               }
               <div className={[_s.d, _s.flexGrow1, _s.h100PC, _s.bgPrimary, _s.borderColorSecondary, _s.borderRight1PX, _s.z1].join(' ')}>
@@ -157,12 +157,12 @@ class MessagesLayout extends React.PureComponent {
 }
 
 const mapStateToProps = (state) => {
-  const selectedChatConversationId = state.getIn(['chats', 'selectedChatConversationId'], null)
-  const currentConversationIsRequest = selectedChatConversationId ? !state.getIn(['chat_conversations', selectedChatConversationId, 'is_approved'], true) : false
+  const selectedChatConversationId = state.getIn(['chats', 'selectedChatConversationId'])
+  const isRequest = state.getIn(['chat_conversations', selectedChatConversationId, 'is_approved']) === false
 
   return {
     selectedChatConversationId,
-    currentConversationIsRequest,
+    isRequest,
     width: state.getIn(['settings', 'window_dimensions', 'width']),
   }
 }

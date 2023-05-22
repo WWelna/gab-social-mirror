@@ -1,5 +1,8 @@
 import { createSelector } from 'reselect'
-import { List as ImmutableList } from 'immutable'
+import {
+  List as ImmutableList,
+  Map as ImmutableMap,
+} from 'immutable'
 import { me } from '../initial_state'
 
 const getAccountBase = (state, id) => state.getIn(['accounts', id], null)
@@ -144,7 +147,8 @@ export const makeGetStatus = () => {
       getFilters,
     ],
     (state, statusBase, group, quotedStatus, statusRepost, accountBase, username, reaction, filters) => {
-      if (!statusBase) {
+      // Can't do anything without a status or account..
+      if (!statusBase || !accountBase) {
         return null
       }
 
@@ -243,4 +247,25 @@ export const getListOfGroups = createSelector([
   })
 
   return list
+})
+  
+export const getGroupStatusContexts = createSelector([
+  (state) => state.getIn(['status_contexts', 'objects'], ImmutableMap()),
+  (state, { groupId }) => groupId,
+  (state, { isEnabled }) => isEnabled,
+], (statusContextObjects, groupId, isEnabled) => {
+  const stausContexts = statusContextObjects.toList()
+  return stausContexts.filter((obj) => {
+    return obj.get('is_enabled') == isEnabled && obj.get('group_id') == groupId
+  })
+})
+
+export const getGlobalStatusContexts = createSelector([
+  (state) => state.getIn(['status_contexts', 'objects'], ImmutableMap()),
+  (state, { isEnabled }) => isEnabled,
+], (statusContextObjects, isEnabled) => {
+  const stausContexts = statusContextObjects.toList()
+  return stausContexts.filter((obj) => {
+    return obj.get('is_enabled') == isEnabled && !!obj.get('is_global')
+  })
 })

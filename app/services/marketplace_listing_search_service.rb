@@ -28,7 +28,7 @@ class MarketplaceListingSearchService < BaseService
     end
     
     options.each do |key, value|
-      scope = scope.merge scope_for(key, value) if !value.nil? && defined?(value)
+      scope = scope.merge scope_for(key, value) if !value.nil? && defined?(value) && value != ''
     end
     scope
   end
@@ -39,10 +39,13 @@ class MarketplaceListingSearchService < BaseService
     case key.to_sym
     when :query
       MarketplaceListing.matching(:title, :contains, value)
+        .or(MarketplaceListing.matching(:description, :contains, value))
+        .or(MarketplaceListing.where('tags @> ARRAY[?]::varchar[]', value.split(' ').map(&:strip)))
+        .or(MarketplaceListing.where('tags @> ARRAY[?]::varchar[]', value.strip))
     when :id
       MarketplaceListing.where(id: value)
     when :tags
-      MarketplaceListing.where(tags: [value]) # includes
+      MarketplaceListing.where('tags @> ARRAY[?]::varchar[]', value.split(',').map(&:strip))
     when :category_id
       MarketplaceListing.where(marketplace_listing_category_id: value)
     when :location

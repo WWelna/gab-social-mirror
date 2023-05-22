@@ -141,4 +141,9 @@ ModalBase.propTypes = {
   isCenteredXS: PropTypes.bool
 }
 
+/**
+ * Allow using ModalBase without redux or react-router in the account section.
+*/
+export const ModalBaseRaw = ModalBase
+
 export default withRouter(injectIntl(connect(mapStateToProps)(ModalBase)))

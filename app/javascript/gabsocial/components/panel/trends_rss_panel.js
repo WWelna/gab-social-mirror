@@ -102,7 +102,7 @@ class TrendsRSSPanel extends ImmutablePureComponent {
                 isXS={isXS}
                 trend={trend}
                 viewType={viewType}
-                key={`trend-card-rss-${i}`}
+                key={`trend-card-rss-${trendsRSSId}-${trend.get('id')}`}
               />
             ))
           }

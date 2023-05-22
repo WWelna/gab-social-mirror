@@ -5,6 +5,7 @@ import {
   LOCAL_STORAGE_BLOCKS,
   LOCAL_STORAGE_MUTES,
   LOCAL_STORAGE_BLOCKED_BY,
+  LOCAL_STORAGE_GROUP_BLOCKS,
 } from '../constants'
 
 // helpers
@@ -13,7 +14,7 @@ function getLocalStorageValueAsArray(key) {
   return !!existing ? existing.split(',') : []
 }
 
-function getLocalStorageIs(key, accountId) {
+function getLocalStorageIds(key, accountId) {
   if (!me || !accountId) return false
   const value = getLocalStorageValueAsArray(key)
   return value.includes(accountId)
@@ -47,7 +48,7 @@ function removeLocalStorageId(key, id) {
  * blocking
  */
 export function isBlockingId(accountId) {
-  return getLocalStorageIs(LOCAL_STORAGE_BLOCKS, accountId)
+  return getLocalStorageIds(LOCAL_STORAGE_BLOCKS, accountId)
 }
 
 export function setIsBlockingIds(ids) {
@@ -62,11 +63,27 @@ export function removeIsBlockingId(id) {
   removeLocalStorageId(LOCAL_STORAGE_BLOCKS, id)
 }
 
+export function setIsBlockingGroupIds(ids) {
+  setLocalStorageIds(LOCAL_STORAGE_GROUP_BLOCKS, ids)
+}
+
+export function appendIsBlockingGroupId(id) {
+  appendLocalStorageId(LOCAL_STORAGE_GROUP_BLOCKS, id)
+}
+
+export function isBlockingGroupId(groupId) {
+  return getLocalStorageIds(LOCAL_STORAGE_GROUP_BLOCKS, groupId)
+}
+
+export function removeIsBlockingGroupId(groupId) {
+  removeLocalStorageId(LOCAL_STORAGE_GROUP_BLOCKS, groupId)
+}
+
 /**
  * muting
  */
 export function isMutingId(accountId) {
-  return getLocalStorageIs(LOCAL_STORAGE_MUTES, accountId)
+  return getLocalStorageIds(LOCAL_STORAGE_MUTES, accountId)
 }
 
 export function setIsMutingIds(ids) {
@@ -85,7 +102,7 @@ export function removeIsMutingId(id) {
  * blocked by
  */
  export function isBlockedById(accountId) {
-  return getLocalStorageIs(LOCAL_STORAGE_BLOCKED_BY, accountId)
+  return getLocalStorageIds(LOCAL_STORAGE_BLOCKED_BY, accountId)
 }
 
 export function setIsBlockedByIds(ids) {

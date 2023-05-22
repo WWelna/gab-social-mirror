@@ -1,10 +1,18 @@
 # frozen_string_literal: true
 
 class REST::ListRelationshipSerializer < ActiveModel::Serializer
-  attributes :id, :member, :subscriber
+  attributes :id, :member, :subscriber, :admin
 
   def id
     object.id.to_s
+  end
+
+  def admin
+    if !current_user.nil?
+      current_user.account.id.to_s == object.account_id.to_s
+    else 
+      false
+    end
   end
 
   def member

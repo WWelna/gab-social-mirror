@@ -2,7 +2,6 @@
 
 class Api::V1::ShortcutsController < Api::BaseController
   before_action :require_user!
-  before_action :set_shortcut, except: [:index, :create]
 
   def index
     @shortcuts = Shortcut.where(account: current_account).limit(100)
@@ -66,6 +65,7 @@ class Api::V1::ShortcutsController < Api::BaseController
         created_at: s.created_at,
         shortcut_id: s.shortcut_id,
         shortcut_type: s.shortcut_type,
+        unread_count: s.unread_count,
         shortcut: value,
       }
       r
@@ -75,7 +75,12 @@ class Api::V1::ShortcutsController < Api::BaseController
   end
 
   def show
-    render json: @shortcut, serializer: REST::ShortcutSerializer
+    shortcut = shortcut_by_type
+    if shortcut.nil?
+      render json: { error: 'Not found' }, status: 404
+    else
+      render json: shortcut, serializer: REST::ShortcutSerializer
+    end
   end
 
   def create
@@ -125,14 +130,47 @@ class Api::V1::ShortcutsController < Api::BaseController
   end
 
   def destroy
-    @shortcut.destroy!
-    render json: { error: false, id: params[:id] }
+    shortcut = shortcut_by_id
+    if shortcut.nil?
+      render json: { error: 'Not found' }, status: 404
+    else
+      shortcut.destroy!
+      render json: { error: false, id: params[:id] }
+    end
+  end
+
+  def clear_count
+    shortcut = shortcut_by_id
+    if shortcut.nil?
+      render json: { error: 'Not found' }, status: 404
+    else
+      shortcut.update!(unread_count: 0)
+      render_empty_success
+    end
   end
 
   private
 
-  def set_shortcut
-    @shortcut = Shortcut.where(account: current_account).find(params[:id])
+  def shortcut_by_id
+    Shortcut.where(account: current_account).find(params[:id])
+  end
+
+  def shortcut_by_type
+    # if type is "tag" find tag's id
+    the_id = params[:id]
+    the_type = params[:type]
+
+    if the_type == 'tag'
+      tag = Tag.where(name: the_id.to_s.downcase).first
+      return nil if tag.nil?
+      the_id = tag.id
+    end
+
+    Shortcut.where(
+      account: current_account,
+      shortcut_id: the_id,
+      shortcut_type: the_type,
+    ).limit(1).first
   end
 
   def shortcut_params

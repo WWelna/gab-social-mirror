@@ -4,8 +4,8 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
-import debounce from 'lodash.debounce'
-import isObject from 'lodash.isobject'
+import debounce from 'lodash/debounce'
+import isObject from 'lodash/isObject'
 import queryString from 'query-string'
 import {
   fetchMarketplaceListingsBySearch,

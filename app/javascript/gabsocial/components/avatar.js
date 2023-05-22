@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { autoPlayGif } from '../initial_state'
 import { openPopoverDeferred, cancelPopover } from '../actions/popover'
 import Image from './image'
@@ -53,11 +53,13 @@ class Avatar extends ImmutablePureComponent {
       account,
       expandOnClick,
       size,
+      isStatic,
     } = this.props
     const { hovering } = this.state
 
     const isPro = !!account ? account.get('is_pro') : false
-    const alt = !account ? '' : `${account.get('display_name')} ${isPro ? '(PRO)' : ''}`.trim()
+    const displayName = !!account ? account.get('display_name') || account.get('username') : ''
+    const alt = (!isStatic || !account) ? '' : `${displayName} ${isPro ? '(PRO)' : ''}`.trim()
     const classes = [_s.d, _s.circle, _s.overflowHidden]
     if (isPro) {
       classes.push(_s.boxShadowAvatarPro)
@@ -79,10 +81,10 @@ class Avatar extends ImmutablePureComponent {
         alt={alt}
         imageRef={this.setImageRef}
         className={classes.join(' ')}
-        expandOnClick={expandOnClick}
-        onMouseEnter={this.handleMouseEnter}
-        onMouseMove={this.handleMouseMove}
-        onMouseLeave={this.handleMouseLeave}
+        expandOnClick={isStatic ? null : expandOnClick}
+        onMouseEnter={isStatic ? null : this.handleMouseEnter}
+        onMouseMove={isStatic ? null : this.handleMouseMove}
+        onMouseLeave={isStatic ? null : this.handleMouseLeave}
         width={size}
         height={size}
       />

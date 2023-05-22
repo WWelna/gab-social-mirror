@@ -18,6 +18,7 @@ const VideoItem = ({
   channelName,
   channelAvatar,
   views,
+  viewsText,
   width,
   duration,
 }) => {
@@ -33,6 +34,7 @@ const VideoItem = ({
 
   const maxTitle = 64
   const truncatedTitle = title.length >= maxTitle ? `${title.substring(0, maxTitle).trim()}...` : title
+  const viewsLabel = viewsText ? viewsText : 'views'
 
   return (
     <a
@@ -45,17 +47,17 @@ const VideoItem = ({
     >
       <div className={[_s.d, _s.w100PC, _s.pt5625PC, _s.overflowHidden, _s.radiusSmall].join(' ')}>
         <div className={[_s.d, _s.posAbs, _s.top0, _s.right0, _s.left0, _s.bottom0].join(' ')}>
-          <Image src={thumbnail} className={[_s.d, _s.width100PC, _s.height100PC].join(' ')} />
+          <Image height='100%' src={thumbnail} className={[_s.d, _s.width100PC, _s.height100PC].join(' ')} />
           {
             isHovering &&
-            <div className={[_s.d, _s.posAbs, _s.aiCenter, _s.jcCenter, _s.bgBlackOpaque, _s.top0, _s.left0, _s.bottom0, _s.right0, _s.z1].join(' ')}>
+            <div className={[_s.d, _s.posAbs, _s.aiCenter, _s.jcCenter, _s.bgBlackOpaquer, _s.top0, _s.left0, _s.bottom0, _s.right0, _s.z1].join(' ')}>
               <div className={[_s.d, _s.h60PX, _s.w60PX, _s.bgBlackOpaquest, _s.circle, _s.borderColorWhite, _s.border2PX, _s.aiCenter, _s.jcCenter].join(' ')}>
                 <Icon id='play' className={[_s.cWhite, _s.ml2].join(' ')} size='22px' />
               </div>
             </div>
           }
 
-          <div className={[_s.d, _s.posAbs, _s.radiusSmall, _s.bgBlackOpaque, _s.px5, _s.py5, _s.mr5, _s.mt5, _s.mb5, _s.bottom0, _s.right0, _s.z3].join(' ')}>
+          <div className={[_s.d, _s.posAbs, _s.radiusSmall, _s.bgBlackOpaquer, _s.px5, _s.py5, _s.mr5, _s.mt5, _s.mb5, _s.bottom0, _s.right0, _s.z3].join(' ')}>
             <Text size='extraSmall' color='white'>
               {duration}
             </Text>
@@ -75,7 +77,7 @@ const VideoItem = ({
           </Text>
           <div>
             <Text color='secondary' size='small'>
-              {views} views
+              {views} {viewsLabel}
               <DotTextSeperator />&nbsp;
               <RelativeTimestamp timestamp={created} />
             </Text>
@@ -95,7 +97,8 @@ VideoItem.propTypes = {
   channelName: PropTypes.string,
   channelAvatar: PropTypes.string,
   views: PropTypes.string,
-  duration: PropTypes.number,
+  viewsText: PropTypes.string,
+  duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 }
 
 const mapStateToProps = (state) => ({

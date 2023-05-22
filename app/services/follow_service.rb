@@ -65,6 +65,9 @@ class FollowService < BaseService
   def direct_follow(source_account, target_account, reblogs: true)
     follow = source_account.follow!(target_account, reblogs: reblogs)
 
+    # publish all follow events to altstream
+    Redis.current.publish("altstream:main", Oj.dump(event: :follow, payload: { account_id: source_account.id.to_s, target_account_id: target_account.id.to_s }))
+
     if target_account.local?
       LocalNotificationWorker.perform_async(target_account.id, follow.id, follow.class.name)
     end

@@ -7,6 +7,7 @@ import { fetchShortcuts } from '../actions/shortcuts'
 import Text from '../components/text'
 import ColumnIndicator from '../components/column_indicator'
 import List from '../components/list'
+import Counter from '../components/counter'
 
 class Shortcuts extends ImmutablePureComponent {
 
@@ -47,6 +48,7 @@ class Shortcuts extends ImmutablePureComponent {
       return {
         to: s.get('to'),
         title: s.get('title'),
+        count: s.get('unread_count'),
         image: s.get('image'),
         icon: s.get('icon'),
       }

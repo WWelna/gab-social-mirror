@@ -104,6 +104,11 @@ class ZoomableImage extends React.PureComponent {
     if (handler) handler()
   }
 
+  handleOnLoad = () => {
+    const { onLoad } = this.props
+    !!onLoad && onLoad()
+  }
+
   setContainerRef = c => {
     this.container = c
   }
@@ -136,6 +141,8 @@ class ZoomableImage extends React.PureComponent {
             transformOrigin: '0 0',
           }}
           onClick={this.handleClick}
+          onLoad={this.handleOnLoad}
+          onError={this.handleOnLoad}
         />
       </div>
     )

@@ -20,7 +20,7 @@ class Api::V1::ReportsController < Api::BaseController
       category: report_params[:category]
     )
 
-    render json: @report, serializer: REST::ReportSerializer
+    render json: {success: true}
   end
 
   private

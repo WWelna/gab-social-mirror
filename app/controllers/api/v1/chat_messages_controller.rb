@@ -20,6 +20,7 @@ class Api::V1::ChatMessagesController < Api::BaseController
     chat = PostChatMessageService.new.call(
       current_account,
       text: chat_params[:text],
+      media_ids: chat_params[:media_ids],
       chat_conversation_account: chat_conversation_account,
       marketplace_listing: marketplace_listing
     )
@@ -35,7 +36,7 @@ class Api::V1::ChatMessagesController < Api::BaseController
   private
 
   def chat_params
-    params.permit(:text, :chat_conversation_id, :marketplace_listing)
+    params.permit(:text, :chat_conversation_id, :marketplace_listing, media_ids: [])
   end
 
   def set_chat_message

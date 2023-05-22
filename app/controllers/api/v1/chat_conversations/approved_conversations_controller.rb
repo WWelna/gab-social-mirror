@@ -7,8 +7,19 @@ class Api::V1::ChatConversations::ApprovedConversationsController < Api::BaseCon
   after_action :insert_pagination_headers
 
   def index
-    chat_conversation_accounts = load_chat_conversation_accounts
-    render json: chat_conversation_accounts, each_serializer: REST::ChatConversationAccountSerializer
+    convos = nil
+
+    if params[:pinned]
+      convos = current_account
+        .chat_conversation_accounts
+        .active
+        .where({ is_pinned: true })
+        .by_recent_message
+    else
+      convos = paginated_chat_conversation_accounts
+    end
+
+    render json: convos, each_serializer: REST::ChatConversationAccountSerializer
   end
 
   def show
@@ -45,14 +56,11 @@ class Api::V1::ChatConversations::ApprovedConversationsController < Api::BaseCon
 
   private
 
-  def load_chat_conversation_accounts
-    paginated_chat_conversation_accounts
-  end
-
   def paginated_chat_conversation_accounts
     current_account
       .chat_conversation_accounts
       .active
+      .where.not({ is_pinned: true })
       .by_recent_message
       .paginate_by_max_id(
         limit_param(DEFAULT_CHAT_CONVERSATION_LIMIT),

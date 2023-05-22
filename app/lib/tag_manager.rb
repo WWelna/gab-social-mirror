@@ -47,6 +47,7 @@ class TagManager
   end
 
   def url_for(target)
+    return nil if target.nil?
     return target.url if target.respond_to?(:local?) && !target.local?
 
     case target.object_type

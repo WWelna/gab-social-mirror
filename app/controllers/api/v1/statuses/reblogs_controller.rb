@@ -14,6 +14,10 @@ class Api::V1::Statuses::ReblogsController < Api::BaseController
 
   def destroy
     @my_relog = status_for_destroy
+    if @my_relog.nil?
+      render json: { }, status: 206
+      return
+    end
     @original_status = @my_relog.reblog
 
     authorize @my_relog, :unreblog?
@@ -37,7 +41,11 @@ class Api::V1::Statuses::ReblogsController < Api::BaseController
   end
 
   def status_for_destroy
-    current_user.account.statuses.where(reblog_of_id: params[:status_id]).first!
+    begin
+      current_user.account.statuses.where(reblog_of_id: params[:status_id]).first!
+    rescue ActiveRecord::RecordNotFound
+      #
+    end
   end
 
   def reblog_params

@@ -17,6 +17,8 @@ class PanelLayout extends React.PureComponent {
       headerButtonTooltip,
       headerButtonHref,
       headerButtonRef,
+      headerButtonTarget,
+      headerTitleSize,
       footerButtonTitle,
       footerButtonAction,
       footerButtonTo,
@@ -32,7 +34,7 @@ class PanelLayout extends React.PureComponent {
             (title || subtitle) &&
             <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
               <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
-                <Heading size='h2'>
+                <Heading size={headerTitleSize ? headerTitleSize : 'h2'}>
                   {title}
                 </Heading>
                 {
@@ -48,6 +50,7 @@ class PanelLayout extends React.PureComponent {
                       href={headerButtonHref}
                       onClick={headerButtonAction}
                       tooltip={headerButtonTooltip}
+                      target={headerButtonTarget}
                       className={[_s.px15, _s.py5, _s.bgSubtle_onHover].join(' ')}
                     >
                       <Text color='inherit' weight='bold'>
@@ -112,6 +115,8 @@ PanelLayout.propTypes = {
   headerButtonTooltip: PropTypes.string,
   headerButtonHref: PropTypes.string,
   headerButtonRef: PropTypes.func,
+  headerButtonTarget: PropTypes.string,
+  headerTitleSize: PropTypes.string,
   footerButtonTitle: PropTypes.string,
   footerButtonAction: PropTypes.func,
   footerButtonTo: PropTypes.string,

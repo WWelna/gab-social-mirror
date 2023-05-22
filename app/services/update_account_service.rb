@@ -13,7 +13,7 @@ class UpdateAccountService < BaseService
     end
 
     # Check if can change username, or hit the 1 per day limit
-    if old_username != params[:username]
+    if !params[:username].nil? && old_username != params[:username]
       max_username_change_daily_limit = 1
       has_changed_username_recently = AccountUsernameChange.where(account: account).where('created_at > ?', 1.day.ago).count >= max_username_change_daily_limit
 
