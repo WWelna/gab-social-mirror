@@ -16,21 +16,26 @@ import {
   SEARCH_TAB_STATUS,
   SEARCH_TAB_GROUP,
   SEARCH_TAB_LINK,
-  SEARCH_TAB_LIST,
+  SEARCH_TAB_FEED,
   SEARCH_TAB_HASHTAG,
+  searchTabs
 } from '../constants'
 import {
   fromJS,
   Map as ImmutableMap,
   List as ImmutableList,
 } from 'immutable'
+import { unique } from '../store/timelines'
+import { parseQuerystring } from '../utils/querystring'
+
+const initialValue = parseQuerystring({ q: '' }).q
+const searchTab = searchTabs.find(item => item.to === window.location.pathname)
 
 const initialState = ImmutableMap({
-  value: '',
-  submitted: false,
+  value: initialValue,
   isLoading: false,
   isError: false,
-  tab: '',
+  tab: (searchTab && searchTab.tab) || '',
   results: ImmutableMap({
     [SEARCH_TAB_ACCOUNT]: ImmutableMap({
       isFetched: false,
@@ -52,7 +57,7 @@ const initialState = ImmutableMap({
       items: ImmutableList(),
       next: null,
     }),
-    [SEARCH_TAB_LIST]: ImmutableMap({
+    [SEARCH_TAB_FEED]: ImmutableMap({
       isFetched: false,
       items: ImmutableList(),
       next: null,
@@ -87,7 +92,6 @@ export default function search(state = initialState, action) {
   case SEARCH_CHANGE:
     return state.withMutations((map) => {
       map.set('value', action.value)
-      map.set('submitted', false)
     })
   case SEARCH_CLEAR:
     return initialState
@@ -95,37 +99,35 @@ export default function search(state = initialState, action) {
   case SEARCH_FETCH_SUCCESS:
     return state.withMutations((mutable) => {
       if (action.results.accounts) {
-        mutable.updateIn(['results', SEARCH_TAB_ACCOUNT, 'items'], (list) => list.concat(action.results.accounts.map(item => item.id)))
+        mutable.updateIn(['results', SEARCH_TAB_ACCOUNT, 'items'], (list) => list.concat(action.results.accounts.map(item => item.id)).filter(unique))
         mutable.setIn(['results', SEARCH_TAB_ACCOUNT, 'isFetched'], true)
         mutable.setIn(['results', SEARCH_TAB_ACCOUNT, 'next'], action.next)
       }
       if (action.results.statuses) {
-        mutable.updateIn(['results', SEARCH_TAB_STATUS, 'items'], (list) => list.concat(action.results.statuses.map(item => item.id)))
+        mutable.updateIn(['results', SEARCH_TAB_STATUS, 'items'], (list) => list.concat(action.results.statuses.map(item => item.id)).filter(unique))
         mutable.setIn(['results', SEARCH_TAB_STATUS, 'isFetched'], true)
         mutable.setIn(['results', SEARCH_TAB_STATUS, 'next'], action.next)
       }
       if (action.results.groups) {
-        mutable.updateIn(['results', SEARCH_TAB_GROUP, 'items'], (list) => list.concat(action.results.groups.map(item => item.id)))
+        mutable.updateIn(['results', SEARCH_TAB_GROUP, 'items'], (list) => list.concat(action.results.groups.map(item => item.id)).filter(unique))
         mutable.setIn(['results', SEARCH_TAB_GROUP, 'isFetched'], true)
         mutable.setIn(['results', SEARCH_TAB_GROUP, 'next'], action.next)
       }
       if (action.results.links) {
-        mutable.updateIn(['results', SEARCH_TAB_LINK, 'items'], (list) => list.concat(action.results.links.map(item => item.id)))
+        mutable.updateIn(['results', SEARCH_TAB_LINK, 'items'], (list) => list.concat(action.results.links.map(item => item.id)).filter(unique))
         mutable.setIn(['results', SEARCH_TAB_LINK, 'isFetched'], true)
         mutable.setIn(['results', SEARCH_TAB_LINK, 'next'], action.next)
       }
       if (action.results.lists) {
-        mutable.updateIn(['results', SEARCH_TAB_LIST, 'items'], (list) => list.concat(action.results.lists.map(item => item.id)))
-        mutable.setIn(['results', SEARCH_TAB_LIST, 'isFetched'], true)
-        mutable.setIn(['results', SEARCH_TAB_LIST, 'next'], action.next)
+        mutable.updateIn(['results', SEARCH_TAB_FEED, 'items'], (list) => list.concat(action.results.lists.map(item => item.id)).filter(unique))
+        mutable.setIn(['results', SEARCH_TAB_FEED, 'isFetched'], true)
+        mutable.setIn(['results', SEARCH_TAB_FEED, 'next'], action.next)
       }
       if (action.results.hashtags) {
-        mutable.setIn(['results', SEARCH_TAB_HASHTAG, 'items'], ImmutableList(fromJS(action.results.hashtags)))
+        mutable.setIn(['results', SEARCH_TAB_HASHTAG, 'items'], ImmutableList(fromJS(action.results.hashtags)).filter(unique))
         mutable.setIn(['results', SEARCH_TAB_HASHTAG, 'isFetched'], true)
         mutable.setIn(['results', SEARCH_TAB_HASHTAG, 'next'], null)
       }
-      
-      mutable.set('submitted', true)
       mutable.set('isLoading', false)
       mutable.set('isError', false)
     })

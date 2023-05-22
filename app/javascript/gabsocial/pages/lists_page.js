@@ -19,6 +19,7 @@ import {
   GabTVVideosPanel,
   UserSuggestionsPanel,
 } from '../features/ui/util/async_components'
+import { parseQuerystring } from '../utils/querystring'
 
 class ListsPage extends React.PureComponent {
 
@@ -41,14 +42,7 @@ class ListsPage extends React.PureComponent {
 
   checkCurrentTab = () => {
     // null/no tab is "featured" aka main landing page of /feeds
-    let tab = null
-    try {
-      const search = this.props.location.search
-      const qp = queryString.parse(search)
-      tab = qp.tab
-    } catch (error) {
-      //
-    }
+    const { tab } = parseQuerystring({ tab: '' })
     this.setState({ currentTab: tab })
   }
 

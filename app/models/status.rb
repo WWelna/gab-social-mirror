@@ -29,6 +29,7 @@
 #  expires_at             :datetime
 #  has_quote              :boolean
 #  tombstoned_at          :datetime
+#  group_moderation       :boolean
 #
 
 class Status < ApplicationRecord
@@ -99,8 +100,8 @@ class Status < ApplicationRecord
   scope :tombstoned,  -> { where.not(tombstoned_at: nil) }
   scope :not_tombstoned,  -> { where(tombstoned_at: nil) }
 
-  scope :only_replies, -> { where('statuses.reply IS TRUE') }
-  scope :without_replies, -> { where('statuses.reply IS FALSE') }
+  scope :only_replies, -> { where('statuses.reply IS TRUE AND statuses.in_reply_to_id IS NOT NULL') }
+  scope :without_replies, -> { where('statuses.reply IS FALSE AND statuses.in_reply_to_id IS NULL') }
   scope :without_reblogs, -> { where('statuses.reblog_of_id IS NULL') }
   scope :with_public_visibility, -> { where(visibility: :public) }
   scope :tagged_with, ->(tag) { joins(:statuses_tags).where(statuses_tags: { tag_id: tag }) }
@@ -293,11 +294,17 @@ class Status < ApplicationRecord
   end
 
   def quotes_count
-    @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 4.hours) do
-      self.class.quotes_count_map(id)[id] || 0
+    # if there's no status_stat record, or the quotes_count is null, we still have to calculate.
+    # however, after this feature is launched, we can assume that quotes will create/increment a status_stat record,
+    # so we can also filter based loosely on when this was launched.
+    if created_at < Date.strptime("09/23/2022", "%m/%d/%Y") && (status_stat.nil? || status_stat.quotes_count.nil?)
+      @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 5.minutes) do
+        self.class.quotes_count_map(id)[id] || 0
+      end
+    else
+      status_stat&.quotes_count || 0
     end
   end
-
 
   def replies_count
     status_stat&.replies_count || 0
@@ -523,19 +530,19 @@ class Status < ApplicationRecord
     end
   end
 
-  def resync_status_stat!
-    return if marked_for_destruction? || destroyed?
+  #def resync_status_stat!
+  #  return if marked_for_destruction? || destroyed?
 
-    replies_count = replies.count if reply_countable?
-    reblogs_count = reblogs.count if reblog_countable?
+  #  replies_count = replies.count if reply_countable?
+  #  reblogs_count = reblogs.count if reblog_countable?
 
-    atts = {
-      replies_count: replies_count,
-      reblogs_count: reblogs_count,
-    }.compact
+  #  atts = {
+  #    replies_count: replies_count,
+  #    reblogs_count: reblogs_count,
+  #  }.compact
 
-    update_status_stat!(atts) if atts.present?
-  end
+  #  update_status_stat!(atts) if atts.present?
+  #end
 
   private
 
@@ -616,6 +623,7 @@ class Status < ApplicationRecord
     account&.increment_count!(:statuses_count)
     reblog&.increment_count!(:reblogs_count) if reblog? && reblog_countable?
     thread&.increment_count!(:replies_count) if in_reply_to_id.present?
+    quote&.increment_count!(:quotes_count) if quote_of_id.present?
   end
 
   def decrement_counter_caches

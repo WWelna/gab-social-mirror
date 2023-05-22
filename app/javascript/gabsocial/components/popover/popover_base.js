@@ -49,7 +49,7 @@ function containsElement(parentElement, checkElement, level = 0) {
     return true
   }
   level += 1
-  if (level > 5) {
+  if (level > 7) {
     // too many checks, it's not local enough, stop
     return false
   }
@@ -129,8 +129,9 @@ class PopoverBase extends ImmutablePureComponent {
    */
   mouseMove = ({ clientX: mouseX, clientY: mouseY }) => {
     const { outerRef } = this
+    const { useProximity } = this.props
 
-    if (!outerRef) {
+    if (!outerRef || !useProximity) {
       return
     }
 
@@ -249,7 +250,7 @@ class PopoverBase extends ImmutablePureComponent {
 
     const containerClasses = CX({
       d: 1,
-      z4: 1,
+      z5: 1,
       boxShadowPopover: popoverType !== POPOVER_STATUS_REACTIONS_SELECTOR && visible,
       displayNone: !visible,
       circle: popoverType === POPOVER_STATUS_REACTIONS_SELECTOR,
@@ -270,7 +271,7 @@ class PopoverBase extends ImmutablePureComponent {
 
           return (
             <div ref={setPopperOuterRef}
-              className={[_s.z4, _s.px5, _s.py5].join(' ')}
+              className={[_s.z5, _s.px5, _s.py5].join(' ')}
               style={style}
               data-placement={placement}>
               <div ref={setPopperArrowRef} style={arrowProps.style} data-popper-arrow />
@@ -304,12 +305,14 @@ PopoverBase.propTypes = {
   onClose: PropTypes.func.isRequired,
   position: PropTypes.string,
   visible: PropTypes.bool,
-  targetRef: PropTypes.any
+  targetRef: PropTypes.any,
+  useProximity: PropTypes.bool,
 }
 
 PopoverBase.defaultProps = {
   title: 'Menu',
   position: 'bottom',
+  useProximity: true,
 }
 
 export default withRouter(connect(mapStateToProps)(PopoverBase))

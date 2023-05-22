@@ -10,7 +10,6 @@ import debounce from 'lodash.debounce'
 import queryString from 'query-string'
 import moment from 'moment-mini'
 import { MIN_ACCOUNT_CREATED_AT_ONBOARDING } from '../../constants'
-import { uploadCompose, resetCompose } from '../../actions/compose'
 import { expandNotifications, setFilter } from '../../actions/notifications'
 import { fetchUnreadWarningsCount } from '../../actions/warnings'
 import LoadingBar from '../../components/loading_bar'
@@ -20,7 +19,6 @@ import WrappedRoute from './util/wrapped_route'
 import ModalRoot from '../../components/modal/modal_root'
 import ToastsContainer from '../../containers/toasts_container'
 import PopoverRoot from '../../components/popover/popover_root'
-import UploadArea from '../../components/upload_area'
 import ProfilePage from '../../pages/profile_page'
 import HashtagPage from '../../pages/hashtag_page'
 import ShortcutsPage from '../../pages/shortcuts_page'
@@ -47,6 +45,7 @@ import IntroductionPage from '../../pages/introduction_page'
 import MarketplaceListingCategoriesPage from '../../pages/marketplace_listing_categories_page'
 import MarketplaceListingsPage from '../../pages/marketplace_listings_page'
 import EmptyPage from '../../pages/empty_page'
+import { dispatchWindowEvent } from '../../utils/events'
 
 import {
   About,
@@ -80,6 +79,7 @@ import {
   GroupCreate,
   GroupAbout,
   GroupJoinRequests,
+  GroupModerationTimeline,
   GroupMembers,
   GroupRemovedAccounts,
   GroupTimeline,
@@ -123,6 +123,7 @@ import {
   Introduction,
 } from './util/async_components'
 import { me, meUsername, isFirstSession, showVideos, showSuggestedUsers, showGroups } from '../../initial_state'
+import { parseQuerystring } from '../../utils/querystring'
 
 // Dummy import, to make sure that <Status /> ends up in the application bundle.
 // Without this it ends up in ~8 very commonly used bundles.
@@ -134,9 +135,6 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  isComposing: state.getIn(['compose', 'is_composing']),
-  hasComposingText: state.getIn(['compose', 'text']).trim().length !== 0,
-  hasMediaAttachments: state.getIn(['compose', 'media_attachments']).size > 0,
   accountCreatedAt: !!me ? state.getIn(['accounts', me, 'created_at']) : undefined,
   shownOnboarding: state.getIn(['settings', 'shownOnboarding']),
 })
@@ -248,9 +246,11 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/groups/create' page={ModalPage} component={GroupCreate} content={children} componentParams={{ title: 'Create Group', page: 'create-group', showSuggestedUsers }} />
         <WrappedRoute path='/groups/:id/members' page={GroupPage} component={GroupMembers} content={children} />
         <WrappedRoute path='/groups/:id/requests' page={GroupPage} component={GroupJoinRequests} content={children} />
+        <WrappedRoute path='/groups/:id/moderation' page={GroupPage} component={GroupModerationTimeline} content={children} />
         <WrappedRoute path='/groups/:id/removed-accounts' page={GroupPage} component={GroupRemovedAccounts} content={children} />
         <WrappedRoute path='/groups/:id/edit' page={ModalPage} component={GroupCreate} content={children} componentParams={{ title: 'Edit Group', page: 'edit-group', showSuggestedUsers }} />
         <WrappedRoute path='/groups/:id/about' publicRoute page={GroupPage} component={GroupAbout} content={children} />
+        <WrappedRoute path='/groups/:id/compose' page={ComposePage} component={Compose} content={children} componentParams={{ title: 'Compose', page: 'compose' }} />
         { /* <WrappedRoute path='/groups/:id/media' publicRoute page={GroupPage} component={GroupTimeline} content={children} componentParams={{ isTimeline: true, onlyMedia: true }} /> */ }
         <WrappedRoute path='/groups/:id' exact publicRoute page={GroupPage} component={GroupTimeline} content={children} componentParams={{ isTimeline: true }} />
 
@@ -271,14 +271,8 @@ class SwitchingArea extends React.PureComponent {
         <Redirect from='/follow_requests' to='/notifications/follow_requests' exact />
         <WrappedRoute path='/notifications/follow_requests' exact page={NotificationsPage} component={FollowRequests} content={children} />
 
-        <WrappedRoute path='/search' exact publicRoute page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/people' exact publicRoute page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/groups' exact publicRoute page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/statuses' exact publicRoute page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/links' exact page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/hashtags' exact page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/marketplace' exact page={SearchPage} component={Search} content={children} />
-        <WrappedRoute path='/search/feeds' exact page={SearchPage} component={Search} content={children} />
+        <Redirect from='/search' to='/search/people' exact />
+        <WrappedRoute path='/search/:tab' publicRoute page={SearchPage} component={Search} content={children} />
 
         <WrappedRoute path='/marketplace' exact publicRoute page={MarketplaceListingsPage} component={MarketplaceListingsFrontPage} content={children} componentParams={{ title: 'Marketplace', page: 'marketplace' }} />
         <WrappedRoute path='/marketplace/categories' exact publicRoute page={MarketplaceListingCategoriesPage} component={MarketplaceListingCategories} content={children} componentParams={{ title: 'Marketplace', page: 'marketplace-categories', showSuggestedUsers }} />
@@ -314,7 +308,7 @@ class SwitchingArea extends React.PureComponent {
         {/* <WrappedRoute path='/:username/bookmarks/:bookmarkCollectionId/edit' exact page={ModalPage} component={BookmarkCollectionEdit} content={children} componentParams={{ title: 'Edit Bookmark Collection', page: 'edit-bookmark-collection' }} /> */}
         <WrappedRoute path='/:username/bookmarks/:bookmarkCollectionId' page={ProfilePage} component={BookmarkedStatuses} content={children} />
 
-        <WrappedRoute path='/:username/posts/:statusId' publicRoute exact page={BasicPage} component={StatusFeature} content={children} componentParams={{ title: 'Status', page: 'status', showSuggestedUsers }} />
+        <WrappedRoute path='/:username/posts/:statusId' publicRoute exact page={BasicPage} component={StatusFeature} content={children} componentParams={{ title: 'Status', setDocTitle: false, page: 'status', showSuggestedUsers }} />
 
         <WrappedRoute path='/:username/posts/:statusId/reposts' publicRoute page={ModalPage} component={StatusReposts} content={children} componentParams={{ title: 'Reposts', showSuggestedUsers }} />
         <WrappedRoute path='/:username/posts/:statusId/quotes' publicRoute page={ModalPage} component={StatusQuotes} content={children} componentParams={{ title: 'Quotes', showSuggestedUsers }} />
@@ -340,105 +334,12 @@ class UI extends React.PureComponent {
 
   state = {
     fetchedHome: false,
-    fetchedNotifications: false,
-    draggingOver: false,
-  }
-
-  handleBeforeUnload = (e) => {
-    const {
-      intl,
-      isComposing,
-      hasComposingText,
-      hasMediaAttachments,
-    } = this.props
-
-    if (isComposing && (hasComposingText || hasMediaAttachments)) {
-      // Setting returnValue to any string causes confirmation dialog.
-      // Many browsers no longer display this text to users,
-      // but we set user-friendly message for other browsers, e.g. Edge.
-      e.returnValue = intl.formatMessage(messages.beforeUnload)
-    }
+    fetchedNotifications: false
   }
 
   handleLayoutChange = () => {
     // The cached heights are no longer accurate, invalidate
     this.props.dispatch(clearHeight())
-  }
-
-  handleDragEnter = (e) => {
-    e.preventDefault()
-
-    if (!this.dragTargets) {
-      this.dragTargets = []
-    }
-
-    if (this.dragTargets.indexOf(e.target) === -1) {
-      this.dragTargets.push(e.target)
-    }
-
-    if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
-      this.setState({
-        draggingOver: true,
-      })
-    }
-  }
-
-  handleDragOver = (e) => {
-    if (this.dataTransferIsText(e.dataTransfer)) return false
-
-    e.preventDefault()
-    e.stopPropagation()
-
-    try {
-      e.dataTransfer.dropEffect = 'copy'
-    } catch (err) {
-      //
-    }
-
-    return false
-  }
-
-  handleDrop = (e) => {
-    if (!me) return
-
-    if (this.dataTransferIsText(e.dataTransfer)) return
-    e.preventDefault()
-
-    this.setState({
-      draggingOver: false,
-    })
-    this.dragTargets = []
-
-    if (e.dataTransfer && e.dataTransfer.files.length >= 1) {
-      this.props.dispatch(uploadCompose(e.dataTransfer.files))
-    }
-  }
-
-  handleDragLeave = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    this.dragTargets = this.dragTargets.filter(el => el !== e.target && this.node.contains(el))
-
-    if (this.dragTargets.length > 0) return
-
-    this.setState({
-      draggingOver: false,
-    })
-  }
-
-  dataTransferIsText = (dataTransfer) => {
-    return (
-      dataTransfer
-      && Array.from(dataTransfer.types).includes('text/plain')
-      && dataTransfer.items.length === 1
-    )
-  }
-
-  closeUploadModal = () => {
-    this.setState({
-      draggingOver: false,
-    })
   }
 
   handleServiceWorkerPostMessage = ({ data }) => {
@@ -451,14 +352,6 @@ class UI extends React.PureComponent {
 
   componentDidMount() {
     if (!me) return
-
-    window.addEventListener('beforeunload', this.handleBeforeUnload, false)
-
-    document.addEventListener('dragenter', this.handleDragEnter, false)
-    document.addEventListener('dragover', this.handleDragOver, false)
-    document.addEventListener('drop', this.handleDrop, false)
-    document.addEventListener('dragleave', this.handleDragLeave, false)
-    document.addEventListener('dragend', this.handleDragEnd, false)
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', this.handleServiceWorkerPostMessage)
@@ -473,20 +366,12 @@ class UI extends React.PureComponent {
     if (pathname === '/home') {
       this.props.dispatch(fetchUnreadWarningsCount())
     } else if (pathname.startsWith('/notifications')) {
-      try {
-        const search = this.props.location.search
-        const qp = queryString.parse(search)
-        let view = `${qp.view}`.toLowerCase()
-
-        if (pathname.startsWith('/notifications/follow_requests')) {
-          view = 'follow_requests'
-        }
-
-        this.props.dispatch(setFilter('active', view))
-      } catch (error) {
-        //
+      const qp = parseQuerystring({ view: '' })
+      let view = `${qp.view}`.toLowerCase()
+      if (pathname.startsWith('/notifications/follow_requests')) {
+        view = 'follow_requests'
       }
-
+      this.props.dispatch(setFilter('active', view))
       this.setState({ fetchedNotifications: true })
       this.props.dispatch(expandNotifications())
     }
@@ -506,15 +391,6 @@ class UI extends React.PureComponent {
         this.props.history.push(introductionPath)
       }
     }
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('beforeunload', this.handleBeforeUnload)
-    document.removeEventListener('dragenter', this.handleDragEnter)
-    document.removeEventListener('dragover', this.handleDragOver)
-    document.removeEventListener('drop', this.handleDrop)
-    document.removeEventListener('dragleave', this.handleDragLeave)
-    document.removeEventListener('dragend', this.handleDragEnd)
   }
 
   componentDidUpdate(prevProps) {
@@ -557,7 +433,6 @@ class UI extends React.PureComponent {
 
   handleHotkeyForceNew = (e) => {
     this.handleHotkeyNew(e)
-    this.props.dispatch(resetCompose())
   }
 
   handleHotkeyBack = () => {
@@ -614,7 +489,6 @@ class UI extends React.PureComponent {
 
   render() {
     const { children, location, showVideos, showSuggestedUsers, showGroups } = this.props
-    const { draggingOver } = this.state
 
     // : todo :
     // const handlers = me ? {
@@ -649,8 +523,6 @@ class UI extends React.PureComponent {
         <ModalRoot />
         <PopoverRoot />
 
-        <UploadArea active={draggingOver} onClose={this.closeUploadModal} />
-
         <ToastsContainer />
       </div>
     )
@@ -662,8 +534,6 @@ UI.propTypes = {
   dispatch: PropTypes.func.isRequired,
   children: PropTypes.node,
   isComposing: PropTypes.bool,
-  hasComposingText: PropTypes.bool,
-  hasMediaAttachments: PropTypes.bool,
   location: PropTypes.object,
   intl: PropTypes.object.isRequired,
   history: PropTypes.object.isRequired,

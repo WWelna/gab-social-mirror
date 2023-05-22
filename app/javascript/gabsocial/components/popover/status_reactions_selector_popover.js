@@ -5,6 +5,7 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import { connect } from 'react-redux'
 import isObject from 'lodash.isobject'
 import get from 'lodash.get'
+import { isTouch } from '../../utils/is_mobile'
 import { favorite } from '../../actions/interactions';
 import {
   setIsHoveringReactionId,
@@ -20,9 +21,9 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
   componentDidMount() {
     this.props.onSetReactionPopoverStatus(this.props.statusId)
 
-    if (this.props.isXS) {
-      const evtOpts = supportsPassiveEvents ? { passive: true } : false
-      document.body.classList.add(_s.selectingReaction)
+    if (isTouch()) {
+      const evtOpts = { passive: false }
+      document.documentElement.classList.add(_s.selectingReaction)
       if (primaryInput === 'touch') {      
         document.body.addEventListener('touchmove', this.touchmove, evtOpts)
         document.body.addEventListener('touchend', this.touchend, evtOpts)
@@ -33,7 +34,7 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
   componentWillUnmount() {
     this.props.onSetReactionPopoverStatus(null)
 
-    document.body.classList.remove(_s.selectingReaction)
+    document.documentElement.classList.remove(_s.selectingReaction)
     if (primaryInput === 'touch') {
       document.body.removeEventListener('touchmove', this.touchmove)
       document.body.removeEventListener('touchend', this.touchend)
@@ -79,6 +80,7 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
   }
 
   touchmove = (e) => {
+    e.preventDefault()
     const reactionId = this.getElement(e)
     this.props.onSetIsHoveringReactionId(reactionId)
   }
@@ -94,9 +96,11 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
   }
 
   render() {
-    const { hoveringId, isXS, reactions } = this.props
+    const { hoveringId, reactions } = this.props
 
     if (!me || !reactions || reactions.size < 1) return null
+
+    const isTouchable = isTouch()
 
     const containerClasses = CX({
       d: 1,
@@ -127,8 +131,8 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
               d: 1,
               cursorPointer: 1,
               noSelect: 1,
-              grow_OnHover: !isXS,
-              grow: isXS && hoveringId === reaction.get('id'),
+              grow_OnHover: !isTouchable,
+              grow: isTouchable && hoveringId === reaction.get('id'),
               noUnderline: 1,
               outlineNone: 1,
               bgTransparent: 1,
@@ -136,12 +140,12 @@ class StatusReactionsSelectorPopover extends ImmutablePureComponent {
               px5: !reaction.get('isCustom'),
               aiCenter: !reaction.get('isCustom'),
               jcCenter: !reaction.get('isCustom'),
-              z6: isXS,
+              z6: isTouchable,
               mr5: !isLast,
-              pt100PX: isXS,
-              pb100PX: isXS,
-              mtNeg100PX: isXS,
-              mbNeg100PX: isXS,
+              pt100PX: isTouchable,
+              pb100PX: isTouchable,
+              mtNeg100PX: isTouchable,
+              mbNeg100PX: isTouchable,
             })
             return (
               <button
@@ -182,7 +186,6 @@ const mapDispatchToProps = (dispatch, { statusId, callback }) => ({
 StatusReactionsSelectorPopover.propTypes = {
   statusId: PropTypes.string,
   callback: PropTypes.func,
-  isXS: PropTypes.bool,
   onSetIsHoveringReactionId: PropTypes.func.isRequired,
   onClick: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,

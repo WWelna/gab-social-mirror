@@ -89,12 +89,12 @@ class Video extends ImmutablePureComponent {
       muted: typeof muted !== 'undefined' ? true : undefined,
       sources: [
         {
-          src,
-          type: fileContentType,
-        },
-        {
           src: sourceMp4,
           type: 'video/mp4',
+        },
+        {
+          src,
+          type: fileContentType || 'video/mp4',
         },
       ],
     }))

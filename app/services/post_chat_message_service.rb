@@ -51,7 +51,7 @@ class PostChatMessageService < BaseService
     end
 
     if LinkBlock.block?(@text)
-      raise GabSocial::NotPermittedError, "A link you're trying to post has been blocked by the moderation team"
+      raise GabSocial::NotPermittedError, "A link you are trying to share has been flagged as spam, if you believe this is a mistake please contact support@gab.com and let us know."
     end
   end
 
@@ -129,8 +129,6 @@ class PostChatMessageService < BaseService
   end
 
   def message_expiration
-    return unless @account.is_pro
-
     @chat_conversation_account.chat_message_expiration_policy_duration&.from_now
   end
 

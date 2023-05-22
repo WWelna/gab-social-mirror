@@ -43,12 +43,13 @@ class BookmarkCollections extends ImmutablePureComponent {
       return <ColumnIndicator type='error' message='Error fetching bookmark collections' />
     }
 
-    let listItems = !!bookmarkCollections ? bookmarkCollections.map((b) => ({
-      to: `/${meUsername}/bookmarks/${b.get('id')}`,
-      title: b.get('title'),
+    const bookmarkCollectionsArr = bookmarkCollections.toIndexedSeq().toArray()
+    let listItems = !!bookmarkCollectionsArr ? bookmarkCollectionsArr.map((bookmarkCollection) => ({
+      to: `/${meUsername}/bookmarks/${bookmarkCollection.get('id')}`,
+      title: bookmarkCollection.get('title'),
       icon: 'lock',
     })) : []
-    listItems = listItems.unshift({
+    listItems.unshift({
       to: `/${meUsername}/bookmarks/saved`,
       title: 'Bookmarks',
       icon: 'lock',

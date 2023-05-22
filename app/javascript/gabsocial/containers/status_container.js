@@ -8,11 +8,6 @@ import {
   fromJS,
 } from 'immutable';
 import {
-  replyCompose,
-  mentionCompose,
-  quoteCompose,
-} from '../actions/compose';
-import {
   repost,
   favorite,
   unrepost,
@@ -37,7 +32,7 @@ import {
 } from '../initial_state'
 import {
   MODAL_BOOST,
-  MODAL_CONFIRM,
+  MODAL_COMPOSE,
   MODAL_STATUS,
   MODAL_PRO_UPGRADE,
   MODAL_UNAUTHORIZED,
@@ -196,6 +191,7 @@ const makeMapStateToProps = () => {
       isComment,
       commentSortingType,
       contextType,
+      highlightStatusId: statusId,
       isComposeModalOpen: state.getIn(['modal', 'modalType']) === 'COMPOSE',
       isDeckConnected: state.getIn(['deck', 'connected'], false),
       isReacting: state.getIn(['popover', 'popoverType']) === POPOVER_STATUS_REACTIONS_SELECTOR,
@@ -208,21 +204,11 @@ const makeMapStateToProps = () => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  onReply (status, history, showModal) {
+  onReply (replyStatus) {
     if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
-    dispatch((_, getState) => {
-      const state = getState();
-      if (state.getIn(['compose', 'text']).trim().length !== 0) {
-        dispatch(openModal('CONFIRM', {
-          message: <FormattedMessage id='confirmations.reply.message' defaultMessage='Replying now will overwrite the message you are currently composing. Are you sure you want to proceed?' />,
-          confirm: <FormattedMessage id='confirmations.reply.confirm' defaultMessage='Reply' />,
-          onConfirm: () => dispatch(replyCompose(status, history)),
-        }))
-      } else {
-        dispatch(replyCompose(status, history, showModal));
-      }
-    })
+    // the status goes into modalProps then ComposeModal
+    dispatch(openModal(MODAL_COMPOSE, { replyStatus, isComment: true }))
   },
 
   onShowRevisions (status) {
@@ -247,10 +233,11 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(closePopover())
   },
 
-  onMention (account, history) {
+  onMention (mentionAccount) {
     if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
-    dispatch(mentionCompose(account, history));
+    // the status goes into modalProps then ComposeModal
+    dispatch(openModal(MODAL_COMPOSE, { mentionAccount }))
   },
 
   onOpenMedia (media, index) {
@@ -305,21 +292,9 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(fetchContext(statusId))
   },
 
-  onQuote (status, history) {
+  onQuote (quoteStatus) {
     if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
-    
-    dispatch((_, getState) => {
-      const state = getState()
-      if (state.getIn(['compose', 'text']).trim().length !== 0) {
-        dispatch(openModal(MODAL_CONFIRM, {
-          message: <FormattedMessage id='confirmations.quote.message' defaultMessage='Quoting now will overwrite the message you are currently composing. Are you sure you want to proceed?' />,
-          confirm: <FormattedMessage id='confirmations.quote.confirm' defaultMessage='Quote' />,
-          onConfirm: () => dispatch(quoteCompose(status, history)),
-        }))
-      } else {
-        dispatch(quoteCompose(status, history))
-      }
-    })
+    dispatch(openModal(MODAL_COMPOSE, { quoteStatus }))
   },
 
   onRepost (status) {

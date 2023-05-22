@@ -55,6 +55,10 @@ class GroupPolicy < ApplicationPolicy
     return true
   end
 
+  def update_pin?
+    is_group_admin_or_moderator?
+  end
+  
   def update_account?
     is_group_admin_or_moderator?
   end

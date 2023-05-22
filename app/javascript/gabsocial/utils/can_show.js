@@ -9,6 +9,7 @@ const BLOCKED_BY = 'blockedby'
 const BLOCKING = 'blocking'
 const MUTING = 'muting'
 const FILTERING = 'filtering'
+const SPAMFLAGGED = 'spamflagged'
 
 export const canShowMediaItem = (attachment, account) => {
   if (!attachment) return {}
@@ -17,6 +18,7 @@ export const canShowMediaItem = (attachment, account) => {
   if (status.get('show_anyways')) return {}
 
   const accountId = account.get('id')
+  const spamFlag = account.get('spam_flag')
 
   let canShow = true
   
@@ -29,6 +31,7 @@ export const canShowMediaItem = (attachment, account) => {
   const isBlockedBy = isBlockedById(accountId)
   const isMuting = isMutingId(accountId)
   const isFiltered = status.get('filtered')
+  const isSpamFlagged = spamFlag === 1
 
   // If blocked by, dont show media. Otherwise just hide (blur) it and have 
   // label appear in meta attributes.
@@ -37,6 +40,9 @@ export const canShowMediaItem = (attachment, account) => {
   }
   else if (isMuting) {
     label = getMessage('attachment', 'account that posted it', MUTING)
+  }
+  else if (isSpamFlagged) {
+    label = getMessage('attachment', 'account that posted it', SPAMFLAGGED)
   }
   else if (isBlocking) {
     label = getMessage('attachment', 'account that posted it', BLOCKING)
@@ -54,6 +60,7 @@ export const canShowChatMessage = (chatMessage) => {
   if (chatMessage.get('show_anyways')) return {}
 
   const accountId = chatMessage.getIn(['account', 'id'])
+  const spamFlag = chatMessage.getIn(['account', 'spam_flag'])
 
   // Always show mine
   if (accountId === me) return {}
@@ -65,14 +72,18 @@ export const canShowChatMessage = (chatMessage) => {
   const isBlockedBy = isBlockedById(accountId) || isContentDisplayingBlockedBy(chatMessage.get('text'))
   const isMuting = isMutingId(accountId)
   const isFiltered = chatMessage.get('filtered')
+  const isSpamFlagged = spamFlag === 1
 
   // If blocked by, then just show a label that its unavailable without option to show
   // in order to preserve history and to keep from entire conversation from disappearing
   // otherwise, display option to "show"
   if (isBlockedBy) {
     nulled = true
-    label = getMessage('chat message', 'messager', BLOCKED_BY)
+    label = getMessage('chat message', 'messenger', BLOCKED_BY)
   } 
+  else if (isSpamFlagged) {
+    label = getMessage('chat message', 'messenger', SPAMFLAGGED)
+  }
   else if (isMuting) {
     label = getMessage('chat message', 'messenger', MUTING)
   }
@@ -94,6 +105,7 @@ export const canShowComment = (comment) => {
   if (comment.get('show_anyways')) return {}
 
   const accountId = comment.getIn(['account', 'id'])
+  const spamFlag = comment.getIn(['account', 'spam_flag'])
 
   // Always show mine
   if (accountId === me) return {}
@@ -105,6 +117,7 @@ export const canShowComment = (comment) => {
   const isBlockedBy = isBlockedById(accountId) || isContentDisplayingBlockedBy(comment.get('content'))
   const isMuting = isMutingId(accountId)
   const isFiltered = comment.get('filtered')
+  const isSpamFlagged = spamFlag === 1
 
   // 1. If blocked by, then just show a label that its unavailable without option to show
   // in order to preserve subcomments and to keep from entire conversation from disappearing
@@ -113,6 +126,9 @@ export const canShowComment = (comment) => {
     nulled = true
     label = getMessage('comment', 'commenter', BLOCKED_BY)
   } 
+  else if (isSpamFlagged) {
+    label = getMessage('comment', 'commenter', SPAMFLAGGED)
+  }
   else if (isMuting) {
     label = getMessage('comment', 'commenter', MUTING)
   }
@@ -150,6 +166,7 @@ export const canShowStatus = (status, {
   const isBlockedBy = isBlockedById(accountId) ||  isContentDisplayingBlockedBy(status.get('content'))
   const isMuting = isMutingId(accountId)
   const isFiltered = status.get('filtered')
+  const isSpamFlagged = status.getIn(['account', 'spam_flag']) === 1
 
   const reblog = status.get('reblog')
   const reblogIsBlockedBy = !!reblog ? isBlockedById(reblog.getIn(['account', 'id'])) || isContentDisplayingBlockedBy(reblog.get('content')) : false
@@ -332,7 +349,7 @@ export const canShowStatus = (status, {
   }
 
   // 7. Hide status completely if blocked_by or blocking and does not fall into [PRIOR]
-  else if (isBlockedBy || isBlocking) {
+  else if (isBlockedBy || isBlocking || isSpamFlagged) {
     canShow = false
   }
 
@@ -363,6 +380,8 @@ const getMessage = (content, author, type) => {
       return `This ${content} is hidden because you are muting the ${author}.`
     case FILTERING:
       return `This ${content} is hidden because it contains a word or phrase that you have filtered.`
+    case SPAMFLAGGED:
+      return `This ${content} is hidden because it has been flagged as spam.`
     default:
       return 'This content is unavailable.'
   }

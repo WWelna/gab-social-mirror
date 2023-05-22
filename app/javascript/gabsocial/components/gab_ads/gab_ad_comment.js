@@ -133,6 +133,7 @@ const GabAdComment = (props = {}) => {
                                 <Video
                                   preview={ad.image}
                                   src={ad.video}
+                                  sourceMp4={ad.video}
                                   fileContentType={ad.video_type || "video/mp4"}
                                   width='100%'
                                   height='100%'

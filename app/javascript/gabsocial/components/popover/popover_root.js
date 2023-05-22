@@ -30,6 +30,7 @@ import {
   POPOVER_PROFILE_OPTIONS,
   POPOVER_SIDEBAR_MORE,
   POPOVER_STATUS_OPTIONS,
+  POPOVER_STATUS_MODAL_CONFIRM,
   POPOVER_STATUS_EXPIRATION_OPTIONS,
   POPOVER_SHARE,
   POPOVER_STATUS_REACTIONS_COUNT,
@@ -37,8 +38,9 @@ import {
   POPOVER_STATUS_VISIBILITY,
   POPOVER_TIMELINE_INJECTION_OPTIONS,
   POPOVER_USER_INFO,
-  POPOVER_VIDEO_STATS,
+  POPOVER_VIDEO_STATS
 } from '../../constants'
+
 import {
   ChatConversationExpirationOptionsPopover,
   ChatConversationOptionsPopover,
@@ -66,13 +68,14 @@ import {
   SidebarMorePopover,
   StatusExpirationOptionsPopover,
   StatusOptionsPopover,
+  StatusModalConfirmPopover,
   SharePopover,
   StatusReactionsCountPopover,
   StatusReactionsSelectorPopover,
   StatusVisibilityPopover,
   TimelineInjectionOptionsPopover,
   UserInfoPopover,
-  VideoStatsPopover,
+  VideoStatsPopover
 } from '../../features/ui/util/async_components'
 
 import { closePopover, closePopoverDeferred } from '../../actions/popover'
@@ -83,7 +86,8 @@ import ErrorPopover from './error_popover'
 import LoadingPopover from './loading_popover'
 
 const POPOVER_COMPONENTS = {
-  [POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS]: ChatConversationExpirationOptionsPopover,
+  [POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS]:
+    ChatConversationExpirationOptionsPopover,
   [POPOVER_CHAT_CONVERSATION_OPTIONS]: ChatConversationOptionsPopover,
   [POPOVER_CHAT_MESSAGE_OPTIONS]: ChatMessageOptionsPopover,
   [POPOVER_CHAT_SETTINGS]: ChatSettingsPopover,
@@ -97,17 +101,21 @@ const POPOVER_COMPONENTS = {
   [POPOVER_GROUP_TIMELINE_SORT_OPTIONS]: GroupTimelineSortOptionsPopover,
   [POPOVER_GROUP_TIMELINE_SORT_TOP_OPTIONS]: GroupTimelineSortTopOptionsPopover,
   [POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS]: ExploreTimelineSortOptionsPopover,
-  [POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS]: ExploreTimelineSortTopOptionsPopover,
+  [POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS]:
+    ExploreTimelineSortTopOptionsPopover,
   [POPOVER_HOME_TIMELINE_SORT_OPTIONS]: HomeTimelineSortOptionsPopover,
   [POPOVER_LISTS_SORT_OPTIONS]: ListsSortOptionsPopover,
-  [POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS]: MarketplaceListingChangeStatusPopover,
-  [POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS]: MarketplaceListingDashboardStatusOptionsPopover,
+  [POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS]:
+    MarketplaceListingChangeStatusPopover,
+  [POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS]:
+    MarketplaceListingDashboardStatusOptionsPopover,
   [POPOVER_MARKETPLACE_LISTING_OPTIONS]: MarketplaceListingOptionsPopover,
   [POPOVER_NAV_SETTINGS]: NavSettingsPopover,
   [POPOVER_NOTIFICATION_SETTINGS]: NotificationSettingsPopover,
   [POPOVER_PROFILE_OPTIONS]: ProfileOptionsPopover,
   [POPOVER_SIDEBAR_MORE]: SidebarMorePopover,
   [POPOVER_STATUS_OPTIONS]: StatusOptionsPopover,
+  [POPOVER_STATUS_MODAL_CONFIRM]: StatusModalConfirmPopover,
   [POPOVER_STATUS_EXPIRATION_OPTIONS]: StatusExpirationOptionsPopover,
   [POPOVER_SHARE]: SharePopover,
   [POPOVER_STATUS_REACTIONS_COUNT]: StatusReactionsCountPopover,
@@ -115,91 +123,84 @@ const POPOVER_COMPONENTS = {
   [POPOVER_STATUS_VISIBILITY]: StatusVisibilityPopover,
   [POPOVER_TIMELINE_INJECTION_OPTIONS]: TimelineInjectionOptionsPopover,
   [POPOVER_USER_INFO]: UserInfoPopover,
-  [POPOVER_VIDEO_STATS]: VideoStatsPopover,
+  [POPOVER_VIDEO_STATS]: VideoStatsPopover
 }
 
 class PopoverRoot extends React.PureComponent {
-
   get isReactionsSelectorPopover() {
-    return this.props.type === POPOVER_STATUS_REACTIONS_SELECTOR
+    return this.props.popoverType === POPOVER_STATUS_REACTIONS_SELECTOR
+  }
+
+  get visible() {
+    const { popoverType } = this.props
+    return typeof popoverType === 'string' && popoverType.length > 0
   }
 
   renderLoading = () => {
-    const { width } = this.props
-    if (this.isReactionsSelectorPopover) return null
-    
+    const { width, onClose } = this.props
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-
-    return <LoadingPopover isXS={isXS} onClose={this.props.onClose} />
+    if (this.isReactionsSelectorPopover) return null
+    return <LoadingPopover isXS={isXS} onClose={onClose} />
   }
 
   renderError = () => {
-    const { width } = this.props
-    if (this.isReactionsSelectorPopover) return null
-    
+    const { width, onClose } = this.props
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-
-    return <ErrorPopover isXS={isXS} onClose={this.props.onClose} />
+    if (this.isReactionsSelectorPopover) return null
+    return <ErrorPopover isXS={isXS} onClose={onClose} />
   }
 
   render() {
-    const { type, props, onClose, width } = this.props
-
-    const visible = !!type
-
+    const { visible } = this
+    const { popoverType, popoverProps, onClose, width } = this.props
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-    const Wrapper = (isXS && !this.isReactionsSelectorPopover) ? ModalBase : PopoverBase
+    const Wrapper =
+      isXS && !this.isReactionsSelectorPopover ? ModalBase : PopoverBase
 
     //If is XS and popover is user info, dont show
     //Since on mobile this should not be visible
-    if (isXS && type === POPOVER_USER_INFO) return null
+    if (isXS && popoverType === POPOVER_USER_INFO) return null
 
     return (
-      <Wrapper
-        onClose={onClose}
-        visible={visible}
-        {...props}
-      >
-        {
-          visible &&
+      <Wrapper onClose={onClose} visible={visible} {...popoverProps}>
+        {visible && (
           <Bundle
-            fetchComponent={POPOVER_COMPONENTS[type]}
+            fetchComponent={POPOVER_COMPONENTS[popoverType]}
             loading={this.renderLoading}
             error={this.renderError}
           >
-            {
-              (Component) => <Component isXS={isXS} onClose={onClose} {...props} />
-            }
+            {Component => (
+              <Component isXS={isXS} onClose={onClose} {...popoverProps} />
+            )}
           </Bundle>
-        }
+        )}
       </Wrapper>
     )
   }
-
 }
 
-const mapStateToProps = (state) => ({
-  type: state.getIn(['popover', 'popoverType']),
-  props: state.getIn(['popover', 'popoverProps'], {}),
-  width: state.getIn(['settings', 'window_dimensions', 'width']),
+const mapStateToProps = state => ({
+  popoverType: state.getIn(['popover', 'popoverType']),
+  popoverProps: state.getIn(['popover', 'popoverProps'], {}),
+  width: state.getIn(['settings', 'window_dimensions', 'width'])
 })
 
-const mapDispatchToProps = (dispatch) => ({
-  onClose(type) {
+const mapDispatchToProps = dispatch => ({
+  onClose() {
     const timeout = get(this, 'props.popoverProps.timeout')
     if (timeout) {
       // allows for a grace period between opening and closing for hover popovers
       return dispatch(closePopoverDeferred())
     }
     dispatch(closePopover())
-  },
+  }
 })
 
 PopoverRoot.propTypes = {
-  type: PropTypes.string,
-  props: PropTypes.object,
+  popoverType: PropTypes.string,
+  popoverProps: PropTypes.object,
   onClose: PropTypes.func.isRequired,
-  width: PropTypes.number,
+  width: PropTypes.number
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(PopoverRoot)

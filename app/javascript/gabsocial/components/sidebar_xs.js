@@ -46,7 +46,6 @@ class SidebarXS extends ImmutablePureComponent {
     if (!me || !account) return null
 
     const acct = account.get('acct')
-    const isPro = account.get('is_pro')
 
     const containerClasses = CX({
       d: 1,

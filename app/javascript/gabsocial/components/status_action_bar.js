@@ -150,9 +150,8 @@ class StatusActionBar extends ImmutablePureComponent {
         {
           hasInteractions && 
           <div className={interactionContainerClasses}>
-            {
-              favoriteCount > 0 &&
-              <div className={[_s.mrAuto, _s.py5].join(' ')}>
+            <div className={[_s.mrAuto, _s.py5].join(' ')}>
+              { favoriteCount > 0 &&
                 <ReactionsDisplayBlock
                   showIcons
                   showText
@@ -163,8 +162,8 @@ class StatusActionBar extends ImmutablePureComponent {
                   onClick={this.openLikesList}
                   isDisabled={nulled}
                 />
-              </div>
-            }
+              }
+            </div>
             {
               replyCount > 0 &&
               <Button

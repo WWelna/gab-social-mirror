@@ -126,7 +126,7 @@ ReactionsDisplayBlock.propTypes = {
   isBasicText: PropTypes.bool,
   isDisabled: PropTypes.bool,
   onClick: PropTypes.func,
-  reactions: ImmutablePropTypes.map,
+  reactions: ImmutablePropTypes.list,
   showIcons: PropTypes.bool,
   showText: PropTypes.bool,
   size: PropTypes.string,

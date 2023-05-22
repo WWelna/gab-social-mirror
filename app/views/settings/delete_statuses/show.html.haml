@@ -1,0 +1,15 @@
+- content_for :page_title do
+  = 'Delete all statuses'
+
+= simple_form_for @confirmation, url: settings_delete_statuses_path, method: :delete do |f|
+  .warning
+    %strong
+      = fa_icon('warning')
+      Delete all statuses, comments and media.
+
+  %p.hint This will permanently, irreversibly remove statuses, comments and media from your account.
+
+  = f.input :password, placeholder: t('simple_form.labels.defaults.current_password'), input_html: { 'aria-label' => t('simple_form.labels.defaults.current_password'), :autocomplete => 'off' }, hint: t('deletes.confirm_password')
+
+  .actions
+    = f.button :button, 'DELETE ALL STATUSES', type: :submit, class: 'negative'

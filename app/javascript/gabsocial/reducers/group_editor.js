@@ -17,6 +17,7 @@ import {
   GROUP_EDITOR_CATEGORY_CHANGE,
   GROUP_EDITOR_IS_PRIVATE_CHANGE,
   GROUP_EDITOR_IS_VISIBLE_CHANGE,
+  GROUP_EDITOR_IS_MODERATED_CHANGE,
 } from '../actions/group_editor'
 import slugify from '../utils/slugify'
 
@@ -33,6 +34,7 @@ const initialState = ImmutableMap({
   coverImage: null,
   isPrivate: false,
   isVisible: true,
+  isModerated: false,
 })
 
 export default function groupEditorReducer(state = initialState, action) {
@@ -55,6 +57,7 @@ export default function groupEditorReducer(state = initialState, action) {
       map.set('tags', tags)
       map.set('isPrivate', action.group.get('is_private'))
       map.set('isVisible', action.group.get('is_visible'))
+      map.set('isModerated', action.group.get('is_moderated'))
       map.set('id', action.group.get('slug'))
       map.set('category', action.group.getIn(['group_category', 'id'], null))
       map.set('isSubmitting', false)
@@ -102,6 +105,11 @@ export default function groupEditorReducer(state = initialState, action) {
   case GROUP_EDITOR_IS_VISIBLE_CHANGE:
     return state.withMutations((map) => {
       map.set('isVisible', action.isVisible)
+      map.set('isChanged', true)
+    })
+  case GROUP_EDITOR_IS_MODERATED_CHANGE:
+    return state.withMutations((map) => {
+      map.set('isModerated', action.isModerated)
       map.set('isChanged', true)
     })
   case GROUP_CREATE_REQUEST:

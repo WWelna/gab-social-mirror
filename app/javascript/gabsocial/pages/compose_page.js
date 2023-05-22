@@ -1,70 +1,75 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
-import queryString from 'query-string'
-import { changeCompose } from '../actions/compose'
 import PageTitle from '../features/ui/util/page_title'
+import { fetchGroup } from '../actions/groups'
 import ComposeLayout from '../layouts/compose_layout'
 import { BREAKPOINT_EXTRA_SMALL } from '../constants'
+import { getGroupIdFromRoute } from '../utils/groups'
+import { parseQuerystring } from '../utils/querystring'
+import { dispatchWindowEvent } from '../utils/events'
 
 class ComposePage extends React.PureComponent {
+  get groupId() {
+    return getGroupIdFromRoute(this)
+  }
 
-  state = {
-    hasQueryParameters: false,
+  get hasGroup() {
+    return this.groupId !== undefined && this.groupId !== null
+  }
+
+  get groupLoaded() {
+    const { groupId } = this
+    const { groups } = this.props
+    return groupId && groups.get(groupId)
   }
 
   componentDidMount() {
-    window.addEventListener('keyup', this.handleKeyUp, false)
+    if (!this.groupLoaded) {
+      this.props.loadGroup(this.groupId)
+    }
 
-    const search = this.props.location.search
-    try {
-      const qp = queryString.parse(search)
-      const url = `${qp.url || ''}`
-      const text = `${qp.text || ''}`
-
-      if (url.length > 0 || text.length > 0) {
-        let value = ""
-        if (text.length > 0) value += `${text} `
-        if (url.length > 0) value += url
-        this.props.dispatch(changeCompose(value))
-        this.setState({ hasQueryParameters: true })
+    const { url, text } = parseQuerystring({ url: '', text: '' })
+    if (url.length > 0 || text.length > 0) {
+      let value = ''
+      if (text.length > 0) value += text
+      if (text.endsWith('\n') === false) {
+        value += ' '
       }
-    } catch (error) {
-      // 
+      if (url.length > 0) value += url
+      value = value.trim()
+      dispatchWindowEvent('composer-insert', {
+        composerId: 'compose-page',
+        text: value
+      })
     }
   }
 
-  componentWillUnmount() {
-    window.removeEventListener('keyup', this.handleKeyUp)
-  }
-
   render() {
-    const { children, width } = this.props
-    const { hasQueryParameters } = this.state
-
+    const { hasGroup, groupId } = this
+    const { children, width, location } = this.props
+    const hasQueryParameters =
+      location.search !== '' && location.search.includes('then=') === false
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-
+    const isExternal = hasQueryParameters && !hasGroup
     return (
-      <ComposeLayout
-        title='Compose'
-        isXS={isXS}
-        isExternal={hasQueryParameters}
-      >
-        <PageTitle path='Compose' />
+      <ComposeLayout title="Compose" isXS={isXS} isExternal={isExternal}>
+        <PageTitle path="Compose" />
         {children}
       </ComposeLayout>
     )
   }
-
 }
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = state => ({
   width: state.getIn(['settings', 'window_dimensions', 'width']),
+  groups: state.get('groups')
 })
 
-ComposePage.propTypes = {
-  children: PropTypes.node.isRequired,
-}
+const mapDispatchToProps = dispatch => ({
+  loadGroup: groupId => dispatch(fetchGroup(groupId))
+})
 
-export default withRouter(connect(mapStateToProps)(ComposePage))
+export default withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ComposePage)
+)

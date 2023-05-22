@@ -3,6 +3,7 @@
 import axios from 'axios';
 import LinkHeader from 'http-link-header';
 import ready from './ready';
+import store from './store'
 
 export const getLinks = response => {
   const value = response.headers.link;
@@ -25,8 +26,8 @@ function setCSRFHeader() {
 
 ready(setCSRFHeader);
 
-export default getState => {
-  const authToken = getState ? getState().getIn(['meta', 'access_token'], '') : null;
+export default (getState = store.getState) => {
+  const authToken = getState().getIn(['meta', 'access_token'], '')
 
   return axios.create({
     headers: Object.assign(csrfHeader, authToken ? {

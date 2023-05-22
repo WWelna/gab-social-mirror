@@ -79,8 +79,10 @@ Rails.application.routes.draw do
     end
 
     resource :delete, only: [:show, :destroy]
+    resource :delete_statuses, only: [:show, :destroy]
 
     resources :sessions, only: [:destroy]
+    resources :statuses, only: [:index, :create]
     resources :scheduled_statuses, only: [:index, :destroy]
     resources :filters, except: [:show]
   end
@@ -111,7 +113,7 @@ Rails.application.routes.draw do
     resources :marketplace_listing_categories, only: [:index, :new, :create, :show, :update, :destroy]
     resources :reaction_types, only: [:index, :new, :create, :show, :update]
     resources :lists, only: [:index, :show, :create, :edit, :update, :destroy]
-    
+    resources :comments, only: [:index, :show, :create, :edit, :update, :destroy]
 
     resources :marketplace_listings, only: [:index, :show, :destroy] do
       member do
@@ -241,6 +243,25 @@ Rails.application.routes.draw do
           get :revisions
         end
       end
+    
+      resources :comments, only: [:create, :update, :show, :destroy] do
+        scope module: :comments do
+          resources :reacted_by, controller: :reacted_by_accounts, only: :index
+
+          resource :react, controller: :reactions, only: :create
+          post :unreact, to: 'reactions#destroy'
+
+          delete :mentions, to: 'mentions#destroy'
+
+          resource :mute, only: [:show, :create]
+          post :unmute, to: 'mutes#destroy'
+        end
+
+        member do
+          # get :comments
+          get :revisions
+        end
+      end
 
       resources :hmac_tokens, only: [:create]
 
@@ -256,8 +277,13 @@ Rails.application.routes.draw do
         resource :explore, only: :show, controller: :explore
       end
 
+      namespace :comment_timelines do
+        resources :tv, only: :show, controller: :tv
+        resources :trends, only: :show, controller: :trends
+      end
+
       namespace :chat_conversation_accounts do
-        
+
       end
 
       resources :chat_conversation_accounts, only: :show do
@@ -327,10 +353,12 @@ Rails.application.routes.draw do
       resources :albums,       only: [:create, :update, :show, :destroy]
       resources :album_lists,  only: [:show]
       resource :expenses,     only: [:show]
-      resources :comments,    only: [:show]
+      resources :status_comments, only: [:show]
       resources :blocks_and_mutes, only: [:index]
       resources :marketplace_listing_categories, only: [:index]
       resources :marketplace_listing_search, only: [:index]
+      resources :comment_stats, only: [:show]
+      resources :comment_flags, only: [:show]
 
       resources :warnings, only: [:index, :show, :destroy] do
         collection do
@@ -376,7 +404,9 @@ Rails.application.routes.draw do
         resources :lists, only: :index, controller: 'accounts/lists'
         resources :marketplace_listing_saves, only: :index, controller: 'accounts/marketplace_listing_saves'
         resources :marketplace_listings, only: :index, controller: 'accounts/marketplace_listings'
-        
+        resources :media_attachments, only: :index, controller: 'accounts/media_attachments'
+        resources :comments, only: :index, controller: 'accounts/comments'
+
         member do
           post :follow
           post :unfollow
@@ -414,6 +444,15 @@ Rails.application.routes.draw do
         resource :join_requests, only: [:show], controller: 'groups/requests'
 
         post '/join_requests/respond', to: 'groups/requests#respond_to_request'
+        
+        resource :moderation, controller: 'groups/moderation'
+        post '/moderation/approve_post', to: 'groups/moderation#approve_post'
+        post '/moderation/remove_post', to: 'groups/moderation#remove_post'
+        post '/moderation/approve_user', to: 'groups/moderation#approve_user'
+        post '/moderation/remove_user', to: 'groups/moderation#remove_user'
+        post '/moderation/report_user', to: 'groups/moderation#report_user'
+        get '/moderation/stats', to: 'groups/moderation#stats'
+        get '/moderation/my_stats', to: 'groups/moderation#my_stats'
 
         resource :pin, only: [:show, :create], controller: 'groups/pins'
         post :unpin, to: 'groups/pins#destroy'
@@ -448,6 +487,8 @@ Rails.application.routes.draw do
 
     namespace :v3 do
       get '/search', to: 'search#index', as: :search_v3
+      get '/me', to: 'me#index', as: :me
+      post '/authcode', to: 'authcode#create', as: :authcode
     end
 
     namespace :web do

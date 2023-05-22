@@ -57,7 +57,7 @@ class Followers extends ImmutablePureComponent {
           onLoadMore={this.handleLoadMore}
           placeholderComponent={AccountPlaceholder}
           placeholderCount={4}
-          emptyMessage={intl.formatMessage(messages.empty)}
+          emptyMessage={account && account.get('followers_count') ? 'This user is not sharing their network.' : intl.formatMessage(messages.empty)}
         >
           {
             account && accountIds && accountIds.map((id) => (

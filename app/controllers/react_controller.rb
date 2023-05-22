@@ -16,6 +16,8 @@ class ReactController < ApplicationController
 
   before_action :set_instance_presenter
 
+  after_action :consider_recalculating, only: [:react]
+
   def react
     #
   end
@@ -139,13 +141,20 @@ class ReactController < ApplicationController
   end
 
   def set_referrer_policy_header
-    unless @status.nil?
-      return if @status.public_visibility? || @status.unlisted_visibility?
-    end
     response.headers['Referrer-Policy'] = 'origin'
   end
 
   def set_instance_presenter
     @instance_presenter = InstancePresenter.new
+  end
+
+  def consider_recalculating
+    if request.path.match(/^\/home/) || request.path.match(/^\//)
+      return if current_account.nil?
+      Rails.cache.fetch("recalc:#{Time.current.strftime('%Y%m%d')}:#{current_account.id}", expires_in: 1.day) do
+        RecalculateAccountStatsWorker.perform_async(current_account.id)
+        true
+      end
+    end
   end
 end

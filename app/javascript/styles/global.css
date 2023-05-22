@@ -12,6 +12,7 @@
   --color_black-opaquest: rgba(0, 0, 0, .3);
   --color_gold: #ffd700;
   --color_red: #de2960;
+  --color_orange: orange;
   --color_red-dark: #c72c5b;
 
   --radius-small: 8px;
@@ -489,6 +490,7 @@ a.unlinked * {
 
 .bgRed { background-color: red; }
 .bgDanger { background-color: var(--color_red); }
+.bgWarn { background-color: var(--color_orange); }
 .bgDangerDark_onHover:hover { background-color: var(--color_red-dark); }
 
 .bgPro { background-color: var(--color_gold); }
@@ -636,6 +638,7 @@ a.unlinked * {
 .maxW100PC130PX { max-width: calc(100% - 130px); }
 .maxW100PC86PX { max-width: calc(100% - 86px); }
 .maxW100PC42PX { max-width: calc(100% - 42px); }
+.maxW100PC35PX { max-width: calc(100% - 35px); }
 .maxW100PC30PX { max-width: calc(100% - 30px); }
 .maxW450PX { max-width: 450PX; }
 .maxW380PX { max-width: 380PX; }
@@ -908,6 +911,7 @@ a.unlinked * {
       -ms-user-select: none !important;
           user-select: none !important;
   overflow: hidden !important;
+  overflow-y: hidden !important;
   pointer-events: none;
 }
 

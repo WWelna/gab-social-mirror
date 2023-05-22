@@ -5,11 +5,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import { FormattedMessage } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import debounce from 'lodash.debounce'
-import {
-  fetchBookmarkCollections,
-  // fetchBookmarkedStatuses,
-  // expandBookmarkedStatuses,
-} from '../actions/bookmarks'
+import { fetchBookmarkCollection } from '../actions/bookmarks'
 import { timelineFetchPaged } from '../store/timelines'
 import { openModal } from '../actions/modal'
 import { me, meUsername } from '../initial_state'
@@ -25,7 +21,7 @@ import Text from '../components/text'
 class BookmarkedStatuses extends ImmutablePureComponent {
 
   load = opts => {
-    const { bookmarkCollectionId } = this.props
+    const { bookmarkCollectionId, bookmarkCollection } = this.props
     if (!bookmarkCollectionId) {
       return
     }
@@ -33,6 +29,10 @@ class BookmarkedStatuses extends ImmutablePureComponent {
     const endpoint = `/api/v1/bookmark_collections/${bookmarkCollectionId}/bookmarks`
     const expandOpts = Object.assign({ endpoint }, opts)
     this.props.dispatch(timelineFetchPaged(timelineId, expandOpts))
+    
+    if (!bookmarkCollection) {
+      this.props.dispatch(fetchBookmarkCollection(bookmarkCollectionId))
+    }
   }
 
   componentDidMount() {
@@ -114,7 +114,7 @@ class BookmarkedStatuses extends ImmutablePureComponent {
             hasMore={hasMore}
             isLoading={isLoading}
             onLoadMore={this.handleLoadMore}
-            emptyMessage={<FormattedMessage id='empty_column.bookmarked_statuses' defaultMessage="You don't have any bookmarked gabs yet. If you are GabPRO, when you bookmark one, it will show up here." />}
+            emptyMessage={<FormattedMessage id='empty_column.bookmarked_statuses' defaultMessage="You don't have any bookmarked gabs yet." />}
           />
         </div>
       </div>
@@ -125,8 +125,7 @@ class BookmarkedStatuses extends ImmutablePureComponent {
 
 const mapStateToProps = (state, { params: { username, bookmarkCollectionId } }) => {
   const timelineId = `bookmarks:${bookmarkCollectionId}`
-  const bookmarkCollections = state.getIn(['bookmark_collections', 'items'])
-  const bookmarkCollection = bookmarkCollections.find((b) => b.get('id') === bookmarkCollectionId)
+  const bookmarkCollection = state.getIn(['bookmark_collections', 'items', `${bookmarkCollectionId}`])
   const bookmarkCollectionTitle = bookmarkCollectionId === 'saved' ? 'Saved' : !!bookmarkCollection ? bookmarkCollection.get('title') : null
 
   return {
@@ -138,15 +137,15 @@ const mapStateToProps = (state, { params: { username, bookmarkCollectionId } }) 
     statusIds: state.getIn(['timelines', timelineId, 'items']),
     isLoading: state.getIn(['timelines', timelineId, 'isLoading']),
     hasMore: state.getIn(['timelines', timelineId, 'hasNext']),
-    bookmarkCollectionsFetched: state.getIn(['bookmark_collections', 'isFetched'], false),
   }
 }
 
 BookmarkedStatuses.propTypes = {
   dispatch: PropTypes.func.isRequired,
-  statusIds: ImmutablePropTypes.list.isRequired,
+  statusIds: ImmutablePropTypes.list,
   hasMore: PropTypes.bool,
   isLoading: PropTypes.bool,
+  bookmarkCollection: ImmutablePropTypes.map,
   bookmarkCollectionId: PropTypes.string,
   isMyAccount: PropTypes.bool.isRequired,
 }

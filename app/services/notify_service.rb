@@ -22,7 +22,15 @@ class NotifyService < BaseService
     FeedManager.instance.filter?(:mentions, @notification.mention.status, @recipient.id)
   end
 
+  def blocked_comment_mention?
+    FeedManager.instance.filter?(:mentions, @notification.comment_mention.comment, @recipient.id)
+  end
+
   def blocked_favourite?
+    false
+  end
+
+  def blocked_comment_reaction?
     false
   end
 
@@ -56,7 +64,7 @@ class NotifyService < BaseService
   end
 
   def message?
-    @notification.type == :mention
+    @notification.type == :mention || @notification.type == :comment_mention
   end
 
   def from_staff?
@@ -72,12 +80,16 @@ class NotifyService < BaseService
   end
 
   def blocked?
+    return false if @notification.type == :group_moderation_event
     blocked   = @recipient.suspended?                            # Skip if the recipient account is suspended anyway
     blocked ||= from_self? && @notification.type != :poll        # Skip for interactions with self
 
     return blocked if message? && from_staff?
 
     blocked ||= @recipient.blocking?(@notification.from_account) # Skip for blocked accounts
+    if @notification.from_account
+      blocked ||= @notification.from_account.blocking?(@recipient) # Skip for blocked by account
+    end
     blocked ||= @recipient.muting_notifications?(@notification.from_account)
     blocked ||= hellbanned?                                      # Hellban
     blocked ||= optional_non_follower?                           # Options
@@ -95,6 +107,7 @@ class NotifyService < BaseService
     return if @notification.activity.nil?
 
     Redis.current.publish("timeline:#{@recipient.id}", Oj.dump(event: :notification, payload: InlineRenderer.render(@notification, @recipient, :notification)))
+    return if @notification.type == :group_moderation_event
     send_push_notifications!
   end
 

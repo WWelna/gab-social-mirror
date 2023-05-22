@@ -65,11 +65,13 @@ const addShortcutsRequest = () => ({
 
 const addShortcutsSuccess = (shortcut) => ({
   type: SHORTCUTS_ADD_SUCCESS,
+  showToast: true,
   shortcut,
 })
 
 const addShortcutsFail = (error) => ({
   type: SHORTCUTS_ADD_FAIL,
+  showToast: true,
   error,
 })
 

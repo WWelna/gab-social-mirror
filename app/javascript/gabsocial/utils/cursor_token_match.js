@@ -1,26 +1,36 @@
-'use strict';
+'use strict'
 
-export function textAtCursorMatchesToken(str, caretPosition, searchTokens) {
-  let word;
+const searchTokens = ['@', ':']
 
-  let left = str.slice(0, caretPosition).search(/\S+$/);
-  let right = str.slice(caretPosition).search(/\s/);
+/**
+ * Used in the draft-js composer to find a 'token' used to search for accounts
+ * or emojis.
+ * @method textAtCursorMatchesToken
+ * @param {string} str composer text
+ * @param {number} cursorPosition
+ * @returns {array} tuple position, token
+ */
+export function textAtCursorMatchesToken(str, cursorPosition) {
+  let word
+
+  let left = str.slice(0, cursorPosition).search(/\S+$/)
+  let right = str.slice(cursorPosition).search(/\s/)
 
   if (right < 0) {
-    word = str.slice(left);
+    word = str.slice(left)
   } else {
-    word = str.slice(left, right + caretPosition);
+    word = str.slice(left, right + cursorPosition)
   }
 
   if (!word || word.trim().length < 2 || searchTokens.indexOf(word[0]) === -1) {
-    return [null, null];
+    return [null, null]
   }
 
-  word = word.trim().toLowerCase();
+  word = word.trim().toLowerCase()
 
   if (word.length > 0) {
-    return [left + 1, word];
+    return [left + 1, word]
   }
 
-  return [null, null];
-};
+  return [null, null]
+}

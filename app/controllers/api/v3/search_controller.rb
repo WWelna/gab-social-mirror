@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Api::V3::SearchController <  Api::BaseController
-
+  before_action :require_user!
   after_action :insert_pagination_headers
 
   V3_SEARCH_RESULTS_LIMIT = 25
@@ -56,7 +56,7 @@ class Api::V3::SearchController <  Api::BaseController
   end
 
   def records_continue?
-    return false if !@search_results || @search_results.nil?
+    return false if !@search_results || @search_results.nil? || @search_results[result_key_by_type].nil?
     @search_results[result_key_by_type].size == limit_param(V3_SEARCH_RESULTS_LIMIT)
   end
 

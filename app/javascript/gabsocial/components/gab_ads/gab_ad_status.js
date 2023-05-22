@@ -47,11 +47,11 @@ const LowerWrapper = ({
   )
 }
 
-const GabAdStatus = ({ pageKey, position }) => {
+const GabAdStatus = ({ pageKey, position, groupCategory }) => {
 
   return (
     <GabAdRoot>
-      <GabAdBase placement={GAB_AD_PLACEMENTS.status} pageKey={pageKey} position={position}>
+      <GabAdBase placement={GAB_AD_PLACEMENTS.status} pageKey={pageKey} position={position} groupCategory={groupCategory}>
         {(ad) => (
           <div className={_s.pb15}>
             <ResponsiveClassesComponent
@@ -141,6 +141,7 @@ const GabAdStatus = ({ pageKey, position }) => {
                               <Video
                                 preview={ad.image}
                                 src={ad.video}
+                                sourceMp4={ad.video}
                                 fileContentType={ad.video_type || "video/mp4"}
                                 width='100%'
                                 height='100%'
@@ -195,6 +196,7 @@ const GabAdStatus = ({ pageKey, position }) => {
 GabAdStatus.propTypes = {
   pageKey: PropTypes.string,
   position: PropTypes.number,
+  groupCategory: PropTypes.string
 }
 
 export default GabAdStatus

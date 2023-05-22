@@ -78,6 +78,7 @@ class User < ApplicationRecord
 
   validates :locale, inclusion: I18n.available_locales.map(&:to_s), if: :locale?
   validates_with BlacklistedEmailValidator, on: :create
+  validates_with BlacklistedEmailValidator, on: :update, if: :email_changed?
   validates_with EmailMxValidator, if: :validate_email_dns?
   validates :agreement, acceptance: { allow_nil: false, accept: [true, 'true', '1'] }, on: :create
 
@@ -110,7 +111,7 @@ class User < ApplicationRecord
   has_many :session_activations, dependent: :destroy
 
   delegate :auto_play_gif, :default_sensitive, :unfollow_modal, :boost_modal, :delete_modal, 
-           :show_videos, :show_suggested_users, :show_groups,
+           :show_videos, :show_suggested_users, :show_groups, :default_status_expiration,
            :noindex, :display_media, :hide_network, :pro_wants_ads,
            :expand_spoilers, :default_language, :aggregate_reblogs, :show_pro_life, :remote_rss_feed,
            :group_in_home_feed, to: :settings, prefix: :setting, allow_nil: false
@@ -226,7 +227,7 @@ class User < ApplicationRecord
   end
 
   def hides_network?
-    @hides_network ||= settings.hide_network
+    @hides_network ||= account.verified? || settings.hide_network
   end
 
   def pro_wants_ads?

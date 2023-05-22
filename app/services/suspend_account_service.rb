@@ -68,8 +68,12 @@ class SuspendAccountService < BaseService
   end
 
   def purge_content!
+    gmes = GroupModerationEvent.where(account_id: @account.id).where(acted_at: nil)
+    gmes.update_all(acted_at: Time.now, rejected: true)
+    gms = GroupModerationStatus.where(account_id: @account.id)
+    gms.destroy_all
     @account.statuses.reorder(nil).find_in_batches do |statuses|
-      BatchedRemoveStatusService.new.call(statuses, skip_side_effects: @options[:destroy])
+      BatchedRemoveStatusService.new.call(statuses, @account, skip_side_effects: @options[:destroy])
     end
 
     associations_for_destruction.each do |association_name|

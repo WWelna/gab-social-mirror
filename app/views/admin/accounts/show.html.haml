@@ -102,6 +102,10 @@
     %a{href: "/admin/action_logs?target_id=#{@account.id}"}
       .dashboard__counters__num= number_with_delimiter Admin::ActionLog.where(target_id: @account.id).count
       .dashboard__counters__label Account Audit Logs
+  %div
+    %a{href: "/admin/comments?account_id=#{@account.id}"}
+      .dashboard__counters__num= number_with_delimiter @account.comments.count
+      .dashboard__counters__label Comments
 
 - unless @account.local? && @account.user.nil?
   .table-wrapper

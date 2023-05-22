@@ -1,19 +1,23 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
-import { clearCompose } from '../../actions/compose'
-import ComposeFormContainer from './containers/compose_form_container'
+import { withRouter } from 'react-router-dom'
+import ComposeForm from './components/compose_form'
+import { getGroupIdFromRoute } from '../../utils/groups'
 
 class Compose extends React.PureComponent {
-
-  componentWillUnmount() {
-    this.props.dispatch(clearCompose())
+  get groupId() {
+    return getGroupIdFromRoute(this)
   }
 
-  render () {
-    return <ComposeFormContainer formLocation='standalone' />
+  render() {
+    return (
+      <ComposeForm
+        composerId="compose-page"
+        formLocation="standalone"
+        autoFocus
+        groupId={this.groupId}
+      />
+    )
   }
-
 }
 
-export default connect()(Compose)
+export default withRouter(Compose)

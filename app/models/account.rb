@@ -148,6 +148,10 @@ class Account < ApplicationRecord
     is_verified || is_pro || is_donor || is_investor?
   end
 
+  def verified?
+    is_verified
+  end
+
   def has_running_marketplace_listings?
     marketplace_listings.only_running.any?
   end

@@ -16,6 +16,7 @@ import {
 	changeGroupCategory,
 	changeGroupIsPrivate,
 	changeGroupIsVisible,
+	changeGroupIsModerated,
 	submit,
 	setGroup,
 	resetEditor,
@@ -92,6 +93,7 @@ class GroupCreate extends ImmutablePureComponent {
 			onChangeGroupCategory,
 			onChangeGroupIsPrivate,
 			onChangeGroupIsVisible,
+			onChangeGroupIsModerated,
 			isSubmitting,
 			onSubmit,
 			idValue,
@@ -99,6 +101,7 @@ class GroupCreate extends ImmutablePureComponent {
 			category,
 			isPrivate,
 			isVisible,
+			isModerated,
 			groupId,
 			categories,
 			isAdmin,
@@ -262,6 +265,23 @@ class GroupCreate extends ImmutablePureComponent {
 					<Text className={_s.mt5} size='small' color='tertiary'>
 						{intl.formatMessage(messages.isVisibleDescription)}
 					</Text>
+
+					<Divider isInvisible />
+						
+					<Switch
+						label={'Moderated'}
+						id='group-ismoderated'
+						checked={isModerated}
+						onChange={onChangeGroupIsModerated}
+						labelProps={{
+							size: 'small',
+							weight: 'medium',
+							color: 'secondary',
+						}}
+					/>
+					<Text className={_s.mt5} size='small' color='tertiary'>
+						{intl.formatMessage(messages.isModeratedDescription)}
+					</Text>
 				</div>
 				
 				<Divider isInvisible />
@@ -302,6 +322,7 @@ const messages = defineMessages({
 	descriptionPlaceholder: { id: 'groups.form.description_placeholder', defaultMessage: 'This group is about...' },
 	isPrivateDescription: { id: 'groups.form.is_private_description', defaultMessage: 'Only members can see group posts.' },
 	isVisibleDescription: { id: 'groups.form.is_visible_description', defaultMessage: 'Anyone can find a visible group in search and other places on Gab.' },
+	isModeratedDescription: { id: 'groups.form.is_moderated_description', defaultMessage: 'Posts from new & potentially spammy users will require moderator review.' },
 })
 
 const mapStateToProps = (state, { params }) => {
@@ -331,6 +352,7 @@ const mapStateToProps = (state, { params }) => {
 		category: state.getIn(['group_editor', 'category']),
 		isPrivate: state.getIn(['group_editor', 'isPrivate']),
 		isVisible: state.getIn(['group_editor', 'isVisible']),
+		isModerated: state.getIn(['group_editor', 'isModerated']),
 		categories: state.getIn(['group_categories', 'items']),
 	}
 }
@@ -362,6 +384,9 @@ const mapDispatchToProps = (dispatch) => ({
 	},
 	onChangeGroupIsVisible(checked) {
 		dispatch(changeGroupIsVisible(checked))
+	},
+	onChangeGroupIsModerated(checked) {
+		dispatch(changeGroupIsModerated(checked))
 	},
 	onResetEditor() {
 		dispatch(resetEditor())
@@ -395,6 +420,7 @@ GroupCreate.propTypes = {
 	onChangeGroupCategory: PropTypes.func.isRequired,
 	onChangeGroupIsPrivate: PropTypes.func.isRequired,
 	onChangeGroupIsVisible: PropTypes.func.isRequired,
+	onChangeGroupIsModerated: PropTypes.func.isRequired,
 	onFetchGroup: PropTypes.func.isRequired,
 	onFetchGroupCategories: PropTypes.func.isRequired,
 	onResetEditor: PropTypes.func.isRequired,
@@ -408,6 +434,7 @@ GroupCreate.propTypes = {
 	category: PropTypes.string.isRequired,
 	isPrivate: PropTypes.bool.isRequired,
 	isVisible: PropTypes.bool.isRequired,
+	isModerated: PropTypes.bool.isRequired,
 	categories: ImmutablePropTypes.list.isRequired,
 }
 

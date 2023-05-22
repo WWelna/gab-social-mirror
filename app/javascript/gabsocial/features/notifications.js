@@ -38,11 +38,7 @@ class Notifications extends ImmutablePureComponent {
 
   componentDidMount() {
     this.props.onDequeueNotifications()
-    if (this.props.expandOnMount) {
-      // for example on Deck notifications are not automatically loaded
-      // for pages in ui/ui.js that component is loading them
-      this.props.onExpandNotifications()
-    }
+    this.props.onExpandNotifications()
   }
 
   componentDidUpdate (prevProps, prevState) {
@@ -70,13 +66,6 @@ class Notifications extends ImmutablePureComponent {
     const last = this.props.notifications.last()
     this.props.onExpandNotifications({ maxId: last && last.get('id') })
   }, 300, { leading: true })
-
-  refresh = () => {
-    if (this.props.totalQueuedNotificationsCount > 0) {
-      return this.props.onDequeueNotifications()
-    }
-    return this.handleReload()
-  }
 
   render() {
     const {
@@ -187,7 +176,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   onDequeueNotifications() {
     dispatch(dequeueNotifications())
-    dispatch(markReadNotifications())  
+    dispatch(markReadNotifications())
   },
   onExpandNotifications(options) {
     if (!options) dispatch(forceDequeueNotifications())
@@ -204,7 +193,6 @@ Notifications.propTypes = {
   sortedNotifications: ImmutablePropTypes.list.isRequired,
   totalQueuedNotificationsCount: PropTypes.number,
   selectedFilter: PropTypes.string.isRequired,
-  expandOnMount: PropTypes.bool,
 }
 
 export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Notifications))

@@ -23,6 +23,7 @@
 #  password                 :string
 #  group_category_id        :integer
 #  is_verified              :boolean          default(FALSE), not null
+#  is_moderated             :boolean          default(NULL)
 #
 
 class Group < ApplicationRecord

@@ -98,6 +98,9 @@ export const importFetchedStatus = (status) => {
   return importFetchedStatuses([status]);
 }
 
+// fakePollId is for GroupModerationStatus
+let fakePollId = 0
+
 export const importFetchedStatuses = (statuses) => (dispatch, getState) => {
   const accounts = []
   const normalStatuses = []
@@ -119,7 +122,11 @@ export const importFetchedStatuses = (statuses) => (dispatch, getState) => {
       processStatus(status.quote)
     }
 
-    if (status.poll && status.poll.id) {
+    if (status.poll) {
+      if (status.poll.id === undefined) {
+        fakePollId += 1
+        status.poll.id = fakePollId
+      }
       pushUnique(polls, normalizePoll(status.poll))
     }
 

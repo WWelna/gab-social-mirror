@@ -5,23 +5,23 @@ class REST::StatusSerializer < ActiveModel::Serializer
              :sensitive, :spoiler_text, :visibility, :language, :uri,
              :url, :direct_replies_count, :replies_count, :reblogs_count, :pinnable, :pinnable_by_group,
              :favourites_count, :quote_of_id, :expires_at, :has_quote, :bookmark_collection_id,
-             :quotes_count, :reaction_id, :reactions_counts
+             :quotes_count, :reaction_id, :reactions_counts, :is_reply, :account_id,
+             :media_attachment_ids
 
   attribute :favourited, if: :current_user?
   attribute :reblogged, if: :current_user?
   attribute :muted, if: :current_user?
 
-  attribute :content, unless: :source_requested?
-  attribute :rich_content, unless: :source_requested?
-  attribute :plain_markdown, unless: :source_requested?
-  attribute :text, if: :source_requested?
+  attribute :content
+  attribute :text, if: :owned_by_user
+  attribute :markdown, if: :owned_by_user
 
   belongs_to :reblog, serializer: REST::StatusSerializer
   belongs_to :quote, serializer: REST::StatusSerializer
-  belongs_to :account, serializer: REST::AccountSerializer
+  belongs_to :account, serializer: REST::AccountSerializer, unless: :exclude_account?
   belongs_to :group, serializer: REST::GroupSerializer
 
-  has_many :media_attachments, serializer: REST::MediaAttachmentSerializer
+  has_many :media_attachments, serializer: REST::MediaAttachmentSerializer, unless: :exclude_media?
   has_many :ordered_mentions, key: :mentions
   has_many :tags
   has_many :emojis, serializer: REST::CustomEmojiSerializer
@@ -33,6 +33,16 @@ class REST::StatusSerializer < ActiveModel::Serializer
     object.id.to_s
   end
 
+  def account_id
+    object.account_id.to_s if !object.account_id.nil?
+  end
+
+  def media_attachment_ids
+    if !object.media_attachments.nil?
+      object.media_attachments.map { |m| m.id.to_s }
+    end
+  end
+
   def direct_replies_count
     if instance_options && instance_options[:relationships]
       instance_options[:relationships].direct_replies_count_map[object.id] || 0
@@ -42,11 +52,7 @@ class REST::StatusSerializer < ActiveModel::Serializer
   end
 
   def quotes_count
-    if instance_options && instance_options[:relationships]
-      instance_options[:relationships].quotes_count_map[object.id] || 0
-    else
-      object.quotes_count
-    end
+    object.quotes_count
   end
 
   def replies_count
@@ -61,14 +67,18 @@ class REST::StatusSerializer < ActiveModel::Serializer
     object.in_reply_to_account_id&.to_s
   end
 
+  def is_reply
+    object.reply?
+  end
+
   def quote_of_id
     object.quote_of_id&.to_s
   end
 
   def current_user?
-    !current_user.nil?
+    defined?(current_user) && !current_user.nil?
   end
-
+  
   def visibility
     # This visibility is masked behind "private"
     # to avoid API changes because there are no
@@ -89,11 +99,21 @@ class REST::StatusSerializer < ActiveModel::Serializer
     if instance_options && instance_options[:relationships]
       blocked_by_status_owner = instance_options[:relationships].blocked_by_map[object.account_id] || false
     end
+    spammer = false
+    if object.account && object.account.spam_flag == 1
+      spammer = true
+    end
 
     if blocked_by_status_owner
       '[HIDDEN – USER BLOCKS YOU]'
+    elsif spammer
+      '[HIDDEN – MARKED AS SPAM]'
     else
-      Formatter.instance.format(object).strip
+      if object.markdown != nil && object.markdown.length > 0
+        Formatter.instance.format(object, use_markdown: true).strip
+      else
+        Formatter.instance.format(object).strip
+      end
     end
   end
 
@@ -102,9 +122,15 @@ class REST::StatusSerializer < ActiveModel::Serializer
     if instance_options && instance_options[:relationships]
       blocked_by_status_owner = instance_options[:relationships].blocked_by_map[object.account_id] || false
     end
+    spammer = false
+    if object.account && object.account.spam_flag == 1
+      spammer = true
+    end
 
     if blocked_by_status_owner
       '[HIDDEN – USER BLOCKS YOU]'
+    elsif spammer
+      '[HIDDEN – MARKED AS SPAM]'
     else
       Formatter.instance.format(object, use_markdown: true).strip
     end
@@ -115,9 +141,15 @@ class REST::StatusSerializer < ActiveModel::Serializer
     if instance_options && instance_options[:relationships]
       blocked_by_status_owner = instance_options[:relationships].blocked_by_map[object.account_id] || false
     end
+    spammer = false
+    if object.account && object.account.spam_flag == 1
+      spammer = true
+    end
 
     if blocked_by_status_owner
       '[HIDDEN – USER BLOCKS YOU]'
+    elsif spammer
+      '[HIDDEN – MARKED AS SPAM]'
     else
       object.markdown
     end
@@ -151,7 +183,11 @@ class REST::StatusSerializer < ActiveModel::Serializer
     if instance_options && instance_options[:relationships]
       instance_options[:relationships].favourites_map[object.id] || nil
     else
-      current_user&.account&.reaction_id(object)
+      if current_user?
+        current_user&.account&.reaction_id(object)
+      else
+        nil
+      end
     end
   end
 
@@ -159,7 +195,11 @@ class REST::StatusSerializer < ActiveModel::Serializer
     if instance_options && instance_options[:relationships]
       instance_options[:relationships].reblogs_map[object.id] || false
     else
-      current_user.account.reblogged?(object)
+      if current_user?
+        current_user.account.reblogged?(object)
+      else
+        nil
+      end
     end
   end
 
@@ -171,10 +211,13 @@ class REST::StatusSerializer < ActiveModel::Serializer
     return
   end
 
+  def owned_by_user
+    current_user? && current_user.account_id == object.account_id
+  end
+
   PINNABLE_VISIBILITIES = %w(public unlisted).freeze
   def pinnable
-    current_user? &&
-      current_user.account_id == object.account_id &&
+    owned_by_user &&
       !object.reblog? &&
       PINNABLE_VISIBILITIES.include?(object.visibility)
   end
@@ -187,16 +230,20 @@ class REST::StatusSerializer < ActiveModel::Serializer
     object.group_id?
   end
 
-  def source_requested?
-    instance_options[:source_requested]
-  end
-
   def ordered_mentions
     object.active_mentions.to_a.sort_by(&:id)
   end
 
   def bookmark_collection_id
     instance_options[:bookmark_collection_id]
+  end
+
+  def exclude_media?
+    instance_options && instance_options[:exclude_media]
+  end
+
+  def exclude_account?
+    instance_options && instance_options[:exclude_account]
   end
 
   class ApplicationSerializer < ActiveModel::Serializer

@@ -1,4 +1,4 @@
-import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
+import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable'
 import {
   GROUPS_FETCH_REQUEST,
   GROUPS_FETCH_SUCCESS,
@@ -20,6 +20,8 @@ import {
   CLEAR_GROUP_MEMBERS_SEARCH,
   GROUP_REMOVED_ACCOUNTS_SEARCH_SUCCESS,
   CLEAR_GROUP_REMOVED_ACCOUNTS_SEARCH,
+  GROUP_MODERATION_STATS,
+  GROUP_MODERATION_MY_STATS,
 } from '../actions/groups'
 import {
   GROUP_TIMELINE_SORTING_TYPE_TOP,
@@ -55,11 +57,12 @@ const initialState = ImmutableMap({
   by_tag: ImmutableMap(),
   member_search_accounts: ImmutableList(),
   removed_search_accounts: ImmutableList(),
+  group_moderation: ImmutableMap(),
+  my_stats: ImmutableMap(),
 })
 
 export default function groupLists(state = initialState, action) {
   // if (tabs.indexOf(action.tab) === -1) return state
-
   switch(action.type) {
   case GROUPS_FETCH_REQUEST:
     return state.withMutations((mutable) => {
@@ -160,6 +163,12 @@ export default function groupLists(state = initialState, action) {
     return state.set('removed_search_accounts', ImmutableList(action.accounts.map((item) => item.id)))
   case CLEAR_GROUP_REMOVED_ACCOUNTS_SEARCH:
     return state.set('removed_search_accounts', ImmutableList())
+  case GROUP_MODERATION_STATS:
+    // stats = { count: 0 }
+    return state.mergeIn(['group_moderation', action.groupId], fromJS(action.stats))
+  case GROUP_MODERATION_MY_STATS:
+    // stats = { count: 0 }
+    return state.mergeIn(['my_stats', action.groupId], fromJS(action.stats))
   default:
     return state
   }

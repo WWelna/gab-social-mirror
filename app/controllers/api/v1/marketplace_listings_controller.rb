@@ -4,7 +4,6 @@ class Api::V1::MarketplaceListingsController < Api::BaseController
   include Authorization
 
   before_action :require_user!, except: [:show]
-  before_action :ensure_user_pro!, except: [:show]
   before_action :set_marketplace_listing, except: [:create]
   before_action :ensure_ownership!, only: [:update, :destroy]
 
@@ -59,14 +58,6 @@ class Api::V1::MarketplaceListingsController < Api::BaseController
   end
 
   private
-
-  def ensure_user_pro!
-    if current_account && current_account.is_pro?
-      true
-    else
-      render json: { error: 'Unauthorized' }, status: 501
-    end
-  end
 
   def ensure_ownership!
     if @marketplace_listing.account.id == current_account.id

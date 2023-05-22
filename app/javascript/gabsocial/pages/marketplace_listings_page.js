@@ -11,6 +11,7 @@ import {
 } from '../constants'
 import {
   LinkFooter,
+  MarketplaceListingCategoriesPanel,
   MarketplaceListingFilterPanel,
 } from '../features/ui/util/async_components'
 
@@ -68,6 +69,7 @@ class MarketplaceListingsPage extends React.PureComponent {
         actions={actions}
         layout={[
           MarketplaceListingFilterPanel,
+          MarketplaceListingCategoriesPanel,
           LinkFooter,
         ]}
       >

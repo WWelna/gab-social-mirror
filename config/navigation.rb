@@ -12,13 +12,14 @@ SimpleNavigation::Configuration.run do |navigation|
     n.item :filters, safe_join([fa_icon('filter fw'), t('filters.index.title')]), settings_filters_path, highlights_on: %r{/filters}
 
     n.item :security, safe_join([fa_icon('lock fw'), t('settings.account')]), edit_user_registration_url do |s|
-      s.item :password, safe_join([fa_icon('lock fw'), t('settings.account_settings')]), edit_user_registration_url, highlights_on: %r{/auth/edit|/settings/delete}
+      s.item :password, safe_join([fa_icon('lock fw'), t('settings.account_settings')]), edit_user_registration_url, highlights_on: %r{/auth/edit|^/settings/delete$}
       s.item :two_factor_authentication, safe_join([fa_icon('mobile fw'), t('settings.two_factor_authentication')]), settings_two_factor_authentication_url, highlights_on: %r{/settings/two_factor_authentication}
       s.item :authorized_apps, safe_join([fa_icon('list fw'), t('settings.authorized_apps')]), oauth_authorized_applications_url
     end
 
-    n.item :posts, safe_join([fa_icon('bars fw'), t('settings.posts')]), settings_scheduled_statuses_url do |s|
-      s.item :scheduled_posts, safe_join([fa_icon('calendar fw'), t('settings.scheduled_posts')]), settings_scheduled_statuses_url
+    n.item :posts, safe_join([fa_icon('bars fw'), 'Statuses']), settings_statuses_url do |s|
+      s.item :statuses, safe_join([fa_icon('calendar fw'), 'Statuses']), settings_statuses_url, highlights_on: %r{/settings/statuses|/settings/delete_statuses}
+      s.item :scheduled_posts, safe_join([fa_icon('calendar fw'), 'Scheduled Statuses']), settings_scheduled_statuses_url
     end
 
     n.item :requests, safe_join([fa_icon('id-card-o fw'), t('verifications.requests.title')]), settings_verifications_requests_url
@@ -42,6 +43,7 @@ SimpleNavigation::Configuration.run do |navigation|
       s.item :tombstones, safe_join([fa_icon('bars fw'), "Tombstones"]), admin_tombstones_url
       s.item :account_warnings, safe_join([fa_icon('link fw'), "Account Warnings"]), admin_account_warnings_url
       s.item :marketplace_listings, safe_join([fa_icon('id-card-o fw'), "Marketplace Listings"]), '/admin/marketplace_listings?status=0'
+      s.item :comments, safe_join([fa_icon('bars fw'), "Comments"]), admin_comments_url
     end
 
     n.item :admin, safe_join([fa_icon('cogs fw'), t('admin.title')]), admin_dashboard_url, if: proc { current_user.staff? } do |s|

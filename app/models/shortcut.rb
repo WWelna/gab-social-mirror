@@ -16,6 +16,7 @@ class Shortcut < ApplicationRecord
     account: 'account',
     group: 'group',
     list: 'list',
+    tag: 'tag',
   }.freeze
 
   belongs_to :account

@@ -24,6 +24,9 @@ class Notification < ApplicationRecord
     follow_request: 'FollowRequest',
     favourite:      'Favourite',
     poll:           'Poll',
+    group_moderation_event: 'GroupModerationEvent',
+    comment_mention: 'CommentMention',
+    comment_reaction: 'CommentReaction',
   }.freeze
 
   STATUS_INCLUDES = [:account, :application, :preloadable_poll, :media_attachments, :tags, active_mentions: :account, reblog: [:account, :application, :preloadable_poll, :media_attachments, :tags, active_mentions: :account]].freeze
@@ -38,6 +41,9 @@ class Notification < ApplicationRecord
   belongs_to :follow_request, foreign_type: 'FollowRequest', foreign_key: 'activity_id', optional: true
   belongs_to :favourite,      foreign_type: 'Favourite',     foreign_key: 'activity_id', optional: true
   belongs_to :poll,           foreign_type: 'Poll',          foreign_key: 'activity_id', optional: true
+  belongs_to :group_moderation_event, foreign_type: 'GroupModerationEvent', foreign_key: 'activity_id', optional: true
+  belongs_to :comment_mention, foreign_type: 'CommentMention', foreign_key: 'activity_id', optional: true
+  belongs_to :comment_reaction, foreign_type: 'CommentReaction', foreign_key: 'activity_id', optional: true
 
   validates :account_id, uniqueness: { scope: [:activity_type, :activity_id] }
   validates :activity_type, inclusion: { in: TYPE_CLASS_MAP.values }
@@ -51,6 +57,9 @@ class Notification < ApplicationRecord
     scope = scope.where(activity_type: types) unless exclude_types.empty?
     scope = scope.joins(:from_account).where(accounts: { is_verified: true }) if only_verified
     scope = scope.where('from_account_id IN (SELECT target_account_id FROM follows WHERE account_id = ?)', current_account.id) if only_following
+    # exclude notifications from blocked accounts in both directions
+    scope = scope.where('from_account_id NOT IN (SELECT target_account_id FROM blocks WHERE account_id = ?)', current_account.id)
+    scope = scope.where('from_account_id NOT IN (SELECT account_id FROM blocks WHERE target_account_id = ?)', current_account.id)
 
     scope
   }
@@ -72,9 +81,67 @@ class Notification < ApplicationRecord
       mention&.status
     when :poll
       poll&.status
+    when :group_moderation_event
+      group_moderation_event&.status
     end
   end
 
+  def target_comment
+    case type
+    when :comment_reaction
+      comment_reaction&.comment
+    when :comment_mention
+      comment_mention&.comment
+    end
+  end
+
+  def group_id
+    case type
+    when :group_moderation_event
+      group_moderation_event&.group_id
+    end
+  end
+
+  def group_name
+    case type
+    when :group_moderation_event
+      if !group_moderation_event.nil?
+        group = Group.find(group_moderation_event.group_id)
+        group&.title || 'A group'
+      else
+        'A group'
+      end
+    end
+  end
+
+  def approved
+    case type
+    when :group_moderation_event
+      group_moderation_event&.approved
+    end
+  end
+
+  def rejected
+    case type
+    when :group_moderation_event
+      group_moderation_event&.rejected
+    end
+  end
+
+  def removed
+    case type
+    when :group_moderation_event
+      group_moderation_event&.removed
+    end
+  end
+
+  def acted_at
+    case type
+    when :group_moderation_event
+      group_moderation_event&.acted_at
+    end
+  end 
+  
   def browserable?
     type != :follow_request
   end
@@ -111,10 +178,14 @@ class Notification < ApplicationRecord
     return unless new_record?
 
     case activity_type
-    when 'Status', 'Follow', 'Favourite', 'FollowRequest', 'Poll'
+    when 'Status', 'Follow', 'Favourite', 'FollowRequest', 'Poll', 'CommentReaction'
       self.from_account_id = activity&.account_id
     when 'Mention'
       self.from_account_id = activity&.status&.account_id
+    when 'CommentMention'
+      self.from_account_id = activity&.comment&.account_id
+    when 'GroupModerationEvent'
+      self.from_account_id = activity&.account_id
     end
   end
 end

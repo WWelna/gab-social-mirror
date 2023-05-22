@@ -69,6 +69,9 @@
   .fields-group
     = f.input :is_archived, as: :boolean, wrapper: :with_label, label: 'Is Archived?'
 
+  .fields-group
+    = f.input :is_moderated, as: :boolean, wrapper: :with_label, label: 'Is Moderated?'
+
   .actions
     = f.button :button, t('generic.save_changes'), type: :submit
 

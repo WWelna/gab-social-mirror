@@ -301,12 +301,7 @@ class StatusContent extends ImmutablePureComponent {
         </div>
       )
     } else if (this.props.onClick) {
-      const hasMarginBottom = !!status.get('card') || !!status.get('poll') || status.get('media_attachments').size > 0
-
-      const containerClasses = CX({
-        px15: !isComment,
-        mb15: hasMarginBottom,
-      })
+      const containerClasses = CX({ px15: !isComment })
 
       const statusContentClasses = CX({
         statusContent: 1,
@@ -352,7 +347,7 @@ class StatusContent extends ImmutablePureComponent {
       statusContent: 1,
       outlineNone: 1,
       px15: !isComment,
-      mb15: !isComment,
+      // mb15: !isComment,
       mt5: isComment,
     })
 

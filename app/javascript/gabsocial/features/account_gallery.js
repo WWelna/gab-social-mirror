@@ -23,14 +23,14 @@ const emptyMessage = (
 class AccountGallery extends ImmutablePureComponent {
 
   load = opts => {
-    const { accountId, mediaType } = this.props
+    const { accountId, mediaType, maxId } = this.props
     if (!accountId || accountId === -1) {
       return
     }
     const timelineId = `account:${accountId}:media`
     const endpoint = `/api/v1/accounts/${accountId}/statuses`
     const limit = 15
-    const expandOpts = Object.assign({ endpoint, mediaType, limit }, opts)
+    const expandOpts = Object.assign({ endpoint, mediaType, limit, maxId }, opts)
     this.props.dispatch(timelineFetchPaged(timelineId, expandOpts))
   }
 
@@ -95,12 +95,18 @@ const mapStateToProps = (state, { account, mediaType }) => {
   const accountId = account.get('id')
   const timeline = state.getIn(['timelines', `account:${accountId}:media`])
   if (timeline === undefined) return { accountId, isLoading: true }
+  const items = timeline.get('items').toJS()
+  let maxId;
+  if (Array.isArray(items) && items.length > 0) {
+    maxId = items.pop()
+  }
   return {
     accountId,
     attachments: getAccountGallery(state, accountId, mediaType),
     isLoading: timeline.get('isLoading'),
     isFetched: timeline.get('isFetched'),
     hasNext: timeline.get('hasNext'),
+    maxId,
   }
 }
 

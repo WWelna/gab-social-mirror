@@ -8,7 +8,8 @@ import Text from './text'
 class TimelineQueueButtonHeader extends React.PureComponent {
 
   handleOnClick = () => {
-    this.props.onClick()
+    window.location.reload();
+    //this.props.onClick()
   }
 
   render() {

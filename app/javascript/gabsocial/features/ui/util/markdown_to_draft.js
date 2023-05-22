@@ -97,8 +97,10 @@ const DefaultBlockEntities = {
 // Entity styles. Simple Inline styles that aren't added to entityMap
 // key is remarkable key, value is draftjs raw key
 const DefaultBlockStyles = {
+  ins_open: 'UNDERLINE',
   strong_open: 'BOLD',
   em_open: 'ITALIC',
+  del_open: 'STRIKETHROUGH',
   code: 'CODE'
 };
 
@@ -175,6 +177,74 @@ function parseInline(inlineItem, BlockEntities, BlockStyles) {
   return {content, blockEntities, blockEntityRanges, blockInlineStyleRanges};
 }
 
+const underscore = '_'
+const space = ' '
+const backslash = '\\'
+const surroundingCharactersPattern = /(\W|\n|\s)/
+
+/**
+ * Remarkable parse underscore underline
+ * @method ins
+ * @param {object} state
+ * @param {boolean} silent
+ * @returns {boolean}
+ */
+function remarkableUnderscoreUnderline(state, silent) {
+  const { src, pos, posMax, level, options, tokens } = state
+  const curChar = src[pos]
+  const prevChar = src[pos - 1]
+  const nextChar = src[pos + 1]
+  const nextUnderline = src.indexOf(underscore, pos + 1)
+  const afterCloseChar = nextUnderline > pos ? src[nextUnderline + 1] : null
+  const nextLevel = level + 1
+
+  if (
+    silent ||
+    pos >= posMax ||
+    level >= options.maxNesting ||
+    src[pos] !== underscore ||
+    prevChar === backslash
+  ) {
+    return false
+  }
+
+  const isOpen = tokens.some(
+    token => token.type === 'ins_open' && token.level === nextLevel
+  )
+
+  if (
+    isOpen === false &&
+    (
+      // no matching close underscore?
+      nextUnderline === -1 ||
+
+      // not on the edge of a word?
+      (pos > 0 && surroundingCharactersPattern.test(prevChar) === false) ||
+      (pos < posMax && afterCloseChar !== null && surroundingCharactersPattern.test(afterCloseChar) === false)
+    )
+  ) {
+    // cannot underline mid-word like i_am_super_dooper
+    return false
+  }
+
+  state.posMax = state.pos;
+  state.pos = pos + 1;
+
+  if (isOpen === false) {
+    state.push({ type: 'ins_open', level: nextLevel });
+  }
+
+  state.parser.tokenize(state);
+
+  if (isOpen) {
+    state.push({ type: 'ins_close', level });
+  }
+
+  state.pos = state.posMax + 1;
+  state.posMax = posMax;
+  return true;
+}
+
 /**
  * Convert markdown into raw draftjs object
  *
@@ -187,6 +257,9 @@ function markdownToDraft(string, options = {}) {
   const remarkablePreset = options.remarkablePreset || options.remarkableOptions;
   const remarkableOptions = typeof options.remarkableOptions === 'object' ? options.remarkableOptions : null;
   const md = new Remarkable(remarkablePreset, remarkableOptions);
+  
+  // before emphasis parser
+  md.inline.ruler.before('emphasis', 'underscore_underline', remarkableUnderscoreUnderline)
 
   // if tables are not explicitly enabled, disable them by default
   if (

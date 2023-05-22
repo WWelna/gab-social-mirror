@@ -2,21 +2,43 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
-import { me } from '../initial_state'
-import {
-  CX,
-  MODAL_COMPOSE,
-  BREAKPOINT_EXTRA_SMALL,
-} from '../constants'
+import { withRouter } from 'react-router-dom'
+import { loggedOut } from '../initial_state'
+import { CX, MODAL_COMPOSE, BREAKPOINT_EXTRA_SMALL } from '../constants'
 import { openModal } from '../actions/modal'
 import Button from './button'
+import { getGroupIdFromRoute } from '../utils/groups'
+
+const btnClass = [
+  _s.py15,
+  _s.h60PX,
+  _s.saveAreaInsetMR,
+  _s.saveAreaInsetMB,
+  _s.w60PX,
+  _s.jcCenter,
+  _s.aiCenter,
+  _s.boxShadowBlock
+].join(' ')
 
 class FloatingActionButton extends React.PureComponent {
+  get groupId() {
+    return getGroupIdFromRoute(this)
+  }
+
+  get hasGroup() {
+    return this.groupId !== undefined && this.groupId !== null
+  }
+
+  onClick = () => {
+    const { groupId, hasGroup } = this
+    const opts = hasGroup ? { groupId } : {}
+    this.props.onOpenCompose(opts)
+  }
 
   render() {
-    const { intl, onOpenCompose, state, width } = this.props
+    const { intl, state, width } = this.props
 
-    if (!me) return null
+    if (loggedOut) return null
 
     const isDesktop = width > BREAKPOINT_EXTRA_SMALL
     const message = intl.formatMessage(messages.gab)
@@ -30,43 +52,41 @@ class FloatingActionButton extends React.PureComponent {
       bottom55PX: !isDesktop,
       bottom0: isDesktop,
       pb15: isDesktop,
-      pr15: isDesktop,
+      pr15: isDesktop
     })
 
     return (
-      <div
-        className={containerClasses}
-      >
+      <div className={containerClasses}>
         <Button
-          to={isDesktop ? undefined : '/compose'}
-          onClick={isDesktop ? onOpenCompose : undefined}
-          className={[_s.py15, _s.h60PX, _s.saveAreaInsetMR, _s.saveAreaInsetMB, _s.w60PX, _s.jcCenter, _s.aiCenter, _s.boxShadowBlock].join(' ')}
+          onClick={this.onClick}
+          className={btnClass}
           title={message}
           aria-label={message}
-          icon='pencil'
-          iconSize='20px'
+          icon="pencil"
+          iconSize="20px"
         />
       </div>
     )
   }
-  
 }
 
 const messages = defineMessages({
-  gab: { id: 'gab', defaultMessage: 'Gab' }, 
+  gab: { id: 'gab', defaultMessage: 'Gab' }
 })
 
-const mapStateToProps = (state) => ({
-  width: state.getIn(['settings', 'window_dimensions', 'width']),
+const mapStateToProps = state => ({
+  width: state.getIn(['settings', 'window_dimensions', 'width'])
 })
 
-const mapDispatchToProps = (dispatch) => ({
-  onOpenCompose: () => dispatch(openModal(MODAL_COMPOSE)),
+const mapDispatchToProps = dispatch => ({
+  onOpenCompose: opts => dispatch(openModal(MODAL_COMPOSE, opts))
 })
 
 FloatingActionButton.propTypes = {
   intl: PropTypes.object.isRequired,
-  onOpenCompose: PropTypes.func.isRequired,
+  onOpenCompose: PropTypes.func.isRequired
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(FloatingActionButton))
+export default withRouter(
+  injectIntl(connect(mapStateToProps, mapDispatchToProps)(FloatingActionButton))
+)

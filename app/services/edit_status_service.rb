@@ -20,7 +20,7 @@ class EditStatusService < BaseService
     @account     = status.account
     @options     = options
     @text        = @options[:text] || ''
-    @markdown    = @options[:markdown] if @account.is_pro
+    @markdown    = @options[:markdown]
 
     # validate_similarity! unless @account.user&.staff? || @account.vpdi?
     validate_links! unless @account.user&.staff?
@@ -44,6 +44,22 @@ class EditStatusService < BaseService
     @text         = @options.delete(:spoiler_text) if @text.blank? && @options[:spoiler_text].present?
     @visibility   = @options[:visibility] || @account.user&.setting_default_privacy
     @visibility   = :unlisted if @visibility == :public && @account.silenced?
+
+    @expires_at = nil
+    case @options[:expires_at]
+      when 'five_minutes'
+        @expires_at = Time.now + 5.minutes
+      when 'one_hour'
+        @expires_at = Time.now + 1.hour
+      when 'six_hours'
+        @expires_at = Time.now + 6.hours
+      when 'one_day'
+        @expires_at = Time.now + 1.day
+      when 'three_days'
+        @expires_at = Time.now + 3.days
+      when 'one_week'
+        @expires_at = Time.now + 1.week
+    end
   rescue ArgumentError
     raise ActiveRecord::RecordInvalid
   end
@@ -58,12 +74,13 @@ class EditStatusService < BaseService
 
   def postprocess_status!
     LinkCrawlWorker.perform_async(@status.id) unless @status.spoiler_text?
+    ExpiringStatusWorker.perform_at(@status.expires_at, @status.id) if @status.expires_at
   end
 
   def prepare_revision_text
     text              = @status.text
     current_media_ids = @status.media_attachments.pluck(:id)
-    new_media_ids     = @options[:media_ids].take(4).map(&:to_i)
+    new_media_ids     = (@options[:media_ids] || []).take(4).map(&:to_i)
 
     if current_media_ids.sort != new_media_ids.sort
       text = "" if text == @options[:text]
@@ -97,7 +114,7 @@ class EditStatusService < BaseService
 
   def validate_links!
     return true unless LinkBlock.block?(@text)
-    raise GabSocial::NotPermittedError, "A link you're trying to post has been blocked by the moderation team"
+    raise GabSocial::NotPermittedError, "A link you are trying to share has been flagged as spam, if you believe this is a mistake please contact support@gab.com and let us know."
   end
 
   def validate_mention_count!
@@ -133,6 +150,7 @@ class EditStatusService < BaseService
       revised_at: Time.now,
       text: @text,
       markdown: @markdown,
+      expires_at: @expires_at,
       media_attachments: @media || [],
       sensitive: (@options[:sensitive].nil? ? @account.user&.setting_default_sensitive : @options[:sensitive]) || @options[:spoiler_text].present?,
       spoiler_text: @options[:spoiler_text] || '',

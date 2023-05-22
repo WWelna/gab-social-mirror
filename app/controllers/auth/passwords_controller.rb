@@ -6,6 +6,23 @@ class Auth::PasswordsController < Devise::PasswordsController
 
   layout 'auth'
 
+  def create
+    if !resource_params[:email].present?
+      flash[:alert] = 'Please enter your email address.'
+      redirect_to '/auth/password/new'
+      return
+    end
+    pwkey = "pwreset:#{Time.current.strftime('%Y%m%d%H')}:#{resource_params[:email]}"
+    found = Rails.cache.read(pwkey)
+    if found
+      flash[:alert] = 'Too many password reset attempts. Please try again in an hour.'
+      redirect_to '/auth/password/new'
+    else
+      Rails.cache.write(pwkey, 1, expires_in: 1.hour)
+      super
+    end
+  end
+
   private
 
   def check_validity_of_reset_password_token

@@ -9,6 +9,10 @@ module Settings
       before_action :ensure_otp_secret
 
       def new
+        if !current_user.confirmed?
+          flash[:alert] = "You must confirm your account before you can enable 2FA."
+          redirect_to "/settings/profile"
+        end
         prepare_two_factor_form
       end
 

@@ -15,7 +15,8 @@ class CommentList extends ImmutablePureComponent {
       onViewComments,
       ancestorAccountId,
       totalDirectDescendants,
-      ancestorStatusId
+      ancestorStatusId,
+      highlightStatusId,
     } = this.props
 
     const size = loadedDirectDescendantsCount
@@ -71,6 +72,7 @@ class CommentList extends ImmutablePureComponent {
         scrollKey='comments'
         hasMore={size < max}
         onLoadMore={onViewComments}
+        disableInfiniteScrollUntilClicked={!!highlightStatusId}
       >
         {scrollableContent}
       </ScrollableList>

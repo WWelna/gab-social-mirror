@@ -17,6 +17,9 @@ class StatusFilter
 
   def results
     scope = Status
+    if !@account.nil?
+      scope = scope.where(account: @account)
+    end
     params.each do |key, value|
       scope = scope.merge scope_for(key, value) if !value.nil? && !value.empty?
     end
@@ -25,6 +28,9 @@ class StatusFilter
 
   def unscoped_results
     scope = Status.unscoped.recent
+    if !@account.nil?
+      scope = scope.where(account: @account)
+    end
     params.each do |key, value|
       scope = scope.merge scope_for(key, value) if !value.nil? && !value.empty?
     end

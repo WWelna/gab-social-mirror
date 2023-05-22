@@ -44,10 +44,6 @@ class Api::V1::ChatConversationController < Api::BaseController
   end
 
   def set_expiration_policy
-    if !current_user.account.is_pro
-      return render json: { error: 'You need to be a GabPRO member to set chat conversation expiration' }, status: 422
-    end
-
     expiration = ChatConversationAccount.expiration_policy_db(name: params[:expiration])
 
     @chat_conversation_account.update!(chat_message_expiration_policy: expiration)

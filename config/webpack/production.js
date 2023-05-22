@@ -9,6 +9,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const { output } = require('./configuration');
 const sharedConfig = require('./shared');
+const { BUNDLE_ANALYZER } = process.env
 
 let attachmentHost;
 
@@ -27,7 +28,6 @@ if (process.env.S3_ENABLED === 'true') {
 
 module.exports = merge(sharedConfig, {
   mode: 'production',
-  devtool: 'source-map',
   stats: 'normal',
   bail: true,
   optimization: {
@@ -36,7 +36,7 @@ module.exports = merge(sharedConfig, {
       new UglifyJsPlugin({
         cache: true,
         parallel: true,
-        sourceMap: true,
+        sourceMap: false,
 
         uglifyOptions: {
           compress: {
@@ -57,7 +57,7 @@ module.exports = merge(sharedConfig, {
       cache: true,
       test: /\.(js|css|html|json|ico|svg|eot|otf|ttf|map)$/,
     }),
-    new BundleAnalyzerPlugin({ // generates report.html
+    BUNDLE_ANALYZER && new BundleAnalyzerPlugin({ // generates report.html
       analyzerMode: 'static',
       openAnalyzer: false,
       logLevel: 'silent', // do not bother Webpacker, who runs with --json and parses stdout
@@ -102,5 +102,5 @@ module.exports = merge(sharedConfig, {
         minify: true,
       },
     }),
-  ],
+  ].filter(Boolean),
 });

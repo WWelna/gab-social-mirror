@@ -114,11 +114,10 @@ class MediaItem extends ImmutablePureComponent {
     const isSquare = aspectRatio === 1 || isSmall
     const containerClasses = CX({
       d: 1,
-      px5: 1,
       flex1: !isSmallRatio && !isSquare,
       minW198PX: !isVideo && !isSmallRatio && !isSquare,
       minW282PX: isVideo && !isSmallRatio && !isSquare,
-      minW120PX: isSmallRatio,
+      minW120PX: isSmallRatio && !isSmall,
       minW162PX: isSquare && !isSmall,
       w33PC: isSmall,
     })
@@ -137,7 +136,7 @@ class MediaItem extends ImmutablePureComponent {
           to={statusUrl}
           title={!!csd.label ? csd.label : title}
         >
-          <div className={[_s.d, _s.mt5, _s.mb10, _s.flexGrow1].join(' ')}>
+          <div className={[_s.d, _s.mb5, _s.ml5, _s.flexGrow1].join(' ')}>
             <div className={paddedContainerClasses}>
               <div className={[_s.d, _s.posAbs, _s.top0, _s.right0, _s.left0, _s.bottom0].join(' ')}>
                 <div className={[_s.d, _s.h100PC, _s.aiCenter, _s.jcCenter, _s.radiusSmall, _s.overflowHidden].join(' ')}>

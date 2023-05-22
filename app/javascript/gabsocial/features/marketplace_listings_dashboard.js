@@ -17,7 +17,6 @@ import ResponsiveComponent from './ui/util/responsive_component'
 import { me } from '../initial_state'
 import {
   BREAKPOINT_SMALL,
-  MODAL_PRO_UPGRADE,
   POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS,
   MARKETPLACE_LISTING_STATUS_PENDING_REVIEW,
   MARKETPLACE_LISTING_STATUS_PENDING_CHANGES,
@@ -28,7 +27,6 @@ import {
   MARKETPLACE_LISTING_STATUS_SOLD,
   MARKETPLACE_LISTING_STATUS_ARCHIVED,
 } from '../constants'
-import { openModal } from '../actions/modal'
 import { openPopover } from '../actions/popover'
 import {
   clearMarketplaceListingDashboard,
@@ -41,8 +39,6 @@ class MarketplaceListingsDashboard extends ImmutablePureComponent {
 
   componentDidMount() {
     const { items } = this.props
-    if (!this.makeSureIsPRO()) return false
-
     // : todo : if no items and yadda yadda
     this.props.onExpandMarketplaceListingDashboard()
   }
@@ -58,8 +54,6 @@ class MarketplaceListingsDashboard extends ImmutablePureComponent {
   }
 
   handleOnChangeMarketplaceListingDashboardQuery = (value) => {
-    if (!this.makeSureIsPRO()) return false
-
     this.props.onChangeMarketplaceListingDashboardQuery(value)
   }
   
@@ -68,18 +62,7 @@ class MarketplaceListingsDashboard extends ImmutablePureComponent {
   }
 
   handleClickSort = (ref) => {
-    if (!this.makeSureIsPRO()) return false
-
     this.props.onOpenStatusSortOptionsPopover(ref)
-  }
-  
-  makeSureIsPRO = () => {
-    const { isPro, onOpenProModal } = this.props
-    if (!isPro) {
-      onOpenProModal()
-      return false
-    }
-    return true
   }
   
   handleOnExpand = debounce((skipMax) => {
@@ -203,13 +186,9 @@ const mapStateToProps = (state) => ({
   isError: state.getIn(['marketplace_listings_lists', 'dashboard', 'isError']),
   searchValue: state.getIn(['marketplace_listing_dashboard', 'search']),
   activeSearchStatuses: state.getIn(['marketplace_listing_dashboard', 'active_search_statuses']),
-  isPro: state.getIn(['accounts', me, 'is_pro']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  onOpenProModal() {
-    dispatch(openModal(MODAL_PRO_UPGRADE))
-  },
   onOpenStatusSortOptionsPopover(targetRef) {
     dispatch(openPopover(POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS, {
       targetRef,
@@ -235,7 +214,6 @@ MarketplaceListingsDashboard.propTypes = {
   isLoading: PropTypes.bool,
   isError: PropTypes.bool,
   searchValue: PropTypes.string,
-  onOpenProModal: PropTypes.func.isRequired,
   onExpandMarketplaceListingDashboard: PropTypes.func.isRequired,
 }
 

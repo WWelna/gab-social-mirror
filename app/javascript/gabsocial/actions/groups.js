@@ -4,10 +4,11 @@ import {
 } from 'immutable'
 import debounce from 'lodash.debounce'
 import api, { getLinks } from '../api'
-import { me } from '../initial_state'
-import { importFetchedAccounts } from './importer'
+import { me, createdAt } from '../initial_state'
+import { importFetchedAccounts, importFetchedStatuses } from './importer'
 import { fetchRelationships } from './accounts'
 import { updateStatusStats } from './statuses'
+import { timelineStatusDelete } from '../store/timelines'
 import {
   ACCEPTED_GROUP_TABS,
   GROUP_LIST_SORTING_TYPE_ALPHABETICAL,
@@ -86,6 +87,8 @@ export const GROUP_JOIN_REQUESTS_APPROVE_FAIL = 'GROUP_JOIN_REQUESTS_APPROVE_FAI
 export const GROUP_JOIN_REQUESTS_REJECT_SUCCESS = 'GROUP_JOIN_REQUESTS_REJECT_SUCCESS'
 export const GROUP_JOIN_REQUESTS_REJECT_FAIL = 'GROUP_JOIN_REQUESTS_REJECT_FAIL'
 
+//
+
 export const GROUP_REMOVE_STATUS_REQUEST = 'GROUP_REMOVE_STATUS_REQUEST'
 export const GROUP_REMOVE_STATUS_SUCCESS = 'GROUP_REMOVE_STATUS_SUCCESS'
 export const GROUP_REMOVE_STATUS_FAIL    = 'GROUP_REMOVE_STATUS_FAIL'
@@ -123,6 +126,8 @@ export const GROUP_TIMELINE_SORT = 'GROUP_TIMELINE_SORT'
 export const GROUP_TIMELINE_TOP_SORT = 'GROUP_TIMELINE_TOP_SORT'
 
 export const GROUP_SORT = 'GROUP_SORT'
+export const GROUP_MODERATION_STATS = 'GROUP_MODERATION_STATS'
+export const GROUP_MODERATION_MY_STATS = 'GROUP_MODERATION_MY_STATS'
 
 /**
  * @description Import a group into redux
@@ -179,22 +184,34 @@ const fetchGroupFail = (groupId, error) => ({
  * @param {Array} groupIds
  */
 export const fetchGroupRelationships = (groupIds) => (dispatch, getState) => {
-  if (!me || !Array.isArray(groupIds)) return
+  if (!me || !groupIds) return
 
-  const loadedRelationships = getState().get('group_relationships')
-  let newGroupIds = groupIds.filter((id) => loadedRelationships.get(id, null) === null)
-
-  if (newGroupIds.length === 0) return
+  if (typeof groupIds === 'string' || typeof groupIds === 'number') {
+    groupIds = [groupIds]
+  }
 
   // Unique
-  newGroupIds = Array.from(new Set(newGroupIds))
+  const newGroupIds = Array.from(new Set(groupIds))
 
   dispatch(fetchGroupRelationshipsRequest(newGroupIds))
 
   api(getState).post('/api/v1/group_relationships', {
     groupIds: newGroupIds,
-  }).then((response) => {
-    dispatch(fetchGroupRelationshipsSuccess(response.data))
+  }).then(({ data }) => {
+    dispatch(fetchGroupRelationshipsSuccess(data))
+    data.forEach(function({ id, member, admin, moderator }) {
+      if (typeof id === 'string' && member && (admin || moderator)) {
+        // user is a mod
+        dispatch(moderationStats(id))
+      } else {
+        // normal user
+        var monthsAgo = new Date()
+        monthsAgo.setMonth(monthAgo.getMonth() - 3)
+        if (createdAt && createdAt > monthsAgo) {
+          dispatch(moderationMyStats(id))
+        }
+      }
+    })
   }).catch((error) => {
     dispatch(fetchGroupRelationshipsFail(error))
   })
@@ -978,6 +995,116 @@ const rejectJoinRequestFail = (accountId, groupId, error) => ({
   groupId,
   error,
 })
+
+/*
+ * Moderators can trigger these actions from moderation_action_bar.js
+ */
+export const groupModerationRespondOptions = [
+  {
+    action: 'approve_post',
+    icon: 'like',
+    title: 'Accept',
+    message: 'Confirm you want to Approve this post?'
+  },
+  {
+    action: 'remove_post',
+    icon: 'close',
+    title: 'Reject',
+    message: 'Confirm you want to Reject this post?'
+  },
+  {
+    action: 'approve_user',
+    icon: 'check',
+    title: 'Whitelist',
+    message: 'Confirm you want to Approve this Account?  They will be able to post without moderation.',
+    forAccount: true,
+  },
+  {
+    action: 'remove_user',
+    icon: 'lock-filled',
+    title: 'Kick',
+    message: 'Confirm you want to Remove this Account from the group?',
+    forAccount: true,
+  },
+  {
+    action: 'report_user',
+    icon: 'error',
+    title: 'Report',
+    message: 'Confirm you want to Report this Account to Gab?  They will be removed from the group.',
+    forAccount: true,
+  },
+]
+
+/**
+ * frm contains { statusId, groupId, action } and it's sent to:
+ * app/controllers/api/v1/groups/moderation_controller.rb
+ */
+ export const respondModerationRequest = frm => (dispatch, getState) => {
+  const { groupId, statusId, action } = frm
+  const pathname = `/api/v1/groups/${groupId}/moderation/${action}`
+  const timelineId = `group_moderation:${groupId}`
+  api(getState).post(pathname, { statusId }).then(({ data }) => {
+    dispatch(timelineStatusDelete({ timelineId, statusId }))
+
+    // is this an account action?
+    const actionInfo = groupModerationRespondOptions
+      .find(item => item.action === action)
+    if (!actionInfo || !actionInfo.forAccount) {
+      return // not an account action
+    }
+
+    const state = getState()
+    const status = state.getIn(['statuses', statusId])
+    if (status === undefined) {
+      return // status not found
+    }
+
+    // which account is this status from?
+    const accountId = ImmutableMap.isMap(status) && status.get('account')
+
+    if (accountId === undefined) {
+      return
+    }
+
+    // remove all posts from the same user from our view after account action
+    const timelineItems = state.getIn(['timelines', timelineId, 'items'])
+    if (
+      ImmutableList.isList(timelineItems) === false ||
+      timelineItems.size === 0
+    ) {
+      return // missing timeline
+    }
+
+    const accountStatusIds = timelineItems.filter(function(item) {
+      const status = state.getIn(['statuses', item])
+      return ImmutableMap.isMap(status) && status.get('account') === accountId
+    })
+
+    accountStatusIds.toJS().forEach(
+      id => dispatch(timelineStatusDelete({ timelineId, statusId: id }))
+    )
+  })
+  .catch(err => console.error("error moderating", frm, err))
+  .finally(() => dispatch(moderationStats(groupId)))
+}
+
+export const moderationStats = groupId => (dispatch, getState) =>
+  api(getState).get(`/api/v1/groups/${groupId}/moderation/stats`)
+    .then(({ data: stats }) => dispatch({
+      type: GROUP_MODERATION_STATS,
+      groupId,
+      stats,
+    }))
+    .catch(err => console.error("group moderation stats error", err))
+
+export const moderationMyStats = groupId => (dispatch, getState) =>
+  api(getState).get(`/api/v1/groups/${groupId}/moderation/my_stats`)
+    .then(({ data: stats }) => dispatch({
+      type: GROUP_MODERATION_MY_STATS,
+      groupId,
+      stats,
+    }))
+    .catch(err => console.error("group moderation my stats error", err))
 
 /**
  * 

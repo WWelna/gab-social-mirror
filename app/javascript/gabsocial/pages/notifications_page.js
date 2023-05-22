@@ -16,18 +16,10 @@ import DefaultLayout from '../layouts/default_layout'
 import {
   LinkFooter,
   NotificationFilterPanel,
-  GabTVVideosPanel,
   UserSuggestionsPanel,
 } from '../features/ui/util/async_components'
 
 class NotificationsPage extends React.PureComponent {
-
-  componentWillUnmount() {
-    const { selectedFilter } = this.props
-    if (selectedFilter !== 'all') {
-     this.props.dispatch(setFilter('active', 'all'))
-    }
-  }
 
   onChangeActiveFilter(notificationType) {
     this.props.dispatch(setFilter('active', notificationType))
@@ -59,7 +51,6 @@ class NotificationsPage extends React.PureComponent {
       notificationCount,
       selectedFilter,
       isXS,
-      showVideos,
       showSuggestedUsers,
     } = this.props
 
@@ -77,10 +68,6 @@ class NotificationsPage extends React.PureComponent {
     const title = intl.formatMessage(messages.notifications)
 
     let sidebarLayout = [NotificationFilterPanel]
-
-    if(showVideos) {
-      sidebarLayout.push(GabTVVideosPanel)
-    }
     
     if(showSuggestedUsers) {
       sidebarLayout.push(UserSuggestionsPanel)

@@ -16,6 +16,7 @@ class BasicPage extends React.PureComponent {
       page,
       title,
       showSuggestedUsers,
+      setDocTitle
     } = this.props
 
     let sidebarLayout = [TrendsBreakingPanel]
@@ -34,7 +35,7 @@ class BasicPage extends React.PureComponent {
         page={page}
         layout={sidebarLayout}
       >
-        <PageTitle path={title} />
+        {setDocTitle !== false && <PageTitle path={title} />}
         {children}
       </DefaultLayout>
     )
@@ -46,6 +47,7 @@ BasicPage.propTypes = {
   children: PropTypes.node.isRequired,
   page: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
+  setDocTitle: PropTypes.bool,
 }
 
 export default BasicPage

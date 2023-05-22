@@ -1,5 +1,7 @@
 'use strict';
 
+import longPressEvent from './utils/long_press_event';
+
 // Convenience function to load polyfills and return a promise when it's done.
 // If there are no polyfills, then this is just Promise.resolve() which means
 // it will execute in the same tick of the event loop (i.e. near-instant).
@@ -22,6 +24,8 @@ function loadPolyfills() {
     Object.values &&
     window.Symbol
   );
+
+  longPressEvent();
 
   // Latest version of Firefox and Safari do not have IntersectionObserver.
   // Edge does not have requestIdleCallback and object-fit CSS property.

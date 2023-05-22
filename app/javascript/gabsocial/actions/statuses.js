@@ -5,7 +5,7 @@ import { evictStatus } from '../storage/modifier'
 import { importFetchedStatus, importFetchedStatuses, importAccount, importStatus } from './importer'
 import { openModal } from './modal'
 import { me } from '../initial_state'
-import { COMMENT_SORTING_TYPE_NEWEST } from '../constants'
+import { COMMENT_SORTING_TYPE_NEWEST, MODAL_COMPOSE } from '../constants'
 
 export const STATUS_FETCH_REQUEST = 'STATUS_FETCH_REQUEST'
 export const STATUS_FETCH_SUCCESS = 'STATUS_FETCH_SUCCESS'
@@ -148,7 +148,7 @@ export const editStatus = (status) => (dispatch) => {
     status,
   })
 
-  dispatch(openModal('COMPOSE'))
+  dispatch(openModal(MODAL_COMPOSE, { editStatus: status, isEditing: true }))
 }
 
 /**
@@ -248,7 +248,7 @@ export const debouncedFetchComments = debounce((id, forceNewest, dispatch, getSt
 
   const sort = forceNewest ? COMMENT_SORTING_TYPE_NEWEST : getState().getIn(['settings', 'commentSorting'])
   const fetchNext = getState().getIn(['contexts', 'nexts', id])
-  const url = !!fetchNext ? fetchNext : `/api/v1/comments/${id}?sort_by=${sort}`
+  const url = !!fetchNext ? fetchNext : `/api/v1/status_comments/${id}?sort_by=${sort}`
 
   api(getState).get(url).then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')

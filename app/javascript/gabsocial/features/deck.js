@@ -4,20 +4,18 @@ import { connect } from 'react-redux'
 import { fromJS } from 'immutable'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import {
-  sortableContainer,
-  sortableElement,
-} from 'react-sortable-hoc'
-import { me, meUsername} from '../initial_state'
+import { sortableContainer, sortableElement } from 'react-sortable-hoc'
+import { me, meUsername } from '../initial_state'
 import {
   GAB_DECK_MAX_ITEMS,
   URL_GAB_PRO,
   MODAL_PRO_UPGRADE,
+  LIST_TYPE_OWN
 } from '../constants'
 import {
   deckConnect,
   deckDisconnect,
-  updateDeckColumnAtIndex,
+  updateDeckColumnAtIndex
 } from '../actions/deck'
 import { saveSettings } from '../actions/settings'
 import { openModal } from '../actions/modal'
@@ -25,6 +23,7 @@ import WrappedBundle from './ui/util/wrapped_bundle'
 import DeckColumn from '../components/deck_column'
 import Text from '../components/text'
 import Button from '../components/button'
+import ColumnIndicator from '../components/column_indicator'
 import {
   AccountTimeline,
   Compose,
@@ -37,12 +36,12 @@ import {
   BookmarkedStatuses,
   ProTimeline,
   News,
-  ExploreTimeline,
+  ExploreTimeline
 } from './ui/util/async_components'
+import { getOrderedLists } from '../selectors'
 
 class Deck extends React.PureComponent {
-
-  componentDidMount () {
+  componentDidMount() {
     this.props.dispatch(deckConnect())
     if (!this.props.isPro) this.handleOnOpenProUpgradeModal()
   }
@@ -55,11 +54,11 @@ class Deck extends React.PureComponent {
     this.props.dispatch(openModal(MODAL_PRO_UPGRADE))
   }
 
-  onSortEnd = ({oldIndex, newIndex}) => {
+  onSortEnd = ({ oldIndex, newIndex }) => {
     this.props.dispatch(updateDeckColumnAtIndex(oldIndex, newIndex))
   }
 
-  onShouldCancelStart = (event) => {
+  onShouldCancelStart = event => {
     if (event.target) {
       if (!event.target.hasAttribute('data-sort-header')) {
         return true
@@ -72,16 +71,19 @@ class Deck extends React.PureComponent {
   getDeckColumn = (deckColumn, index) => {
     if (!deckColumn || !this.props.isPro) return null
 
-    let Component, noRefresh, accountId, icon = null
+    let Component,
+      noRefresh,
+      accountId,
+      icon = null
     let componentParams = {}
-    let title, subtitle = ''
+    let title = <ColumnIndicator type="loading" />,
+      subtitle = ''
 
     switch (deckColumn) {
       case 'notifications':
         title = 'Notifications'
         icon = 'notifications'
         Component = Notifications
-        componentParams = { expandOnMount: true }
         break
       case 'home':
         title = 'Home'
@@ -98,13 +100,13 @@ class Deck extends React.PureComponent {
         title = 'Likes'
         icon = 'like'
         Component = LikedStatuses
-        componentParams = { params: { username: meUsername }}
+        componentParams = { params: { username: meUsername } }
         break
       case 'bookmarks':
         title = 'Bookmarks'
         icon = 'bookmark'
         Component = BookmarkedStatuses
-        componentParams = { params: { username: meUsername }}
+        componentParams = { params: { username: meUsername } }
         break
       case 'pro':
         title = 'Pro Timeline'
@@ -127,37 +129,42 @@ class Deck extends React.PureComponent {
     }
 
     if (!Component) {
-      if (deckColumn.indexOf('user.') > -1)  {
+      if (deckColumn.indexOf('user.') > -1) {
         const userAccountId = deckColumn.replace('user.', '')
         title = 'User'
         Component = AccountTimeline
-        const account = this.props.accounts.get(userAccountId) ||
+        const account =
+          this.props.accounts.get(userAccountId) ||
           fromJS({ id: userAccountId })
         componentParams = { account }
         accountId = userAccountId
-      } else if (deckColumn.indexOf('list.') > -1)  {
+      } else if (deckColumn.indexOf('list.') > -1) {
         const listId = deckColumn.replace('list.', '')
-        title = 'Feed'
-        subtitle = listId
+        const feedTitle = this.props.lists.getIn(['items', listId, 'title'])
+        if (feedTitle) {
+          title = feedTitle
+        }
         icon = 'list'
         Component = ListTimeline
-        componentParams = { params: { id: listId }} 
-      } else if (deckColumn.indexOf('group.') > -1)  {
+        componentParams = { params: { id: listId } }
+      } else if (deckColumn.indexOf('group.') > -1) {
         const groupId = deckColumn.replace('group.', '')
-        title = 'Group'
-        subtitle = groupId
+        const groupTitle = this.props.groups.getIn([groupId, 'title'])
+        if (groupTitle) {
+          title = groupTitle
+        }
         icon = 'group'
         Component = GroupTimeline
-        componentParams = { params: { id: groupId }} 
-      } else if (deckColumn.indexOf('news.') > -1)  {
-        // : todo :        
-      } else if (deckColumn.indexOf('hashtag.') > -1)  {
+        componentParams = { params: { id: groupId } }
+      } else if (deckColumn.indexOf('news.') > -1) {
+        // : todo :
+      } else if (deckColumn.indexOf('hashtag.') > -1) {
         const hashtag = deckColumn.replace('hashtag.', '')
         title = 'Hashtag'
         subtitle = hashtag
         icon = 'apps'
         Component = HashtagTimeline
-        componentParams = { params: { id: hashtag }} 
+        componentParams = { params: { id: hashtag } }
       }
     }
 
@@ -177,96 +184,103 @@ class Deck extends React.PureComponent {
           noRefresh={noRefresh}
           accountId={accountId}
         >
-          <WrappedBundle component={Component} componentParams={componentParams} />
+          <WrappedBundle
+            component={Component}
+            componentParams={componentParams}
+          />
         </DeckColumn>
       </SortableItem>
     )
   }
 
-  render () {
+  render() {
     const { gabDeckOrder, isPro } = this.props
 
     const isEmpty = gabDeckOrder.size === 0
 
     const title = (
       <span className={[_s.d, _s.flexRow, _s.jcCenter, _s.aiCenter].join(' ')}>
-        <span className={[_s.d, _s.mr2].join(' ')}>
-          Gab Deck for Gab
+        <span className={[_s.d, _s.mr2].join(' ')}>Gab Deck for Gab</span>
+        <span
+          className={[_s.bgPro, _s.cBlack, _s.radiusSmall, _s.px5, _s.py5].join(
+            ' '
+          )}
+        >
+          PRO
         </span>
-        <span className={[_s.bgPro, _s.cBlack, _s.radiusSmall, _s.px5, _s.py5].join(' ')}>PRO</span>
       </span>
     )
 
     return (
       <SortableContainer
-        axis='x'
-        lockAxis='x'
+        axis="x"
+        lockAxis="x"
         onSortEnd={this.onSortEnd}
         shouldCancelStart={this.onShouldCancelStart}
       >
-        {
-          (isEmpty || !isPro) &&
+        {(isEmpty || !isPro) && (
           <React.Fragment>
-            <DeckColumn title='Compose' icon='pencil' noButtons>
+            <DeckColumn title="Compose" icon="pencil" noButtons>
               <WrappedBundle component={Compose} />
             </DeckColumn>
-            {
-              !isPro &&
-              <DeckColumn title={title} icon='pro' noButtons>
+            {!isPro && (
+              <DeckColumn title={title} icon="pro" noButtons>
                 <div className={[_s.d, _s.px15, _s.py15].join(' ')}>
                   <Text>
-                    GabDeck is a unique way to customize your Gab experience. Upgrade to GabPRO to unlock the GabDeck.
+                    GabDeck is a unique way to customize your Gab experience.
+                    Upgrade to GabPRO to unlock the GabDeck.
                   </Text>
                   <div className={[_s.mt15, _s.d, _s.flexRow].join(' ')}>
                     <Button href={URL_GAB_PRO}>
-                      <Text color='inherit' className={_s.px10}>
+                      <Text color="inherit" className={_s.px10}>
                         Upgrade to GabPRO
                       </Text>
                     </Button>
                   </div>
                 </div>
               </DeckColumn>
-            }
-            <DeckColumn title='Explore' icon='explore' noButtons>
+            )}
+            <DeckColumn title="Explore" icon="explore" noButtons>
               <WrappedBundle component={ExploreTimeline} />
             </DeckColumn>
-            <DeckColumn title='News' icon='news' noButtons>
-              <WrappedBundle component={News} componentParams={{ isSmall: true }} />
+            <DeckColumn title="News" icon="news" noButtons>
+              <WrappedBundle
+                component={News}
+                componentParams={{ isSmall: true }}
+              />
             </DeckColumn>
             <DeckColumn />
           </React.Fragment>
-        }
-        {
-          !isEmpty && isPro &&
-          gabDeckOrder.map((deckOption, i) => this.getDeckColumn(deckOption, i))
-        }
+        )}
+        {!isEmpty &&
+          isPro &&
+          gabDeckOrder.map((deckOption, i) =>
+            this.getDeckColumn(deckOption, i)
+          )}
       </SortableContainer>
     )
   }
-
 }
 
-const SortableItem = sortableElement(({children}) => (
-  <div>
-    {children}
-  </div>
-))
+const SortableItem = sortableElement(({ children }) => <div>{children}</div>)
 
-const SortableContainer = sortableContainer(({children}) => (
+const SortableContainer = sortableContainer(({ children }) => (
   <div className={[_s.d, _s.flexRow, _s.listStyleNone].join(' ')}>
     {children}
   </div>
 ))
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = state => ({
   isPro: state.getIn(['accounts', me, 'is_pro']),
   gabDeckOrder: state.getIn(['settings', 'gabDeckOrder']),
-  accounts: state.get('accounts')
+  accounts: state.get('accounts'),
+  groups: state.get('groups'),
+  lists: state.get('lists')
 })
 
 Deck.propTypes = {
   isPro: PropTypes.bool.isRequired,
-  gabDeckOrder: ImmutablePropTypes.list,
+  gabDeckOrder: ImmutablePropTypes.list
 }
 
 export default connect(mapStateToProps)(Deck)

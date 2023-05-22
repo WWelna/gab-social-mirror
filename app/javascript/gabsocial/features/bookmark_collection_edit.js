@@ -85,8 +85,7 @@ class BookmarkCollectionEdit extends React.PureComponent {
 }
 
 const mapStateToProps = (state, { bookmarkCollectionId }) => {
-  const bookmarkCollections = state.getIn(['bookmark_collections', 'items'])
-  const bookmarkCollection = bookmarkCollections.find((b) => b.get('id') === bookmarkCollectionId)
+  const bookmarkCollection = state.getIn(['bookmark_collections', 'items', `${bookmarkCollectionId}`])
   const bookmarkCollectionTitle = bookmarkCollectionId === 'saved' ? 'Saved' : !!bookmarkCollection ? bookmarkCollection.get('title') : null
   return {
     bookmarkCollectionId,

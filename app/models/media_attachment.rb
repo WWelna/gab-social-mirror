@@ -30,12 +30,12 @@ class MediaAttachment < ApplicationRecord
 
   enum type: [:image, :gifv, :video, :unknown]
 
-  IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].freeze
+  IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.jfif'].freeze
   VIDEO_FILE_EXTENSIONS = ['.webm', '.mp4', '.m4v', '.mov'].freeze
 
   IMAGE_MIME_TYPES             = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].freeze
-  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime', 'video/ogg', 'video/3gpp'].freeze
-  VIDEO_CONVERTIBLE_MIME_TYPES = ['video/webm', 'video/quicktime'].freeze
+  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime', 'video/ogg', 'video/3gpp', 'audio/webm'].freeze
+  VIDEO_CONVERTIBLE_MIME_TYPES = ['video/webm', 'video/quicktime', 'audio/webm'].freeze
 
   BLURHASH_OPTIONS = {
     x_comp: 4,
@@ -117,6 +117,7 @@ class MediaAttachment < ApplicationRecord
   remotable_attachment :file, SIZE_LIMIT
 
   include Attachmentable
+  include Paginable
 
   validates :account, presence: true
   validates :description, length: { maximum: 420 }, if: :local?
@@ -125,10 +126,12 @@ class MediaAttachment < ApplicationRecord
   scope :unattached, -> { where(status_id: nil, scheduled_status_id: nil, marketplace_listing_id: nil) }
   scope :local,      -> { where(remote_url: '') }
   scope :remote,     -> { where.not(remote_url: '') }
+  scope :recent,     -> { reorder(created_at: :desc) }
+  scope :excluding_scheduled, -> { where(scheduled_status_id: nil) }
+  
+  default_scope { recent }
 
-  default_scope { order(id: :asc) }
-
- def is_pro
+  def is_pro
     return false if account_id.nil?
     account.is_pro
   end
@@ -196,7 +199,6 @@ class MediaAttachment < ApplicationRecord
         {
           small: VIDEO_STYLES[:small],
           playable: VIDEO_STYLES[:playable],
-          original: VIDEO_FORMAT,
         }
       else
         VIDEO_STYLES

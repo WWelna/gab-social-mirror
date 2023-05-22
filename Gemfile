@@ -168,3 +168,5 @@ gem "sentry-rails", "~> 5.2"
 gem "sentry-sidekiq", "~> 5.2"
 
 gem 'feedjira'
+
+gem "elastic-apm", "~> 4.5"

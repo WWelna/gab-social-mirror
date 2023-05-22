@@ -2,7 +2,6 @@
 
 class Api::V1::BookmarkCollectionsController < Api::BaseController
   before_action :require_user!
-  before_action :require_pro!
   before_action :set_bookmark_collections, only: :index
   before_action :set_bookmark_collection, only: [:show, :update, :destroy, :update_status]
 
@@ -45,14 +44,6 @@ class Api::V1::BookmarkCollectionsController < Api::BaseController
 
   def resource_params
     params.permit(:title)
-  end
-
-  def require_pro!
-    if current_account.is_pro?
-      true
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
-    end
   end
   
 end

@@ -19,7 +19,7 @@ class MediaGalleryPanel extends ImmutablePureComponent {
     }
     const timelineId = `account:${accountId}:media`
     const endpoint = `/api/v1/accounts/${accountId}/statuses`
-    const expandOpts = Object.assign({ endpoint, limit: 8, only_media: true }, opts)
+    const expandOpts = Object.assign({ endpoint, limit: 9, only_media: true }, opts)
     this.props.dispatch(timelineFetchPaged(timelineId, expandOpts))
   }
 
@@ -50,27 +50,21 @@ class MediaGalleryPanel extends ImmutablePureComponent {
         headerButtonTitle={!!account ? intl.formatMessage(messages.show_all) : undefined}
         headerButtonTo={!!account ? `/${account.get('acct')}/photos` : undefined}
       >
-        <div className={[_s.d, _s.w100PC, _s.px10, _s.pb10, _s.flexRow, _s.flexWrap].join(' ')}>
+        <div className={[_s.d, _s.w100PC, _s.pr5, _s.flexRow, _s.flexWrap].join(' ')}>
           {
             !!account && attachments.size > 0 &&
-            <React.Fragment>
-              {
-                attachments.slice(0, 9).map(attachment => (
-                  <MediaItem
-                    isSmall
-                    key={attachment.get('id')}
-                    attachment={attachment}
-                    account={account}
-                  />
-                ))
-              }
-            </React.Fragment>
+            attachments.slice(0, 9).map(attachment => (
+              <MediaItem
+                isSmall
+                key={attachment.get('id')}
+                attachment={attachment}
+                account={account}
+              />
+            ))
           }
           {
             !account || (attachments.size === 0 && isLoading) &&
-            <div className={[_s.d, _s.w100PC].join(' ')}>
-              <MediaGalleryPanelPlaceholder />
-            </div>
+            <MediaGalleryPanelPlaceholder />
           }
         </div>
       </PanelLayout>

@@ -27,9 +27,7 @@ class DefaultSidebar extends ImmutablePureComponent {
   }
 
   componentDidMount() {
-    if (this.props.isPro) {
-      this.props.onFetchShortcuts()
-    }
+    this.props.onFetchShortcuts()
     window.addEventListener('keyup', this.globalKeyup)
     window.addEventListener('keydown', this.globalKeydown)
   }
@@ -99,6 +97,15 @@ class DefaultSidebar extends ImmutablePureComponent {
               <Icon id='list' size='8px' className={_s.cSecondary} />
             </div>
           )
+        } else if (s.get('shortcut_type') === 'tag') {
+          shortcutComponent = (
+            <div
+              className={[_s.d, _s.circle, _s.bgSecondary, _s.aiCenter, _s.jcCenter].join(' ')}
+              style={{ height: '16px', width: '16px' }}
+            >
+              <Text size='small' color='secondary'>#</Text>
+            </div>
+          )
         }
 
         shortcutItems.push({
@@ -157,7 +164,7 @@ class DefaultSidebar extends ImmutablePureComponent {
 
     let groupsTo = '/groups'
     let groupsOnClick = undefined
-    if (currentPathname.startsWith('/groups')) {
+    if (currentPathname.startsWith('/groups') && !currentPathname.startsWith('/groups/')) {
       groupsTo = undefined
       groupsOnClick = () => {
         window.scroll(0,0)
@@ -247,7 +254,6 @@ const mapStateToProps = (state) => ({
   notificationCount: state.getIn(['notifications', 'unread']),
   unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount']),
   homeItemsQueueCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount'], 0),
-  isPro: state.getIn(['accounts', me, 'is_pro']),
   routerEntries: state.getIn(['router', 'entries'], [])
 })
 

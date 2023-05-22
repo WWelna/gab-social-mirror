@@ -15,10 +15,7 @@ import {
   leaveGroupChatConversation,
 } from '../../actions/chat_conversation_accounts'
 import { purgeChatMessages } from '../../actions/chat_messages'
-import {
-  MODAL_PRO_UPGRADE,
-  MODAL_CHAT_CONVERSATION_MEMBERS,
-} from '../../constants'
+import { MODAL_CHAT_CONVERSATION_MEMBERS } from '../../constants'
 import { me } from '../../initial_state'
 import PopoverLayout from './popover_layout'
 import List from '../list'
@@ -49,12 +46,7 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
   }
 
   handleOnPurge = () => {
-    if (!this.props.isPro) {
-      this.props.openProUpgradeModal()
-    } else {
-      this.props.onPurge()
-    }
-
+    this.props.onPurge()
     this.handleOnClosePopover()
   }
 
@@ -143,16 +135,12 @@ class ChatConversationOptionsPopover extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state, { chatConversationId }) => ({
-  isPro: state.getIn(['accounts', me, 'is_pro']),
   isMuted: state.getIn(['chat_conversations', chatConversationId, 'is_muted']),
   isPinned: state.getIn(['chat_conversations', chatConversationId, 'is_pinned']),
   isGroupChat: state.getIn(['chat_conversations', chatConversationId, 'is_group_chat']),
 })
 
 const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
-  openProUpgradeModal() {
-    dispatch(openModal(MODAL_PRO_UPGRADE))
-  },
   onPurge() {
     dispatch(purgeChatMessages(chatConversationId))
   },
@@ -187,7 +175,6 @@ const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
 
 ChatConversationOptionsPopover.propTypes = {
   isXS: PropTypes.bool,
-  isPro: PropTypes.bool.isRequired,
   chatConversation: ImmutablePropTypes.map,
   isChatConversationRequest: PropTypes.bool,
   onClosePopover: PropTypes.func.isRequired,

@@ -15,12 +15,8 @@ class Api::V1::ChatConversations::MessagesController < Api::BaseController
   end
 
   def destroy_all
-    if current_user.account.is_pro
-      PurgeChatMessagesService.new.call(current_user.account, @chat_conversation_account)
-      render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
-    end
+    PurgeChatMessagesService.new.call(current_user.account, @chat_conversation_account)
+    render json: @chat_conversation_account, serializer: REST::ChatConversationAccountSerializer
   end
 
   private

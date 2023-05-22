@@ -4,7 +4,7 @@ class StatusLimitValidator < ActiveModel::Validator
   MAX_STATUSES_DAILY_LIMIT = 1500
   MAX_STATUSES_HOURLY_LIMIT = 250
   MAX_STATUSES_HALF_HOUR_LIMIT = 100
-  MAX_STATUSES_MINUTE_LIMIT = 10
+  MAX_STATUSES_MINUTE_LIMIT = 20
 
   def validate(status)
     return if status.account.nil?

@@ -6,7 +6,7 @@ require 'net/http'
 module Attachmentable
   extend ActiveSupport::Concern
 
-  MAX_MATRIX_LIMIT = 16_777_216 # 4096x4096px or approx. 16MB
+  MAX_MATRIX_LIMIT = 169_000_000 # 13000x13000px
 
   included do
     before_post_process :obfuscate_file_name
@@ -45,7 +45,6 @@ module Attachmentable
       next if attachment.blank? || !/image.*/.match?(attachment.content_type) || attachment.queued_for_write[:original].blank?
 
       width, height = FastImage.size(attachment.queued_for_write[:original].path)
-
       raise GabSocial::DimensionsValidationError, "#{width}x#{height} images are not supported, must be below #{MAX_MATRIX_LIMIT} sqpx" if width.present? && height.present? && (width * height >= MAX_MATRIX_LIMIT)
     end
   end
@@ -82,7 +81,6 @@ module Attachmentable
 
   def appropriate_extension(attachment)
     mime_type = MIME::Types[attachment.content_type]
-
     extensions_for_mime_type = mime_type.empty? ? [] : mime_type.first.extensions
     original_extension       = Paperclip::Interpolations.extension(attachment, :original)
     proper_extension         = extensions_for_mime_type.first.to_s

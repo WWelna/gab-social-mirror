@@ -91,7 +91,7 @@ class FooterBar extends ImmutablePureComponent {
       }
     }
 
-    if (me && currentPathname.startsWith('/groups') === true) {
+    if (me && currentPathname.startsWith('/groups') && !currentPathname.startsWith('/groups/')) {
       delete groups.to
       groups.onClick = () => {
         window.scrollTo(0,0)

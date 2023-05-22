@@ -30,7 +30,7 @@ class ComposeNavigationBar extends React.PureComponent {
         
           <div className={innerClasses}>
 
-            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.aiCenter, _s.ml15, _s.w84PX].join(' ')}>
+            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.aiCenter, _s.ml15].join(' ')}>
               {
                 isExternal &&
                 <h1 className={[_s.d, _s.mr15].join(' ')}>
@@ -57,16 +57,12 @@ class ComposeNavigationBar extends React.PureComponent {
               }
             </div>
 
-            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.jcCenter, _s.aiCenter, _s.mlAuto, _s.mrAuto].join(' ')}>
+            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.jcCenter, _s.aiCenter, _s.mlAuto, _s.mrAuto, _s.pr50].join(' ')}>
               <Heading size='h1'>
                 <span className={[_s.dangerousContent, _s.fs24PX, _s.colorNavigation].join(' ')}>
                   Compose
                 </span>
               </Heading>
-            </div>
-
-            <div className={[_s.d, _s.h53PX, _s.flexRow, _s.aiCenter, _s.jcEnd, _s.mr15, _s.w84PX].join(' ')}>
-              <ComposeFormSubmitButton type='navigation' />
             </div>
 
           </div>

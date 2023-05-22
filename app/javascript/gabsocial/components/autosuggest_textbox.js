@@ -1,169 +1,190 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import ImmutablePropTypes from 'react-immutable-proptypes'
-import isObject from 'lodash.isobject'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import Textarea from 'react-textarea-autosize'
-import debounce from 'lodash.debounce'
-import {
-  CX,
-  BREAKPOINT_EXTRA_SMALL,
-} from '../constants'
+import { CX, BREAKPOINT_EXTRA_SMALL } from '../constants'
 import { textAtCursorMatchesToken } from '../utils/cursor_token_match'
 import Responsive from '../features/ui/util/responsive_component'
 import AutosuggestAccount from './autosuggest_account'
 import AutosuggestEmoji from './autosuggest_emoji'
 import Composer from './composer'
 import Icon from './icon'
+import { isMobile, getWindowDimension } from '../utils/is_mobile'
 
 class AutosuggestTextbox extends ImmutablePureComponent {
-
   state = {
     suggestionsHidden: true,
-    focused: false,
     selectedSuggestion: 0,
     lastToken: null,
-    tokenStart: 0,
+    tokenStart: 0
   }
 
-  onChange = (e, value, markdown, selectionStart) => {
-    if (!isObject(e)) {
-      e = {
-        target: {
-          value,
-          markdown,
-          selectionStart,
-        },
-      }
+  get shouldBindComposerEvents() {
+    const { width } = getWindowDimension()
+    return isMobile(width)
+  }
+
+  componentDidMount() {
+    if (this.shouldBindComposerEvents) {
+      window.addEventListener('composer-insert', this.composerInsert)
+      window.addEventListener('composer-replace', this.composerReplace)
+      window.addEventListener('composer-reset', this.composerReset)
     }
 
-    const [ tokenStart, token ] = textAtCursorMatchesToken(e.target.value, e.target.selectionStart, this.props.searchTokens);
+    if (
+      this.props.autoFocus &&
+      typeof this.props.text === 'string' &&
+      this.props.text.length > 0 &&
+      this.textbox
+    ) {
+      // it has auto focus and text so we want to select to the end
+      this.selectEnd()
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.shouldBindComposerEvents) {
+      window.removeEventListener('composer-insert', this.composerInsert)
+      window.removeEventListener('composer-replace', this.composerReplace)
+      window.removeEventListener('composer-reset', this.composerReset)
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    // in compose_form a new number is set each time it changes
+    if (
+      Array.isArray(prevProps.suggestions) &&
+      Array.isArray(this.props.suggestions) &&
+      prevProps.suggestions.checkpoint !== this.props.suggestions
+    ) {
+      this.setState({ suggestionsHidden: false })
+    }
+  }
+
+  onChange = ({ text, markdown, cursorPosition }) => {
+    const [tokenStart, token] = textAtCursorMatchesToken(text, cursorPosition)
 
     if (token !== null && this.state.lastToken !== token) {
-      this.setState({ lastToken: token, selectedSuggestion: 0, tokenStart });
-      this.props.onSuggestionsFetchRequested(token);
+      this.setState({ lastToken: token, selectedSuggestion: 0, tokenStart })
+      this.props.onSuggestionsFetchRequested(token)
     } else if (token === null && this.state.lastToken !== null) {
-      this.setState({ lastToken: null });
-      this.props.onSuggestionsClearRequested();
+      this.setState({ lastToken: null })
+      this.props.onSuggestionsClearRequested()
     }
 
-    this.props.onChange(e, e.target.selectionStart);
+    this.props.onChange({ text, markdown, cursorPosition })
   }
 
-  editorChange = debounce((...args) => this.onChange(...args), 50)
+  onTextareaChange = evt => {
+    const { value: text, selectionStart: cursorPosition } = evt.target
+    this.onChange({ text, cursorPosition })
+    if (text) {
+      window.composerHasText = true
+    } else {
+      window.composerHasText = false
+    }
+  }
 
-  onKeyDown = (e) => {
-    const { suggestions, disabled } = this.props;
-    const { selectedSuggestion, suggestionsHidden } = this.state;
+  onKeyDown = e => {
+    const { suggestions, disabled } = this.props
+    const { selectedSuggestion, suggestionsHidden } = this.state
+    const sugLen = suggestions.length
 
     if (disabled) {
-      e.preventDefault();
-      return;
+      e.preventDefault()
+      return
     }
 
     // Ignore key events during text composition
     // e.key may be a name of the physical key even in this case (e.x. Safari / Chrome on Mac)
-    if (e.which === 229 || e.isComposing) return;
+    if (e.which === 229 || e.isComposing) return
 
     switch (e.key) {
-    case 'Escape':
-      if (suggestions.size === 0 || suggestionsHidden) {
-        document.querySelector('#gabsocial').focus()
-      } else {
-        e.preventDefault();
-        this.setState({ suggestionsHidden: true });
-      }
+      case 'Escape':
+        if (sugLen === 0 || suggestionsHidden) {
+          document.querySelector('#gabsocial').focus()
+        } else {
+          e.preventDefault()
+          this.setState({ suggestionsHidden: true })
+        }
 
-      break;
-    case 'ArrowDown':
-      if (suggestions.size > 0 && !suggestionsHidden) {
-        e.preventDefault();
-        this.setState({ selectedSuggestion: Math.min(selectedSuggestion + 1, suggestions.size - 1) });
-      }
+        break
+      case 'ArrowDown':
+        if (sugLen > 0 && !suggestionsHidden) {
+          e.preventDefault()
+          this.setState({
+            selectedSuggestion: Math.min(selectedSuggestion + 1, sugLen - 1)
+          })
+        }
 
-      break;
-    case 'ArrowUp':
-      if (suggestions.size > 0 && !suggestionsHidden) {
-        e.preventDefault();
-        this.setState({ selectedSuggestion: Math.max(selectedSuggestion - 1, 0) });
-      }
+        break
+      case 'ArrowUp':
+        if (sugLen > 0 && !suggestionsHidden) {
+          e.preventDefault()
+          this.setState({
+            selectedSuggestion: Math.max(selectedSuggestion - 1, 0)
+          })
+        }
 
-      break;
-    case 'Enter':
-    case 'Tab':
-      // Select suggestion
-      if (this.state.lastToken !== null && suggestions.size > 0 && !suggestionsHidden) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.props.onSuggestionSelected(this.state.tokenStart, this.state.lastToken, suggestions.get(selectedSuggestion));
-      }
+        break
+      case 'Enter':
+      case 'Tab':
+        // Select suggestion
+        if (this.state.lastToken !== null && sugLen > 0 && !suggestionsHidden) {
+          e.preventDefault()
+          e.stopPropagation()
+          const { tokenStart, lastToken: token } = this.state
+          const suggestion = suggestions[selectedSuggestion]
+          this.props.onSuggestionSelected({ tokenStart, token, suggestion })
+        }
 
-      break;
+        break
     }
 
-    if (e.defaultPrevented || !this.props.onKeyDown) return;
+    if (e.defaultPrevented || !this.props.onKeyDown) return
 
-    this.props.onKeyDown(e);
+    this.props.onKeyDown(e)
   }
 
   onBlur = () => {
-    this.setState({ suggestionsHidden: true, focused: false });
+    this.setState({ suggestionsHidden: true })
 
     if (this.props.onBlur) {
-      this.props.onBlur();
+      this.props.onBlur()
     }
   }
 
-  onFocus = () => {
-    this.setState({ focused: true });
-
-    if (this.props.onFocus) {
-      this.props.onFocus();
-    }
-  }
-
-  onPaste = (e) => {
-    if (this.props.onPaste && e.clipboardData && e.clipboardData.files.length === 1) {
-      this.props.onPaste(e.clipboardData.files);
-      e.preventDefault();
-    }
-  }
-
-  onSuggestionClick = (e) => {
-    const suggestion = this.props.suggestions.get(e.currentTarget.getAttribute('data-index'));
-    e.preventDefault();
-    this.props.onSuggestionSelected(this.state.tokenStart, this.state.lastToken, suggestion);
-    this.textbox.focus();
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (nextProps.suggestions !== this.props.suggestions && nextProps.suggestions.size > 0 && this.state.suggestionsHidden && this.state.focused) {
-      this.setState({ suggestionsHidden: false });
-    }
+  onSuggestionClick = e => {
+    const index = parseInt(e.currentTarget.getAttribute('data-index'))
+    const suggestion = this.props.suggestions[index]
+    e.preventDefault()
+    this.props.onSuggestionSelected({
+      tokenStart: this.state.tokenStart,
+      token: this.state.lastToken,
+      suggestion
+    })
+    this.textbox.focus()
   }
 
   renderSuggestion = (suggestion, i) => {
-    const { selectedSuggestion } = this.state;
-    let inner, key;
-
-    if (typeof suggestion === 'object') {
-      inner = <AutosuggestEmoji emoji={suggestion} />;
-      key = suggestion.id;
-    } else {
-      inner = <AutosuggestAccount id={suggestion} />;
-      key = suggestion;
-    }
+    const { selectedSuggestion } = this.state
+    const inner =
+      suggestion.acct || suggestion.username ? (
+        <AutosuggestAccount id={suggestion.id} />
+      ) : (
+        <AutosuggestEmoji emoji={suggestion} />
+      )
+    const key = suggestion.id
 
     const isSelected = i === selectedSuggestion
     const classes = CX({
       bgPrimary: !isSelected,
-      bgSubtle: isSelected,
+      bgSubtle: isSelected
     })
 
     return (
       <div
-        role='button'
-        tabIndex='0'
+        role="button"
         key={key}
         data-index={i}
         className={classes}
@@ -171,27 +192,97 @@ class AutosuggestTextbox extends ImmutablePureComponent {
       >
         {inner}
       </div>
-    );
+    )
   }
 
-  setTextbox = (c) => {
-    this.textbox = c
+  selectEnd() {
+    const { textbox } = this
+    if (
+      textbox &&
+      typeof textbox.value === 'string' &&
+      textbox.value.length > 0
+    ) {
+      const vlen = textbox.value.length
+      if (vlen > 0) {
+        textbox.selectionStart = vlen
+        textbox.selectionEnd = vlen
+      }
+    }
+  }
+
+  setTextbox = ref => (this.textbox = ref)
+
+  hasTextarea = () =>
+    this.textbox && this.textbox.tagName.toLowerCase() === 'textarea'
+
+  insertText = text => {
+    const { textbox, hasTextarea } = this
+    if (!hasTextarea) {
+      return // somehow we bound the events but it's not mobile textarea
+    }
+    const { selectionStart: start, selectionEnd: end } = textbox
+    this.replaceText({ start, end, text })
+  }
+
+  replaceText = ({ start, end, text }) => {
+    const { textbox, hasTextarea } = this
+    if (!hasTextarea) {
+      return // somehow we bound the events but it's not mobile textarea
+    }
+    const newText =
+      textbox.value.substring(0, start) +
+      text +
+      textbox.value.substring(end, textbox.value.length)
+    this.textbox.value = newText
+    this.props.onChange({ text: newText })
+  }
+
+  composerReset = evt => {
+    const { composerId } = evt.detail
+    if (composerId === this.props.composerId && this.textbox) {
+      const { text = '' } = this.props
+      this.textbox.value = text
+    }
+    window.composerHasText = false
+  }
+
+  // insert text at cursor from a another component e.g. emoji
+  composerInsert = evt => {
+    const { composerId, text } = evt.detail
+    if (composerId === this.props.composerId) {
+      this.insertText(text)
+    }
+  }
+
+  // replace text near cursor from a another component e.g. suggestions
+  composerReplace = evt => {
+    const { composerId } = evt.detail
+    if (composerId === this.props.composerId) {
+      this.replaceText(evt.detail)
+    }
+  }
+
+  onFocus = evt => {
+    // bubble up
+    this.props.onFocus(evt)
   }
 
   render() {
     const {
-      value,
-      small,
+      text,
+      markdown,
+      small = false,
       suggestions,
       disabled,
       placeholder,
       onKeyUp,
       children,
-      valueMarkdown,
       id,
-      isPro,
       isEdit,
       isModalOpen,
+      composerId,
+      autoFocus,
+      rte_controls_visible
     } = this.props
 
     const { suggestionsHidden } = this.state
@@ -201,7 +292,7 @@ class AutosuggestTextbox extends ImmutablePureComponent {
       maxW100PC: 1,
       flexGrow1: small,
       jcCenter: small,
-      py5: small,
+      py5: small
     })
 
     const textareaClasses = CX({
@@ -219,16 +310,18 @@ class AutosuggestTextbox extends ImmutablePureComponent {
       fs16PX: !small,
       fs14PX: small,
       maxH200PX: small,
-      maxH80VH: !small,
+      maxH80VH: !small
     })
 
     return (
-      <React.Fragment>
+      <>
         <div className={textareaContainerClasses}>
-          <label htmlFor={id} className={[_s.visiblyHidden, _s.displayNone].join(' ')}>
+          <label
+            htmlFor={id}
+            className={[_s.visiblyHidden, _s.displayNone].join(' ')}
+          >
             {placeholder}
           </label>
-
           <Responsive max={BREAKPOINT_EXTRA_SMALL}>
             <Textarea
               id={id}
@@ -236,62 +329,69 @@ class AutosuggestTextbox extends ImmutablePureComponent {
               className={textareaClasses}
               disabled={disabled}
               placeholder={placeholder}
-              autoFocus={false}
-              value={value}
-              onChange={this.onChange}
+              autoFocus={autoFocus}
+              value={text}
+              onChange={this.onTextareaChange}
               onKeyDown={this.onKeyDown}
               onKeyUp={onKeyUp}
               onFocus={this.onFocus}
               onBlur={this.onBlur}
-              onPaste={this.onPaste}
-              aria-autocomplete='list'
+              onPaste={this.props.onPaste}
+              aria-autocomplete="list"
             />
-            { !isModalOpen &&
-              <Icon id='pencil' className={[_s.cSecondary, _s.posAbs, _s.mt15, _s.mr15, _s.right0, _s.pointerEventsNone].join(' ')} size='0.9em' />
-            }
+            {!isModalOpen && (
+              <Icon
+                id="pencil"
+                className={[
+                  _s.cSecondary,
+                  _s.posAbs,
+                  _s.mt15,
+                  _s.mr15,
+                  _s.right0,
+                  _s.pointerEventsNone
+                ].join(' ')}
+                size="0.9em"
+              />
+            )}
           </Responsive>
-
           <Responsive min={BREAKPOINT_EXTRA_SMALL}>
             <Composer
               inputRef={this.setTextbox}
               disabled={disabled}
               placeholder={placeholder}
-              value={value}
-              valueMarkdown={valueMarkdown}
-              onChange={this.editorChange}
+              text={text}
+              markdown={markdown}
+              onChange={this.onChange}
               onKeyDown={this.onKeyDown}
               onKeyUp={onKeyUp}
               onFocus={this.onFocus}
               onBlur={this.onBlur}
-              onPaste={this.onPaste}
+              onPaste={this.props.onPaste}
+              onUpload={this.props.onUpload}
               small={small}
               isEdit={isEdit}
-              isPro={isPro}
-              onUpstreamChangesAccepted={this.props.onUpstreamChangesAccepted}
-              hasUpstreamChanges={this.props.hasUpstreamChanges}
-              caretPosition={this.props.caretPosition}
+              cursorPosition={this.props.cursorPosition}
+              composerId={composerId}
+              autoFocus={autoFocus}
+              rte_controls_visible={rte_controls_visible}
             />
           </Responsive>
-
           {children}
         </div>
-
-        {
-          !small && !suggestionsHidden && !suggestions.isEmpty() &&
+        {!small && !suggestionsHidden && suggestions.length > 0 && (
           <div className={[_s.d].join(' ')}>
             {suggestions.map(this.renderSuggestion)}
           </div>
-        }
-      </React.Fragment>
+        )}
+      </>
     )
   }
-
 }
 
 AutosuggestTextbox.propTypes = {
-  value: PropTypes.string,
-  valueMarkdown: PropTypes.string,
-  suggestions: ImmutablePropTypes.list,
+  text: PropTypes.string,
+  markdown: PropTypes.string,
+  suggestions: PropTypes.array,
   disabled: PropTypes.bool,
   placeholder: PropTypes.string,
   onSuggestionSelected: PropTypes.func.isRequired,
@@ -301,21 +401,15 @@ AutosuggestTextbox.propTypes = {
   onKeyUp: PropTypes.func,
   onKeyDown: PropTypes.func,
   id: PropTypes.string,
-  searchTokens: PropTypes.arrayOf(PropTypes.string),
   onPaste: PropTypes.func,
   onFocus: PropTypes.func,
   onBlur: PropTypes.func,
   textarea: PropTypes.bool,
   small: PropTypes.bool,
-  isPro: PropTypes.bool,
   isEdit: PropTypes.bool,
-  onUpstreamChangesAccepted: PropTypes.func,
-  hasUpstreamChanges: PropTypes.bool,
-  caretPosition: PropTypes.number,
-}
-
-AutosuggestTextbox.defaultProps = {
-  searchTokens: ['@', ':'],
+  cursorPosition: PropTypes.number,
+  composerId: PropTypes.string,
+  autoFocus: PropTypes.bool
 }
 
 export default AutosuggestTextbox

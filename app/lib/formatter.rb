@@ -95,6 +95,21 @@ class Formatter
     html
   end
 
+  def commentText(comment)
+    raw_content = comment.text
+
+    return '' if raw_content.blank?
+
+    html = raw_content
+    html = encode_and_link_urls(html, nil, keep_html: false)
+    html = reformat(html, true)
+    html = encode_custom_emojis(html, comment.emojis)
+
+    html.html_safe # rubocop:disable Rails/OutputSafety
+
+    html
+  end
+
   def format(status, **options)
     if options[:use_markdown]
       raw_content = status.markdown
@@ -206,7 +221,7 @@ class Formatter
   end
 
   def link_url(url)
-    "<a href=\"#{encode(url)}\" target=\"blank\" rel=\"nofollow noopener noreferrer\">#{link_html(url)}</a>"
+    "<a href=\"#{encode(url)}\" target=\"blank\" rel=\"nofollow noopener\">#{link_html(url)}</a>"
   end
 
   private
@@ -420,7 +435,7 @@ class Formatter
 
   def link_to_url(entity, options = {})
     url        = Addressable::URI.parse(entity[:url])
-    html_attrs = { target: '_blank', rel: 'nofollow noopener noreferrer' }
+    html_attrs = { target: '_blank', rel: 'nofollow noopener' }
 
     html_attrs[:rel] = "me #{html_attrs[:rel]}" if options[:me]
 

@@ -3,7 +3,6 @@
 class Api::V1::BookmarkCollections::BookmarksController < Api::BaseController
   before_action -> { doorkeeper_authorize! :read, :'read:bookmarks' }
   before_action :require_user!
-  before_action :require_pro!
   after_action :insert_pagination_headers
 
   def index
@@ -77,14 +76,6 @@ class Api::V1::BookmarkCollections::BookmarksController < Api::BaseController
     the = params[:bookmark_collection_id]
     return nil if the == 'saved'
     return the
-  end
-
-  def require_pro!
-    if current_account.is_pro?
-      true
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
-    end
   end
 
 end

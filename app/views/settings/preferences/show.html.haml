@@ -42,6 +42,10 @@
     .fields-group.fields-row__column.fields-row__column-6
       = f.input :setting_display_media, collection: ['default', 'show_all', 'hide_all'], wrapper: :with_label, include_blank: false, label_method: lambda { |item| t("simple_form.hints.defaults.setting_display_media_#{item}") }, hint: false
 
+  .fields-row#default-status-expiration
+    .fields-group.fields-row__column.fields-row__column-6
+      = f.input :setting_default_status_expiration, collection: ['five_minutes', 'one_hour', 'six_hours', 'one_day', 'three_days', 'one_week'], wrapper: :with_label, include_blank: true, label_method: lambda { |item| t("simple_form.hints.defaults.setting_default_status_expiration_#{item}") }, hint: false
+
   .fields-group
     = f.input :setting_show_videos, as: :boolean, wrapper: :with_label
     = f.input :setting_show_suggested_users, as: :boolean, wrapper: :with_label

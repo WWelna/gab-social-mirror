@@ -83,6 +83,7 @@ module AccountInteractions
     has_many :muted_by, -> { order('mutes.id desc') }, through: :muted_by_relationships, source: :account
 
     has_many :conversation_mutes
+    has_many :comment_conversation_mutes
 
     # Chat block relationships
     has_many :chat_block_relationships, class_name: 'ChatBlock', foreign_key: 'account_id', dependent: :destroy
@@ -155,6 +156,15 @@ module AccountInteractions
     conversation_mute&.destroy!
   end
 
+  def mute_comment_conversation!(comment_conversation)
+    comment_conversation_mutes.find_or_create_by!(comment_conversation: comment_conversation)
+  end
+
+  def unmute_comment_conversation!(comment_conversation)
+    comment_conversation_mute = comment_conversation_mutes.find_by(comment_conversation: comment_conversation)
+    comment_conversation_mute&.destroy!
+  end
+
   def following?(other_account)
     active_relationships.where(target_account: other_account).exists?
   end
@@ -189,6 +199,18 @@ module AccountInteractions
 
   def favourited?(status)
     status.proper.favourites.where(account: self).exists?
+  end
+
+  def comment_reacted?(comment)
+    comment.comment_reactions.where(account: self).exists?
+  end
+
+  def comment_reaction_id(comment)
+    reaction = comment.comment_reactions.where(account: self).first
+    if !reaction.nil?
+      return reaction.reaction_id
+    end
+    nil
   end
 
   def reaction_id(status)
@@ -237,6 +259,10 @@ module AccountInteractions
   def lists_for_local_distribution
     lists.joins(account: :user)
          .where('users.current_sign_in_at > ?', User::ACTIVE_DURATION.ago)
+  end
+
+  def muting_comment_conversation?(comment_conversation)
+    comment_conversation_mutes.where(comment_conversation: comment_conversation).exists?
   end
 
   private

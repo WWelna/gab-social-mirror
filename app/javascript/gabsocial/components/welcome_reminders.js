@@ -97,7 +97,7 @@ class WelcomeReminders extends ImmutablePureComponent {
     if (!visible || !account) return false
 
     return (
-      <div className={[_s.d, _s.flexRow, _s.mb10, _s.w100PC, _s.px10].join(' ')}>
+      <div className={[_s.d, _s.flexRow, _s.mb10, _s.mt15, _s.w100PC, _s.px10].join(' ')}>
         <WelcomeReminderItem
           icon='pencil'
           title='Send your first post'

@@ -9,6 +9,7 @@
 #  role              :string
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
+#  is_approved       :boolean          default(NULL)
 #
 
 class GroupAccount < ApplicationRecord

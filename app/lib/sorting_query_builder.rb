@@ -83,6 +83,7 @@ private
   end
 
   def apply_conditions!
+    @statuses = @statuses.not_tombstoned
     @statuses = @statuses.with_public_visibility if @group.nil?
 
     if @source == 'explore'
@@ -98,20 +99,8 @@ private
       })
 
       @statuses = @statuses.joins(account: :account_stat).where(account: { account_stats: { following_count: -Float::INFINITY..20_000 } })
-
-      # Require a minimum amout of text, to remove posts that are basically just screenshots
-      # Excluding NULL and '' to potentially utilize an index and avoid a LENGTH calculation
-      @statuses = @statuses.where('statuses.text is not null and statuses.text != ?', '')
-      @statuses = @statuses.where('length(statuses.text) > 50')
-
-      # Filter out phrases that game the system to boost post interaction
-      [
-        'i follow back',
-      ].each do |phrase|
-        @statuses = @statuses.where('statuses.text not ilike ?', "%#{phrase}%")
-      end
     elsif @group
-      @statuses = @statuses.where(group: @group)
+      @statuses = @statuses.where('"statuses".group_id is not null').where(group: @group)
     end
   end
 

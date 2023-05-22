@@ -3,12 +3,9 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import Textarea from 'react-textarea-autosize'
 import { openPopover } from '../../../actions/popover'
-import { openModal } from '../../../actions/modal'
 import { sendChatMessage } from '../../../actions/chat_messages'
-import { me } from '../../../initial_state'
 import {
   CX,
-  MODAL_PRO_UPGRADE,
   EXPIRATION_OPTION_NAMES,
   POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS,
 } from '../../../constants'
@@ -30,11 +27,7 @@ class ChatMessageComposeForm extends React.PureComponent {
   }
 
   handleOnExpire = () => {
-    if (this.props.isPro) {
-      this.props.onShowExpirePopover(this.expiresBtn)
-    } else {
-      this.props.onShowProModal()
-    }
+    this.props.onShowExpirePopover(this.expiresBtn)
   }
 
   onChange = (e) => {
@@ -229,16 +222,12 @@ class ChatMessageComposeForm extends React.PureComponent {
 }
 
 const mapStateToProps = (state, { chatConversationId }) => ({
-  isPro: state.getIn(['accounts', me, 'is_pro']),
   expiresAtValue: state.getIn(['chat_conversations', chatConversationId, 'chat_message_expiration_policy']),
 })
 
 const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
   onSendChatMessage(text, chatConversationId) {
     dispatch(sendChatMessage(text, chatConversationId))
-  },
-  onShowProModal() {
-    dispatch(openModal(MODAL_PRO_UPGRADE))
   },
   onShowExpirePopover(targetRef) {
     dispatch(openPopover(POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS, {
@@ -252,10 +241,8 @@ const mapDispatchToProps = (dispatch, { chatConversationId }) => ({
 ChatMessageComposeForm.propTypes = {
   chatConversationId: PropTypes.string,
   isXS: PropTypes.bool,
-  isPro: PropTypes.bool,
   onSendChatMessage: PropTypes.func.isRequired,
   onShowExpirePopover: PropTypes.func.isRequired,
-  onShowProModal: PropTypes.func.isRequired,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(ChatMessageComposeForm)

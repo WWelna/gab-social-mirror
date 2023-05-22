@@ -8,7 +8,6 @@ import Heading from '../heading'
 import Text from '../text'
 
 class PopoverLayout extends React.PureComponent {
-
   handleOnClose = () => {
     if (this.props.onClose) {
       return this.props.onClose()
@@ -17,37 +16,54 @@ class PopoverLayout extends React.PureComponent {
   }
 
   render() {
-    const {
-      children,
-      width,
-      isXS,
-      title,
-    } = this.props
+    const { children, width, isXS, title } = this.props
 
     if (isXS) {
       return (
         <div className={[_s.d, _s.modal, _s.px10, _s.pb10].join(' ')}>
-          <div className={[_s.d, _s.bgPrimary, _s.radiusSmall, _s.overflowHidden, _s.mb10].join(' ')}>
-            {
-              !!title &&
-              <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.jcCenter, _s.borderBottom1PX, _s.borderColorSecondary, _s.h53PX, _s.px15].join(' ')}>
-                <Heading size='h2'>
-                  {title}
-                </Heading>
+          <div
+            className={[
+              _s.d,
+              _s.bgPrimary,
+              _s.radiusSmall,
+              _s.overflowHidden,
+              _s.mb10
+            ].join(' ')}
+          >
+            {!!title && (
+              <div
+                className={[
+                  _s.d,
+                  _s.flexRow,
+                  _s.aiCenter,
+                  _s.jcCenter,
+                  _s.borderBottom1PX,
+                  _s.borderColorSecondary,
+                  _s.h53PX,
+                  _s.px15
+                ].join(' ')}
+              >
+                <Heading size="h2">{title}</Heading>
               </div>
-            }
-            <div className={[_s.d, _s.maxH80VH, _s.radiusSmall, _s.overflowYScroll].join(' ')}>
+            )}
+            <div
+              className={[
+                _s.d,
+                _s.maxH80VH,
+                _s.radiusSmall,
+                _s.overflowYScroll
+              ].join(' ')}
+            >
               {children}
             </div>
           </div>
-
           <Button
-            backgroundColor='primary'
-            color='primary'
+            backgroundColor="primary"
+            color="primary"
             onClick={this.handleOnClose}
             radiusSmall
           >
-            <Text color='inherit' size='large' align='center'>
+            <Text color="inherit" size="large" align="center">
               Cancel
             </Text>
           </Button>
@@ -57,19 +73,14 @@ class PopoverLayout extends React.PureComponent {
 
     return (
       <div style={{ width: `${width}px` }} className={_s.modal}>
-        <Block>
-          {children}
-        </Block>
+        <Block>{children}</Block>
       </div>
     )
   }
-
 }
 
 const mapDispatchToProps = dispatch => ({
-  onCloseAlternate: () => {
-    dispatch(closePopover())
-  },
+  onCloseAlternate: () => dispatch(closePopover())
 })
 
 PopoverLayout.propTypes = {
@@ -78,11 +89,9 @@ PopoverLayout.propTypes = {
   isXS: PropTypes.bool,
   title: PropTypes.string,
   onClose: PropTypes.func,
-  onCloseAlternate: PropTypes.func,
+  onCloseAlternate: PropTypes.func
 }
 
-PopoverLayout.defaultProps = {
-  width: 250,
-}
+PopoverLayout.defaultProps = { width: 250 }
 
 export default connect(null, mapDispatchToProps)(PopoverLayout)

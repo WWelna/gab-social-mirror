@@ -46,6 +46,7 @@ class VideoModal extends ImmutablePureComponent {
             preview={media.get('preview_url')}
             blurhash={media.get('blurhash')}
             src={media.get('url')}
+            sourceMp4={media.get('url')}
             startTime={time}
             onCloseVideo={onClose}
             link={link}

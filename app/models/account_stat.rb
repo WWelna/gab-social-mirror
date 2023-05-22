@@ -38,6 +38,17 @@ class AccountStat < ApplicationRecord
       );
     SQL
 
+  RESYNC_GABS_SQL = <<-SQL.squish
+    WITH correct_stats AS (
+      SELECT (SELECT COUNT(*) FROM statuses WHERE account_id = :account_id) AS statuses_count
+    )
+    UPDATE account_stats AS current_stats
+    SET statuses_count = correct_stats.statuses_count,
+        updated_at = NOW()
+    FROM correct_stats
+    WHERE current_stats.account_id = :account_id;
+  SQL
+
   belongs_to :account, inverse_of: :account_stat
 
   def resync!(reload: true)
@@ -47,6 +58,15 @@ class AccountStat < ApplicationRecord
     self.class.connection.execute(sql)
 
     self.reload if reload
+
+    return(nil)
+  end
+
+  def resync_gabs!
+    return(nil) unless self.persisted?
+
+    sql = self.class.sanitize_sql([RESYNC_GABS_SQL, { account_id: self.account_id }])
+    self.class.connection.execute(sql)
 
     return(nil)
   end

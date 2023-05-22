@@ -1,12 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { Map as ImmutableMap } from 'immutable'
 import { closeModal } from '../../actions/modal'
-import { cancelReplyCompose } from '../../actions/compose'
 import Bundle from '../../features/ui/util/bundle'
 import ModalBase from './modal_base'
 import BundleErrorModal from './bundle_error_modal'
 import LoadingModal from './loading_modal'
+import { openPopover } from '../../actions/popover'
+
 import {
   MODAL_ALBUM_CREATE,
   MODAL_BLOCK_ACCOUNT,
@@ -49,7 +51,10 @@ import {
   MODAL_UNAUTHORIZED,
   MODAL_UNFOLLOW,
   MODAL_VIDEO,
+  POPOVER_STATUS_MODAL_CONFIRM,
+  leadingAtMention
 } from '../../constants'
+
 import {
   AlbumCreateModal,
   BlockAccountModal,
@@ -69,9 +74,7 @@ import {
   EmailConfirmationReminderModal,
   GroupCreateModal,
   GroupDeleteModal,
-  GroupMembersModal,
   GroupPasswordModal,
-  GroupRemovedAccountsModal,
   HomeTimelineSettingsModal,
   HotkeysModal,
   ListAddUserModal,
@@ -93,7 +96,7 @@ import {
   StatusRevisionsModal,
   UnauthorizedModal,
   UnfollowModal,
-  VideoModal,
+  VideoModal
 } from '../../features/ui/util/async_components'
 
 const MODAL_COMPONENTS = {
@@ -137,7 +140,7 @@ const MODAL_COMPONENTS = {
   [MODAL_STATUS_REVISIONS]: StatusRevisionsModal,
   [MODAL_UNAUTHORIZED]: UnauthorizedModal,
   [MODAL_UNFOLLOW]: UnfollowModal,
-  [MODAL_VIDEO]: VideoModal,
+  [MODAL_VIDEO]: VideoModal
 }
 
 const CENTERED_XS_MODALS = [
@@ -147,83 +150,136 @@ const CENTERED_XS_MODALS = [
   MODAL_LIST_DELETE,
   MODAL_MUTE,
   MODAL_UNAUTHORIZED,
-  MODAL_UNFOLLOW,
+  MODAL_UNFOLLOW
 ]
 
-class ModalRoot extends React.PureComponent {
+const createInitialState = () => ({
+  text: '',
+  markdown: '',
+  media_attachments: [],
+  closeRef: null
+})
 
-  getSnapshotBeforeUpdate() {
-    return { visible: !!this.props.type }
+const { isMap } = ImmutableMap
+
+class ModalRoot extends React.Component {
+  state = createInitialState()
+
+  get visible() {
+    const { modalType } = this.props
+    return typeof modalType === 'string' && modalType.length > 0
   }
 
-  componentDidUpdate(prevProps, prevState, { visible }) {
-    if (visible) {
+  componentDidUpdate() {
+    if (this.visible) {
       document.body.classList.add(_s.overflowYHidden)
     } else {
       document.body.classList.remove(_s.overflowYHidden)
     }
   }
 
-  renderLoading = () => {
-    return <LoadingModal />
+  onClickClose = msg => {
+    const onClose = () => {
+      this.props.onClose(this.props.modalType)
+      this.setState(createInitialState())
+    }
+
+    if (this.props.modalType !== MODAL_COMPOSE || msg === MODAL_COMPOSE) {
+      return onClose()
+    }
+
+    /*
+    
+    For modal compose ask the user if they want to keep their content.
+    
+    */
+    const { text, markdown, media_attachments, closeRef } = this.state
+    const { modalProps = {} } = this.props
+    const isComment = isMap(modalProps.replyStatus) || modalProps.isComment
+    const isEdit = isMap(modalProps.editStatus)
+
+    const hasText = typeof text === 'string' && text.trim().length > 0
+    const hasMarkdown = typeof markdown === 'string' && markdown.trim().length > 0
+    const hasAttachments =
+      Array.isArray(media_attachments) && media_attachments.length > 0
+    const hasContent = hasText || hasMarkdown || hasAttachments
+    const isJustMention = leadingAtMention.test(text) || leadingAtMention.test(markdown)
+    const defaultReply = hasContent && isComment && isJustMention
+    const defaultEdit = isEdit &&
+      modalProps.editStatus.get('text') === text &&
+      modalProps.editStatus.get('markdown') === markdown
+    const onConfirmDiscard = () => onClose()
+    const onConfirmKeep = () => {
+      /*noop*/
+    }
+
+    if (hasContent && !defaultReply && !defaultEdit) {
+      const targetRef = closeRef
+      const useProximity = false // don't use mouse distance to close
+      return this.props.onOpenConfirmPopover({
+        onConfirmDiscard,
+        onConfirmKeep,
+        targetRef,
+        useProximity,
+        isEdit
+      })
+    }
+
+    onClose()
   }
 
-  renderError = () => {
-    return <BundleErrorModal {...this.props} onClose={this.onClickClose} />
-  }
+  renderLoading = () => <LoadingModal />
 
-  onClickClose = () => {
-    this.props.onClose(this.props.type)
-  }
+  renderError = () => <BundleErrorModal onClose={this.onClickClose} />
+
+  // text, media_attachments sent up from ComposeModal
+  onUpdateRootContent = update => this.setState(update)
 
   render() {
-    const { type, props } = this.props
-    const visible = !!type
-
+    const { visible } = this
+    const { modalType, modalProps } = this.props
     return (
       <ModalBase
         onClose={this.onClickClose}
-        isCenteredXS={CENTERED_XS_MODALS.indexOf(type) > -1}
-        type={type}
+        isCenteredXS={CENTERED_XS_MODALS.indexOf(modalType) > -1}
+        type={modalType}
       >
-        {
-          visible &&
+        {visible && (
           <Bundle
-            fetchComponent={MODAL_COMPONENTS[type]}
+            fetchComponent={MODAL_COMPONENTS[modalType]}
             loading={this.renderLoading}
             error={this.renderError}
             renderDelay={150}
           >
-            {
-              (Component) => <Component {...props} onClose={this.onClickClose} />
-            }
+            {Component => (
+              <Component
+                {...modalProps}
+                onClose={this.onClickClose}
+                onUpdateRootContent={this.onUpdateRootContent}
+              />
+            )}
           </Bundle>
-        }
+        )}
       </ModalBase>
     )
   }
-
 }
 
-const mapStateToProps = (state) => ({
-  type: state.getIn(['modal', 'modalType']),
-  props: state.getIn(['modal', 'modalProps'], {}),
+const mapStateToProps = state => ({
+  modalType: state.getIn(['modal', 'modalType']),
+  modalProps: state.getIn(['modal', 'modalProps'], {})
 })
 
-const mapDispatchToProps = (dispatch) => ({
-  onClose(optionalType) {
-    if (optionalType === 'COMPOSE') {
-      dispatch(cancelReplyCompose())
-    }
-
-    dispatch(closeModal())
-  },
+const mapDispatchToProps = dispatch => ({
+  onClose: () => dispatch(closeModal()),
+  onOpenConfirmPopover: opts =>
+    dispatch(openPopover(POPOVER_STATUS_MODAL_CONFIRM, opts))
 })
 
 ModalRoot.propTypes = {
-  type: PropTypes.string,
-  props: PropTypes.object,
-  onClose: PropTypes.func.isRequired,
+  modalType: PropTypes.string,
+  modalProps: PropTypes.object,
+  onClose: PropTypes.func.isRequired
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(ModalRoot)

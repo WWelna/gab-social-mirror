@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import { me } from '../../initial_state'
 import { POPOVER_NOTIFICATION_SETTINGS } from '../../constants'
 import { setFilter } from '../../actions/notifications'
 import { openPopover } from '../../actions/popover'
@@ -27,7 +26,6 @@ class NotificationFilterPanel extends ImmutablePureComponent {
       intl,
       onChange,
       settings,
-      isPro
     } = this.props
 
     return (
@@ -36,7 +34,6 @@ class NotificationFilterPanel extends ImmutablePureComponent {
         headerButtonTitle={<Icon id='cog'/>}
         headerButtonRef={this.setRef}
         headerButtonAction={this.handleOnClickSettings}
-        noPadding={!isPro}
       >
         <SettingSwitch
           prefix='notification'
@@ -66,7 +63,6 @@ const messages = defineMessages({
 
 const mapStateToProps = (state) => ({
   settings: state.getIn(['notifications', 'filter']),
-  isPro: state.getIn(['accounts', me, 'is_pro']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
@@ -84,7 +80,6 @@ NotificationFilterPanel.propTypes = {
   intl: PropTypes.object.isRequired,
   onChange: PropTypes.func.isRequired,
   settings: ImmutablePropTypes.map.isRequired,
-  isPro: PropTypes.bool.isRequired,
 }
 
 export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(NotificationFilterPanel))

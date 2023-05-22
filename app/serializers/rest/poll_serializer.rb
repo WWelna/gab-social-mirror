@@ -36,7 +36,7 @@ class REST::PollSerializer < ActiveModel::Serializer
   end
 
   def current_user?
-    !current_user.nil?
+    defined?(current_user) && !current_user.nil?
   end
 
 end

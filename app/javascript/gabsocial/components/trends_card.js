@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { openModal } from '../actions/modal'
-import { changeCompose } from '../actions/compose'
 import { urlRegex } from '../features/ui/util/url_regex'
 import {
   CX,
@@ -150,8 +149,8 @@ class TrendsCard extends ImmutablePureComponent {
 
 const mapDispatchToProps = (dispatch) => ({
   onOpenComposeModal(trendsUrl) {
-    dispatch(openModal(MODAL_COMPOSE))
-    dispatch(changeCompose(`${trendsUrl} `)) //extra space at the end
+    const initialText = `${trendsUrl} ` //extra space at the end
+    dispatch(openModal(MODAL_COMPOSE, { initialText }))
   },
 })
 

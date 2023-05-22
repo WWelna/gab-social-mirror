@@ -22,6 +22,10 @@ class ErrorBoundary extends React.PureComponent {
   }
 
   componentDidCatch(error, info) {
+    if (process.env.NODE_ENV === 'development') {
+      const { message, stack } = error
+      console.error("ErrorBoundary", message, stack)
+    }
     this.setState({
       hasError: true,
       stackTrace: error.stack,

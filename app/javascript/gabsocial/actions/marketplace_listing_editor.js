@@ -138,7 +138,7 @@ const updateMarketplaceListingFail = (error) => ({
 export const uploadMarketplaceListingMedia = (files) => (dispatch, getState) => {
   if (!me) return
 
-  const uploadLimit = 5
+  const uploadLimit = 8
   const media  = getState().getIn(['marketplace_listing_editor', 'media_attachments'])
   const pending  = getState().getIn(['marketplace_listing_editor', 'pending_media_attachments'])
   const progress = new Array(files.length).fill(0)
@@ -153,7 +153,7 @@ export const uploadMarketplaceListingMedia = (files) => (dispatch, getState) => 
 
 	try {
 		for (const [i, f] of Array.from(files).entries()) {
-			if (media.size + i > 3) break
+			if (media.size + i > uploadLimit) break
 	
 			resizeImage(f).then((file) => {
 				const data = new FormData()

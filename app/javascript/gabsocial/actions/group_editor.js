@@ -18,6 +18,7 @@ export const GROUP_EDITOR_TAGS_CHANGE = 'GROUP_EDITOR_TAGS_CHANGE'
 export const GROUP_EDITOR_CATEGORY_CHANGE = 'GROUP_EDITOR_CATEGORY_CHANGE'
 export const GROUP_EDITOR_IS_PRIVATE_CHANGE = 'GROUP_EDITOR_IS_PRIVATE_CHANGE'
 export const GROUP_EDITOR_IS_VISIBLE_CHANGE = 'GROUP_EDITOR_IS_VISIBLE_CHANGE'
+export const GROUP_EDITOR_IS_MODERATED_CHANGE = 'GROUP_EDITOR_IS_MODERATED_CHANGE'
 
 export const GROUP_EDITOR_RESET = 'GROUP_EDITOR_RESET'
 export const GROUP_EDITOR_SETUP = 'GROUP_EDITOR_SETUP'
@@ -37,6 +38,7 @@ export const submit = (routerHistory) => (dispatch, getState) => {
 	const category = getState().getIn(['group_editor', 'category'])
 	const isPrivate = getState().getIn(['group_editor', 'isPrivate'])
 	const isVisible = getState().getIn(['group_editor', 'isVisible'])
+	const isModerated = getState().getIn(['group_editor', 'isModerated'])
 	const slug = getState().getIn(['group_editor', 'id'], null)
 	const password = getState().getIn(['group_editor', 'password'], null)
 
@@ -49,6 +51,7 @@ export const submit = (routerHistory) => (dispatch, getState) => {
 		category,
 		isPrivate,
 		isVisible,
+		isModerated,
 		slug,
 	}
 
@@ -73,6 +76,7 @@ const createGroup = (options, routerHistory) => (dispatch, getState) => {
 	formData.append('tags', options.tags)
 	formData.append('is_private', options.isPrivate)
 	formData.append('is_visible', options.isVisible)
+	formData.append('is_moderated', options.isModerated)
 	formData.append('password', options.password)
 
 	if (options.coverImage !== null) {
@@ -124,6 +128,7 @@ const updateGroup = (groupId, options, routerHistory) => (dispatch, getState) =>
 	formData.append('tags', options.tags)
 	formData.append('is_private', options.isPrivate)
 	formData.append('is_visible', options.isVisible)
+	formData.append('is_moderated', options.isModerated)
 	formData.append('password', options.password)
 
 	if (!!options.slug) {
@@ -213,6 +218,11 @@ export const changeGroupIsPrivate = (isPrivate) => ({
 export const changeGroupIsVisible = (isVisible) => ({
 	type: GROUP_EDITOR_IS_VISIBLE_CHANGE,
 	isVisible,
+})
+
+export const changeGroupIsModerated = (isModerated) => ({
+	type: GROUP_EDITOR_IS_MODERATED_CHANGE,
+	isModerated,
 })
 
 export const changeGroupCoverImage = (imageData) => ({

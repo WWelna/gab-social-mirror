@@ -2,8 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import debounce from 'lodash.debounce'
+import { isTouch } from '../utils/is_mobile'
 import {
-  BREAKPOINT_EXTRA_SMALL,
+  REACTIONS_INITIATOR_DELAY,
   POPOVER_STATUS_REACTIONS_SELECTOR,
 } from '../constants'
 import { me } from '../initial_state'
@@ -14,67 +15,74 @@ import {
 
 class ReactionsPopoverInitiator extends React.PureComponent {
 
-  touchStartTime = null
   mouseOverTimeout = null
 
-  handleMouseEnter = (e) => {
-    this.touchStartTime = (new Date()).getTime()
-    
-    // if (!document.body.classList.contains(_s.selectingReaction) && this.props.isXS) {
-      // setTimeout(() => {
-      //   document.body.classList.add(_s.selectingReaction)
-      // }, 100)
-    // }
-    this.mouseOverTimeout = setTimeout(() => {
-      this.props.onOpenReactions(this.container, this.props.statusId)
-    }, 850)
-    return e.preventDefault()
+  componentWillUnmount() {
+    if (this.mouseOverTimeout) {
+      clearTimeout(this.mouseOverTimeout)
+      this.mouseOverTimeout = null
+    }
+
+    if (this.container) {
+      this.container.removeEventListener('long-press', this.handleOnLongPress)
+      this.container.removeEventListener('click', this.handleOnClick)
+      this.container.removeEventListener('mouseenter', this.handleOnMouseEnter)
+      this.container.removeEventListener('mouseleave', this.handleOnMouseLeave)
+    }
   }
 
   handleOnClick = () => {
     this.props.onClick()
-    // : todo : fix mobile touch up outside
-    if (this.props.isLike) {
-      this.attemptToHidePopover()
-    }
+    this.attemptToHidePopover()
   }
 
-  handleMouseLeave = debounce(() => {
-    const offset = (new Date()).getTime() - this.touchStartTime
-    if (this.props.isXS && offset <= 350) {
-      this.props.onClick()
-    }
+  handleOnMouseEnter = (e) => {
+    this.mouseOverTimeout = setTimeout(() => {
+      this.props.onOpenReactions(this.container, this.props.statusId)
+    }, REACTIONS_INITIATOR_DELAY)
+    return e.preventDefault()
+  }
+
+  handleOnMouseLeave = debounce(() => {
     this.attemptToHidePopover()
   }, 250)
 
+  handleOnLongPress = (e) => {
+    this.props.onOpenReactions(this.container, this.props.statusId)
+  }
+
   attemptToHidePopover = () => {
     clearTimeout(this.mouseOverTimeout)
-    this.touchStartTime = null
   }
 
   setRef = (c) => {
+    if (!c) return
+
     this.container = c
+
+    // all have click
+    this.container.addEventListener('click', this.handleOnClick, false)
+
+    if (isTouch()) {
+      // only touch has long press
+      this.container.addEventListener('long-press', this.handleOnLongPress, false)
+    } else {
+      // else, desktop, has custom hover
+      this.container.addEventListener('mouseenter', this.handleOnMouseEnter, false)
+      this.container.addEventListener('mouseleave', this.handleOnMouseLeave, false)
+    }
   }
 
   render() {
-    const {
-      isDisabled,
-      children,
-      isXS,
-    } = this.props
+    const { children, isDisabled } = this.props
 
     if (isDisabled || !me) return children
 
     return (
-      <div 
+      <div
         ref={this.setRef}
         className={_s.noSelect}
-        // : todo : test
-        onClick={!isXS ? this.handleOnClick : undefined}
-        onTouchStart={isXS ? this.handleMouseEnter : undefined}
-        onTouchEnd={isXS ? this.handleMouseLeave : undefined}
-        onMouseEnter={!isXS ? this.handleMouseEnter : undefined}
-        onMouseLeave={!isXS ? this.handleMouseLeave : undefined}
+        data-long-press-delay={REACTIONS_INITIATOR_DELAY}
       >
         {children}
       </div>
@@ -90,13 +98,6 @@ ReactionsPopoverInitiator.propTypes = {
   onCancelReactions: PropTypes.func,
 }
 
-const mapStateToProps = (state, props) => ({
-  isReacting: state.getIn(['popover', 'popoverType']) === POPOVER_STATUS_REACTIONS_SELECTOR,
-  hoveringReactionId: state.getIn(['reactions', 'hovering_id']),
-  reactionPopoverOpenForStatusId: state.getIn(['reactions', 'reactionPopoverOpenForStatusId']),
-  isXS: state.getIn(['settings', 'window_dimensions', 'width']) <= BREAKPOINT_EXTRA_SMALL,
-})
-
 const mapDispatchToProps = (dispatch) => ({
   onOpenReactions(targetRef, statusId, callback) {
     dispatch(openPopover(POPOVER_STATUS_REACTIONS_SELECTOR, {
@@ -111,4 +112,4 @@ const mapDispatchToProps = (dispatch) => ({
   },
 })
 
-export default connect(mapStateToProps, mapDispatchToProps)(ReactionsPopoverInitiator);
+export default connect(null, mapDispatchToProps)(ReactionsPopoverInitiator);

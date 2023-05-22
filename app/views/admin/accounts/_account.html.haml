@@ -14,8 +14,6 @@
   %td
     %samp= number_with_delimiter account.statuses.count
   %td
-    %samp= number_with_delimiter account.user_current_sign_in_ip
-  %td
     %div{ :style => "display:flex;flex-direction:row;" }
       - open_reports = account.targeted_reports.unresolved.count
       - bg_color = 'transparent'

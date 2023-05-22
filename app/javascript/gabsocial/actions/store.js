@@ -1,5 +1,4 @@
 import { Iterable, fromJS } from 'immutable'
-import { hydrateCompose } from './compose'
 import { importFetchedAccounts } from './importer'
 
 export const STORE_HYDRATE = 'STORE_HYDRATE'
@@ -17,6 +16,5 @@ export const hydrateStore = (rawState) => (dispatch) => {
     state,
   })
 
-  dispatch(hydrateCompose())
   if (rawState.accounts) dispatch(importFetchedAccounts(Object.values(rawState.accounts)))
 }

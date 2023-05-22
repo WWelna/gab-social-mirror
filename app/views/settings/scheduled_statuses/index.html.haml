@@ -1,5 +1,5 @@
 - content_for :page_title do
-  = t('settings.scheduled_posts')
+  = 'Scheduled Statuses'
 
 - unless @account.is_pro?
   %span= t('scheduled_statuses.upgrade_to_pro_to_schedule_statuses')
@@ -16,14 +16,12 @@
     %table.table
       %thead
         %tr
-          %th= t('scheduled_statuses.id')
           %th= t('scheduled_statuses.scheduled_at')
           %th= t('scheduled_statuses.text')
           %th
       %tbody
         - @scheduled_statuses.each do |scheduled_status|
           %tr
-            %td= scheduled_status.id
             %td= scheduled_status.scheduled_at
             %td= scheduled_status.params['text']
             %td

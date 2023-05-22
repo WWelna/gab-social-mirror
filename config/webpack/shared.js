@@ -9,6 +9,8 @@ const extname = require('path-complete-extname');
 const { env, settings, output } = require('./configuration');
 const rules = require('./rules');
 const localePackPaths = require('./generateLocalePacks');
+const { NODE_ENV } = process.env;
+const isPrd = NODE_ENV === "production"
 
 const extensionGlob = `**/*{${settings.extensions.join(',')}}*`;
 const entryPath = join(settings.source_path, settings.source_entry_path);
@@ -83,6 +85,7 @@ module.exports = {
       entrypoints: true,
       writeToDisk: true,
       publicPath: true,
+      space: isPrd ? 0 : 2
     }),
   ],
 

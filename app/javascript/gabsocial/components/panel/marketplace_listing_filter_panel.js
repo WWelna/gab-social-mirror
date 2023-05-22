@@ -14,6 +14,7 @@ import {
   fetchMarketplaceListingCategories
 } from '../../actions/marketplace_listing_categories'
 import { isStaff } from '../../initial_state'
+import { isTouch } from '../../utils/is_mobile'
 import {
   setParamsForMarketplaceListingSearch
 } from '../../actions/marketplace_listing_search'
@@ -37,6 +38,7 @@ const filterNonNull = (obj) => {
 class MarketplaceListingFilterPanel extends React.PureComponent {
 
   state = {
+    isAdvancedOpen: isTouch(),
     isChanged: false,
     tags: this.props.filters.get('tags'),
     query: this.props.filters.get('query'),
@@ -151,8 +153,14 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
     this.setState({ hasImagesValue: e.target.value, isChanged: true })
   }
 
+  toggleIsAdvancedOpen = () => {
+    const { isAdvancedOpen } = this.state
+    this.setState({ isAdvancedOpen: !isAdvancedOpen })
+  }
+
   render() {
     const {
+      isAdvancedOpen,
       isChanged,
       tags,
       query,
@@ -198,7 +206,7 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
           <Text size='large' weight='bold' className={_s.mb10}>Filters</Text>
           
           <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt10, _s.mb10, _s.aiCenter].join(' ')}>
-            <Text htmlFor='mpl-sort-by' tagName='label' weight='medium' className={[_s.minW120PX, _s.pr10].join(' ')}>Sort by</Text>
+            <Text htmlFor='mpl-sort-by' tagName='label' weight='medium' className={[_s.minW84PX, _s.pr10].join(' ')}>Sort by</Text>
             <div className={[_s.d, _s.flexGrow1].join(' ')}>
               <Select
                 isSmall
@@ -211,7 +219,7 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
           </div>
 
           <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt5, _s.mb10, _s.aiCenter].join(' ')}>
-            <Text htmlFor='mpl-category' tagName='label' weight='medium' className={[_s.minW120PX, _s.pr10].join(' ')}>Category</Text>
+            <Text htmlFor='mpl-category' tagName='label' weight='medium' className={[_s.minW84PX, _s.pr10].join(' ')}>Category</Text>
             <div className={[_s.d, _s.flexGrow1].join(' ')}>
               <Select
                 isSmall
@@ -222,135 +230,134 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
               />
             </div>
           </div>
-
+   
           <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt5, _s.mb10, _s.aiCenter].join(' ')}>
-            <Text htmlFor='mpl-condition' tagName='label' weight='medium' className={[_s.minW120PX, _s.pr10].join(' ')}>Item Condition</Text>
+            <Text htmlFor='mpl-price-min' tagName='label' tagName='label'weight='medium' className={[_s.minW84PX, _s.pr10].join(' ')}>Price</Text>
             <div className={[_s.d, _s.flexGrow1].join(' ')}>
-              <Select
-                isSmall
-                id='mpl-condition'
-                value={condition}
-                onChange={this.handleChangeCondition}
-                options={MARKETPLACE_LISTING_CONDITIONS}
-              />
-            </div>
-          </div>
-
-          <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt5, _s.aiCenter].join(' ')}>
-            <Text htmlFor='mpl-shipping' tagName='label' weight='medium' className={[_s.minW120PX, _s.pr10].join(' ')}>Shippable?</Text>
-            <div className={[_s.d, _s.flexGrow1].join(' ')}>
-              <Select
-                isSmall
-                id='mpl-shipping'
-                value={shippingValue}
-                onChange={this.handleChangeShippingRequired}
-                options={[
-                  {
-                    title: 'All',
-                    value: null,
-                  },
-                  {
-                    title: 'Yes',
-                    value: 1,
-                  },
-                  {
-                    title: 'No',
-                    value: 0,
-                  }
-                ]}
-              />
-            </div>
-          </div>
-            
-          { /*
-          <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt5, _s.aiCenter].join(' ')}>
-            <Text htmlFor='mpl-has-images' tagName='label' weight='medium' className={[_s.minW120PX, _s.pr10].join(' ')}>Has Images?</Text>
-            <div className={[_s.d, _s.flexGrow1].join(' ')}>
-              <Select
-                isSmall
-                id='mpl-has-images'
-                value={hasImagesValue}
-                onChange={this.handleChangeHasImages}
-                options={[
-                  {
-                    title: 'All',
-                    value: null,
-                  },
-                  {
-                    title: 'Yes',
-                    value: 1,
-                  },
-                  {
-                    title: 'No',
-                    value: 0,
-                  }
-                ]}
-              />
-            </div>
-          </div>
-              */}
-        </div>
-        
-        <Divider isSmall />
-        
-        <div className={[_s.d, _s.px15, _s.pt5, _s.pb15].join(' ')}>
-          <div className={[_s.d, _s.mt5, _s.mb10].join(' ')}>
-            <Text htmlFor='mpl-location' tagName='label' weight='medium' className={[_s.mb5].join(' ')}>Location</Text>
-            <Text color='secondary' size='extraSmall' className={[_s.mb15].join(' ')}>
-              * May not always be accurate
-            </Text>
-            <div className={[_s.d, _s.flexGrow1].join(' ')}>
-              <Input
-                id='mpl-location'
-                placeholder='City/State/Town'
-                value={location}
-                maxLength={120}
-                onChange={this.handleChangeLocation}
-              />
-            </div>
-          </div>
-
-          <div className={[_s.d, _s.mt5, _s.mb10].join(' ')}>
-            <Text htmlFor='mpl-tags' tagName='label' weight='medium' className={[_s.mb15].join(' ')}>Tags</Text>
-            <div className={[_s.d, _s.flexGrow1].join(' ')}>
-              <Input
-                id='mpl-tags'
-                placeholder='restored, leather, etc.'
-                value={tags}
-                maxLength={120}
-                onChange={this.handleChangeTags}
-              />
-            </div>
-          </div>
-            
-          <div className={[_s.d, _s.mt5, _s.mb5].join(' ')}>
-            <Text htmlFor='mpl-price-min' tagName='label' tagName='label'weight='medium' className={[_s.mb15, _s.pr10].join(' ')}>Price</Text>
-            <div className={[_s.d, _s.flexRow, _s.flexGrow1, _s.w100PC].join(' ')}>
-              <div className={[_s.d, _s.w33PC].join(' ')}>
-                <Input
-                  id='mpl-price-min'
-                  placeholder='Min'
-                  type='number'
-                  value={priceMin}
-                  maxLength={8}
-                  onChange={this.handleChangePriceMin}
-                />
-              </div>
-              <Text className={[_s.d, _s.px10, _s.py10].join(' ')}>
-                to
-              </Text>
-              <div className={[_s.d, _s.w33PC].join(' ')}>
-                <Input
-                  id='mpl-price-max'
-                  placeholder='Max'
-                  type='number'
-                  value={priceMax}
-                  maxLength={8}
-                  onChange={this.handleChangePriceMax}
-                />
+              <div className={[_s.d, _s.flexRow].join(' ')}>
+                <div className={[_s.d, _s.w72PX].join(' ')}>
+                  <Input
+                    small
+                    id='mpl-price-min'
+                    placeholder='Min'
+                    type='number'
+                    value={priceMin}
+                    maxLength={8}
+                    onChange={this.handleChangePriceMin}
+                  />
+                </div>
+                <Text className={[_s.d, _s.px10, _s.py10].join(' ')}>
+                  to
+                </Text>
+                <div className={[_s.d, _s.w72PX].join(' ')}>
+                  <Input
+                    small
+                    id='mpl-price-max'
+                    placeholder='Max'
+                    type='number'
+                    value={priceMax}
+                    maxLength={8}
+                    onChange={this.handleChangePriceMax}
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          {
+            !isAdvancedOpen &&
+            <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.py5].join(' ')}>
+              <div className={[_s.d, _s.flexGrow1].join(' ')}>
+                <Divider isSmall />
+              </div>
+              <Button
+                noClasses
+                onClick={this.toggleIsAdvancedOpen}
+                className={[_s.d, _s.py5, _s.px15, _s.circle, _s.borderColorSecondary, _s.border1PX, _s.cursorPointer, _s.outlineNone, _s.noUnderline, _s.bgTransparent].join(' ')}
+              >
+                <Text color='secondary' size='small'>
+                  More Filters
+                </Text>
+              </Button>
+              <div className={[_s.d, _s.flexGrow1].join(' ')}>
+                <Divider isSmall />
+              </div>
+            </div>
+          }
+
+          {
+            isAdvancedOpen &&
+            <div>
+              <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt5, _s.mb10, _s.aiCenter].join(' ')}>
+                <Text htmlFor='mpl-condition' tagName='label' weight='medium' className={[_s.minW84PX, _s.pr10].join(' ')}>Condition</Text>
+                <div className={[_s.d, _s.flexGrow1].join(' ')}>
+                  <Select
+                    isSmall
+                    id='mpl-condition'
+                    value={condition}
+                    onChange={this.handleChangeCondition}
+                    options={MARKETPLACE_LISTING_CONDITIONS}
+                  />
+                </div>
+              </div>
+
+              <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.mt5, _s.aiCenter].join(' ')}>
+                <Text htmlFor='mpl-shipping' tagName='label' weight='medium' className={[_s.minW84PX, _s.pr10].join(' ')}>Shippable?</Text>
+                <div className={[_s.d, _s.flexGrow1].join(' ')}>
+                  <Select
+                    isSmall
+                    id='mpl-shipping'
+                    value={shippingValue}
+                    onChange={this.handleChangeShippingRequired}
+                    options={[
+                      {
+                        title: 'All',
+                        value: null,
+                      },
+                      {
+                        title: 'Yes',
+                        value: 1,
+                      },
+                      {
+                        title: 'No',
+                        value: 0,
+                      }
+                    ]}
+                  />
+                </div>
+              </div>
+                
+            
+              <div className={[_s.d, _s.mt10, _s.mb10].join(' ')}>
+                <Text htmlFor='mpl-location' tagName='label' weight='medium' className={[_s.mb5].join(' ')}>Location</Text>
+                <Text color='secondary' size='extraSmall' className={[_s.mb15].join(' ')}>
+                  * May not always be accurate
+                </Text>
+                <div className={[_s.d, _s.flexGrow1].join(' ')}>
+                  <Input
+                    id='mpl-location'
+                    placeholder='City/State/Town'
+                    value={location}
+                    maxLength={120}
+                    onChange={this.handleChangeLocation}
+                  />
+                </div>
+              </div>
+
+              <div className={[_s.d, _s.mt5, _s.mb10].join(' ')}>
+                <Text htmlFor='mpl-tags' tagName='label' weight='medium' className={[_s.mb15].join(' ')}>Tags</Text>
+                <div className={[_s.d, _s.flexGrow1].join(' ')}>
+                  <Input
+                    id='mpl-tags'
+                    placeholder='restored, leather, etc.'
+                    value={tags}
+                    maxLength={120}
+                    onChange={this.handleChangeTags}
+                  />
+                </div>
+              </div>
+            </div>
+          }
 
           {/* if staff allow account search here */}
 
@@ -368,7 +375,6 @@ class MarketplaceListingFilterPanel extends React.PureComponent {
     )
   }
 }
-
 
 const mapStateToProps = (state) => ({
   filters: state.getIn(['marketplace_listing_search', 'filters']),

@@ -17,32 +17,38 @@ import FileInput from '../file_input'
 
 class MarketplaceListingMediaUploadBlock extends ImmutablePureComponent {
 
-  state = {
-    count: 1,
-  }
-
   handleOnUpload = (e) => {
     this.props.onUpload(e.target.files[0])
   }
 
-  handleOnDelete = (mediaId) => {
+  handleOnDelete = (index) => {
+    const { medias } = this.props
+    if (!medias) return null
+    const item = medias.get(index)
+    if (!item) return null
+    const mediaId = item.get('id') || null
+    if (!mediaId) return null
     this.props.onDeleteMedia(mediaId)
   }
 
-  handleOnAppend = () => {
-    this.setState({ count: Math.min(this.state.count + 1, MAX_MARKETPLACE_IMAGE_UPLOAD) })  
+  getMediaUrl = (index) => {
+    const { medias } = this.props
+    if (!medias) return null
+    const item = medias.get(index)
+    if (!item) return null
+    return item.get('preview_url') || null
   }
 
   render() {
     const {
-      medias,
       isUploading,
       isSubmitting,
       uploadProgress,
       isDisabled,
     } = this.props
-    const { count, nulled } = this.state
-    
+
+    const inputDisabled = isSubmitting || isDisabled
+
     return (
       <div className={[_s.d, _s.px10, _s.border2PX, _s.borderColorSecondary, _s.radiusSmall].join(' ')}>
         <Text className={[_s.mt15, _s.pl5, _s.mb10].join(' ')} size='small' weight='medium' color='secondary'>
@@ -52,52 +58,14 @@ class MarketplaceListingMediaUploadBlock extends ImmutablePureComponent {
         { isUploading && <ProgressBar small progress={uploadProgress} /> }
 
         <div className={[_s.d, _s.flexRow, _s.flexWrap].join(' ')}>
-          {!!medias && medias.map((item, i) => (
-            <div className={[_s.d, _s.pr10, _s.py10].join(' ')} key={`mpl-media-${i}-${item.get('id')}`}>
-              <FileInput
-                hasClear
-                disabled
-                onClear={() => this.handleOnDelete(item.get('id'))}
-                onChange={this.handleOnUpload}
-                id='marketplace-listing-cover-photo'
-                file={item.get('preview_url')}
-                width='158px'
-                height='158px'
-                isBordered
-              />
-            </div>
-          ))}
-
-          {
-            Array.apply(null, {
-              length: count - medias.size
-            }).map((_, i) => (
-            <div className={[_s.d, _s.pr10, _s.py10].join(' ')} key={`mpl-file-upload-${i}`}>
-              <FileInput
-                hasClear
-                file={null}
-                id={`file-input-${count}`}
-                onChange={this.handleOnUpload}
-                disabled={isSubmitting || isDisabled}
-                width='158px'
-                height='158px'
-                isBordered
-              />
-            </div>
-          ))}
-          {
-            count !== MAX_MARKETPLACE_IMAGE_UPLOAD &&
-            <div className={[_s.d, _s.pr10, _s.py10].join(' ')}>
-              <Button
-                noClasses
-                className={[_s.d, _s.w158PX, _s.h158PX, _s.cursorPointer, _s.radiusSmall, _s.outlineNone, _s.bgSecondary, _s.bgSecondaryDark_onHover, _s.aiCenter, _s.jcCenter, _s.cSecondary, _s.cWhite_onHover].join(' ')}
-                icon='add'
-                iconSize='20px'
-                isDisabled={isDisabled}
-                onClick={this.handleOnAppend}
-              />
-            </div>
-          }
+          <FileInputWrapper url={this.getMediaUrl(0)} index={0} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(0)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(1)} index={1} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(1)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(2)} index={2} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(2)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(3)} index={3} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(3)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(4)} index={4} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(4)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(5)} index={5} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(5)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(6)} index={6} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(6)} disabled={inputDisabled} />
+          <FileInputWrapper url={this.getMediaUrl(7)} index={7} onChange={this.handleOnUpload} onClear={() => this.handleOnDelete(7)} disabled={inputDisabled} />
         </div>
         <Text className={[_s.mt5, _s.pl5, _s.mb15].join(' ')} size='small' color='tertiary'>
           (Optional) Max: 5MB. Accepted image types: .jpg, .png
@@ -107,6 +75,24 @@ class MarketplaceListingMediaUploadBlock extends ImmutablePureComponent {
   }
 
 }
+
+const FileInputWrapper = ({ index, url, isDisabled, onClear, onChange }) => (
+  <div className={[_s.d, _s.pr10, _s.py10].join(' ')}>
+    <FileInput
+      hasClear
+      id={`file-input-${index}`}
+      file={url}
+      fileType='image'
+      onClear={onClear}
+      onChange={onChange}
+      disabled={isDisabled}
+      accept='image/jpeg,image/png'
+      width='158px'
+      height='158px'
+      isBordered
+    />
+  </div>
+)
 
 const mapStateToProps = (state) => ({
   medias: state.getIn(['marketplace_listing_editor', 'media_attachments']),

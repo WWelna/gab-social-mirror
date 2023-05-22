@@ -19,6 +19,8 @@ class StatusBookmark < ApplicationRecord
 
   validates :status_id, uniqueness: { scope: :account_id }
 
+  validates_with StatusBookmarkLimitValidator
+
   before_validation do
     self.status = status.reblog if status&.reblog?
   end

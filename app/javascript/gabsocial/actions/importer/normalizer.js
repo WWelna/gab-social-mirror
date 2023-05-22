@@ -44,11 +44,16 @@ export const normalizeAccount = (account) => {
   return account
 }
 
+const statusDefaults = { emojis: [], mentions: [] }
+
+// fakePollId is for GroupModerationStatus
+let fakePollId = 0
+
 /**
  * 
  */
 export const normalizeStatus = (status, normalOldStatus) => {
-  const normalStatus   = { ...status }
+  const normalStatus   = Object.assign({}, statusDefaults, status)
   normalStatus.account = status.account_id || status.account.id
 
   if (status.reblog && status.reblog.id) {
@@ -59,8 +64,8 @@ export const normalizeStatus = (status, normalOldStatus) => {
     normalStatus.quote = status.quote.id
   }
 
-  if (status.poll && status.poll.id) {
-    normalStatus.poll = status.poll.id
+  if (status.poll) {
+    normalStatus.poll = status.poll.id || (fakePollId += 1)
   }
 
   if (!!status.group || !!status.group_id) {
@@ -100,15 +105,29 @@ export const normalizeStatus = (status, normalOldStatus) => {
   return normalStatus
 }
 
+const pollDefaults = {
+  emojis: [],
+  expired: false,
+  // expires_at:
+  multiple: false,
+  voted: true,
+  voted_for: null,
+  votes_count: 0
+}
+
 /**
  * 
  */
 export const normalizePoll = (poll) => {
-  const normalPoll = { ...poll }
+  const normalPoll = Object.assign({}, pollDefaults, poll)
 
   const emojiMap = makeEmojiMap(normalPoll)
 
-  normalPoll.options = poll.options.map((option) => ({
+  if (normalPoll.options.every(item => typeof item === 'string')) {
+    normalPoll.options = normalPoll.options.map((title, id) => ({ id, title }))
+  }
+
+  normalPoll.options = normalPoll.options.map((option) => ({
     ...option,
     title_emojified: emojify(escapeTextContentForBrowser(option.title), emojiMap),
   }))

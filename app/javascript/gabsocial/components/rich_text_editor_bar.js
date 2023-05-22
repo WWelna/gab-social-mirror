@@ -1,9 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
 import { RichUtils } from 'draft-js'
-import { me } from '../initial_state'
-import { makeGetAccount } from '../selectors'
 import { CX } from '../constants'
 import Icon from './icon'
 
@@ -12,32 +9,32 @@ const RTE_ITEMS = [
     label: 'Bold',
     style: 'BOLD',
     type: 'style',
-    icon: 'bold',
+    icon: 'bold'
   },
   {
     label: 'Italic',
     style: 'ITALIC',
     type: 'style',
-    icon: 'italic',
+    icon: 'italic'
   },
   {
     label: 'Underline',
     style: 'UNDERLINE',
     type: 'style',
-    icon: 'underline',
+    icon: 'underline'
   },
   {
     label: 'Strikethrough',
     style: 'STRIKETHROUGH',
     type: 'style',
-    icon: 'strikethrough',
+    icon: 'strikethrough'
   },
   {
     label: 'Monospace',
     style: 'CODE',
     type: 'style',
-    icon: 'code',
-  },
+    icon: 'code'
+  }
   // {
   //   label: 'Title',
   //   style: 'header-one',
@@ -71,7 +68,6 @@ const RTE_ITEMS = [
 ]
 
 class RichTextEditorBar extends React.PureComponent {
-
   toggleEditorStyle = (style, type) => {
     if (type === 'style') {
       this.props.onChange(
@@ -85,22 +81,31 @@ class RichTextEditorBar extends React.PureComponent {
   }
 
   render() {
-    const { isPro, rteControlsVisible, editorState } = this.props
+    const { rte_controls_visible, editorState } = this.props
 
-    if (!rteControlsVisible || !isPro) return null
+    if (!rte_controls_visible) return null
 
     return (
-      <div className={[_s.d, _s.bgPrimary, _s.borderBottom1PX, _s.borderColorSecondary, _s.py5, _s.px15, _s.aiCenter, _s.flexRow].join(' ')}>
-        {
-          RTE_ITEMS.map((item, i) => (
-            <StyleButton
-              key={`rte-button-${i}`}
-              editorState={editorState}
-              onClick={this.toggleEditorStyle}
-              {...item}
-            />
-          ))
-        }
+      <div
+        className={[
+          _s.d,
+          _s.bgPrimary,
+          _s.borderBottom1PX,
+          _s.borderColorSecondary,
+          _s.py5,
+          _s.px15,
+          _s.aiCenter,
+          _s.flexRow
+        ].join(' ')}
+      >
+        {RTE_ITEMS.map((item, i) => (
+          <StyleButton
+            key={`rte-button-${i}`}
+            editorState={editorState}
+            onClick={this.toggleEditorStyle}
+            {...item}
+          />
+        ))}
         {/*<Button
           backgroundColor='none'
           color='secondary'
@@ -115,30 +120,26 @@ class RichTextEditorBar extends React.PureComponent {
       </div>
     )
   }
-
 }
 
 class StyleButton extends React.PureComponent {
-
-  handleOnClick = (e) => {
+  handleOnClick = e => {
     e.preventDefault()
     this.props.onClick(this.props.style, this.props.type)
   }
 
   render() {
-    const {
-      label,
-      style,
-      type,
-      icon,
-      editorState
-    } = this.props
+    const { label, style, type, icon, editorState } = this.props
 
     const selection = editorState.getSelection()
     const currentStyle = editorState.getCurrentInlineStyle()
-    const blockType = editorState.getCurrentContent().getBlockForKey(selection.getStartKey()).getType()
+    const blockType = editorState
+      .getCurrentContent()
+      .getBlockForKey(selection.getStartKey())
+      .getType()
 
-    const active = type === 'block' ? style === blockType : currentStyle.has(style)
+    const active =
+      type === 'block' ? style === blockType : currentStyle.has(style)
     const iconColor = active ? 'cWhite' : 'cSecondary'
 
     const btnClasses = CX({
@@ -153,7 +154,7 @@ class StyleButton extends React.PureComponent {
       bgTransparent: 1,
       radiusSmall: 1,
       outlineNone: 1,
-      py10: 1,
+      py10: 1
     })
 
     return (
@@ -162,11 +163,10 @@ class StyleButton extends React.PureComponent {
         onMouseDown={this.handleOnClick}
         title={label}
       >
-        <Icon id={icon} size='16px' className={_s[iconColor]} />
+        <Icon id={icon} size="16px" className={_s[iconColor]} />
       </button>
     )
   }
-
 }
 
 StyleButton.propTypes = {
@@ -174,25 +174,13 @@ StyleButton.propTypes = {
   label: PropTypes.string,
   style: PropTypes.string,
   icon: PropTypes.string,
-  type: PropTypes.string,
-}
-
-const mapStateToProps = (state) => {
-  const getAccount = makeGetAccount()
-  const account = getAccount(state, me)
-  const isPro = account.get('is_pro')
-
-  return {
-    isPro,
-    rteControlsVisible: state.getIn(['compose', 'rte_controls_visible']),
-  }
+  type: PropTypes.string
 }
 
 RichTextEditorBar.propTypes = {
   editorState: PropTypes.object.isRequired,
-  isPro: PropTypes.bool.isRequired,
-  rteControlsVisible: PropTypes.bool.isRequired,
-  onChange: PropTypes.func.isRequired,
+  rte_controls_visible: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired
 }
 
-export default connect(mapStateToProps)(RichTextEditorBar)
+export default RichTextEditorBar

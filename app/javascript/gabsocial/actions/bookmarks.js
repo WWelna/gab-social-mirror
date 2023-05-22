@@ -5,6 +5,10 @@ export const BOOKMARK_COLLECTIONS_FETCH_REQUEST = 'BOOKMARK_COLLECTIONS_FETCH_RE
 export const BOOKMARK_COLLECTIONS_FETCH_SUCCESS = 'BOOKMARK_COLLECTIONS_FETCH_SUCCESS'
 export const BOOKMARK_COLLECTIONS_FETCH_FAIL = 'BOOKMARK_COLLECTIONS_FETCH_FAIL'
 
+export const BOOKMARK_COLLECTION_FETCH_REQUEST = 'BOOKMARK_COLLECTION_FETCH_REQUEST'
+export const BOOKMARK_COLLECTION_FETCH_SUCCESS = 'BOOKMARK_COLLECTION_FETCH_SUCCESS'
+export const BOOKMARK_COLLECTION_FETCH_FAIL = 'BOOKMARK_COLLECTION_FETCH_FAIL'
+
 export const BOOKMARK_COLLECTIONS_CREATE_REQUEST = 'BOOKMARK_COLLECTIONS_CREATE_REQUEST'
 export const BOOKMARK_COLLECTIONS_CREATE_SUCCESS = 'BOOKMARK_COLLECTIONS_CREATE_SUCCESS'
 export const BOOKMARK_COLLECTIONS_CREATE_FAIL = 'BOOKMARK_COLLECTIONS_CREATE_FAIL'
@@ -21,6 +25,7 @@ export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_FAIL = 'BOOKMARK_COLLECTIONS_UPD
 export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST'
 export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS'
 
+// PLURAL
 export const fetchBookmarkCollections = () => (dispatch, getState) => {
   if (!me) return
 
@@ -46,6 +51,36 @@ const fetchBookmarkCollectionsSuccess = (bookmarkCollections) => ({
 
 const fetchBookmarkCollectionsFail = (error) => ({
   type: BOOKMARK_COLLECTIONS_FETCH_FAIL,
+  showToast: true,
+  error,
+})
+
+// SINGULAR
+export const fetchBookmarkCollection = (bookmarkCollectionId) => (dispatch, getState) => {
+  if (!me || !bookmarkCollectionId || bookmarkCollectionId.toLowerCase() === 'saved') return
+
+  if (getState().getIn(['bookmark_collections', 'isLoading'])) return
+
+  dispatch(fetchBookmarkCollectionRequest())
+
+  api(getState).get(`/api/v1/bookmark_collections/${bookmarkCollectionId}`).then((response) => {
+    dispatch(fetchBookmarkCollectionSuccess(response.data))
+  }).catch((error) => {
+    dispatch(fetchBookmarkCollectionFail(error))
+  })
+}
+
+const fetchBookmarkCollectionRequest = () => ({
+  type: BOOKMARK_COLLECTION_FETCH_REQUEST,
+})
+
+const fetchBookmarkCollectionSuccess = (bookmarkCollection) => ({
+  type: BOOKMARK_COLLECTION_FETCH_SUCCESS,
+  bookmarkCollection,
+})
+
+const fetchBookmarkCollectionFail = (error) => ({
+  type: BOOKMARK_COLLECTION_FETCH_FAIL,
   showToast: true,
   error,
 })

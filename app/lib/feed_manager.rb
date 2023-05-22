@@ -94,8 +94,8 @@ class FeedManager
     check_for_blocks.concat([status.account_id])
 
     if status.reblog?
-      check_for_blocks.concat([status.reblog.account_id])
-      check_for_blocks.concat(status.reblog.active_mentions.pluck(:account_id))
+      check_for_blocks.concat([status.reblog.account_id]) unless status.reblog.nil?
+      check_for_blocks.concat(status.reblog.active_mentions.pluck(:account_id)) unless status.reblog.nil?
     end
 
     return true if blocks_or_mutes?(receiver_id, check_for_blocks, :home)
@@ -105,7 +105,7 @@ class FeedManager
       should_filter &&= receiver_id != status.in_reply_to_account_id                                                             # and it's not a reply to me
       should_filter &&= status.account_id != status.in_reply_to_account_id                                                       # and it's not a self-reply
       return should_filter
-    elsif status.reblog?                                                                                                         # Filter out a reblog
+    elsif status.reblog? && !status.reblog.nil?                                                                                  # Filter out a reblog
       should_filter ||= Block.where(account_id: status.reblog.account_id, target_account_id: receiver_id).exists?                # or if the author of the reblogged status is blocking me
       return should_filter
     end

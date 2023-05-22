@@ -84,7 +84,7 @@ const emojify = (str, customEmojis = {}, plain = false, largeEnabled = false, fo
     } else { // matched to unicode emoji
       const { filename, shortCode } = unicodeMapping[match];
       const title = shortCode ? `:${shortCode}:` : '';
-      replacement = `<span style="font-size:${size}px;margin:${mt}px 0 0;height:${size}px;width:${size}px;vertical-align:middle;">${match}</span>` //plain ? '' : `<img draggable="false" style="height:${size}px;width:${size}px;margin:${mt}px 0 0;font-family:'object-fit:contain',inherit;vertical-align:middle;-o-object-fit:contain;object-fit:contain;" alt="${match}" title="${title}" src="${assetHost}/emoji/${filename}.svg" />`;
+      replacement = plain ? '' : `<img draggable="false" style="height:${size}px;width:${size}px;margin:${mt}px 0 0;font-family:'object-fit:contain',inherit;vertical-align:middle;-o-object-fit:contain;object-fit:contain;" alt="${match}" title="${title}" src="${assetHost}/emoji/${filename}.svg" />`;
       rend = i + match.length;
       emojiCount++;
       // If the matched character was followed by VS15 (for selecting text presentation), skip it.

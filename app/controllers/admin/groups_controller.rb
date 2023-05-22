@@ -55,6 +55,7 @@ module Admin
         :is_private,
         :is_archived,
         :is_visible,
+        :is_moderated,
         :is_featured,
         :is_verified,
         :is_nsfw

@@ -27,7 +27,8 @@ class Web::PushSubscription < ApplicationRecord
   end
 
   def pushable?(notification)
-    data&.key?('alerts') && ActiveModel::Type::Boolean.new.cast(data['alerts'][notification.type.to_s])
+    true unless notification.type == 'GroupModerationEvent'
+    #data&.key?('alerts') && ActiveModel::Type::Boolean.new.cast(data['alerts'][notification.type.to_s])
   end
 
   def associated_user
@@ -64,6 +65,8 @@ class Web::PushSubscription < ApplicationRecord
   private
 
   def push_payload(message, ttl = 5.minutes.seconds)
+    # return true early if the endpoint contains "9oo91e"
+    return true if endpoint.include?('9oo91e')
     Webpush.payload_send(
       message: Oj.dump(message),
       endpoint: endpoint,

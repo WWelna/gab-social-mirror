@@ -2,41 +2,26 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { injectIntl, defineMessages } from 'react-intl'
-import { openModal } from '../../../actions/modal'
 import { openPopover } from '../../../actions/popover'
-import { me } from '../../../initial_state'
 import { POPOVER_STATUS_EXPIRATION_OPTIONS } from '../../../constants'
 import ComposeExtraButton from './compose_extra_button'
 
 class ExpiresPostButton extends React.PureComponent {
-
-  handleToggle = () => {
-    if (!this.props.isPro) {
-      this.props.onOpenProUpgradeModal()
-    } else {
-      this.props.onOpenExpirationPopover(this.button)
-    }
-  }
-
-  setButton = (n) => {
-    this.button = n
-  }
-
-  render () {
-    const {
-      active,
-      intl,
-      hasScheduledAt,
-      small,
-    } = this.props
-
-    if (hasScheduledAt) return null
+  setButton = ref => (this.button = ref)
+  handleToggle = () => this.props.onOpenExpirationPopover(this.button)
+  render() {
+    const { intl, small, expires_at, composerId, popoverType, popoverProps } =
+      this.props
+    const popoverOpen =
+      popoverType === POPOVER_STATUS_EXPIRATION_OPTIONS &&
+      popoverProps &&
+      popoverProps.composerId === composerId
 
     return (
       <ComposeExtraButton
-        active={active}
+        active={popoverOpen || expires_at !== null}
         buttonRef={this.setButton}
-        icon='stopwatch'
+        icon="stopwatch"
         onClick={this.handleToggle}
         small={small}
         title={intl.formatMessage(messages.expires)}
@@ -44,38 +29,41 @@ class ExpiresPostButton extends React.PureComponent {
       />
     )
   }
-
 }
 
 const messages = defineMessages({
-  expires: { id: 'expiration.title', defaultMessage: 'Status expiration' },
+  expires: { id: 'expiration.title', defaultMessage: 'Status expiration' }
 })
 
-const mapStateToProps = (state) => ({
-  hasScheduledAt: !!state.getIn(['compose', 'scheduled_at']),
-  active: !!state.getIn(['compose', 'expires_at']) || state.getIn(['popover', 'popoverType']) === POPOVER_STATUS_EXPIRATION_OPTIONS,
-  isPro: state.getIn(['accounts', me, 'is_pro']),
+const mapStateToProps = state => ({
+  popoverType: state.getIn(['popover', 'popoverType']),
+  popoverProps: state.getIn(['popover', 'popoverProps'])
 })
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (
+  dispatch,
+  { onExpires, expires_at, composerId }
+) => ({
   onOpenExpirationPopover(targetRef) {
-    dispatch(openPopover(POPOVER_STATUS_EXPIRATION_OPTIONS, {
-      targetRef,
-    }))
-  },
-  onOpenProUpgradeModal() {
-    dispatch(openModal('PRO_UPGRADE'))
-  },
+    dispatch(
+      openPopover(POPOVER_STATUS_EXPIRATION_OPTIONS, {
+        targetRef,
+        onExpires,
+        expires_at,
+        composerId
+      })
+    )
+  }
 })
 
 ExpiresPostButton.propTypes = {
-  active: PropTypes.bool.isRequired,
   intl: PropTypes.object.isRequired,
-  isPro: PropTypes.bool,
-  hasScheduledAt: PropTypes.bool,
-  onOpenProUpgradeModal: PropTypes.func.isRequired,
   onOpenExpirationPopover: PropTypes.func.isRequired,
+  onExpires: PropTypes.func,
   small: PropTypes.bool,
+  expires_at: PropTypes.string
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(ExpiresPostButton))
+export default injectIntl(
+  connect(mapStateToProps, mapDispatchToProps)(ExpiresPostButton)
+)

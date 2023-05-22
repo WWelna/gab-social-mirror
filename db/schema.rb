@@ -10,10 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_05_02_224927) do
+ActiveRecord::Schema.define(version: 2022_10_06_005045) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_stat_statements"
+  enable_extension "pgstattuple"
   enable_extension "plpgsql"
 
   create_table "account_conversations", force: :cascade do |t|
@@ -47,6 +48,7 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "last_status_at"
+    t.integer "unread_count", default: 0
     t.index ["account_id"], name: "index_account_stats_on_account_id", unique: true
   end
 
@@ -251,6 +253,75 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.index ["from_account_id", "chat_conversation_id"], name: "index_chat_messages_on_from_account_id_and_chat_conversation_id"
   end
 
+  create_table "comment_conversation_mutes", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.bigint "comment_conversation_id", null: false
+    t.index ["account_id", "comment_conversation_id"], name: "comment_convo_mutes_on_account_and_comment_convo", unique: true
+  end
+
+  create_table "comment_conversations", force: :cascade do |t|
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "comment_mentions", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "comment_id"
+    t.boolean "silent", default: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id", "comment_id"], name: "index_comment_mentions_on_account_id_and_comment_id", unique: true
+  end
+
+  create_table "comment_reactions", force: :cascade do |t|
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "account_id", null: false
+    t.bigint "comment_id", null: false
+    t.bigint "reaction_id"
+    t.index ["account_id", "comment_id"], name: "index_comment_reactions_on_account_id_and_comment_id", unique: true
+  end
+
+  create_table "comment_revisions", force: :cascade do |t|
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "comment_id"
+    t.string "text"
+  end
+
+  create_table "comment_stats", force: :cascade do |t|
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "comment_id", null: false
+    t.bigint "replies_count", default: 0, null: false
+    t.bigint "reactions_count", default: 0, null: false
+    t.index ["comment_id"], name: "index_comment_stats_on_comment_id", unique: true
+  end
+
+  create_table "comment_tombstones", force: :cascade do |t|
+    t.bigint "comment_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["comment_id"], name: "index_comment_tombstones_on_comment_id"
+  end
+
+  create_table "comments", id: :bigint, default: -> { "timestamp_id('comments'::text)" }, force: :cascade do |t|
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.bigint "account_id", null: false
+    t.integer "source"
+    t.text "source_id"
+    t.text "language", default: "en", null: false
+    t.bigint "in_reply_to_id"
+    t.bigint "in_reply_to_account_id"
+    t.text "text", default: "", null: false
+    t.boolean "reply", default: false
+    t.bigint "comment_conversation_id"
+    t.datetime "revised_at"
+    t.datetime "tombstoned_at"
+    t.index ["account_id"], name: "index_comments_on_account_id"
+  end
+
   create_table "conversation_mutes", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "conversation_id", null: false
@@ -337,10 +408,9 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.string "role"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_approved"
     t.index ["account_id", "group_id"], name: "index_group_accounts_on_account_id_and_group_id", unique: true
-    t.index ["account_id"], name: "index_group_accounts_on_account_id"
     t.index ["group_id", "account_id"], name: "index_group_accounts_on_group_id_and_account_id"
-    t.index ["group_id"], name: "index_group_accounts_on_group_id"
   end
 
   create_table "group_categories", force: :cascade do |t|
@@ -355,8 +425,36 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "group_id"], name: "index_group_join_requests_on_account_id_and_group_id", unique: true
-    t.index ["account_id"], name: "index_group_join_requests_on_account_id"
     t.index ["group_id"], name: "index_group_join_requests_on_group_id"
+  end
+
+  create_table "group_moderation_events", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "group_id"
+    t.bigint "status_id"
+    t.bigint "group_moderation_status_id"
+    t.boolean "approved", default: false
+    t.boolean "rejected", default: false
+    t.boolean "removed", default: false
+    t.boolean "reported", default: false
+    t.datetime "acted_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_group_moderation_events_on_account_id"
+    t.index ["group_id"], name: "index_group_moderation_events_on_group_id"
+    t.index ["group_moderation_status_id"], name: "index_group_moderation_events_on_group_moderation_status_id"
+    t.index ["status_id"], name: "index_group_moderation_events_on_status_id"
+  end
+
+  create_table "group_moderation_statuses", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "group_id"
+    t.integer "spam_score"
+    t.jsonb "content"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_group_moderation_statuses_on_account_id"
+    t.index ["group_id"], name: "index_group_moderation_statuses_on_group_id"
   end
 
   create_table "group_pinned_statuses", force: :cascade do |t|
@@ -364,7 +462,6 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.bigint "group_id", null: false
     t.index ["group_id"], name: "index_group_pinned_statuses_on_group_id"
     t.index ["status_id", "group_id"], name: "index_group_pinned_statuses_on_status_id_and_group_id", unique: true
-    t.index ["status_id"], name: "index_group_pinned_statuses_on_status_id"
   end
 
   create_table "group_removed_accounts", force: :cascade do |t|
@@ -373,9 +470,7 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "group_id"], name: "index_group_removed_accounts_on_account_id_and_group_id", unique: true
-    t.index ["account_id"], name: "index_group_removed_accounts_on_account_id"
     t.index ["group_id", "account_id"], name: "index_group_removed_accounts_on_group_id_and_account_id"
-    t.index ["group_id"], name: "index_group_removed_accounts_on_group_id"
   end
 
   create_table "groups", force: :cascade do |t|
@@ -394,11 +489,12 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.integer "member_count", default: 0
     t.text "slug"
     t.boolean "is_private", default: false
-    t.boolean "is_visible", default: false
+    t.boolean "is_visible", default: true
     t.string "tags", default: [], array: true
     t.string "password"
     t.integer "group_category_id"
     t.boolean "is_verified", default: false, null: false
+    t.boolean "is_moderated"
     t.index ["account_id"], name: "index_groups_on_account_id"
     t.index ["slug"], name: "index_groups_on_slug", unique: true
   end
@@ -429,7 +525,7 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
   create_table "list_accounts", force: :cascade do |t|
     t.bigint "list_id", null: false
     t.bigint "account_id", null: false
-    t.bigint "follow_id", default: 1
+    t.bigint "follow_id"
     t.index ["account_id", "list_id"], name: "index_list_accounts_on_account_id_and_list_id", unique: true
     t.index ["follow_id"], name: "index_list_accounts_on_follow_id"
     t.index ["list_id", "account_id"], name: "index_list_accounts_on_list_id_and_account_id"
@@ -461,7 +557,6 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.integer "visibility", default: 0, null: false
     t.integer "subscriber_count", default: 0, null: false
     t.string "slug"
-    t.integer "order"
     t.boolean "is_featured"
     t.index ["account_id"], name: "index_lists_on_account_id"
     t.index ["slug"], name: "index_lists_on_slug", unique: true
@@ -563,7 +658,6 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.bigint "scheduled_status_id"
     t.string "blurhash"
     t.bigint "media_attachment_album_id"
-    t.integer "processing"
     t.bigint "marketplace_listing_id"
     t.string "file_fingerprint"
     t.index ["account_id"], name: "index_media_attachments_on_account_id"
@@ -746,6 +840,17 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.index ["slug"], name: "index_reaction_types_on_slug", unique: true
   end
 
+  create_table "remote_rss_feeds", force: :cascade do |t|
+    t.string "url"
+    t.boolean "active", default: false, null: false
+    t.datetime "last_scan_at"
+    t.datetime "last_trigger_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.integer "fail_count", default: 0, null: false
+    t.text "top_guid"
+  end
+
   create_table "report_notes", force: :cascade do |t|
     t.text "content", null: false
     t.bigint "report_id", null: false
@@ -812,7 +917,6 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.bigint "shortcut_id", null: false
     t.string "shortcut_type", default: "", null: false
     t.index ["account_id", "shortcut_id", "shortcut_type"], name: "index_shortcuts_on_account_id_and_shortcut_id_and_shortcut_type", unique: true
-    t.index ["account_id"], name: "index_shortcuts_on_account_id"
   end
 
   create_table "site_uploads", force: :cascade do |t|
@@ -841,7 +945,6 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.bigint "status_id", null: false
     t.bigint "status_bookmark_collection_id"
     t.index ["account_id", "status_id"], name: "index_status_bookmarks_on_account_id_and_status_id", unique: true
-    t.index ["account_id"], name: "index_status_bookmarks_on_account_id"
     t.index ["status_bookmark_collection_id"], name: "index_status_bookmarks_on_status_bookmark_collection_id"
     t.index ["status_id"], name: "index_status_bookmarks_on_status_id"
   end
@@ -877,6 +980,7 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.bigint "favourites_count", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "quotes_count"
     t.index ["created_at"], name: "index_status_stats_on_created_at"
     t.index ["favourites_count"], name: "index_status_stats_on_favourites_count"
     t.index ["reblogs_count"], name: "index_status_stats_on_reblogs_count"
@@ -918,6 +1022,8 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
     t.datetime "expires_at"
     t.boolean "has_quote"
     t.datetime "tombstoned_at"
+    t.boolean "group_moderation"
+    t.index ["account_id", "id", "visibility", "created_at"], name: "index_statuses_20201206", order: { id: :desc }
     t.index ["account_id", "id", "visibility", "updated_at"], name: "index_statuses_20180106", order: { id: :desc }
     t.index ["created_at"], name: "index_statuses_on_created_at"
     t.index ["group_id"], name: "index_statuses_on_group_id"
@@ -1074,6 +1180,9 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
   add_foreign_key "chat_conversations", "chat_messages", column: "last_chat_message_id", on_delete: :nullify
   add_foreign_key "chat_messages", "accounts", column: "from_account_id", on_delete: :cascade
   add_foreign_key "chat_messages", "chat_conversations", on_delete: :cascade
+  add_foreign_key "comment_stats", "comments", on_delete: :cascade
+  add_foreign_key "comment_tombstones", "comments", on_delete: :cascade
+  add_foreign_key "comments", "accounts", on_delete: :cascade
   add_foreign_key "custom_filters", "accounts", on_delete: :cascade
   add_foreign_key "favourites", "accounts", name: "fk_5eb6c2b873", on_delete: :cascade
   add_foreign_key "favourites", "statuses", name: "fk_b0e856845e", on_delete: :cascade
@@ -1085,6 +1194,8 @@ ActiveRecord::Schema.define(version: 2022_05_02_224927) do
   add_foreign_key "group_accounts", "groups", on_delete: :cascade
   add_foreign_key "group_join_requests", "accounts", on_delete: :cascade
   add_foreign_key "group_join_requests", "groups", on_delete: :cascade
+  add_foreign_key "group_moderation_statuses", "accounts", on_delete: :cascade
+  add_foreign_key "group_moderation_statuses", "groups", on_delete: :cascade
   add_foreign_key "group_pinned_statuses", "groups", on_delete: :cascade
   add_foreign_key "group_pinned_statuses", "statuses", on_delete: :cascade
   add_foreign_key "group_removed_accounts", "accounts", on_delete: :cascade

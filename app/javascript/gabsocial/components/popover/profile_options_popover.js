@@ -9,9 +9,6 @@ import {
   unmuteAccount,
 } from '../../actions/accounts'
 import {
-  mentionCompose,
-} from '../../actions/compose'
-import {
   addShortcut,
   removeShortcut,
 } from '../../actions/shortcuts'
@@ -21,7 +18,7 @@ import {
   openPopover,
   closePopover,
 } from '../../actions/popover'
-import { POPOVER_SHARE } from '../../constants'
+import { POPOVER_SHARE, MODAL_COMPOSE } from '../../constants'
 import { unfollowModal, me, isStaff } from '../../initial_state'
 import { makeGetAccount } from '../../selectors'
 import PopoverLayout from './popover_layout'
@@ -48,12 +45,15 @@ class ProfileOptionsPopover extends React.PureComponent {
       onClick: this.handleShare
     });
 
-    menu.push({
-      hideArrow: true,
-      icon: 'comment',
-      title: intl.formatMessage(messages.mention, { name: account.get('acct') }),
-      onClick: this.handleOnMention
-    });
+    const isBlockedBy = account.getIn(['relationship', 'blocked_by'])
+    if (!isBlockedBy) {
+      menu.push({
+        hideArrow: true,
+        icon: 'comment',
+        title: intl.formatMessage(messages.mention, { name: account.get('acct') }),
+        onClick: this.handleOnMention
+      });
+    }
 
     if (account.getIn(['relationship', 'following'])) {
       const showingReblogs = account.getIn(['relationship', 'showing_reblogs'])
@@ -253,9 +253,9 @@ const mapDispatchToProps = (dispatch, { intl, innerRef }) => ({
       }));
     }
   },
-  onMention(account) {
+  onMention(mentionAccount) {
     dispatch(closePopover())
-    dispatch(mentionCompose(account));
+    dispatch(openModal(MODAL_COMPOSE, { mentionAccount }))
   },
   onRepostToggle(account) {
     dispatch(closePopover())

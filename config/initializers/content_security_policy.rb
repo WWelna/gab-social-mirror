@@ -13,7 +13,7 @@ Rails.application.config.content_security_policy do |p|
   p.font_src        :self, assets_host
   p.img_src         :self, :https, :data, :blob, assets_host
   p.style_src       :self, :unsafe_inline, assets_host
-  p.media_src       :self, :https, :data, assets_host
+  p.media_src       :self, :https, :data, assets_host, "blob:"
   p.frame_src       :self, :https
   p.manifest_src    :self, assets_host
 

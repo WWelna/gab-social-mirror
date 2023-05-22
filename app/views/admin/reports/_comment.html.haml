@@ -1,0 +1,44 @@
+- return nil if comment.marked_for_destruction? || comment.marked_for_mass_destruction?
+
+.batch-table__row{style:'overflow:hidden;'}
+  %label.batch-table__row__select.batch-checkbox
+    = f.check_box :comment_ids, { multiple: true, include_hidden: false }, comment.id
+  .batch-table__row__content
+    .status__content.comment_content><
+      = Formatter.instance.plaintext(comment)
+    .detailed-status__meta{style:'display:flex;flex-direction:row;flex-wrap:wrap;color:#757575;'}
+      %div{style:'display:flex;flex-direction:row;color:#757575;margin-right:auto;padding-right:10px;'}
+        %div{style:'display:inline-block;margin-right:5px;color:#757575;'}
+          = admin_account_inline_link_to(comment.account, defined?(public_route))
+          ·
+        
+        - if comment.reply?
+          %div{style:'display:inline-block;margin-right:5px;color:#757575;'}
+            %span{style:'display:inline-block;margin-right:5px;color:#757575;'} Reply
+            ·
+        
+        = link_to TagManager.instance.url_for(comment), class: 'detailed-status__datetime', target: stream_link_target, rel: 'noopener' do
+          %time.formatted{datetime: comment.created_at.iso8601, title: l(comment.created_at) }= l(comment.created_at)
+
+        %span{style:'margin:0 5px;'} ·
+        %span= comment.source
+        %span{style:'margin:0 5px;'} ·
+        %span= comment.source_id.to_s
+
+        - if comment.tombstoned?
+          ·
+          = fa_icon('database fw')
+          = 'Tombstoned'
+    
+      -# : todo :
+      - reactions = 1 #comment.reactions_count
+      - replies = 1 #comment.replies_count
+
+      - if reactions > 0 || replies > 0
+        %div{style: ''}
+          - int_styles = 'display:inline-block;margin:0 5px;color:#757575;font-size:14px;text-decoration:none;cursor:pointer;'
+          - if reactions > 0
+            %a{style:int_styles, href: TagManager.instance.url_for(comment)}= "#{reactions} reaction#{reactions > 1 ? 's' : ''}"
+          - if replies > 0
+            %a{style:int_styles, href: TagManager.instance.url_for(comment)}= "#{replies} repl#{replies > 1 ? 'ies' : 'y'}"
+    

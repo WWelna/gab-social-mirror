@@ -8,6 +8,7 @@ import {
 import { importFetchedAccount } from '../actions/importer'
 import { importGroup } from '../actions/groups'
 import { importList } from '../actions/lists'
+import { importHashtag } from '../actions/hashtags'
 import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable'
 
 const initialState = ImmutableMap({
@@ -48,6 +49,15 @@ const normalizeShortcut = (shortcut) => {
       icon: 'list',
       to: `/feeds/${shortcut.shortcut.id}`,
     }
+  } else if (shortcut.shortcut_type === 'tag') {
+    importHashtag(shortcut.shortcut)
+    return {
+      id: shortcut.id,
+      shortcut_type: 'tag',
+      shortcut_id: shortcut.shortcut_id,
+      title: shortcut.shortcut.name,
+      to: `/tags/${shortcut.shortcut.name}`,
+    }
   }
 }
 
@@ -79,7 +89,9 @@ export default function shortcutsReducer(state = initialState, action) {
         map.set('isError', true)
       })
     case SHORTCUTS_ADD_SUCCESS:
-      return state.update('items', list => list.push(fromJS(normalizeShortcut(action.shortcut))))
+      const normalizedValue = normalizeShortcut(action.shortcut)
+      if (!normalizedValue) return state
+      return state.update('items', list => list.push(fromJS(normalizedValue)))
     case SHORTCUTS_REMOVE_SUCCESS:
       return state.update('items', list => list.filterNot((item) => {
         return `${item.get('id')}` === `${action.shortcutId}`

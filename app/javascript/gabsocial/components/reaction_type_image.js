@@ -12,28 +12,19 @@ const ReactionTypeImage = ({
 }) => (
   <span
     key={`reaction-${slug}`}
-    className={[_s.d, _s.noSelect, _s.noUnderline, _s.outlineNone, _s.bgTransparent].join(' ')}
+    className={[_s.d, _s.noSelect, _s.pointerEventsNone, _s.noUnderline, _s.outlineNone, _s.bgTransparent].join(' ')}
     data-name={name}
-    data-reaction={id}
-    style={{ width: size, height: size }}
-  >
-    <img
-      draggable='false'
-      style={{
-        height: size,
-        width: size,
-        fontFamily: "'object-fit:contain',inherit",
-        verticalAlign: 'middle',
-        objectFit: 'contain',
-        OObjectFit: 'contain',
-      }}
-      className={_s.noSelect}
-      alt={name}
-      title={name}
-      src={icon}
-      data-reaction={id}
-    />
-  </span>
+    aria-label={name}
+    role='img'
+    style={{
+      width: size,
+      height: size,
+      backgroundImage: `url(${icon})`,
+      backgroundSize: 'contain',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }}
+  />
 )
 
 const mapStateToProps = (state, { reactionTypeId }) => {

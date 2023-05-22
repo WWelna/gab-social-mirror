@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { LoadingBar } from 'react-redux-loading-bar'
-import { CX  } from '../constants'
+import Icon from './icon'
 import ZoomableImage from './zoomable_image'
 
 class ImageLoader extends React.PureComponent {
@@ -13,16 +12,6 @@ class ImageLoader extends React.PureComponent {
   }
 
   removers = [];
-  canvas = null;
-
-  get canvasContext() {
-    if (!this.canvas) {
-      return null
-    }
-
-    this._canvasContext = this._canvasContext || this.canvas.getContext('2d');
-    return this._canvasContext;
-  }
 
   componentDidMount () {
     this.loadImage(this.props);
@@ -41,41 +30,11 @@ class ImageLoader extends React.PureComponent {
   loadImage (props) {
     this.removeEventListeners();
     this.setState({ loading: true, error: false });
-    Promise.all([
-      props.previewSrc && this.loadPreviewCanvas(props),
-      this.hasSize() && this.loadOriginalImage(props),
-    ].filter(Boolean))
+    Promise.all([this.loadOriginalImage(props)].filter(Boolean))
       .then(() => {
         this.setState({ loading: false, error: false });
-        this.clearPreviewCanvas();
       })
       .catch(() => this.setState({ loading: false, error: true }));
-  }
-
-  loadPreviewCanvas = ({ previewSrc, width, height }) => new Promise((resolve, reject) => {
-    const image = new Image();
-    const removeEventListeners = () => {
-      image.removeEventListener('error', handleError);
-      image.removeEventListener('load', handleLoad);
-    };
-    const handleError = () => {
-      removeEventListeners();
-      reject();
-    };
-    const handleLoad = () => {
-      removeEventListeners();
-      this.canvasContext.drawImage(image, 0, 0, width, height);
-      resolve();
-    };
-    image.addEventListener('error', handleError);
-    image.addEventListener('load', handleLoad);
-    image.src = previewSrc;
-    this.removers.push(removeEventListeners);
-  })
-
-  clearPreviewCanvas () {
-    const { width, height } = this.canvas;
-    this.canvasContext.clearRect(0, 0, width, height);
   }
 
   loadOriginalImage = ({ src }) => new Promise((resolve, reject) => {
@@ -103,43 +62,23 @@ class ImageLoader extends React.PureComponent {
     this.removers = [];
   }
 
-  hasSize () {
-    const { width, height } = this.props;
-    return typeof width === 'number' && typeof height === 'number';
-  }
-
-  setCanvasRef = c => {
-    this.canvas = c;
-    if (c) this.setState({ width: c.offsetWidth });
-  }
-
   render () {
-    const { alt, src, width, height, onClick } = this.props
+    const { alt, src, previewSrc, onClick } = this.props
     const { loading } = this.state
 
-    const className = CX({
-      d: 1,
-      w100PC: 1,
-      h100PC: 1,
-    });
-
     return (
-      <div className={className}>
-        <LoadingBar loading={loading ? 1 : 0} className='loading-bar' style={{ width: this.state.width || width }} />
-        {loading ? (
-          <canvas
-            className={[_s.d, _s.objectFitCover].join(' ')}
-            ref={this.setCanvasRef}
-            width={width}
-            height={height}
-          />
-        ) : (
-          <ZoomableImage
-            alt={alt}
-            src={src}
-            onClick={onClick}
-          />
-        )}
+      <div className={[_s.d, _s.w100PC, _s.h100PC].join(' ')}>
+        <ZoomableImage
+          alt={alt}
+          src={loading ? previewSrc : src}
+          onClick={onClick}
+        />
+        {
+          loading &&
+          <div className={[_s.d, _s.posAbs, _s.top0, _s.left0, _s.bottom0, _s.right0, _s.aiCenter, _s.jcCenter].join(' ')}>
+            <Icon id='loading' />
+         </div>
+        }
       </div>
     );
   }

@@ -12,7 +12,6 @@ import chat_conversation_messages from './chat_conversation_messages'
 import chat_conversations from './chat_conversations'
 import chat_messages from './chat_messages'
 import chat_settings from './chat_settings'
-import compose from './compose'
 import contexts from './contexts'
 import custom_emojis from './custom_emojis'
 import deck from './deck'
@@ -81,7 +80,6 @@ const reducers = {
   chat_conversations,
   chat_messages,
   chat_settings,
-  compose,
   contexts,
   custom_emojis,
   deck,

@@ -68,7 +68,13 @@ class Api::V1::StatusesController < Api::BaseController
                                          group_id: status_params[:group_id],
                                          quote_of_id: status_params[:quote_of_id])
 
-    render json: @status, serializer: @status.is_a?(ScheduledStatus) ? REST::ScheduledStatusSerializer : REST::StatusSerializer
+    if @status.is_a? ScheduledStatus
+      render json: @status, serializer: REST::ScheduledStatusSerializer
+    elsif @status.is_a? GroupModerationStatus
+      render json: @status, serializer: REST::GroupModerationStatusSerializer
+    elsif @status.is_a? Status
+      render json: @status, serializer: REST::StatusSerializer
+    end
   end
 
   def update
@@ -94,8 +100,6 @@ class Api::V1::StatusesController < Api::BaseController
 
     # StatusSimilarityService.new.clear(current_user.account)
     RemovalWorker.perform_async(@status.id)
-
-    render json: @status, serializer: REST::StatusSerializer, source_requested: true
   end
 
   private

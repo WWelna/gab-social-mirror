@@ -28,11 +28,14 @@ class PostStatusService < BaseService
     @account     = account
     @options     = options
     @text        = @options[:text] || ''
-    @markdown    = @options[:markdown] if @account.is_pro
+    @markdown    = @options[:markdown]
     @in_reply_to = @options[:thread]
     @auto_join_group = @options[:autoJoinGroup] || false
     @status_hash = Digest::MD5.new << @text unless @text.blank?
+    @moderated   = false
+    @group_spam_score = 0
 
+    set_linked_entities
     set_group
 
     validate_blocked!(@in_reply_to)
@@ -44,9 +47,13 @@ class PostStatusService < BaseService
     #validate_similarity! unless @account.user&.staff? || @account.vpdi?
     validate_copy_paste_spam! unless @text.blank? || @account.user&.staff? || @account.vpdi?
     preprocess_attributes!
+    validate_blocked_quote!
+    process_group_moderation! unless options[:gms_skip] or !@in_reply_to.nil?
 
     if scheduled?
       schedule_status!
+    elsif @moderated
+      create_group_moderation_status!
     else
       process_status!
       postprocess_status!
@@ -58,6 +65,25 @@ class PostStatusService < BaseService
   end
 
   private
+
+  def set_linked_entities
+    if @options[:quote_of_id].nil? && @in_reply_to.nil?
+      # no quote and is not a comment... check if options[:text] (the status content) contains a status link
+      entityData = LinkableEntitiesInTextService.new.call(@text)
+      if !entityData.nil? && !entityData[:status].nil? && !entityData[:url].nil?
+        @options[:quote] = entityData[:status]
+        # replace the url text in status. but only replace the first occurance
+        # because the LinkableEntitiesInTextService only works off of the first url found...
+        # So, if there's more than 1 url, it'll only always use the first one
+        # BUT. if the text IS the url and ONLY the url, then leave the url there
+        # because we cannot have a status with empty text field
+        subbedText = @text.gsub(/\s+/, "").sub(entityData[:url].to_s, "")
+        if subbedText.length > 0
+          @text = @text.sub(entityData[:url].to_s, "")
+        end
+      end
+    end
+  end
 
   def set_group
     # If this is a reply, we want the group to be the same group that the status we're
@@ -86,21 +112,19 @@ class PostStatusService < BaseService
     end
 
     @expires_at = nil
-    if @account.is_pro
-      case @options[:expires_at]
-        when 'five_minutes'
-          @expires_at = Time.now + 5.minutes
-        when 'one_hour'
-          @expires_at = Time.now + 1.hour
-        when 'six_hours'
-          @expires_at = Time.now + 6.hours
-        when 'one_day'
-          @expires_at = Time.now + 1.day
-        when 'three_days'
-          @expires_at = Time.now + 3.days
-        when 'one_week'
-          @expires_at = Time.now + 1.week
-      end
+    case @options[:expires_at]
+      when 'five_minutes'
+        @expires_at = Time.now + 5.minutes
+      when 'one_hour'
+        @expires_at = Time.now + 1.hour
+      when 'six_hours'
+        @expires_at = Time.now + 6.hours
+      when 'one_day'
+        @expires_at = Time.now + 1.day
+      when 'three_days'
+        @expires_at = Time.now + 3.days
+      when 'one_week'
+        @expires_at = Time.now + 1.week
     end
     @scheduled_at = @options[:scheduled_at]&.to_datetime
     @scheduled_at = nil if scheduled_in_the_past?
@@ -149,6 +173,24 @@ class PostStatusService < BaseService
     end
   end
 
+  def create_group_moderation_status!
+    @status = GroupModerationStatus.create({
+      account_id: @account.id,
+      group_id: @group.id,
+      content: group_moderation_status_content,
+      spam_score: @group_spam_score
+    })
+    gme = GroupModerationEvent.create({
+      group_moderation_status_id: @status.id,
+      group_id: @group.id,
+      account_id: @account.id
+    })
+    mods = GroupAccount.where(group: @group, role: ['moderator', 'admin']).pluck(:account_id)
+    mods.each do |mod|
+      LocalNotificationWorker.perform_async(mod, gme.id, gme.class.name)
+    end
+  end
+
   def postprocess_status!
     LinkCrawlWorker.perform_async(@status.id)
     # DistributionWorker.perform_async(@status.id)
@@ -156,11 +198,43 @@ class PostStatusService < BaseService
     PollExpirationNotifyWorker.perform_at(@status.poll.expires_at, @status.poll.id) if @status.poll
   end
 
+  def process_group_moderation!
+    return unless @group&.is_moderated?
+    return if @account.vpdi? || @account.user&.staff?
+    return if @account.created_at < 3.months.ago
+
+    account_id = @account.id
+    group_id = @group.id
+    group_account = GroupAccount.where(group_id: group_id, account_id: account_id).first
+    return if group_account&.is_approved?
+
+    @group_spam_score = GroupModerationService.create_spam_score({
+      account: @account,
+      content: @options
+    })
+
+    if @group_spam_score > 5
+      @moderated = true
+    end
+  end
+
+  def postprocess_status!
+    LinkCrawlWorker.perform_async(@status.id)
+    # DistributionWorker.perform_async(@status.id)
+    ExpiringStatusWorker.perform_at(@status.expires_at, @status.id) if @status.expires_at
+    PollExpirationNotifyWorker.perform_at(@status.poll.expires_at, @status.poll.id) if @status.poll
+  end
+
   def potentially_reset_parent_cache
     if !@status.quote_of_id.nil?
+      Rails.cache.delete("reactions_counts:#{@status.quote_of_id}")
       Rails.cache.delete("statuses/#{@status.quote_of_id}")
     elsif !@status.in_reply_to_id.nil?
+      Rails.cache.delete("reactions_counts:#{@status.in_reply_to_id}")
       Rails.cache.delete("statuses/#{@status.in_reply_to_id}")
+    elsif !@status.reblog_of_id.nil?
+      Rails.cache.delete("reactions_counts:#{@status.reblog_of_id}")
+      Rails.cache.delete("statuses/#{@status.reblog_of_id}")
     end
   end
 
@@ -173,8 +247,9 @@ class PostStatusService < BaseService
       raise GabSocial::ValidationError, I18n.t('statuses.not_a_member_of_group')
     end
 
-    # Public groups can be posted in by anyone.
-    return if !@group.is_private?
+    return if @account.user && @account.user.staff?
+
+    return if !@group.is_private
 
     # You have to be a member of a private group to post in it. 
     unless GroupAccount.where(account: @account, group: @group).exists?
@@ -188,6 +263,13 @@ class PostStatusService < BaseService
     return validate_blocked!(reply_status.thread) unless reply_account.blocking?(@account)
 
     raise GabSocial::NotPermittedError, "Cannot reply. @#{reply_account.username} has you blocked and you are trying to post undearneath one of their posts."
+  end
+
+  def validate_blocked_quote!
+    quote = @options[:quote]
+    if quote and quote.account and quote.account.blocking?(@account)
+      raise GabSocial::NotPermittedError, "Cannot quote. @#{quote.account.username} has you blocked and you are trying to quote one of their posts."
+    end
   end
 
   def validate_media!
@@ -230,13 +312,13 @@ class PostStatusService < BaseService
   # end
 
   def validate_copy_paste_spam!
-    return true unless CopyPasteSpamService.new.is_copy_paste_spam(@account.id, @status_hash)
+    return true unless CopyPasteSpamService.new.is_status_copy_paste_spam(@account.id, @status_hash)
     raise GabSocial::NotPermittedError, 'Please do not copy and paste the same message over and over.'
   end
 
   def validate_links!
     return true unless LinkBlock.block?(@text)
-    raise GabSocial::NotPermittedError, "A link you're trying to post has been blocked by the moderation team"
+    raise GabSocial::NotPermittedError, "A link you are trying to share has been flagged as spam, if you believe this is a mistake please contact support@gab.com and let us know."
   end
 
   def validate_mention_count!
@@ -297,7 +379,7 @@ class PostStatusService < BaseService
       spoiler_text: @options[:spoiler_text] || '',
       visibility: @visibility,
       language: language_from_option(@options[:language]) || @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account),
-      application: @options[:application],
+      application: @options[:application]
     }.compact
   end
 
@@ -322,5 +404,19 @@ class PostStatusService < BaseService
       options_hash[:quote_of_id]    = options_hash.delete(:quote)&.id
       options_hash[:scheduled_at]   = nil
     end
+  end
+
+  # Store a subset of the content similar to scheduled but for group moderation
+  def group_moderation_status_content
+    {
+      quote_of_id: (@options[:quote] && @options[:quote][:id]),
+      media_ids: @options[:media_ids],
+      text: @text,
+      sensitive: (@options[:sensitive].nil? ? @account.user&.setting_default_sensitive : @options[:sensitive]) || @options[:spoiler_text].present?,
+      spoiler_text: @options[:spoiler_text] || '',
+      visibility: @visibility,
+      poll: @options[:poll],
+      language: language_from_option(@options[:language]) || @account.user&.setting_default_language&.presence || LanguageDetector.instance.detect(@text, @account)
+    }.compact
   end
 end

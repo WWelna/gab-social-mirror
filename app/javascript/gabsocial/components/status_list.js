@@ -160,6 +160,7 @@ class StatusList extends ImmutablePureComponent {
       createParams,
       queueResults,
       limit,
+      maxId,
     }
     this.props.onTimelineFetchPaged(expandOpts)
     this.rescheduleQueue()
@@ -271,47 +272,60 @@ class StatusList extends ImmutablePureComponent {
       showInjections,
       showEmptyInjections,
       showAds,
+      groupCategory,
       paginationLoggedIn,
       page,
       maxPages,
+      afterStatus: AfterStatus,
+      showActionBar,
+      showEllipsis,
+      showSpam,
+      disableCanShow,
     } = this.props
 
     const { isRefreshing } = this.state
+    
+    const notInPins = statusId => pins.includes(statusId) === false
+    const allStatusIds = []
+      .concat(pins.toJS())
+      .concat(statusIds.toJS().filter(notInPins))
 
-    let scrollableContent = []
-      .concat(pins.toJS().map((statusId, index) =>
-        (<StatusContainer
-          key={`pin-${statusId}-${index}`}
+    let scrollableContent = allStatusIds.map((statusId, index) => {
+      return (
+        isComments ?
+        <Comment
+          key={`comment-${statusId}-${index}`}
           id={statusId}
-          isFeatured
+          ancestorAccountId={1}
+          isDetached
+          disableCanShow={disableCanShow}
+        /> :
+        <StatusContainer
+          key={`status-${statusId}-${index}`}
+          id={statusId}
+          isFeatured={pins.includes(statusId)}
           onMoveUp={this.handleMoveUp}
           onMoveDown={this.handleMoveDown}
-          contextType={timelineId}
           scrollKey={scrollKey}
+          contextType={timelineId}
           commentsLimited
-        />)))
-      .concat(statusIds.toJS()
-        // care is taken to deduplicate on the redux side but due to asynchrony
-        // they can still contain the same ids. this will remove them.
-        .filter(statusId => pins.indexOf(statusId) === -1)
-        .map((statusId, index) => (
-          isComments ?
-            <Comment
-              isDetached
-              key={`comment-${statusId}-${index}`}
-              id={statusId}
-              ancestorAccountId={1}
-            /> :
-            <StatusContainer
-              key={`status-${statusId}-${index}`}
-              id={statusId}
-              onMoveUp={this.handleMoveUp}
-              onMoveDown={this.handleMoveDown}
-              scrollKey={scrollKey}
-              contextType={timelineId}
-              commentsLimited
-            />
-        )))
+          showActionBar={showActionBar}
+          showEllipsis={showEllipsis}
+          showSpam={showSpam}
+          disableCanShow={disableCanShow}
+        />
+      )
+    })
+    
+    if (AfterStatus) {
+      scrollableContent = scrollableContent.reduce((acm, item, index) => {
+        const statusId = allStatusIds[index]
+        const afterProps = Object.assign({}, this.props, { statusId })
+        acm.push(item)
+        acm.push(<AfterStatus key={`after-${statusId}`} {...afterProps} />)
+        return acm
+      }, [])
+    }
 
     const hasStatuses = scrollableContent.length> 0
 
@@ -359,7 +373,7 @@ class StatusList extends ImmutablePureComponent {
             <WrappedBundle
               key={`gab-ad-status-timeline-injection-${index}`}
               component={GabAdStatus}
-              componentParams={{ pageKey: timelineId, position: index }}
+              componentParams={{ pageKey: timelineId, position: index, groupCategory: groupCategory }}
             />
           )
         }
@@ -455,7 +469,8 @@ const mapDispatchToProps = (dispatch, { timelineId }) => ({
     dispatch(timelineFetchPins(timelineId, opts))
   },
   onTimelineDequeue() {
-    dispatch(timelineDequeue(timelineId))
+    window.location.reload();
+    //dispatch(timelineDequeue(timelineId))
   },
   onFetchContext(statusId) {
     dispatch(fetchContext(statusId, true))
@@ -484,6 +499,7 @@ StatusList.propTypes = {
   showPins: PropTypes.bool,
   showPromoted: PropTypes.bool,
   showAds: PropTypes.bool,
+  groupCategory: PropTypes.string,
   showInjections: PropTypes.bool,
   showEmptyInjections: PropTypes.bool,
   queue: PropTypes.bool,
@@ -492,6 +508,11 @@ StatusList.propTypes = {
   pinsEndpoint: PropTypes.string,
   paginationLoggedIn: PropTypes.bool,
   limit: PropTypes.number,
+  afterStatus: PropTypes.elementType,
+  showActionBar: PropTypes.bool,
+  showEllipsis: PropTypes.bool,
+  showSpam: PropTypes.bool,
+  disableCanShow: PropTypes.bool,
   // from redux state
   statusIds: ImmutablePropTypes.list,
   queuedItems: ImmutablePropTypes.list,

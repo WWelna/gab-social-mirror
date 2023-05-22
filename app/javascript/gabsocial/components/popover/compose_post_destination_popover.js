@@ -6,146 +6,73 @@ import { connect } from 'react-redux'
 import { closePopover } from '../../actions/popover'
 import { getListOfGroups } from '../../selectors'
 import { fetchGroupsByTab } from '../../actions/groups'
-import { changeComposeGroupId, changeComposeReplyToId } from '../../actions/compose'
 import PopoverLayout from './popover_layout'
 import List from '../list'
-import Button from '../button'
-import Text from '../text'
+import { CX } from '../../constants'
 
 class ComposePostDesinationPopover extends ImmutablePureComponent {
-
-  state = {
-    isGroupsSelected: false,
-  }
-
   componentDidMount() {
-    if (this.props.composeGroupId) {
-      this.setState({ isGroupsSelected: true })
-    }
-  }
-
-  componentDidUpdate (prevProps) {
-    if (prevProps.composeGroupId !== this.props.composeGroupId) {
-      this.setState({ isGroupsSelected: !!this.props.composeGroupId })
-    }
-  }
-
-  handleOnClosePopover = () => {
-    this.props.onClosePopover()
-  }
-
-  selectDestination = (destination) => {
-    const isGroupsSelected = destination === 'group'
-    this.setState({ isGroupsSelected })
-    if (isGroupsSelected) {
+    const { groups } = this.props
+    if (!groups || groups.size === 0) {
       this.props.onFetchMemberGroups()
-    } else {
-      this.handleSelectGroup(null)
     }
-  }
-
-  handleSelectGroup = (groupId) => {
-    this.props.onChangeComposeGroupId(groupId)
-    this.handleOnClosePopover()
   }
 
   render() {
-    const { isXS, groups, composeGroupId } = this.props
-    const { isGroupsSelected } = this.state
+    const { isXS, groups, groupId } = this.props
 
-    const mainItems = [
+    const items = [
       {
         hideArrow: true,
         title: 'Timeline',
-        isActive: !isGroupsSelected,
-        onClick: () => this.selectDestination('home'),
-      },
-      {
-        title: 'Group',
-        isActive: isGroupsSelected,
-        onClick: () => this.selectDestination('group'),
-      },
+        isActive: groupId === null,
+        onClick: () => this.props.onSelect(null)
+      }
     ]
 
-    const groupItems = !!groups ? groups.map((group) => ({
-      hideArrow: true,
-      onClick: () => this.handleSelectGroup(group.get('id')),
-      title: group.get('title'),
-      isActive: group.get('id') === composeGroupId,
-    })) : []
-    
+    groups.forEach(group =>
+      items.push({
+        hideArrow: true,
+        onClick: () => this.props.onSelect(group.get('id')),
+        title: group.get('title'),
+        isActive: group.get('id') === groupId
+      })
+    )
+
+    const listWrapperStyles = CX({
+      d: 1,
+      maxH340PX: !isXS,
+      overflowYScroll: !isXS
+    })
+
     return (
       <PopoverLayout
-        width={isGroupsSelected ? 320 : 180}
+        width={320}
         isXS={isXS}
-        onClose={this.handleOnClosePopover}
+        onClose={this.props.onClosePopover}
       >
-        {
-          !isGroupsSelected &&
-          <div className={[_s.d, _s.w100PC].join(' ')}>
-            <Text className={[_s.d, _s.px15, _s.py10, _s.bgSecondary].join(' ')}>Post to:</Text>
-            <List
-              size={isXS ? 'large' : 'normal'}
-              items={mainItems}
-            />
-          </div>
-        }
-        {
-          isGroupsSelected &&
-          <div className={[_s.d, _s.w100PC].join(' ')}>
-            <div className={[_s.d, _s.flexRow, _s.bgSecondary].join(' ')}>
-              <Button
-                isText
-                icon='back'
-                color='primary'
-                backgroundColor='none'
-                className={[_s.aiCenter, _s.jcCenter, _s.pl15, _s.pr5].join(' ')}
-                onClick={() => this.selectDestination('home')}
-              />
-              <Text className={[_s.d, _s.pl5, _s.py10].join(' ')}>
-                Select group:
-              </Text>
-            </div>
-            <div className={[_s.d, _s.w100PC, _s.overflowYScroll, _s.maxH340PX].join(' ')}>
-              <List
-                size={isXS ? 'large' : 'normal'}
-                scrollKey='groups-post-destination-add'
-                showLoading={groups.length === 0}
-                emptyMessage="You are not a member of any groups yet."
-                items={groupItems}
-              />
-            </div>
-          </div>
-        }
+        <div className={listWrapperStyles}>
+          <List size={isXS ? 'large' : 'normal'} items={items} />
+        </div>
       </PopoverLayout>
     )
   }
 }
 
-const mapStateToProps = (state) => {
-  const composeGroupId = state.getIn(['compose', 'group_id'])
-  const composeReplyToId = state.getIn(['compose', 'in_reply_to'])
+const mapStateToProps = state => ({
+  groups: getListOfGroups(state, { type: 'member' })
+})
 
-  return {
-    composeGroupId,
-    composeGroup: state.getIn(['groups', composeGroupId]),
-    groups: getListOfGroups(state, { type: 'member' }),
-    composeReplyToId,
-  }
-}
-
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch, { onDestination }) => ({
+  onSelect(groupId) {
+    onDestination({ groupId })
+    dispatch(closePopover())
+  },
   onClosePopover() {
     dispatch(closePopover())
   },
   onFetchMemberGroups() {
     dispatch(fetchGroupsByTab('member'))
-  },
-  onChangeComposeGroupId(groupId) {
-    dispatch(changeComposeGroupId(groupId))
-  },
-  onChangeComposeReplyToId(replyToId) {
-    dispatch(changeComposeReplyToId(replyToId))
   }
 })
 
@@ -153,10 +80,11 @@ ComposePostDesinationPopover.propTypes = {
   isXS: PropTypes.bool,
   onClosePopover: PropTypes.func.isRequired,
   onFetchMemberGroups: PropTypes.func.isRequired,
-  onChangeComposeGroupId: PropTypes.func.isRequired,
-  onChangeComposeReplyToId: PropTypes.func.isRequired,
   groups: ImmutablePropTypes.list,
-  composeGroup: ImmutablePropTypes.map,
+  onDestination: PropTypes.func
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ComposePostDesinationPopover)
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(ComposePostDesinationPopover)

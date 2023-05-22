@@ -3,7 +3,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect, Provider } from 'react-redux'
-import configureStore from '../store/configureStore'
+import store from '../store'
 import { BrowserRouter, Route } from 'react-router-dom'
 import { IntlProvider, addLocaleData } from 'react-intl'
 import { fetchCustomEmojis } from '../actions/custom_emojis'
@@ -27,7 +27,7 @@ import { fetchFilters } from '../actions/filters'
 const { localeData, messages } = getLocale()
 addLocaleData(localeData)
 
-export const store = configureStore()
+export { store }
 const hydrateAction = hydrateStore(initialState)
 
 store.dispatch(hydrateAction)

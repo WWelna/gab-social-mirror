@@ -23,6 +23,7 @@ class HomeFeed < Feed
        where
         s.id > :hard_limit_id
         and s.reply is false
+        and s.in_reply_to_id IS NULL
         and s.tombstoned_at IS NULL
         and (
           case
@@ -76,6 +77,7 @@ class HomeFeed < Feed
         s.id > :hard_limit_id
         and s.reblog_of_id is null
         and s.reply is false
+        and s.in_reply_to_id IS NULL
         and s.tombstoned_at IS NULL
         and (
           exists(
@@ -122,6 +124,7 @@ class HomeFeed < Feed
         ss.status_id > :hard_limit_id
         and s.reblog_of_id is null
         and s.reply is false
+        and s.in_reply_to_id IS NULL
         and s.tombstoned_at IS NULL
         and (
           exists(

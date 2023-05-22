@@ -5,7 +5,6 @@ import Button from '../../../components/button'
 import Text from '../../../components/text'
 
 class ComposeExtraButton extends React.PureComponent {
-
   render() {
     const {
       title,
@@ -15,16 +14,15 @@ class ComposeExtraButton extends React.PureComponent {
       children,
       active,
       buttonRef,
-      isLast,
       small,
-      iconClassName,
+      iconClassName
     } = this.props
 
     const containerClasses = CX({
       d: 1,
       jcCenter: 1,
       h40PX: 1,
-      mr5: 1,
+      mr5: 1
     })
 
     const btnClasses = CX({
@@ -43,7 +41,7 @@ class ComposeExtraButton extends React.PureComponent {
       bgBrandLight: active,
       py10: 1,
       px10: small,
-      radiusSmall: !small,
+      radiusSmall: !small
     })
 
     const iconClasses = CX(active ? null : iconClassName, {
@@ -52,10 +50,9 @@ class ComposeExtraButton extends React.PureComponent {
       mr10: !small,
       py2: small,
       ml10: !small,
-      px2: small,
+      px2: small
     })
 
-    const iconSize = '16px'
     const textColor = !active ? 'primary' : 'white'
 
     return (
@@ -66,24 +63,26 @@ class ComposeExtraButton extends React.PureComponent {
           title={title}
           isDisabled={disabled}
           onClick={onClick}
-          backgroundColor='none'
+          backgroundColor="none"
           iconClassName={iconClasses}
           icon={icon}
-          iconSize='16px'
+          iconSize="16px"
           buttonRef={!children ? buttonRef : undefined}
         >
-          { children }
-          {
-            !small &&
-            <Text color={textColor} weight='medium' className={[_s.pr10].join(' ')}>
+          {children}
+          {!small && (
+            <Text
+              color={textColor}
+              weight="medium"
+              className={[_s.pr10].join(' ')}
+            >
               {title}
             </Text>
-          }
+          )}
         </Button>
       </div>
     )
   }
-
 }
 
 ComposeExtraButton.propTypes = {
@@ -94,7 +93,7 @@ ComposeExtraButton.propTypes = {
   active: PropTypes.bool,
   buttonRef: PropTypes.func,
   small: PropTypes.bool,
-  iconClassName: PropTypes.string,
+  iconClassName: PropTypes.string
 }
 
 export default ComposeExtraButton

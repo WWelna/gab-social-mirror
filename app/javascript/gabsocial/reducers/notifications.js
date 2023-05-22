@@ -47,6 +47,11 @@ const notificationToMap = (notification) => ImmutableMap({
   created_at: notification.created_at,
   reaction_id: notification.favourite && notification.favourite.reaction_id ? notification.favourite.reaction_id : null,
   status: notification.status ? notification.status.id : null,
+  group_id: notification.group_moderation_event ? notification.group_moderation_event.group_id : null,
+  approved: notification.group_moderation_event ? notification.group_moderation_event.approved : null,
+  rejected: notification.group_moderation_event ? notification.group_moderation_event.rejected : null,
+  removed: notification.group_moderation_event ? notification.group_moderation_event.removed : null,
+  group_name: notification.group_moderation_event ? notification.group_moderation_event.group_name : null,
 });
 
 const makeSortedNotifications = (state) => {
@@ -184,7 +189,8 @@ const normalizeNotification = (state, notification) => {
   return makeSortedNotifications(state)
 }
 
-const expandNormalizedNotifications = (state, notifications, next) => {
+const expandNormalizedNotifications = (state, action) => {
+  const { notifications, next, operation } = action
   let items = ImmutableList()
 
   notifications.forEach((n, i) => {
@@ -207,7 +213,7 @@ const expandNormalizedNotifications = (state, notifications, next) => {
       })
     }
 
-    if (!next) mutable.set('hasMore', false)
+    if (!next && operation === 'load-next') mutable.set('hasMore', false)
     mutable.set('isLoading', false)
   })
 
@@ -292,9 +298,7 @@ export default function notifications(state = initialState, action) {
       mutable.set('unread', 0)
     });
   case NOTIFICATIONS_EXPAND_SUCCESS:
-    return expandNormalizedNotifications(state.withMutations(mutable => {
-      mutable.set('unread', 0)
-    }), action.notifications, action.next);
+    return expandNormalizedNotifications(state.set('unread', 0), action);
   case ACCOUNT_BLOCK_SUCCESS:
     return filterNotifications(state, action.relationship);
   case ACCOUNT_MUTE_SUCCESS:

@@ -46,6 +46,7 @@ class StatusHeader extends ImmutablePureComponent {
       status,
       isCompact,
       nulled,
+      showEllipsis,
     } = this.props
 
     const statusUrl = `/${status.getIn(['account', 'acct'])}/posts/${status.get('id')}`
@@ -123,7 +124,7 @@ class StatusHeader extends ImmutablePureComponent {
               </NavLink>
 
               {
-                !reduced && !!me &&
+                showEllipsis && !reduced && !!me &&
                 <Button
                   isText
                   isDisabled={nulled}
@@ -191,7 +192,7 @@ class StatusHeader extends ImmutablePureComponent {
               }
 
               {
-                status.get('revised_at') !== null &&
+                status.get('revised_at') &&
                 <React.Fragment>
                   <DotTextSeperator />
                   <Button
@@ -254,6 +255,7 @@ StatusHeader.propTypes = {
   reduced: PropTypes.bool,
   isCompact: PropTypes.bool,
   nulled: PropTypes.bool,
+  showEllipsis: PropTypes.bool,
 }
 
 export default injectIntl(connect(null, mapDispatchToProps)(StatusHeader))

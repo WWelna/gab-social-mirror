@@ -4,11 +4,24 @@ class REST::MediaAttachmentSerializer < ActiveModel::Serializer
   include RoutingHelper
 
   attributes :id, :type, :url, :preview_url, :source_mp4,
-             :remote_url, :text_url, :meta,
+             :remote_url, :meta, :account_id,
+             :status_id, :marketplace_listing_id,
              :description, :blurhash, :file_content_type
 
   def id
     object.id.to_s
+  end
+
+  def account_id
+    object.account_id.to_s if !object.account_id.nil?
+  end
+
+  def status_id
+    object.status_id.to_s if !object.status_id.nil?
+  end
+  
+  def marketplace_listing_id
+    object.marketplace_listing_id.to_s if !object.marketplace_listing_id.nil?
   end
 
   def clean_migrated_url
@@ -22,6 +35,10 @@ class REST::MediaAttachmentSerializer < ActiveModel::Serializer
   end
 
   def url
+    if object.type == "video"
+      return nil
+    end
+
     if object.file_file_name and object.file_file_name.start_with? "gab://media/"
       return clean_migrated_url[1]
     end
@@ -61,11 +78,8 @@ class REST::MediaAttachmentSerializer < ActiveModel::Serializer
     end
   end
 
-  def text_url
-    object.local? ? medium_url(object) : nil
-  end
-
   def meta
     object.file.meta
   end
+
 end

@@ -31,6 +31,13 @@ en:
         setting_display_media_default: Hide media marked as sensitive
         setting_display_media_hide_all: Always hide media
         setting_display_media_show_all: Always show media
+        setting_default_status_expiration_none: None
+        setting_default_status_expiration_five_minutes: 5 minutes
+        setting_default_status_expiration_one_hour: 60 minutes
+        setting_default_status_expiration_six_hours: 6 hours
+        setting_default_status_expiration_one_day: 24 hours
+        setting_default_status_expiration_three_days: 3 days
+        setting_default_status_expiration_one_week: 7 days
         setting_hide_network: Who you follow and who follows you will not be shown on your profile
         setting_pro_wants_ads: As a GabPRO Member, you can opt in to seeing advertisements
         setting_noindex: Affects your public profile and status pages
@@ -106,6 +113,13 @@ en:
         setting_display_media_default: Default
         setting_display_media_hide_all: Hide all
         setting_display_media_show_all: Show all
+        setting_default_status_expiration: Automatically expire statuses and comments
+        setting_default_status_expiration_five_minutes: 5 minutes
+        setting_default_status_expiration_one_hour: 60 minutes
+        setting_default_status_expiration_six_hours: 6 hours
+        setting_default_status_expiration_one_day: 24 hours
+        setting_default_status_expiration_three_days: 3 days
+        setting_default_status_expiration_one_week: 7 days
         setting_expand_spoilers: Always expand gabs marked with content warnings
         setting_hide_network: Hide your network
         setting_pro_wants_ads: Show advertisements

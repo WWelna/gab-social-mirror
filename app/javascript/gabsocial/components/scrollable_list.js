@@ -6,6 +6,7 @@ import Block from './block'
 import ColumnIndicator from './column_indicator'
 import LoadMore from './load_more'
 import { getScrollableParent } from '../utils/scrolling'
+import { loggedIn } from '../initial_state'
 
 const isFunction = val => typeof val === 'function'
 
@@ -13,7 +14,10 @@ const evtOpts = supportsPassiveEvents ? { passive: true } : false
 
 class ScrollableList extends React.PureComponent {
 
-  state = { nearBottom: false }
+  state = {
+    nearBottom: false,
+    clickedLoadMore: false,
+  }
   scrollableParent = null
 
   componentWillUnmount() {
@@ -25,7 +29,7 @@ class ScrollableList extends React.PureComponent {
   }
 
   handleScroll = throttle(() => {
-    if (this.props.disableInfiniteScroll) {
+    if (this.props.disableInfiniteScroll || (this.props.disableInfiniteScrollUntilClicked && !this.state.clickedLoadMore)) {
       return
     }
 
@@ -66,7 +70,8 @@ class ScrollableList extends React.PureComponent {
       nearBottom &&
       isFunction(onLoadMore) &&
       hasMore &&
-      !isLoading
+      !isLoading &&
+      loggedIn
     ) {
       onLoadMore()
     }
@@ -80,6 +85,9 @@ class ScrollableList extends React.PureComponent {
 
   handleLoadMore = (e) => {
     e.preventDefault()
+    if (this.props.disableInfiniteScrollUntilClicked && !this.state.clickedLoadMore) {
+      this.setState({ clickedLoadMore: true })
+    }
     this.props.onLoadMore()
   }
 
@@ -160,7 +168,7 @@ class ScrollableList extends React.PureComponent {
       return (
         <div ref={this.setRef}>
           {children}
-          {(hasMore && onLoadMore && !isLoading) && <LoadMore onClick={this.handleLoadMore} />}
+          {(hasMore && onLoadMore && !isLoading && loggedIn) && <LoadMore onClick={this.handleLoadMore} />}
           {isLoading && nearBottom && <ColumnIndicator type='loading' />}
         </div>
       )

@@ -90,13 +90,17 @@ class GabAdBase extends React.Component {
    * Fetch a new ad and save it at the page position.
    */
   loadFreshAd() {
-    const { placement } = this.props
+    const { placement, groupCategory } = this.props
     let adUrl
 
     if (placement === GAB_AD_PLACEMENTS.status) {
       adUrl = `${growBaseUrl}status`
     } else if (placement === GAB_AD_PLACEMENTS.panel) {
       adUrl = `${growBaseUrl}sidebar`
+    }
+
+    if (groupCategory && groupCategory != '') {
+      adUrl += `?category=${groupCategory}`
     }
 
     axios.get(adUrl).then(({ data: ad }) => {
@@ -229,7 +233,7 @@ class GabAdBase extends React.Component {
 }
 
 function mapStateToProps(state) {
-  const pagePositionAdsCache = state.getIn(['advertisements', 'pagePositionAdsCache'])
+  const pagePositionAdsCache = state.getIn(['advertisements', 'pagePositionAdsCache']);
   return { pagePositionAdsCache }
 }
 
@@ -249,6 +253,7 @@ GabAdBase.propTypes = {
   onRemovePosition: PropTypes.func.isRequired,
   pageKey: PropTypes.string,
   position: PropTypes.number,
+  groupCategory: PropTypes.string,
   pagePositionAdsCache: ImmutablePropTypes.map,
 }
 

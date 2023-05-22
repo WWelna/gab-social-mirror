@@ -12,7 +12,7 @@ if (element !== null) {
   }
 }
 
-const getMeta = (path) => get(initialState, `meta.${path}`)
+const getMeta = path => get(initialState, `meta.${path}`)
 
 export const autoPlayGif = getMeta('auto_play_gif')
 export const displayMedia = getMeta('display_media')
@@ -40,5 +40,16 @@ export const loggedOut = !loggedIn
 export const isPro = get(initialState, `accounts.${accountId}.is_pro`)
 export const activeReactions = getMeta('active_reactions')
 export const allReactions = getMeta('all_reactions')
+export const accept_content_types = get(
+  initialState,
+  'media_attachments.accept_content_types'
+)
+export const default_privacy = get(initialState, 'compose.default_privacy')
+export const default_sensitive = get(initialState, 'compose.default_sensitive')
+export const default_status_expiration = get(
+  initialState,
+  'compose.default_status_expiration'
+)
+export const createdAt = loggedIn ? Date.parse(get(initialState, `accounts.${accountId}.created_at`)) : null
 
 export default initialState

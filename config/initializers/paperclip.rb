@@ -2,6 +2,10 @@
 
 Paperclip.options[:read_timeout] = 60
 
+Paperclip.options[:content_type_mappings] = {
+  jfif: %w(image/jpeg)
+}
+
 Paperclip::DataUriAdapter.register
 
 Paperclip.interpolates :filename do |attachment, style|

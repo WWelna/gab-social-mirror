@@ -8,9 +8,10 @@ class CreateChatConversationService < BaseService
     hourly: 4,
   }
 
-  def call(current_account, other_accounts)
+  def call(current_account, other_accounts, auto_approved = false)
     @current_account = current_account
     @other_accounts = other_accounts
+    @auto_approved = auto_approved
 
     # must have @current_account and other_accounts
     return nil if @current_account.nil? || @other_accounts.nil?
@@ -82,7 +83,7 @@ class CreateChatConversationService < BaseService
     elsif @other_accounts.length == 1 && @other_accounts[0].id != @current_account.id
       fop = @other_accounts.first
 
-      validate_relationships!(fop)
+      validate_relationships!(fop) unless @auto_approved
 
       # create a participant (of the conversation) for myself with other accounts included
       my_chat = create_my_conversation(@other_accounts.map { |account| account.id.to_s })
@@ -92,7 +93,7 @@ class CreateChatConversationService < BaseService
         account: fop,
         participant_account_ids: [@current_account.id],
         chat_conversation: my_chat.chat_conversation,
-        is_approved: false
+        is_approved: @auto_approved || (fop && fop.following?(@current_account))
       )
     else
       # impossible

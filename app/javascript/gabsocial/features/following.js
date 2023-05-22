@@ -57,7 +57,7 @@ class Following extends ImmutablePureComponent {
           onLoadMore={this.handleLoadMore}
           placeholderComponent={AccountPlaceholder}
           placeholderCount={4}
-          emptyMessage={intl.formatMessage(messages.empty)}
+          emptyMessage={account && account.get('following_count') ? 'This user is not sharing their network.' : intl.formatMessage(messages.empty)}
         >
           {
             account && accountIds && accountIds.map((id) => (
@@ -75,6 +75,7 @@ const mapStateToProps = (state, { account }) => {
   const accountId = !!account ? account.get('id') : -1
 
   return {
+
     accountId,
     accountIds: state.getIn(['user_lists', 'following', accountId, 'items']),
     hasMore: !!state.getIn(['user_lists', 'following', accountId, 'next']),

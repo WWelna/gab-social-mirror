@@ -4,8 +4,8 @@ import { connect } from 'react-redux'
 import PropTypes from 'prop-types'
 import get from 'lodash.get'
 import throttle from 'lodash.throttle'
-import { supportsPassiveEvents } from 'detect-it'
-import { BREAKPOINT_EXTRA_SMALL, CX } from '../constants'
+import { supportsPassiveEvents, primaryInput } from 'detect-it'
+import { CX } from '../constants'
 import ColumnIndicator from './column_indicator'
 import Icon from './icon'
 
@@ -79,10 +79,21 @@ class PullToRefresh extends React.Component {
 
   // is it allowed to do anything?
   get pullable() {
-    const { isDisabled, width, isModalOpen, isPopoverOpen } = this.props
-    const isMobile = width < BREAKPOINT_EXTRA_SMALL
+    const { isDisabled, isModalOpen, isPopoverOpen } = this.props
+    const isTouch = primaryInput === 'touch'
     const isCompose = window.location.pathname.startsWith('/compose')
-    if (isDisabled || !isMobile || isModalOpen || isPopoverOpen || isCompose) {
+    const composerListening = window.composerHasText
+    const hasSelection = window.getSelection().toString().length > 0
+
+    if (
+      isDisabled ||
+      composerListening ||
+      !isTouch ||
+      isModalOpen ||
+      isPopoverOpen ||
+      isCompose ||
+      hasSelection
+    ) {
       return false
     }
     return true

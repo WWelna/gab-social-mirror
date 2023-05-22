@@ -130,6 +130,7 @@ class MediaModal extends ImmutablePureComponent {
               preview={image.get('preview_url')}
               blurhash={image.get('blurhash')}
               src={image.get('url')}
+              sourceMp4={image.get('url')}
               width={image.get('width')}
               height={image.get('height')}
               startTime={time || 0}

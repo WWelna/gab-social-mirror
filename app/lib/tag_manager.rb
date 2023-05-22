@@ -54,6 +54,9 @@ class TagManager
       short_account_with_replies_url(target)
     when :note, :comment, :activity
       short_account_status_url(target.account, target)
+    when :sourced_comment
+      # : todo :
+      'todo'
     end
   end
 end

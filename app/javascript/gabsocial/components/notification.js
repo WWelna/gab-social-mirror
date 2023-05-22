@@ -10,6 +10,7 @@ import {
   BREAKPOINT_EXTRA_SMALL,
 } from '../constants' 
 import Responsive from '../features/ui/util/responsive_component'
+import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_component'
 import StatusContainer from '../containers/status_container'
 import Avatar from './avatar'
 import Icon from './icon'
@@ -22,6 +23,12 @@ import ReactionTypeImage from './reaction_type_image'
 
 class Notification extends ImmutablePureComponent {
 
+  // stop react-router-dom from intercepting and history.push
+  cancelRouter = evt => {
+    evt.stopPropagation()
+    return true
+  }
+
   render() {
     const {
       intl,
@@ -33,6 +40,11 @@ class Notification extends ImmutablePureComponent {
       isHidden,
       isUnread,
       isDeckConnected,
+      group_id,
+      group_name,
+      approved,
+      rejected,
+      removed,
     } = this.props
     
     const count = !!accounts ? accounts.size : 0
@@ -40,6 +52,7 @@ class Notification extends ImmutablePureComponent {
 
     let message
     let icon
+    let groupUrl
 
     switch (type) {
       case 'follow':
@@ -82,6 +95,25 @@ class Notification extends ImmutablePureComponent {
         }
         icon = 'poll'
         message = intl.formatMessage(msg)
+        break
+      case 'group_moderation_event':
+        icon = 'group'
+        groupUrl = `/groups/${group_id}`
+        if (!count) {
+          if (approved) {
+            message = `Group moderators have accepted your post in: ${group_name}`
+          } else if (removed) {
+            message = `Group moderators have removed you from: ${group_name}`
+          } else {
+            message = `Group moderators have rejected your post from: ${group_name}`
+          }
+        } else {
+          if (approved || rejected) {
+            return null
+          }
+          groupUrl = `/groups/${group_id}/moderation`
+          message = `New post awaiting moderation in: ${group_name}`
+        }
         break
       default:
         return null
@@ -136,7 +168,10 @@ class Notification extends ImmutablePureComponent {
               </Responsive>
             }
 
-            <div className={[_s.d, _s.flexNormal].join(' ')}>
+            <ResponsiveClassesComponent
+              classNames={[_s.d, _s.flexNormal, _s.maxW100PC35PX].join(' ')}
+              classNamesXS={[_s.d, _s.flexNormal, _s.maxW100PC].join(' ')}
+            >
               <div className={[_s.d, _s.flexRow, _s.flexWrap].join(' ')}>
                 {
                   accounts && accounts.map((account, i) => (
@@ -165,8 +200,18 @@ class Notification extends ImmutablePureComponent {
                     }
                   </div>
                   <Text size='medium'>
-                    {' '}
-                    {message}
+                    { !!groupUrl &&
+                      <a
+                        href={groupUrl}
+                        onClick={this.cancelRouter}
+                        className={[_s.noUnderline, _s.text].join(' ')}
+                      >
+                        {message}
+                      </a>
+                    }
+                    { !groupUrl &&
+                      `${message}`
+                    }
                   </Text>
                   <React.Fragment>
                     <DotTextSeperator />
@@ -193,7 +238,7 @@ class Notification extends ImmutablePureComponent {
                   />
                 </div>
               }
-            </div>
+            </ResponsiveClassesComponent>
 
           </div>
         </div>

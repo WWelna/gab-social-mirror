@@ -13,7 +13,6 @@ class CreateMarketplaceListingService < BaseService
     validate_links! unless @account.user&.staff?
     validate_media!
     validate_user_confirmation!
-    validate_user_pro!
 
     process_marketplace_listing!
 
@@ -67,7 +66,7 @@ class CreateMarketplaceListingService < BaseService
 
   def validate_links!
     return true unless LinkBlock.block?(@text)
-    raise GabSocial::NotPermittedError, "A link you're trying to include in your Marketplace listing has been blocked by the moderation team"
+    raise GabSocial::NotPermittedError, "A link you included in your Marketplace listing has been flagged as spam, if you believe this is a mistake please contact support@gab.com and let us know."
   end
 
   def validate_media!
@@ -104,11 +103,6 @@ class CreateMarketplaceListingService < BaseService
   def validate_user_confirmation!
     return true if @account.user&.confirmed?
     raise GabSocial::NotPermittedError, "Please confirm your account before creating a Marketplace listing."
-  end
-
-  def validate_user_pro!
-    return true if @account.is_pro?
-    raise GabSocial::NotPermittedError, "Only GabPRO members are able to create Marketplace listings right now."
   end
 
   def marketplace_listing_attributes

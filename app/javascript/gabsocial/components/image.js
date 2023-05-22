@@ -1,17 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import {
-  CX,
-  MODAL_MEDIA,
-} from '../constants'
+import { CX, MODAL_MEDIA } from '../constants'
 import { openModal } from '../actions/modal'
 
-class Image extends React.PureComponent {
+const missingUrl = 'https://gab.com/headers/original/missing.png'
 
-  state = {
-    error: false,
-  }
+class Image extends React.PureComponent {
+  state = { error: false }
 
   handleOnError = () => {
     this.setState({ error: true })
@@ -30,8 +26,9 @@ class Image extends React.PureComponent {
       width,
       height,
       onMouseEnter,
-      onMouseLeave,
+      onMouseLeave
     } = this.props
+
     const { error } = this.state
 
     const classes = CX(className, {
@@ -50,12 +47,22 @@ class Image extends React.PureComponent {
       return <div className={classes} />
     }
 
+    let imageUrl
+
+    if (error) {
+      imageUrl = missingUrl
+    } else if (typeof src === 'object' && src.name) {
+      imageUrl = URL.createObjectURL(src)
+    } else if (typeof src === 'string') {
+      imageUrl = src
+    }
+
     return (
       <img
         alt={alt}
         className={classes}
         ref={imageRef}
-        src={!error ? src : 'https://gab.com/headers/original/missing.png'}
+        src={imageUrl}
         onError={this.handleOnError}
         onClick={this.props.onOpenMediaModal}
         loading={isLazy ? 'lazy' : undefined}
@@ -67,7 +74,6 @@ class Image extends React.PureComponent {
       />
     )
   }
-
 }
 
 const mapDispatchToProps = (dispatch, { alt, src, expandOnClick }) => ({
@@ -75,21 +81,15 @@ const mapDispatchToProps = (dispatch, { alt, src, expandOnClick }) => ({
     if (expandOnClick) {
       dispatch(openModal(MODAL_MEDIA, { alt, src }))
     }
-  },
-});
+  }
+})
 
 Image.propTypes = {
   alt: PropTypes.string,
   isLazy: PropTypes.bool,
   className: PropTypes.string,
-  width: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.number,
-  ]),
-  height: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.number,
-  ]),
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   fit: PropTypes.oneOf(['contain', 'cover', 'tile', 'none']),
   nullable: PropTypes.bool,
   lazy: PropTypes.bool,
@@ -98,12 +98,12 @@ Image.propTypes = {
   onOpenMediaModal: PropTypes.func.isRequired,
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
-  onLoad: PropTypes.func,
+  onLoad: PropTypes.func
 }
 
 Image.defaultProps = {
   width: '100%',
-  fit: 'cover',
+  fit: 'cover'
 }
 
 export default connect(null, mapDispatchToProps)(Image)

@@ -240,3 +240,6 @@ export const changeMarketplaceListingItemView = (tab) => ({
   type: MARKETPLACE_LISTING_VIEW_CHANGE,
   tab,
 })
+
+export const marketplaceSearchReset = () =>
+  ({ type: MARKETPLACE_LISTING_SEARCH_RESET })

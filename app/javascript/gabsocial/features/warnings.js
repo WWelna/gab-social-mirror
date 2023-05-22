@@ -33,7 +33,7 @@ class Warnings extends ImmutablePureComponent {
         <ScrollableList
           scrollKey='account_warnings'
           onLoadMore={this.handleLoadMore}
-          hasMore={hasMore}
+          hasMore={false}
           isLoading={isLoading}
           showLoading={isLoading}
           emptyMessage={'You do not have any account warnings'}

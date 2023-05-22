@@ -118,7 +118,7 @@ class DefaultNavigationBar extends ImmutablePureComponent {
 
     let groupsTo = '/groups'
     let groupsClick = undefined
-    if (currentPathname.startsWith('/groups')) {
+    if (currentPathname.startsWith('/groups') && !currentPathname.startsWith('/groups/')) {
       groupsTo = undefined
       groupsClick = () => {
         window.scrollTo(0,0)

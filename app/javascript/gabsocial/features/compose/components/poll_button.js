@@ -1,67 +1,34 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
-import { addPoll, removePoll } from '../../../actions/compose'
 import ComposeExtraButton from './compose_extra_button'
 
-class PollButton extends React.PureComponent {
-
-  handleClick = () => {
-    this.props.onClick()
-  }
-
-  render() {
-    const {
-      intl,
-      active,
-      disabled,
-      small,
-    } = this.props
-
-    return (
-      <ComposeExtraButton
-        title={intl.formatMessage(active ? messages.remove_poll : messages.add_poll)}
-        disabled={disabled}
-        onClick={this.handleClick}
-        icon='poll'
-        small={small}
-        active={active}
-        iconClassName={_s.cIconComposePoll}
-      />
-    )
-  }
-
-}
+const PollButton = ({ intl, disabled, small, poll, onPollToggle }) => (
+  <ComposeExtraButton
+    title={intl.formatMessage(
+      poll !== null ? messages.remove_poll : messages.add_poll
+    )}
+    disabled={disabled}
+    onClick={onPollToggle}
+    icon="poll"
+    small={small}
+    active={poll !== null}
+    iconClassName={_s.cIconComposePoll}
+  />
+)
 
 const messages = defineMessages({
   add_poll: { id: 'poll_button.add_poll', defaultMessage: 'Add poll' },
   title: { id: 'poll_button.title', defaultMessage: 'Poll' },
-  remove_poll: { id: 'poll_button.remove_poll', defaultMessage: 'Remove poll' },
-})
-
-const mapStateToProps = (state) => ({
-  active: state.getIn(['compose', 'poll']) !== null,
-})
-
-const mapDispatchToProps = (dispatch) => ({
-  onClick() {
-    dispatch((_, getState) => {
-      if (getState().getIn(['compose', 'poll'])) {
-        dispatch(removePoll())
-      } else {
-        dispatch(addPoll())
-      }
-    })
-  },
+  remove_poll: { id: 'poll_button.remove_poll', defaultMessage: 'Remove poll' }
 })
 
 PollButton.propTypes = {
   disabled: PropTypes.bool,
-  active: PropTypes.bool,
-  onClick: PropTypes.func.isRequired,
-  intl: PropTypes.object.isRequired,
+  onPollToggle: PropTypes.func,
+  intl: PropTypes.object,
   small: PropTypes.bool,
+  poll: PropTypes.object
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(PollButton))
+export default injectIntl(PollButton)

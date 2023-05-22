@@ -89,7 +89,7 @@ PillItem.propTypes = {
   prependImage: PropTypes.string,
   isActive: PropTypes.bool,
   onClick: PropTypes.func,
-  title: PropTypes.string,
+  title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   to: PropTypes.string,
   isHidden: PropTypes.bool,
 }

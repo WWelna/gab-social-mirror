@@ -57,15 +57,27 @@ class MediaContainer extends React.PureComponent {
 
               ...(componentName === 'Video' ? {
                 onOpenVideo: this.handleOpenVideo,
+                className: 'h100PC',
+                height: '100%',
+                width: '100%',
               } : {
                 onOpenMedia: this.handleOpenMedia,
               }),
             });
 
-            return ReactDOM.createPortal(
-              <Component {...props} key={`media-${i}`} />,
-              component,
-            );
+            if (componentName === 'Video') {
+              return ReactDOM.createPortal(
+                <div style={{height: '400px'}}>
+                  <Component {...props} key={`media-${i}`} />
+                </div>,
+                component,
+              );
+             } else {
+              return ReactDOM.createPortal(
+                <Component {...props} key={`media-${i}`} />,
+                component,
+              );
+             }
           })}
         </React.Fragment>
       </IntlProvider>

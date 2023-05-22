@@ -23,11 +23,16 @@ module Admin::AccountModerationNotesHelper
     end
   end
 
-  def admin_account_inline_link_to(account)
+  def admin_account_inline_link_to(account, public_route = false)
     return if account.nil?
 
-    link_to admin_account_path(account.id), class: name_tag_classes(account, true), title: account.acct do
-      content_tag(:span, account.acct, class: 'username')
+    path = public_route ? "/#{account.username}" : admin_account_path(account.id)
+
+    link_to path, class: name_tag_classes(account, true), title: account.acct do
+      safe_join([
+                  image_tag(account.avatar.url, width: 17, height: 17, class: 'avatar', style: 'border-radius:9999px;vertical-align:top;'),
+                  content_tag(:span, account.acct, class: 'username', style: 'padding-left:5px;color:#757575;'),
+                ], ' ')
     end
   end
 

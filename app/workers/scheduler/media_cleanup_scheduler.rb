@@ -12,6 +12,11 @@ class Scheduler::MediaCleanupScheduler
   private
 
   def unattached_media
-    MediaAttachment.reorder(nil).unattached.where('created_at < ?', 1.day.ago)
+    to_remove = []
+    MediaAttachment.reorder(nil).unattached.where('created_at < ?', 1.days.ago).pluck(:id).each do |media|
+      found = GroupModerationStatus.where("content @> ?", '{"media_ids":["' + "#{media}" + '"]}').exists?
+      to_remove << media unless found
+    end
+    MediaAttachment.reorder(nil).where(id: to_remove)
   end
 end

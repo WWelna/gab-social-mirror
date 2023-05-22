@@ -7,16 +7,6 @@ import isObject from 'lodash.isobject'
 import get from 'lodash.get'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
 
-const getMessageFromError = (data) => {
-  if (!isObject(data)) return null
-  const response = get(data, 'error.response.data')
-  if (!!response && !isObject(response)) return `${response}`
-  else if (isObject(response)) {
-    return response.error || null
-  }
-  return null
-}
-
 const makeMessageFromData = (data) => {
   // this is based on the redux message type
   const typeMessage = `${data.type}`.split('_').join(' ').toLowerCase()
@@ -25,6 +15,7 @@ const makeMessageFromData = (data) => {
     const status = get(data, 'error.response.status')
     const statusText = get(data, 'error.response.statusText')
     const contentType = get(data, 'error.response.headers.content-type')
+    const errorText = get(data, 'error.response.data.error')
     if (
       typeof status === 'number' &&
       status >= 400 &&
@@ -34,12 +25,10 @@ const makeMessageFromData = (data) => {
     ) {
       // It is an HTML error message which we cannot display.
       return `${typeMessage}: ${status} ${statusText}`;
+    } else if (!!errorText) {
+      return errorText
     }
   }
-
-  // fallback to json error message
-  const error = getMessageFromError(data)
-  if (!!error) return error
 
   // unknown message, use redux message type
   return typeMessage

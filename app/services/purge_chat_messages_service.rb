@@ -2,10 +2,6 @@
 
 class PurgeChatMessagesService < BaseService
   def call(account, chat_conversation_account)
-    unless account.is_pro
-      raise GabSocial::NotPermittedError, 'You must be pro to purge chat messages'
-    end
-
     # Destroy all mine
     ChatMessage.where(
       from_account: account,

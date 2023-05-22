@@ -45,9 +45,11 @@ class SidebarLayout extends React.PureComponent {
                         icon='arrow-left'
                       />
                     }
-                    <Heading size='h1'>
-                      {title}
-                    </Heading>
+                    <div>
+                      <Heading size='h1'>
+                        {title}
+                      </Heading>
+                    </div>
                     {
                       !!actions &&
                       <div className={[_s.d, _s.bgTransparent, _s.flexRow, _s.aiCenter, _s.jcCenter, _s.mlAuto].join(' ')}>

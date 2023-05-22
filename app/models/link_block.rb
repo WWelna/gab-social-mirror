@@ -38,6 +38,7 @@ class LinkBlock < ApplicationRecord
     return true if text.include? '.brokenfuture.com'
     return true if text.include? 'gildapparels.xyz'
     return true if text.include? 'skatapparel.com'
+    return true if text.include? 'javaburnpackage.weebly'
 
     links = blockable_links(text)
     return links.present? && exists?(link: links)

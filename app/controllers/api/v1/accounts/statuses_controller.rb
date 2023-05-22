@@ -6,11 +6,8 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
   after_action :insert_pagination_headers
 
   def index
-    # if attempting to paginate and no user, return error
-    if params[:max_id] || params[:since_id] || params[:min_id]
-      if current_account.nil?
-        return render json: { "error": true }, status: 429
-      end
+    if paginating && current_account.nil?
+      return render json: { "error": true }, status: 429
     end
 
     @statuses = load_statuses
@@ -39,32 +36,33 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
 
   def account_statuses
     # : todo : if no current_user, limit date and no: tagged, reblogs, comments
-    statuses = truthy_param?(:pinned) ? pinned_scope : permitted_account_statuses
+    statuses = truthy_param?(:pinned) ?
+      @account.pinned_statuses :
+      @account.statuses.permitted_for(@account, current_account)
 
-    if current_account.nil? && !truthy_param?(:pinned)
-      statuses = statuses.limit(8)
-    else
-      statuses = statuses.paginate_by_id(limit_param(DEFAULT_STATUSES_LIMIT), params_slice(:max_id, :since_id, :min_id))
+    max_id = params[:max_id]
+    min_id = params[:min_id]
+
+    if logged_in
+      # only a logged in user can paginate
+      if max_id != nil
+        statuses = statuses.where(Status.arel_table[:id].lt(max_id))
+      elsif min_id != nil
+        statuses = statuses.where(Status.arel_table[:id].gt(min_id))
+      end
     end
 
-    statuses.merge!(only_media_scope) if truthy_param?(:only_media) && !current_account.nil?
-    statuses.merge!(no_replies_scope) if truthy_param?(:exclude_replies)
-    statuses.merge!(only_replies_scope) if truthy_param?(:only_comments)
-    statuses.merge!(no_reblogs_scope) if truthy_param?(:exclude_reblogs)
-
-    statuses
-  end
-
-  def permitted_account_statuses
-    @account.statuses.permitted_for(@account, current_account)
-  end
-
-  def only_media_scope
-    if !current_account.nil?
-      Status.where(id: account_media_status_ids)
-    else
-      nil
+    if truthy_param?(:only_media) && logged_in
+      statuses = statuses.where(id: account_media_status_ids)
     end
+
+    if truthy_param?(:only_comments)
+      statuses = statuses.where(reply: true)
+    else
+      statuses = statuses.where(reply: false)
+    end
+
+    statuses.limit(computed_limit)
   end
 
   def account_media_status_ids
@@ -87,51 +85,47 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
     end
   end
 
-  def pinned_scope
-    @account.pinned_statuses
-  end
-
-  def no_replies_scope
-    Status.without_replies
-  end
-
-  def only_replies_scope
-    Status.only_replies
-  end
-
-  def no_reblogs_scope
-    Status.without_reblogs
-  end
-
   def pagination_params(core_params)
-    params.slice(:limit, :only_media, :exclude_replies, :only_comments).permit(:limit, :only_media, :exclude_replies, :only_comments).merge(core_params)
+    params.slice(
+      :limit,
+      :only_media,
+      :only_comments
+    ).permit(
+      :limit,
+      :only_media,
+      :only_comments
+    ).merge(core_params)
   end
 
   def insert_pagination_headers
-    set_pagination_headers(next_path, prev_path) unless current_account.nil?
+    set_pagination_headers(next_path, prev_path) unless logged_out
   end
 
   def next_path
-    if records_continue?
-      api_v1_account_statuses_url pagination_params(max_id: pagination_max_id)
+    if @statuses.size == computed_limit
+      api_v1_account_statuses_url pagination_params(max_id: @statuses.last.id)
     end
   end
 
   def prev_path
     unless @statuses.empty?
-      api_v1_account_statuses_url pagination_params(min_id: pagination_since_id)
+      api_v1_account_statuses_url pagination_params(min_id: @statuses.first.id)
     end
   end
 
-  def records_continue?
-    @statuses.size == limit_param(DEFAULT_STATUSES_LIMIT)
+  def logged_out
+    current_account.nil?
   end
 
-  def pagination_max_id
-    @statuses.last.id
+  def logged_in
+    !logged_out
   end
 
-  def pagination_since_id
-    @statuses.first.id
+  def computed_limit
+    logged_in ? limit_param(DEFAULT_STATUSES_LIMIT) : 8
+  end
+
+  def paginating
+    return params[:max_id] || params[:since_id] || params[:min_id]
   end
 end

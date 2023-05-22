@@ -2,111 +2,85 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
-import { injectIntl, defineMessages } from 'react-intl'
-import { openModal } from '../../actions/modal'
-import { cancelReplyCompose } from '../../actions/compose'
-import {
-  CX,
-  BREAKPOINT_EXTRA_SMALL,
-} from '../../constants'
+import { injectIntl } from 'react-intl'
+import { CX, BREAKPOINT_EXTRA_SMALL } from '../../constants'
+
+const hasChildren = children =>
+  children !== false && React.Children.count(children) > 0
 
 class ModalBase extends React.PureComponent {
-
-  state = {
-    revealed: !!this.props.children,
+  get visible() {
+    return hasChildren(this.props.children)
   }
 
-  activeElement = this.state.revealed ? document.activeElement : null
-
-  handleKeyUp = (e) => {
-    if ((e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) && !!this.props.children) {
+  handleKeyUp = e => {
+    if (
+      (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) &&
+      this.visible
+    ) {
       this.handleOnClose()
     }
   }
 
   handleOnClose = (e, force) => {
-    const { onOpenModal, composeText, composeId, onClose, intl, type, onCancelReplyCompose } = this.props
-
-    if ((!!e && this.dialog !== e.target) && !force) return
-
-    if (!composeId && composeText && type === 'COMPOSE') {
-      onOpenModal('CONFIRM', {
-        message: intl.formatMessage(messages.delete),
-        confirm: intl.formatMessage(messages.confirm),
-        onConfirm: () => onCancelReplyCompose(),
-        onCancel: () => onOpenModal('COMPOSE'),
-      })
-    } else {
-      onClose()
+    if (!!e && this.dialog !== e.target && !force) return
+    if (
+      e &&
+      e.target &&
+      typeof e.target.getAttribute === 'function' &&
+      typeof e.target.isSameNode === 'function' &&
+      e.target.getAttribute('role') === 'dialog' &&
+      this.downTarget &&
+      this.upTarget &&
+      e.target.isSameNode(this.upTarget) &&
+      !e.target.isSameNode(this.downTarget)
+    ) {
+      // user was selecting or mousing in the composer, moved out of the modal
+      // previously it would close it, now we prevent closing.
+      return
     }
+
+    this.props.onClose()
   }
 
   componentDidMount() {
     window.addEventListener('keyup', this.handleKeyUp, false)
-    window.addEventListener('popstate', (e) => this.handleOnClose(e, true), false);
+    window.addEventListener('popstate', e => this.handleOnClose(e, true), false)
+    document.body.addEventListener('mousedown', this.bodyMouseDown)
+    document.body.addEventListener('mouseup', this.bodyMouseUp)
   }
 
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (!!nextProps.children && !this.props.children) {
-      this.activeElement = document.activeElement
-
-      this.getSiblings().forEach(sibling => sibling.setAttribute('inert', true))
-    } else if (!nextProps.children) {
-      this.setState({ revealed: false })
-    }
-
-    if (!nextProps.children && !!this.props.children) {
-      this.activeElement.focus()
-      this.activeElement = null
-    }
+  componentWillUnmount() {
+    window.removeEventListener('keyup', this.handleKeyUp)
+    window.removeEventListener('popstate', this.handleOnClose, false)
+    document.body.removeEventListener('mousedown', this.bodyMouseDown)
+    document.body.removeEventListener('mousedown', this.bodyMouseUp)
   }
 
   componentDidUpdate(prevProps) {
-    if (!this.props.children && !!prevProps.children) {
-      this.getSiblings().forEach(sibling => sibling.removeAttribute('inert'))
-    }
-
-    if (this.props.children) {
-      requestAnimationFrame(() => {
-        this.setState({ revealed: true })
-      })
-    }
-
     // if page location changes, immediately close modal
     if (prevProps.location !== this.props.location) {
       this.props.onClose()
     }
   }
 
-  componentWillUnmount() {
-    window.removeEventListener('keyup', this.handleKeyUp)
-    window.removeEventListener('popstate', this.handleOnClose, false);
-  }
-
-  getSiblings = () => {
-    return Array(...this.node.parentElement.childNodes).filter(node => node !== this.node)
-  }
-
-  setRef = (n) => {
-    this.node = n
-  }
-
-  setDialog = (n) => {
-    this.dialog = n
-  }
+  setRef = ref => (this.node = ref)
+  setDialog = ref => (this.dialog = ref)
+  bodyMouseDown = evt => (this.downTarget = evt.target)
+  bodyMouseUp = evt => (this.upTarget = evt.target)
 
   render() {
+    const { visible } = this
     const { children, isCenteredXS, width } = this.props
-
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-    const visible = !!children
+    // const visible = children !== undefined && children !== null
 
     const containerClasses = CX({
       d: 1,
       z4: 1,
       h100PC: visible,
       w100PC: visible,
-      displayNone: !visible,
+      displayNone: !visible
     })
 
     const dialogClasses = CX({
@@ -121,64 +95,50 @@ class ModalBase extends React.PureComponent {
       top0: 1,
       rightAuto: 1,
       bottomAuto: 1,
-      left0: 1,
+      left0: 1
     })
 
     return (
       <div ref={this.setRef} className={containerClasses}>
-        {
-          !!visible &&
-          <React.Fragment>
+        {visible && (
+          <>
             <div
-              role='presentation'
-              className={[_s.d, _s.bgBlackOpaque, _s.posFixed, _s.z3, _s.top0, _s.right0, _s.bottom0, _s.left0].join(' ')}
+              role="presentation"
+              className={[
+                _s.d,
+                _s.bgBlackOpaque,
+                _s.posFixed,
+                _s.z3,
+                _s.top0,
+                _s.right0,
+                _s.bottom0,
+                _s.left0
+              ].join(' ')}
             />
             <div
               ref={this.setDialog}
-              role='dialog'
+              role="dialog"
               onClick={this.handleOnClose}
               className={dialogClasses}
             >
               {children}
             </div>
-          </React.Fragment>
-        }
+          </>
+        )}
       </div>
     )
   }
-
 }
 
-const messages = defineMessages({
-  confirm: { id: 'confirmations.delete.confirm', defaultMessage: 'Delete' },
-  delete: { id: 'confirmations.delete.message', defaultMessage: 'Are you sure you want to delete this status?' },
-})
-
-const mapStateToProps = (state) => ({
-  composeId: state.getIn(['compose', 'id']),
-  composeText: state.getIn(['compose', 'text']),
-  width: state.getIn(['settings', 'window_dimensions', 'width']),
-})
-
-const mapDispatchToProps = (dispatch) => ({
-  onOpenModal(type, opts) {
-    dispatch(openModal(type, opts))
-  },
-  onCancelReplyCompose() {
-    dispatch(cancelReplyCompose())
-  },
+const mapStateToProps = state => ({
+  width: state.getIn(['settings', 'window_dimensions', 'width'])
 })
 
 ModalBase.propTypes = {
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
-  onOpenModal: PropTypes.func.isRequired,
-  onCancelReplyCompose: PropTypes.func.isRequired,
-  intl: PropTypes.object.isRequired,
-  composeId: PropTypes.string,
-  composeText: PropTypes.string,
   type: PropTypes.string,
-  isCenteredXS: PropTypes.bool,
+  isCenteredXS: PropTypes.bool
 }
 
-export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(ModalBase)))
+export default withRouter(injectIntl(connect(mapStateToProps)(ModalBase)))

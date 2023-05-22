@@ -405,7 +405,6 @@ export const isBookmark = (statusId) => (dispatch, getState) => {
   dispatch(isBookmarkRequest(statusId))
 
   api(getState).get(`/api/v1/statuses/${statusId}/bookmark`).then((response) => {
-    dispatch(updateStatusStats(response.data))
     dispatch(isBookmarkSuccess(statusId))
   }).catch((error) => {
     dispatch(isBookmarkFail(statusId, error))

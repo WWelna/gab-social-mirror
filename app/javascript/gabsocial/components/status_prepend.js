@@ -109,13 +109,13 @@ class StatusPrepend extends ImmutablePureComponent {
             </div>
           }
           {
-            !isRepost && !isComment &&
+            !isRepost && isFeatured &&
             <Text color='secondary' size='small'>
               {intl.formatMessage(isFeatured ? messages.pinned : isPinnedInGroup ? messages.pinnedByGroup : messages.promoted)}
             </Text>
           }
           {
-            isComment &&
+            isComment && !isFeatured &&
             <Text color='secondary' size='small'>
               <FormattedMessage
                 id='status.commented_on_this'

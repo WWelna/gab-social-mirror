@@ -141,7 +141,7 @@ class Api::V1::GroupsController < Api::BaseController
   end
 
   def group_params
-    thep = params.permit(:title, :password, :cover_image, :description, :is_private, :tags, :is_visible, :group_category_id, :slug)
+    thep = params.permit(:title, :password, :cover_image, :description, :is_private, :tags, :is_visible, :group_category_id, :slug, :is_moderated)
     thep[:tags] = thep[:tags].split(",") unless thep[:tags].nil?
     thep[:cover_image] = nil if thep[:cover_image] == 'undefined'
     thep

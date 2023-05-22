@@ -5,39 +5,20 @@ import { defineMessages, injectIntl } from 'react-intl'
 import { openPopover } from '../../../actions/popover'
 import ComposeExtraButton from './compose_extra_button'
 
+const iconMap = {
+  unlisted: 'unlock-filled',
+  private: 'lock-filled',
+  public: 'globe'
+}
+
 class StatusVisibilityButton extends React.PureComponent {
-
-  handleOnClick = () => {
-    this.props.onOpenPopover(this.button)
-  }
-
-  setButton = (n) => {
-    this.button = n
-  }
-
+  setButton = ref => (this.button = ref)
+  handleOnClick = () => this.props.onOpenPopover(this.button)
   render() {
-    const {
-      intl,
-      small,
-      value,
-    } = this.props
-
-    let icon;
-    switch (value) {
-    case 'unlisted':
-      icon = 'unlock-filled'
-      break;
-    case 'private':
-      icon = 'lock-filled'
-      break;
-    default:
-      icon = 'globe'
-      break;
-    }
-
+    const { intl, small, privacy } = this.props
     return (
       <ComposeExtraButton
-        icon={icon}
+        icon={iconMap[privacy]}
         title={intl.formatMessage(messages.visibility)}
         onClick={this.handleOnClick}
         small={small}
@@ -46,34 +27,31 @@ class StatusVisibilityButton extends React.PureComponent {
       />
     )
   }
-
 }
 
 const messages = defineMessages({
-  visibility: { id: 'privacy.visibility', defaultMessage: 'Visibility' },
+  visibility: { id: 'privacy.visibility', defaultMessage: 'Visibility' }
 })
 
-const mapStateToProps = (state) => ({
-  value: state.getIn(['compose', 'privacy']),
-})
-
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch, { onVisibility, privacy }) => ({
   onOpenPopover(targetRef) {
-    dispatch(openPopover('STATUS_VISIBILITY', {
-      targetRef,
-    }))
-  },
+    dispatch(
+      openPopover('STATUS_VISIBILITY', {
+        targetRef,
+        onVisibility,
+        privacy
+      })
+    )
+  }
 })
 
 StatusVisibilityButton.propTypes = {
   intl: PropTypes.object.isRequired,
   small: PropTypes.bool,
   onOpenPopover: PropTypes.func.isRequired,
-  value: PropTypes.oneOf([
-    'private',
-    'unlisted',
-    'public',
-  ]),
+  privacy: PropTypes.oneOf(['private', 'unlisted', 'public'])
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(StatusVisibilityButton))
+export default injectIntl(
+  connect(null, mapDispatchToProps)(StatusVisibilityButton)
+)

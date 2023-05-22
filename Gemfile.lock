@@ -222,6 +222,9 @@ GEM
       dotenv (= 2.7.6)
       railties (>= 3.2)
     e2mmap (0.1.0)
+    elastic-apm (4.5.1)
+      concurrent-ruby (~> 1.0)
+      http (>= 3.0)
     email_address (0.1.20)
       netaddr (>= 2.0.4, < 3)
       simpleidn
@@ -729,6 +732,7 @@ DEPENDENCIES
   devise_pam_authenticatable2 (~> 9.2)
   doorkeeper (~> 5.1)
   dotenv-rails (~> 2.7)
+  elastic-apm (~> 4.5)
   email_address
   fabrication (~> 2.20)
   faker (~> 2.15)

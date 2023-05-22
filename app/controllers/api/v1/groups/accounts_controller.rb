@@ -64,6 +64,11 @@ class Api::V1::Groups::AccountsController < Api::BaseController
   end
 
   def load_accounts
+    group_relationships = GroupRelationshipsPresenter.new([@group.id], current_user.account_id)
+    is_admin_or_mod = group_relationships.admin[@group.id] == true or group_relationships.moderator[@group.id] == true
+    if not is_admin_or_mod
+      return []
+    end
     if unlimited?
       @group.accounts.without_suspended.includes(:account_stat).all
     else

@@ -18,6 +18,9 @@ module AccountAssociations
     has_many :mentions, inverse_of: :account, dependent: :destroy
     has_many :notifications, inverse_of: :account, dependent: :destroy
     has_many :scheduled_statuses, inverse_of: :account, dependent: :destroy
+    has_many :comment_mentions, inverse_of: :account, dependent: :destroy
+    has_many :comments, inverse_of: :account, dependent: :destroy
+    has_many :comment_reactions, inverse_of: :account, dependent: :destroy
 
     # Bookmarked statuses
     has_many :status_bookmarks, inverse_of: :account, dependent: :destroy

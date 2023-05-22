@@ -12,6 +12,15 @@ class FavouriteService < BaseService
     if !status.nil? && status.account.blocking?(account)
       raise GabSocial::NotPermittedError, "Cannot like or react. @#{status.account.username} has you blocked."
     end
+
+    if !status.group.nil? && status.group.is_private
+      group_relationships = GroupRelationshipsPresenter.new([status.group.id], account.id)
+      is_admin_or_mod = group_relationships.admin[status.group.id] == true or group_relationships.moderator[status.group.id] == true
+      is_member = group_relationships.member[status.group.id] == true
+      if !is_admin_or_mod && !is_member
+        raise GabSocial::NotPermittedError, "Cannot like or react. You are not a member of this private group."
+      end
+    end
     
     if !reactionId.nil?
       reactionType = ReactionType.active.where(id: reactionId).first

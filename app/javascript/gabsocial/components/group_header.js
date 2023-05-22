@@ -26,6 +26,7 @@ import Icon from './icon'
 import TabBar from './tab_bar'
 import Pills from './pills'
 import Text from './text'
+import Badge from './badge'
 
 class GroupHeader extends ImmutablePureComponent {
 
@@ -87,6 +88,7 @@ class GroupHeader extends ImmutablePureComponent {
       isXS,
       isShortcut,
       relationships,
+      moderationCount,
     } = this.props
 
     const coverSrc = !!group ? group.get('cover_image_url') : ''
@@ -96,6 +98,7 @@ class GroupHeader extends ImmutablePureComponent {
     const slug = !!group ? !!group.get('slug') ? `g/${group.get('slug')}` : undefined : undefined
     const isPrivate = !!group ? group.get('is_private') : false
     const isAdminOrMod = !!relationships ? (relationships.get('admin') || relationships.get('moderator')) : false
+    const isModerated = !!group ? group.get('is_moderated') : undefined
 
     const tabs = !group ? [] : [
       {
@@ -115,6 +118,22 @@ class GroupHeader extends ImmutablePureComponent {
       tabs.push({
         to: `/groups/${group.get('id')}/requests`,
         title: 'Requests',
+      }) 
+    }
+
+    if (isAdminOrMod && group && isModerated) {
+      const moderationTitle = moderationCount > 0 ?
+        <>
+          Moderation
+          <Badge
+            text={moderationCount}
+            mergeClasses={{ bgWarn: 1, cWhite: 1 }}
+          />
+        </> :
+        'Moderation'
+      tabs.push({
+        to: `/groups/${group.get('id')}/moderation`,
+        title: moderationTitle,
       }) 
     }
 
@@ -305,6 +324,7 @@ GroupHeader.propTypes = {
   onRemoveShortcut: PropTypes.func.isRequired,
   onOpenGroupOptions: PropTypes.func.isRequired,
   relationships: ImmutablePropTypes.map,
+  moderationCount: PropTypes.number,
 }
 
 export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(GroupHeader))

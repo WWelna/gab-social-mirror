@@ -9,8 +9,8 @@ import {
   convertToRaw,
   convertFromRaw,
   ContentState,
+  Modifier
 } from 'draft-js'
-import get from 'lodash.get'
 import draftToMarkdown from '../features/ui/util/draft_to_markdown'
 import markdownToDraft from '../features/ui/util/markdown_to_draft'
 import { urlRegex } from '../features/ui/util/url_regex'
@@ -26,15 +26,15 @@ const markdownOptions = {
   remarkableOptions: {
     disable: {
       inline: ['links'],
-      block: ['table', 'heading'],
+      block: ['table', 'heading']
     },
     enable: {
-      inline: ['del', 'ins'],
+      inline: ['del', 'ins']
     }
   }
 }
 
-const getBlockStyle = (block) => {
+const getBlockStyle = block => {
   switch (block.getType()) {
     case 'blockquote':
       return 'RichEditor-blockquote'
@@ -43,23 +43,23 @@ const getBlockStyle = (block) => {
   }
 }
 
-function groupHandleStrategy(contentBlock, callback, contentState) {
+function groupHandleStrategy(contentBlock, callback) {
   findWithRegex(GROUP_HANDLE_REGEX, contentBlock, callback)
 }
 
-function handleStrategy(contentBlock, callback, contentState) {
+function handleStrategy(contentBlock, callback) {
   findWithRegex(HANDLE_REGEX, contentBlock, callback)
 }
 
-function hashtagStrategy(contentBlock, callback, contentState) {
+function hashtagStrategy(contentBlock, callback) {
   findWithRegex(HASHTAG_REGEX, contentBlock, callback)
 }
 
-function cashtagStrategy(contentBlock, callback, contentState) {
+function cashtagStrategy(contentBlock, callback) {
   findWithRegex(CASHTAG_REGEX, contentBlock, callback)
 }
 
-function urlStrategy(contentBlock, callback, contentState) {
+function urlStrategy(contentBlock, callback) {
   findWithRegex(urlRegex, contentBlock, callback)
 }
 
@@ -72,12 +72,9 @@ const findWithRegex = (regex, contentBlock, callback) => {
   }
 }
 
-const HighlightedSpan = (props) => {
+const HighlightedSpan = props => {
   return (
-    <span
-      className={_s.cBrand}
-      data-offset-key={props.offsetKey}
-    >
+    <span className={_s.cBrand} data-offset-key={props.offsetKey}>
       {props.children}
     </span>
   )
@@ -86,34 +83,34 @@ const HighlightedSpan = (props) => {
 const compositeDecorator = new CompositeDecorator([
   {
     strategy: handleStrategy,
-    component: HighlightedSpan,
+    component: HighlightedSpan
   },
   {
     strategy: hashtagStrategy,
-    component: HighlightedSpan,
+    component: HighlightedSpan
   },
   {
     strategy: cashtagStrategy,
-    component: HighlightedSpan,
+    component: HighlightedSpan
   },
   {
     strategy: urlStrategy,
-    component: HighlightedSpan,
+    component: HighlightedSpan
   },
   {
     strategy: groupHandleStrategy,
-    component: HighlightedSpan,
-  },
+    component: HighlightedSpan
+  }
 ])
 
 const styleMap = {
-  'CODE': {
+  CODE: {
     padding: '0.25em 0.5em',
     backgroundColor: 'var(--border_color_secondary)',
     color: 'var(--text_color_secondary)',
-    fontSize: 'var(--fs_n)',
-  },
-};
+    fontSize: 'var(--fs_n)'
+  }
+}
 
 const GROUP_HANDLE_REGEX = /(?:^|[^\/\)\w])g\/([a-zA-Z]{1,})/g
 const HANDLE_REGEX = /\@[\w]+/g
@@ -121,170 +118,202 @@ const HASHTAG_REGEX = /\#[\w\u0590-\u05ff]+/g
 const CASHTAG_REGEX = /\$[\w\u0590-\u05ff]+/g
 
 class Composer extends React.PureComponent {
-
   state = {
-    active: false,
     editorState: EditorState.createEmpty(compositeDecorator),
-    plainText: this.props.value,
-    markdownString: this.props.valueMarkdown
+    text: this.props.text,
+    markdown: this.props.markdown
   }
 
   componentDidMount() {
-    this.replaceEditorState({ focusable: false })
-    window.addEventListener('composer-clear', this.composerClear)
+    this.replaceEditorText({ focus: this.props.autoFocus })
+    window.addEventListener('composer-insert', this.composerInsert)
+    window.addEventListener('composer-replace', this.composerReplace)
+    window.addEventListener('composer-reset', this.composerReset)
   }
 
   componentWillUnmount() {
-    window.removeEventListener('composer-clear', this.composerClear)
+    window.removeEventListener('composer-insert', this.composerInsert)
+    window.removeEventListener('composer-replace', this.composerReplace)
+    window.removeEventListener('composer-reset', this.composerReset)
   }
 
-  componentDidUpdate() {
-    if (this.props.hasUpstreamChanges) {
-      // Changes were made in the reducer
-      this.replaceEditorState({ focusable: true })
-      // Tell the reducer we updated it.
-      this.props.onUpstreamChangesAccepted()
-    }
-  }
-
-  // This is a temporary work-around for clearing a just submitted comment status.
-  composerClear = evt => {
-    const submittedText = get(evt, 'detail.text')
-
-    if (typeof submittedText !== 'string') {
-      return // unknown compose submit
-    }
-
-    const { plainText, markdownString } = this.state
-
-    // is this the same text as what was submitted?
-    const textMatch = typeof plainText === 'string' &&
-      submittedText.trim() === plainText.trim()
-
-    // same markdown submitted?
-    const markdownMatch = typeof markdownString === 'string' &&
-      submittedText.trim() === markdownString.trim()
-
-    if (textMatch || markdownMatch) {
-      // blank out the text
-      let { editorState } = this.state
-      editorState = EditorState.push(editorState, ContentState.createFromText(''))
-      this.setState({ editorState })
-    }
-  }
-
-  replaceEditorState({ focusable }) {
-    let { editorState, active } = this.state
-
-    const { value, valueMarkdown, isPro, isEdit, caretPosition } = this.props
-    if (valueMarkdown && isPro && isEdit) {
-      const rawData = markdownToDraft(valueMarkdown, markdownOptions)
+  /**
+   * Replace the editor contents with whatever is from the parent and push the
+   * selection to the end.
+   * @method replaceEditorText
+   * @param {boolean} options.focusable
+   */
+  replaceEditorText({ focus }) {
+    let { editorState } = this.state
+    const { text, markdown, isEdit, cursorPosition } = this.props
+    if (markdown && isEdit) {
+      const rawData = markdownToDraft(markdown, markdownOptions)
       const contentState = convertFromRaw(rawData)
       editorState = EditorState.push(editorState, contentState)
-    } else if (value) {
-      editorState = EditorState.push(editorState, ContentState.createFromText(value))
+    } else if (typeof text === 'string') {
+      editorState = EditorState.push(
+        editorState,
+        ContentState.createFromText(text)
+      )
     }
-
-    if (focusable || active) {
+    if (focus) {
       const currentSelection = editorState.getSelection()
       if (
-        typeof caretPosition === 'number' &&
-        caretPosition !== currentSelection.get('anchorOffset') &&
-        caretPosition !== currentSelection.get('focusOffset')
+        typeof cursorPosition === 'number' &&
+        cursorPosition !== currentSelection.get('anchorOffset') &&
+        cursorPosition !== currentSelection.get('focusOffset')
       ) {
         const nextSelection = currentSelection
-          .set('anchorOffset', caretPosition)
-          .set('focusOffset', caretPosition)
+          .set('anchorOffset', cursorPosition)
+          .set('focusOffset', cursorPosition)
           .set('hasFocus', true)
-        editorState = EditorState.forceSelection(editorState, nextSelection)  
+        editorState = EditorState.forceSelection(editorState, nextSelection)
       } else {
         editorState = EditorState.moveFocusToEnd(editorState)
       }
     }
-
     this.setState({ editorState })
   }
 
-  onChange = (editorState) => {
+  composerReset = evt => {
+    const { composerId } = evt.detail
+    if (composerId === this.props.composerId) {
+      this.replaceEditorText({ focus: false })
+    }
+    window.composerHasText = false
+  }
+
+  // insert text at cursor from a another component e.g. emoji
+  composerInsert = evt => {
+    const { composerId, text } = evt.detail
+    if (composerId === this.props.composerId) {
+      this.insertText(text)
+    }
+  }
+
+  // replace text near cursor from a another component e.g. suggestions
+  composerReplace = evt => {
+    const { composerId } = evt.detail
+    if (composerId === this.props.composerId) {
+      this.replaceText(evt.detail)
+    }
+  }
+
+  // complicated looking way to insert text
+  insertText = text => {
+    let { editorState } = this.state
+    const currentContent = editorState.getCurrentContent()
+    const currentSelection = editorState.getSelection()
+    const newContent = Modifier.replaceText(
+      currentContent,
+      currentSelection,
+      text
+    )
+    const newEditorState = EditorState.push(
+      editorState,
+      newContent,
+      'insert-text'
+    )
+    editorState = EditorState.forceSelection(
+      newEditorState,
+      newContent.getSelectionAfter()
+    )
+    this.onChange(editorState)
+  }
+
+  // complicated looking way to replace text
+  replaceText = ({ start, end, text }) => {
+    let { editorState } = this.state
+    const currentContent = editorState.getCurrentContent()
+    const replaceSelection = editorState.getSelection().merge({
+      anchorOffset: start,
+      focusOffset: end
+    })
+
+    const newContent = Modifier.replaceText(
+      currentContent,
+      replaceSelection,
+      text
+    )
+
+    const newEditorState = EditorState.push(
+      editorState,
+      newContent,
+      'replace-text'
+    )
+    editorState = EditorState.forceSelection(
+      newEditorState,
+      newContent.getSelectionAfter()
+    )
+    this.onChange(editorState)
+  }
+
+  // extract text and markdown and bubble up
+  onChange = editorState => {
     const content = editorState.getCurrentContent()
-    // const plainText = content.getPlainText('\u0001')
+    // const text = content.gettext('\u0001')
 
     const blocks = convertToRaw(editorState.getCurrentContent()).blocks
-    const value = blocks.map(block => (!block.text.trim() && '') || block.text).join('\n')
+    const text = blocks
+      .map(block => (!block.text.trim() && '') || block.text)
+      .join('\n')
 
-    const selectionState = editorState.getSelection()  
+    const selectionState = editorState.getSelection()
     const currentBlockKey = selectionState.getStartKey()
-    const currentBlockIndex = blocks.findIndex((k) => k.key === currentBlockKey)
-    const priorBlockTextLength = blocks.splice(0, currentBlockIndex).map(block => (!block.text.trim() && '') || block.text).join('\n').length
+    const currentBlockIndex = blocks.findIndex(k => k.key === currentBlockKey)
+    const priorBlockTextLength = blocks
+      .splice(0, currentBlockIndex)
+      .map(block => (!block.text.trim() && '') || block.text)
+      .join('\n').length
     const selectionStart = selectionState.getStartOffset()
     const toAdd = currentBlockIndex === 0 ? 0 : 1
     const cursorPosition = priorBlockTextLength + selectionStart + toAdd
 
     const rawObject = convertToRaw(content)
-    const markdownString = this.props.isPro ? draftToMarkdown(rawObject,markdownOptions) : null
+    const markdown = draftToMarkdown(rawObject, markdownOptions)
 
-    this.setState({ editorState, plainText: value, markdownString })
-    this.props.onChange(null, value, markdownString, cursorPosition)
-  }
-
-  handleOnFocus = () => {
-    document.addEventListener('paste', this.handleOnPaste)
-    this.setState({ active: true })
-    this.props.onFocus()
-  }
-
-  handleOnBlur = () => {
-    document.removeEventListener('paste', this.handleOnPaste, true)
-    this.setState({ active: false })
-    this.props.onBlur()
-  }
-
-  focus = () => {
-    this.textbox.focus()
-  }
-
-  handleOnPaste = (e) => {
-    if (this.state.active) {
-      this.props.onPaste(e)
+    this.setState({ editorState, text, markdown })
+    this.props.onChange({ text, markdown, cursorPosition })
+    if (text) {
+      window.composerHasText = true
+    } else {
+      window.composerHasText = false
     }
   }
 
-  keyBindingFn = (e) => {
+  keyBindingFn = e => {
     if (e.type === 'keydown') {
       this.props.onKeyDown(e)
     }
-
     return getDefaultKeyBinding(e)
   }
 
-  handleKeyCommand = (command) => {
+  handleKeyCommand = command => {
     const { editorState } = this.state
     const newState = RichUtils.handleKeyCommand(editorState, command)
-
     if (newState) {
       this.onChange(newState)
       return true
     }
-
     return false
   }
 
-  setRef = (n) => {
+  setRef = n => {
     try {
       this.textbox = n
-      this.props.inputRef(n) 
+      this.props.inputRef(n)
     } catch (error) {
       //
     }
   }
 
+  onFocus = evt => {
+    // bubble up
+    this.props.onFocus(evt)
+  }
+
   render() {
-    const {
-      disabled,
-      placeholder,
-      small,
-      isPro,
-    } = this.props
+    const { disabled, placeholder, small, rte_controls_visible } = this.props
     const { editorState } = this.state
 
     const editorContainerClasses = CX({
@@ -298,24 +327,17 @@ class Composer extends React.PureComponent {
       px15: !small,
       px10: small,
       pb10: !small,
-      h100PC: !small,
+      h100PC: !small
     })
 
     return (
       <div className={[_s.d, _s.flex1].join(' ')}>
-
-        {
-          isPro &&
-          <RichTextEditorBar
-            editorState={editorState}
-            onChange={this.onChange}
-          />
-        }
-
-        <div
-          className={editorContainerClasses}
-          onClick={this.handleOnFocus}
-        >
+        <RichTextEditorBar
+          editorState={editorState}
+          onChange={this.onChange}
+          rte_controls_visible={rte_controls_visible}
+        />
+        <div className={editorContainerClasses}>
           <Editor
             blockStyleFn={getBlockStyle}
             editorState={editorState}
@@ -325,9 +347,10 @@ class Composer extends React.PureComponent {
             placeholder={placeholder}
             ref={this.setRef}
             readOnly={disabled}
-            onBlur={this.handleOnBlur}
-            onFocus={this.handleOnFocus}
             keyBindingFn={this.keyBindingFn}
+            onFocus={this.onFocus}
+            onBlur={this.props.onBlur}
+            handlePastedFiles={this.props.onPaste}
             stripPastedStyles
             spellCheck
           />
@@ -335,26 +358,20 @@ class Composer extends React.PureComponent {
       </div>
     )
   }
-
 }
 
 Composer.propTypes = {
   inputRef: PropTypes.func,
   disabled: PropTypes.bool,
   placeholder: PropTypes.string,
-  value: PropTypes.string,
-  valueMarkdown: PropTypes.string,
+  text: PropTypes.string,
+  markdown: PropTypes.string,
   onChange: PropTypes.func,
   onKeyDown: PropTypes.func,
-  onFocus: PropTypes.func,
-  onBlur: PropTypes.func,
   onPaste: PropTypes.func,
   small: PropTypes.bool,
-  isPro: PropTypes.bool,
   isEdit: PropTypes.bool,
-  onUpstreamChangesAccepted: PropTypes.func,
-  hasUpstreamChanges: PropTypes.bool,
-  caretPosition: PropTypes.number,
+  cursorPosition: PropTypes.number
 }
 
 export default Composer

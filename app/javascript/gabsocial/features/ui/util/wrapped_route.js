@@ -32,6 +32,10 @@ class WrappedRoute extends React.PureComponent {
   }
 
   renderError = (props) => {
+    if (process.env.NODE_ENV === 'development') {
+      const { message, stack } = props
+      console.error('WrappedRoute error', message, stack)
+    }
     return <BundleColumnError {...props} />
   }
 

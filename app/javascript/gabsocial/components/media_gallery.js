@@ -580,7 +580,7 @@ MediaGallery.propTypes = {
   media: ImmutablePropTypes.list.isRequired,
   size: PropTypes.object,
   height: PropTypes.number.isRequired,
-  onOpenMedia: PropTypes.func.isRequired,
+  onOpenMedia: PropTypes.func,
   intl: PropTypes.object.isRequired,
   defaultWidth: PropTypes.number,
   cacheWidth: PropTypes.func,

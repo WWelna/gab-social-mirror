@@ -16,7 +16,7 @@ export default class TermsOfService extends React.PureComponent {
             <Heading>GAB AI INC</Heading>
             <br />
             <Heading>Website Terms of Service</Heading>
-            <Heading size='h4'>Last Updated: 3 May 2020</Heading>
+            <Heading size='h4'>Last Updated: 7 June 2022</Heading>
             <br />
             <Heading size='h2'>Acceptance of the Terms of Service</Heading>
             <br />
@@ -394,6 +394,13 @@ export default class TermsOfService extends React.PureComponent {
             </ul>
 
             <Text tagName='p' className={_s.mt15} size='medium'>Although our Content Standards, following the First Amendment, do not proscribe offensive speech, we strongly encourage you to ensure that your User Contributions are cordial and civil. The foundation of a free society requires people to peacefully settle their differences through dialogue and debate. Gab exists to promote the free flow of information online. It is our view that the responsible exercise of one’s free speech rights is its own reward and, as a general rule, the most well-respected online publishers tend to be the ones who behave the most civilly and put forward their arguments most intelligently.</Text>
+
+            <Text tagName='p' className={_s.mt15} size='medium'>
+              Our policy on “hate speech” is to allow all speech which is permitted by the First Amendment and to disallow all speech which is not permitted by the First Amendment. We allow hate speech, as defined in New York law, if it is lawful because it is lawful. We reserve the right to remove speech when it is unlawful because it is unlawful.
+            </Text>
+            <Text tagName='p' className={_s.mt15} size='medium'>
+              We will not be tracking “hate speech,” providing any mechanism to report it specifically, nor responding to anyone who reports it, because the Constitution and Federal law protect our right to do so and forbid New York from legislating otherwise. If users wish to file a report for content which is objectionable they may do so with our moderation team via the usual channels. If they report conduct which is “hateful conduct” under New York law but which is lawful under the First Amendment they should expect that no action will be taken by us. We have the ability to respond to moderation reports but never do so.
+            </Text>
 
             <br />
             <Heading size='h2'>Copyright Infringement</Heading>

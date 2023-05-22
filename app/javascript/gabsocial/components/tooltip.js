@@ -10,7 +10,7 @@ class Tooltip extends React.PureComponent {
 
     return (
       <Popper
-        placement='top'
+        placement='left'
         referenceElement={targetRef}
         strategy="fixed"
       >

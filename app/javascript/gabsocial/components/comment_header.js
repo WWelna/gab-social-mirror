@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
+import moment from 'moment-mini'
 import { me, isStaff } from '../initial_state'
 import Button from './button'
 import DisplayName from './display_name'
@@ -54,6 +55,12 @@ class CommentHeader extends ImmutablePureComponent {
     const myComment = status.getIn(['account', 'id']) === me
     const reactionsMap = status.get('reactions_counts')
 
+    const expirationDate = status.get('expires_at')
+    let timeUntilExpiration
+    if (!!expirationDate) {
+      timeUntilExpiration = moment(expirationDate).fromNow()
+    }
+
     return (
       <div className={[_s.d, _s.aiStart, _s.py2, _s.maxW100PC, _s.flexGrow1].join(' ')}>
 
@@ -80,6 +87,18 @@ class CommentHeader extends ImmutablePureComponent {
             </div>
           }
 
+          {
+            !!status.get('expires_at') &&
+            <React.Fragment>
+              <DotTextSeperator />
+              <span title={intl.formatMessage(messages.expirationMessage, {
+                time: timeUntilExpiration,
+              })} className={[_s.d, _s.displayInline, _s.ml5].join(' ')}>
+                <Icon id='stopwatch' size='13px' className={[_s.d, _s.cTertiary].join(' ')} />
+              </span>
+            </React.Fragment>
+          }
+          
           {
             !!status.get('group') &&
             <React.Fragment>
@@ -206,6 +225,7 @@ const messages = defineMessages({
   repostsLabel: { id: 'reposts.label', defaultMessage: '{number, plural, one {# repost} other {# reposts}}' },
   quotesLabel: { id: 'quotes.label', defaultMessage: '{number, plural, one {# quote} other {# quotes}}' },
   original: { id: 'original_gabber', defaultMessage: 'Original Gabber' },
+  expirationMessage: { id: 'status.expiration_message', defaultMessage: 'This status expires {time}' },
 })
 
 CommentHeader.propTypes = {

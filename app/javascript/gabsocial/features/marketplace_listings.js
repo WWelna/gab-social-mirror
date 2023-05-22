@@ -13,7 +13,7 @@ import {
   setParamsForMarketplaceListingSearch,
 } from '../actions/marketplace_listing_search'
 import MarketplaceListingsCollection from '../components/marketplace/marketplace_listings_collection'
-
+import { parseQuerystring } from '../utils/querystring'
 
 class MarketplaceListings extends ImmutablePureComponent {
 
@@ -24,13 +24,7 @@ class MarketplaceListings extends ImmutablePureComponent {
       onFetchMarketplaceListingsBySearch,
     } = this.props
 
-    const search = this.props.location.search
-    let qp = null
-    try {
-      qp = queryString.parse(search)
-    } catch (error) {
-      //
-    }
+    const qp = parseQuerystring()
     const hasChanged = this.areQuerystringsDifferentThanSaved(qp)
     if (!!qp && hasChanged) {
       this.props.onSetParamsForMarketplaceListingSearch(qp)
@@ -38,6 +32,16 @@ class MarketplaceListings extends ImmutablePureComponent {
 
     if ((!hasMore && listingIds.count() === 0) || hasChanged) {
       onFetchMarketplaceListingsBySearch()
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    // if clicked MarketplaceListingCategoriesPanel list item to change the category
+    // check to see if query params have changed, if so, re-set & re-fetch 
+    if (prevProps.location.search !== this.props.location.search) {
+      const qp = parseQuerystring()
+      this.props.onSetParamsForMarketplaceListingSearch(qp)
+      this.props.onFetchMarketplaceListingsBySearch() 
     }
   }
 

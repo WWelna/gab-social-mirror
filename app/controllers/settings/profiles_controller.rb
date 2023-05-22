@@ -11,25 +11,11 @@ class Settings::ProfilesController < Settings::BaseController
   end
 
   def update
-    # if verified and display_name is different, return flash error and redirect back
-    if !@account.is_pro && params[:account][:username] && @account.username != params[:account][:username]
-      flash[:alert] = 'Unable to change username for your account. You are not GabPRO'
-      redirect_to settings_profile_path
+    if UpdateAccountService.new.call(@account, account_params)
+      redirect_to settings_profile_path, notice: I18n.t('generic.changes_saved_msg')
     else
-      if @account.username != params[:account][:username]
-        AccountUsernameChange.create!(
-          account: @account,
-          from_username: @account.username,
-          to_username: params[:account][:username] || ''
-        )
-      end
-
-      if UpdateAccountService.new.call(@account, account_params)
-        redirect_to settings_profile_path, notice: I18n.t('generic.changes_saved_msg')
-      else
-        @account.build_fields
-        render :show
-      end
+      @account.build_fields
+      render :show
     end
   end
 

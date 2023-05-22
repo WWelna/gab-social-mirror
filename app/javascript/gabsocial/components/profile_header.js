@@ -159,7 +159,7 @@ class ProfileHeader extends ImmutablePureComponent {
         title: 'Likes',
       })
     }
-    if (isMyProfile && account.get('is_pro')) {
+    if (isMyProfile) {
       tabs.push({
         to: `/${account.get('acct')}/bookmarks`,
         title: intl.formatMessage(messages.bookmarks),

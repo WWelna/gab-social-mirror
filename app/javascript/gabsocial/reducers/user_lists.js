@@ -1,4 +1,4 @@
-import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
+import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable'
 import { me } from '../initial_state'
 import {
   FOLLOWERS_FETCH_REQUEST,

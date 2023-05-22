@@ -7,7 +7,7 @@ class Auth::SessionsController < Devise::SessionsController
 
   skip_before_action :require_no_authentication, only: [:create]
   skip_before_action :check_user_permissions, only: [:destroy]
-  prepend_before_action :authenticate_with_two_factor, if: :two_factor_enabled?, only: [:create]
+  prepend_before_action :authenticate_with_two_factor, if: :two_factor_enabled?, only: [:create]  
   before_action :set_instance_presenter, only: [:new]
   before_action :set_body_classes
 
@@ -41,15 +41,18 @@ class Auth::SessionsController < Devise::SessionsController
   protected
 
   def find_user
-    ActiveRecord::Base.connected_to(role: :writing) do
-      if session[:otp_user_id]
-        User.find(session[:otp_user_id])
-      elsif user_params[:email]
-        if use_seamless_external_login? && Devise.check_at_sign && user_params[:email].index('@').nil?
-          User.joins(:account).find_by(accounts: { username: user_params[:email] })
-        else
-          User.find_for_authentication(email: user_params[:email])
-        end
+    if session[:otp_user_id]
+      User.find(session[:otp_user_id])
+    elsif user_params[:email]
+      disabled = Rails.cache.fetch("disabled-login:#{user_params[:email]}", expires_in: 1.hour) do
+        user = User.joins(:account).find_by(email: user_params[:email])
+        user.try(:disabled?) || user.try(:account).try(:suspended?)
+      end
+      return forbidden_redirect if disabled
+      if use_seamless_external_login? && Devise.check_at_sign && user_params[:email].index('@').nil?
+        User.joins(:account).find_by(accounts: { username: user_params[:email] })
+      else
+        User.find_for_authentication(email: user_params[:email])
       end
     end
   end
@@ -78,6 +81,10 @@ class Auth::SessionsController < Devise::SessionsController
 
   def two_factor_enabled?
     find_user.try(:otp_required_for_login?)
+  end
+
+  def forbidden_redirect
+    redirect_to(new_user_session_path, alert: 'Blocked')
   end
 
   def valid_otp_attempt?(user)

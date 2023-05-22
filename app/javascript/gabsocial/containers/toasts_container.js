@@ -26,7 +26,7 @@ class ToastsContainer extends React.PureComponent {
       left0: 1,
       pl15: 1,
       pt15: 1,
-      heightMax100VH: 1,
+      maxH100VH: 1,
       pb10: 1,
       saveAreaInsetMB: 1,
       displayNone: !hasNotifications

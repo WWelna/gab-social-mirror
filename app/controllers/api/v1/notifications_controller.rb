@@ -11,7 +11,10 @@ class Api::V1::NotificationsController < Api::BaseController
 
   def index
     @notifications = load_notifications
-    render json: @notifications, each_serializer: REST::NotificationSerializer, relationships: StatusRelationshipsPresenter.new(target_statuses_from_notifications, current_user&.account_id)
+    render json: @notifications,
+           each_serializer: REST::NotificationSerializer,
+           relationships: StatusRelationshipsPresenter.new(target_statuses_from_notifications, current_user&.account_id),
+           comment_relationships: CommentRelationshipsPresenter.new(target_comments_from_notifications, current_user&.account_id)
   end
 
   def show
@@ -60,6 +63,10 @@ class Api::V1::NotificationsController < Api::BaseController
 
   def target_statuses_from_notifications
     @notifications.reject { |notification| notification.target_status.nil? }.map(&:target_status)
+  end
+
+  def target_comments_from_notifications
+    @notifications.reject { |notification| notification.target_comment.nil? }.map(&:target_comment)
   end
 
   def insert_pagination_headers

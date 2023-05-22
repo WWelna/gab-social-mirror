@@ -196,7 +196,7 @@ class Poll extends ImmutablePureComponent {
     const disabled = this.props.disabled || Object.entries(this.state.selected).every(item => !item)
 
     return (
-      <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
+      <div className={[_s.d, _s.px15].join(' ')}>
         <ul className={[_s.d, _s.listStyleNone].join(' ')}>
           {
             poll.get('options').map((option, i) => this.renderOption(option, i))

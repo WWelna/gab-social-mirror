@@ -11,9 +11,10 @@ class BatchedRemoveStatusService < BaseService
   # @param [Status] statuses A preferably batched array of statuses
   # @param [Hash] options
   # @option [Boolean] :skip_side_effects
-  def call(statuses, **options)
+  def call(statuses, account, **options)
     statuses = Status.where(id: statuses.map(&:id)).includes(:account).flat_map { |status| [status] + status.reblogs.includes(:account).to_a }
 
+    @account = account
     @mentions = statuses.each_with_object({}) { |s, h| h[s.id] = s.active_mentions.includes(:account).to_a }
     @tags     = statuses.each_with_object({}) { |s, h| h[s.id] = s.tags.pluck(:name) }
 
@@ -24,6 +25,8 @@ class BatchedRemoveStatusService < BaseService
       status.mark_for_mass_destruction!
       status.destroy
     end
+
+    sync_status_stats
 
     return if options[:skip_side_effects]
 
@@ -40,6 +43,13 @@ class BatchedRemoveStatusService < BaseService
   end
 
   private
+
+  def sync_status_stats
+    account_stat = AccountStat.where(account_id: @account.id).first
+    if !account_stat.nil?
+      account_stat.resync_gabs!
+    end
+  end
 
   def unpush_from_home_timelines(account, statuses)
     recipients = account.followers_for_local_distribution.to_a

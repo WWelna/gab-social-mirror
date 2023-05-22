@@ -49,6 +49,7 @@ class GroupInfoPanel extends ImmutablePureComponent {
     const slug = !!group ? !!group.get('slug') ? `g/${group.get('slug')}` : undefined : undefined
     const isPrivate = !!group ? group.get('is_private') : false
     const isVisible = !!group ? group.get('is_visible') : false
+    const isModerated = !!group ? group.get('is_moderated') : false
     const tags = !!group ? group.get('tags') : []
     const groupCategory = !!group ? group.getIn(['group_category', 'text'], null) : null
     
@@ -155,7 +156,24 @@ class GroupInfoPanel extends ImmutablePureComponent {
                 backgroundColor='secondary'
                 color='secondary'
                 className={[_s.px5, _s.py2].join(' ')}
-                tooltip={isVisible ? 'Anyone can find this group in search and other places on gab' : 'The group admin made this group invisible in search and other places on Gab'}
+                tooltip={isVisible ? 'Anyone can find this group in search\nand other places on gab' : 'The group admin made this group\ninvisible in search and other\nplaces on Gab'}
+              >
+                <Text size='small' color='inherit' className={_s.px5}>?</Text>
+              </Button>
+            </GroupInfoPanelRow>
+          
+            <Divider isSmall />
+
+            <GroupInfoPanelRow
+              title={'Moderated'}
+              icon={isModerated ? 'lock-filled' : 'check'}
+            >
+              <Button
+                isNarrow
+                backgroundColor='secondary'
+                color='secondary'
+                className={[_s.px5, _s.py2].join(' ')}
+                tooltip={isModerated ? 'Gab groups are moderated by users.\nThis group additionally screens newer users.' : 'Gab groups are moderated by the users who run them.'}
               >
                 <Text size='small' color='inherit' className={_s.px5}>?</Text>
               </Button>
@@ -215,8 +233,8 @@ class GroupInfoPanel extends ImmutablePureComponent {
                 <GroupInfoPanelRow title={intl.formatMessage(messages.tags)} icon='shop'>
                   <div className={[_s.d, _s.flexRow, _s.jcEnd, _s.flexWrap, _s.pl5].join(' ')}>
                     {
-                      tags.map((tag) => (
-                        <div className={[_s.mr5, _s.mb5].join(' ')}>
+                      tags.map((tag, tagIndex) => (
+                        <div key={`tag-${tagIndex}`} className={[_s.mr5, _s.mb5].join(' ')}>
                           <NavLink
                             to={`/groups/browse/tags/${slugify(tag)}`}
                             className={_s.noUnderline}

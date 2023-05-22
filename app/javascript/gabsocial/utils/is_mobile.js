@@ -54,3 +54,13 @@ export function isIOS15() {
 export function isPWA() {
   return PWA
 }
+
+// check if we're using a touch screen
+export function hasPointerEvents() {
+  return (('PointerEvent' in window) || (window.navigator && 'msPointerEnabled' in window.navigator))
+}
+
+export function isTouch() {
+  return (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0))
+}
+

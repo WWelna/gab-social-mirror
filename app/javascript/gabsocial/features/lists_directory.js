@@ -27,6 +27,7 @@ import Button from '../components/button'
 import Icon from '../components/icon'
 import BlockHeading from '../components/block_heading'
 import ResponsiveComponent from './ui/util/responsive_component'
+import { parseQuerystring } from '../utils/querystring'
 
 class ListsDirectory extends ImmutablePureComponent {
 
@@ -54,15 +55,8 @@ class ListsDirectory extends ImmutablePureComponent {
 
   checkCurrentUrlTab = () => {
     // null/no tab is "featured" aka main landing page of /feeds
-    let tab = null
-    try {
-      const search = this.props.location.search
-      const qp = queryString.parse(search)
-      tab = qp.tab
-      if (!tab) tab = LIST_TYPE_FEATURED
-    } catch (error) {
-      //
-    }
+    const qp = parseQuerystring()
+    const tab = qp.tab || LIST_TYPE_FEATURED
     if (this.state.currentTab !== tab) {
       this.setState({ currentTab: tab })
       this.handleOnChangeTab(tab)

@@ -15,6 +15,7 @@ import { unescapeHTML } from '../utils/html'
 import { getFilters, regexFromFilters } from '../selectors'
 import { me } from '../initial_state'
 import { NOTIFICATION_FILTERS } from '../constants'
+import { fetchGroupRelationships } from './groups'
 
 export const NOTIFICATIONS_UPDATE = 'NOTIFICATIONS_UPDATE'
 export const NOTIFICATIONS_UPDATE_QUEUE = 'NOTIFICATIONS_UPDATE_QUEUE'
@@ -46,7 +47,7 @@ const fetchRelatedRelationships = (dispatch, notifications) => {
 }
 
 const excludeTypesFromFilter = filter => {
-  const allTypes = ImmutableList(['follow', 'favourite', 'reblog', 'mention', 'poll'])
+  const allTypes = ImmutableList(['follow', 'favourite', 'reblog', 'mention', 'poll', 'group_moderation_event'])
   return allTypes.filterNot(item => item === filter).toJS()
 }
 
@@ -61,6 +62,38 @@ export const updateNotifications = (notification, intlMessages, intlLocale) => (
 
     if (notification.status) {
       dispatch(importFetchedStatus(notification.status))
+    }
+
+    if ('group_moderation_event' in notification) {
+      const {
+        acted_at,
+        status_id,
+        group_id,
+        approved,
+        rejected,
+        removed
+      } = notification.group_moderation_event
+
+      const userRemoved1 = typeof group_id === 'string' &&
+        group_id.length > 0 &&
+        removed
+
+      /*
+      This is a workaround until we figure out why GroupRemovedAccount is not
+      updated in app/services/group_moderation_service.rb remove_user. Even
+      though it's marked removed we may be getting an old copy of the data.
+      */
+      const userRemoved2 = acted_at === null &&
+        approved === false &&
+        rejected === false &&
+        removed === false &&
+        status_id === ''
+
+      const reloadRelationships = userRemoved1 || userRemoved2
+
+      if (reloadRelationships) {
+        dispatch(fetchGroupRelationships(group_id))
+      }
     }
 
     dispatch({
@@ -175,18 +208,37 @@ export const expandNotifications = ({ maxId } = {}, done = noop) => (dispatch, g
     params.since_id = notifications.getIn(['items', 0, 'id'])
   }
 
+  const operation = params.since_id !== undefined ? 'load-prev' : 'load-next'
+
   dispatch(expandNotificationsRequest(isLoadingMore))
 
-  api(getState).get('/api/v1/notifications', { params }).then((response) => {
-    const next = getLinks(response).refs.find(link => link.rel === 'next')
+  api(getState).get('/api/v1/notifications', { params }).then(response => {
+    let next = getLinks(response).refs.find(link => link.rel === 'next')
+    next = next && next.uri
+    const notifications = response.data
+    const notBlank = item => item !== undefined && item !== null
+    const accounts = notifications
+      .map(item => item.account)
+      .filter(notBlank)
+    const statuses = notifications
+      .map(item => item.status)
+      .filter(notBlank)
 
-    dispatch(importFetchedAccounts(response.data.map(item => item.account)))
-    dispatch(importFetchedStatuses(response.data.map(item => item.status).filter(status => !!status)))
+    if (accounts.length > 0) {
+      dispatch(importFetchedAccounts(accounts))
+    }
 
-    dispatch(expandNotificationsSuccess(response.data, next ? next.uri : null, isLoadingMore))
+    if (statuses.length > 0) {
+      dispatch(importFetchedStatuses(statuses))
+    }
 
-    fetchRelatedRelationships(dispatch, response.data)
-
+    dispatch(expandNotificationsSuccess({
+      notifications,
+      next,
+      isLoadingMore,
+      operation
+    }))
+    fetchRelatedRelationships(dispatch, notifications)
     done()
   }).catch((error) => {
     console.log(error)
@@ -200,11 +252,17 @@ const expandNotificationsRequest = (isLoadingMore) => ({
   skipLoading: !isLoadingMore,
 })
 
-const expandNotificationsSuccess = (notifications, next, isLoadingMore) => ({
+const expandNotificationsSuccess = ({
+  notifications,
+  next,
+  isLoadingMore,
+  operation
+}) => ({
   type: NOTIFICATIONS_EXPAND_SUCCESS,
   notifications,
   next,
   skipLoading: !isLoadingMore,
+  operation
 })
 
 const expandNotificationsFail = (error, isLoadingMore) => ({

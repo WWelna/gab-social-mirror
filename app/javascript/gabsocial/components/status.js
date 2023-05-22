@@ -5,6 +5,7 @@ import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { HotKeys } from 'react-hotkeys'
 import { withRouter } from 'react-router-dom'
+import moment from 'moment-mini'
 import {
   CX,
   COMMENT_SORTING_TYPE_NEWEST,
@@ -17,7 +18,7 @@ import {
 } from '../initial_state'
 import scheduleIdleTask from '../utils/schedule_idle_task'
 import { canShowStatus } from '../utils/can_show'
-import ComposeFormContainer from '../features/compose/containers/compose_form_container'
+import ComposeForm from '../features/compose/components/compose_form'
 import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_component'
 import CommentPlaceholder from './placeholder/comment_placeholder'
 import StatusContent from './status_content'
@@ -80,6 +81,29 @@ class Status extends ImmutablePureComponent {
   state = {
     showMedia: defaultMediaVisibility(this.props.status),
     statusId: undefined,
+    isExpired: false,
+  }
+
+  componentDidMount() {
+    this._scheduleNextUpdate()
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._timer)
+  }
+
+  _scheduleNextUpdate() {
+    const { status } = this.props
+    const { isExpired } = this.state
+    if (!status || isExpired) return
+
+    const expirationDate = status.get('expires_at')
+    if (!expirationDate) return
+
+    const msUntilExpiration = moment(expirationDate).valueOf() - moment().valueOf()
+    this._timer = setTimeout(() => {
+      this.setState({ isExpired: true })
+    }, msUntilExpiration);
   }
 
   handleToggleMediaVisibility = () => {
@@ -124,12 +148,10 @@ class Status extends ImmutablePureComponent {
   }
 
   handleOnReply = (status) => {
-    this.props.onReply(status || this._properStatus(), this.props.history, true)
+    this.props.onReply(status || this._properStatus())
   }
 
-  handleOnQuote = (status) => {
-    this.props.onQuote(status || this._properStatus(), this.props.history)
-  }
+  handleOnQuote = status => this.props.onQuote(status || this._properStatus())
 
   handleHotkeyFavorite = () => {
     this.props.onFavorite(this._properStatus())
@@ -237,19 +259,25 @@ class Status extends ImmutablePureComponent {
       loadedDirectDescendantsCount,
       next,
       scrollKey,
+      showActionBar = true,
+      showEllipsis = true,
+      showSpam = false,
+      disableCanShow = false,
+      highlightStatusId,
     } = this.props
     let { status } = this.props
+    const { isExpired } = this.state
 
-    if (!status) {
+    if (!status || isExpired) {
       return null
     }
 
     //If account is spam and not mine, hide
-    if (status.getIn(['account', 'is_spam']) && status.getIn(['account', 'id']) !== me) {
+    if (!showSpam && status.getIn(['account', 'is_spam']) && status.getIn(['account', 'id']) !== me) {
       return null
     }
 
-    if (isComment && !ancestorStatus && !isChild) {
+    if ((isComment && !isFeatured) && !ancestorStatus && !isChild) {
       // Wait to load...
       // return <StatusPlaceholder />
       if (contextType === 'feature') {
@@ -258,7 +286,7 @@ class Status extends ImmutablePureComponent {
       return null
     }
 
-    const csd = canShowStatus(status, {
+    const csd = disableCanShow ? {} : canShowStatus(status, {
       isChild,
       quoteParent,
       scrollKey,
@@ -314,6 +342,7 @@ class Status extends ImmutablePureComponent {
       radiusSmall: !isChild,
       bgPrimary: !isChild,
       boxShadowBlock: !isChild,
+      pb15: !showActionBar,
     })
 
     const containerClassesXS = CX({
@@ -338,6 +367,9 @@ class Status extends ImmutablePureComponent {
       bgSubtle_onHover: isChild && !csd.nulled,
     })
 
+    // in group moderation the ellipsis are hidden and it's not clickable
+    const isClickable = showEllipsis
+
     return (
       <HotKeys handlers={handlers} className={_s.outlineNone}>
         <div className={parentClasses}>
@@ -351,7 +383,7 @@ class Status extends ImmutablePureComponent {
               data-featured={(isFeatured || isPinnedInGroup) ? 'true' : null}
               aria-label={!!csd.label ? csd.label : textForScreenReader(intl, status, rebloggedByText)}
               ref={this.handleRef}
-              onClick={(isChild && !csd.label) && !isNotification ? this.handleClick : undefined}
+              onClick={(isChild && !csd.label) && !isNotification && isClickable ? this.handleClick : undefined}
             >
               <div className={innerContainerClasses}>
 
@@ -371,9 +403,10 @@ class Status extends ImmutablePureComponent {
                     <StatusHeader
                       nulled={!!csd.label}
                       status={status}
-                      reduced={isChild}
+                      reduced={isChild && !isNotification}
                       isCompact={isDeckConnected}
                       onOpenStatusModal={this.handleOnOpenStatusModal}
+                      showEllipsis={showEllipsis}
                     />
                   }
 
@@ -400,11 +433,11 @@ class Status extends ImmutablePureComponent {
 
                   {
                     (!csd.label && !csd.nulled) &&
-                    <div className={_s.d}>
+                    <div className={CX({ d: true })}>
                       <StatusContent
                         status={status}
                         reblogContent={reblogContent}
-                        onClick={this.handleClick}
+                        onClick={isClickable ? this.handleClick : undefined}
                         expanded={!status.get('hidden')}
                         onExpandedToggle={this.handleExpandedToggle}
                         collapsable={contextType !== 'feature'}
@@ -454,7 +487,7 @@ class Status extends ImmutablePureComponent {
                   }
 
                   {
-                    (!isChild || isNotification) &&
+                    (showActionBar && (!isChild || isNotification)) &&
                     <StatusActionBar
                       nulled={!!csd.label}
                       status={status}
@@ -479,6 +512,12 @@ class Status extends ImmutablePureComponent {
               </div>
             </div>
           </ResponsiveClassesComponent>
+
+          { // : overlay to block clicks when compose is open :
+            contextType === 'compose' &&
+            <div className={[_s.d, _s.posAbs, _s.bgTransparent, _s.top0, _s.right0, _s.bottom0, _s.left0].join(' ')} />
+          }
+
         </div>
         { 
           !isChild && !isNotification && !commentsLimited &&
@@ -492,7 +531,12 @@ class Status extends ImmutablePureComponent {
 
                 {
                   contextType == 'feature' &&
-                  <ComposeFormContainer replyToId={status.get('id')} feature="true" formLocation="status" />
+                  <ComposeForm
+                    composerId={`reply-${status.get('id')}`}
+                    replyToId={status.get('id')}
+                    feature={true}
+                    formLocation="status"
+                  />
                 }
                 
                 {
@@ -524,6 +568,7 @@ class Status extends ImmutablePureComponent {
                         loadedDirectDescendantsCount={loadedDirectDescendantsCount}
                         onViewComments={this.handleOnExpandComments}
                         ancestorStatusId={status.get('id')}
+                        highlightStatusId={highlightStatusId}
                       />
                     }
                   </React.Fragment>
@@ -584,8 +629,13 @@ Status.propTypes = {
   commentSortingType: PropTypes.string,
   scrollKey: PropTypes.string,
   onShowStatusAnyways: PropTypes.func,
+  showActionBar: PropTypes.bool,
+  showEllipsis: PropTypes.bool,
+  showSpam: PropTypes.bool,
+  disableCanShow: PropTypes.bool,
   hoveringReactionId: PropTypes.string,
   reactionPopoverOpenForStatusId: PropTypes.string,
+  highlightStatusId: PropTypes.string,
 }
 
 export default withRouter(injectIntl(Status))

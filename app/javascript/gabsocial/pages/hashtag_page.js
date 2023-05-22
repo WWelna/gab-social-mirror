@@ -1,9 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, injectIntl } from 'react-intl'
+import { connect } from 'react-redux'
 import isObject from 'lodash.isobject'
+import { me } from '../initial_state'
 import PageTitle from '../features/ui/util/page_title'
 import DefaultLayout from '../layouts/default_layout'
+import {
+  addShortcut,
+  removeShortcut,
+ } from '../actions/shortcuts' 
 import {
   LinkFooter,
   ProgressPanel,
@@ -13,15 +18,34 @@ import {
 
 class HashtagPage extends React.PureComponent {
 
-  render() {
+  handleOnToggleShortcut = () => {
     const {
-      children,
-      intl,
-      params,
-      showSuggestedUsers,
+      isShortcut,
+      hashtag,
+      shortcut,
+      onAddShortcut,
+      onRemoveShortcut
     } = this.props
 
-    const hashtag = isObject(params) ? params.id : ''
+    if (isShortcut) {
+      onRemoveShortcut(shortcut)
+    } else {
+      onAddShortcut(hashtag)
+    }
+  }
+    
+  render() {
+    const {
+      isShortcut,
+      children,
+      showSuggestedUsers,
+      hashtag,
+    } = this.props
+
+    const actions = !!me ? [{
+      icon: isShortcut ? 'star' : 'star-outline',
+      onClick: this.handleOnToggleShortcut,
+    }] : []
 
     let sidebarLayout = [ProgressPanel, TrendsBreakingPanel]
 
@@ -34,27 +58,55 @@ class HashtagPage extends React.PureComponent {
     return (
       <DefaultLayout
         showBackBtn
-        title={intl.formatMessage(messages.hashtagTimeline)}
+        title='Tag Timeline'
         page={`hashtag.${hashtag}`}
         layout={sidebarLayout}
+        actions={actions}
       >
-        <PageTitle path={intl.formatMessage(messages.hashtag)} />
+        <PageTitle path={`#${hashtag} timeline`} />
+        <div className={[_s.d, _s.w100PC, _s.px15, _s.py15].join(' ')}>
+          <span
+            className={[_s.w100PC, _s.text, _s.fs15PX, _s.textOverflowEllipsis, _s.cPrimary].join(' ')}
+            dangerouslySetInnerHTML={{ __html: `#${hashtag}` }}
+          />
+        </div>
         {children}
       </DefaultLayout>
     )
   }
 }
 
-const messages = defineMessages({
-  hashtag: { id: 'hashtag', defaultMessage: 'Hashtag' },
-  hashtagTimeline: { id: 'hashtag_timeline', defaultMessage: 'Hashtag timeline' },
-})
+const mapStateToProps = (state, { params }) => {
+  const hashtag = `${isObject(params) ? params.id : ''}`.toLowerCase()
+  const shortcuts = state.getIn(['shortcuts', 'items'])
+  const shortcut = shortcuts.find((s) => {
+    return `${s.get('title')}`.toLowerCase() == hashtag && s.get('shortcut_type') === 'tag'
+  })
 
+  return {
+    hashtag,
+    shortcut,
+    isShortcut: !!shortcut,
+  }
+}
+
+const mapDispatchToProps = (dispatch) => ({
+  onAddShortcut(hashtag) {
+    dispatch(addShortcut('tag', hashtag))
+  },
+  onRemoveShortcut(shortcut) {
+    if (!shortcut) return
+    dispatch(removeShortcut(shortcut.get('id'), 'tag'))
+  },
+})
+ 
+ 
 HashtagPage.propTypes = {
   children: PropTypes.node.isRequired,
-  dispatch: PropTypes.func.isRequired,
-  intl: PropTypes.object.isRequired,
+  onAddShortcut: PropTypes.func.isRequired,
+  onRemoveShortcut: PropTypes.func.isRequired,
+  hashtag: PropTypes.string.isRequired,
   params: PropTypes.object.isRequired,
 }
 
-export default injectIntl(HashtagPage)
+export default connect(mapStateToProps, mapDispatchToProps)(HashtagPage)

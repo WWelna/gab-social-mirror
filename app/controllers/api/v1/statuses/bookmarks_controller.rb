@@ -7,12 +7,8 @@ class Api::V1::Statuses::BookmarksController < Api::BaseController
   before_action :require_user!
 
   def create
-    if current_user.account.is_pro
-      @status = bookmarked_status
-      render json: @status, serializer: REST::StatusBookmarkedSerializer
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
-    end
+    @status = bookmarked_status
+    render json: @status, serializer: REST::StatusBookmarkedSerializer
   end
 
   def show
@@ -21,17 +17,13 @@ class Api::V1::Statuses::BookmarksController < Api::BaseController
   end
 
   def destroy
-    if current_user.account.is_pro
-      @status = requested_status
-      @bookmarks_map = { @status.id => false }
+    @status = requested_status
+    @bookmarks_map = { @status.id => false }
 
-      bookmark = StatusBookmark.find_by!(account: current_user.account, status: @status)
-      bookmark.destroy!
+    bookmark = StatusBookmark.find_by!(account: current_user.account, status: @status)
+    bookmark.destroy!
 
-      render json: @status, serializer: REST::StatusBookmarkedSerializer
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
-    end
+    render json: @status, serializer: REST::StatusBookmarkedSerializer
   end
 
   private

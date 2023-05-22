@@ -23,7 +23,7 @@ import Image from '../components/image'
 import Input from '../components/input'
 import Text from '../components/text'
 import Pagination from '../components/pagination'
-import ComposeFormContainer from './compose/containers/compose_form_container'
+import ComposeForm from './compose/components/compose_form'
 import Responsive from './ui/util/responsive_component'
 import { DisplayOptions } from '../components/modal/display_options_modal'
 import EditProfileModal from '../components/modal/edit_profile_modal'
@@ -124,7 +124,8 @@ class SlideFirstPost extends React.PureComponent {
               <br />
 
               <div className={[_s.d, _s.boxShadowBlock, _s.overflowHidden, _s.radiusSmall].join(' ')}>
-                <ComposeFormContainer
+                <ComposeForm
+                  composerId="introduction"
                   formLocation='introduction'
                   groupId={GAB_COM_INTRODUCE_YOURSELF_GROUP_ID}
                   hidePro

@@ -24,7 +24,6 @@ import { fetchMarketplaceListingCategories } from '../actions/marketplace_listin
 import {
 	MODAL_CONFIRM,
 	MARKETPLACE_LISTING_CONDITIONS,
-	MODAL_PRO_UPGRADE,
 } from '../constants'
 import { me } from '../initial_state'
 import ResponsiveClassesComponent from './ui/util/responsive_classes_component'
@@ -54,13 +53,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
   }
 
   componentDidMount() {
-		const { itemId, item, isPro, categories } = this.props
-
-		// check if is pro, if not, show modal
-		if (!isPro) {
-			this.props.onOpenProModal()
-			return
-		}
+		const { itemId, item, categories } = this.props
 
 		if (!categories || categories.size === 0) {
 			this.props.onFetchMarketplaceListingCategories()
@@ -82,14 +75,9 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
   }
 
 	handleOnSubmit = (e) => {
-		const { onSubmit, onClose, idValue, isPro } = this.props
+		const { onSubmit, onClose, idValue } = this.props
 		
 		e.preventDefault()
-
-		if (!isPro) {
-			this.props.onOpenProModal()
-			return false
-		}
 
 		!!onClose && onClose()
 
@@ -118,7 +106,6 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 	    categories,
 			condition,
 			shipping,
-			isPro,
 			isOwner,
 			isError,
 	  } = this.props
@@ -140,8 +127,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 	    }
 	  }
 
-		const inputsDisabled = !isPro
-	  const submitDisabled = ((!titleValue || !category || !descriptionValue) && !itemId) || isSubmitting || !isPro
+	  const submitDisabled = ((!titleValue || !category || !descriptionValue) && !itemId) || isSubmitting
 
 	  return (
 			<div className={[_s.d, _s.w100PC].join(' ')}>
@@ -165,7 +151,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 										maxLength={120}
 										value={titleValue}
 										onChange={onChangeTitle}
-										isDisabled={isSubmitting || inputsDisabled}
+										isDisabled={isSubmitting}
 										placeholder='Marketplace item title...'
 										isRequired
 									/>
@@ -177,7 +163,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 										value={descriptionValue}
 										onChange={onDescriptionChange}
 										placeholder='This marketplace item is about...'
-										isDisabled={isSubmitting || inputsDisabled}
+										isDisabled={isSubmitting}
 										maxLength={3000}
 										isRequired
 									/>
@@ -190,7 +176,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 									classNamesSmall={[_s.d, _s.mb15].join(' ')}
 									classNamesXS={[_s.d, _s.mb15].join(' ')}
 								>
-									<MarketplaceListingMediaUploadBlock isDisabled={isSubmitting || inputsDisabled} />
+									<MarketplaceListingMediaUploadBlock isDisabled={isSubmitting} isEditing={itemId} />
 								</ResponsiveClassesComponent>
 							</ResponsiveClassesComponent>
 
@@ -207,7 +193,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 										maxLength={8}
 										value={priceValue}
 										onChange={onChangePrice}
-										isDisabled={isSubmitting || inputsDisabled}
+										isDisabled={isSubmitting}
 									/>
 								</div>
 								<div className={[_s.d, _s.aiStart].join(' ')}>
@@ -215,7 +201,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 										Does the item require shipping?
 									</Text>
 									<Switch
-										disabled={isSubmitting || inputsDisabled}
+										disabled={isSubmitting}
 										onChange={onChangeShipping}
 										checked={shipping}
 									/>
@@ -236,7 +222,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 										value={category}
 										onChange={onChangeCategory}
 										options={categoriesOptions}
-										isDisabled={isSubmitting || inputsDisabled}
+										isDisabled={isSubmitting}
 									/>
 								</ResponsiveClassesComponent>
 
@@ -248,7 +234,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 										value={condition}
 										onChange={onChangeCondition}
 										options={conditionsOptions}
-										isDisabled={isSubmitting || inputsDisabled}
+										isDisabled={isSubmitting}
 									/>
 								</div>
 							</div>
@@ -260,7 +246,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 								value={tags}
 								maxLength={120}
 								onChange={onChangeTags}
-								isDisabled={isSubmitting || inputsDisabled}
+								isDisabled={isSubmitting}
 							/>
 							<Text className={[_s.mt10, _s.pl15].join(' ')} size='small' color='tertiary'>
 								(Optional) Add tags separated by commas to increase item visibility
@@ -275,7 +261,7 @@ class MarketplaceListingCreate extends ImmutablePureComponent {
 								maxLength={120}
 								value={locationValue}
 								onChange={onChangeLocation}
-								isDisabled={isSubmitting || inputsDisabled}
+								isDisabled={isSubmitting}
 							/>
 							<Text className={[_s.mt5, _s.pl15].join(' ')} size='small' color='tertiary'>
 								(Optional) Add a location such as a town, city and/or state to help local buyers
@@ -332,15 +318,10 @@ const mapStateToProps = (state, { params }) => {
 		condition: state.getIn(['marketplace_listing_editor', 'condition']),
 		shipping: state.getIn(['marketplace_listing_editor', 'shipping_required']),
     categories: state.getIn(['marketplace_listing_categories', 'items']),
-		isPro: state.getIn(['accounts', me, 'is_pro']),
   }
 }
 
 const mapDispatchToProps = (dispatch) => ({
-	onOpenProModal() {
-		dispatch(openModal(MODAL_PRO_UPGRADE))
-		// go back to last page
-	},
   onChangeTitle(value) {
     dispatch(changeMarketplaceListingTitle(value))
   },

@@ -42,48 +42,94 @@ export const TIMELINE_FETCH_PINS = 'TIMELINE_FETCH_PINS'
 export const TIMELINE_LOADING = 'TIMELINE_LOADING'
 export const TIMELINE_REMOVE_STALE = 'TIMELINE_REMOVE_STALE'
 export const TIMELINE_UNLOADED = 'TIMELINE_UNLOADED'
+export const TIMELINE_STATUS_DELETE = 'TIMELINE_STATUS_DELETE'
 
-export const timelineDequeue = timelineId =>
-  ({ type: TIMELINE_DEQUEUE, timelineId })
+export const timelineDequeue = timelineId => ({
+  type: TIMELINE_DEQUEUE,
+  timelineId
+})
 
-export const timelineItems = (timelineId, items) =>
-  ({ type: TIMELINE_ITEMS, timelineId, items })
+export const timelineItems = (timelineId, items) => ({
+  type: TIMELINE_ITEMS,
+  timelineId,
+  items
+})
 
-export const timelinePrependItem = (timelineId, statusId) =>
-  ({ type: TIMELINE_PREPEND_ITEM, timelineId, statusId })
+export const timelinePrependItem = (timelineId, statusId) => ({
+  type: TIMELINE_PREPEND_ITEM,
+  timelineId,
+  statusId
+})
 
-export const timelinePins = (timelineId, pins) =>
-  ({ type: TIMELINE_PINS, timelineId, pins })
+export const timelinePins = (timelineId, pins) => ({
+  type: TIMELINE_PINS,
+  timelineId,
+  pins
+})
 
-export const timelineQueue = (timelineId, queuedItems) =>
-  ({ type: TIMELINE_QUEUE, timelineId, queuedItems })
+export const timelineQueue = (timelineId, queuedItems) => ({
+  type: TIMELINE_QUEUE,
+  timelineId,
+  queuedItems
+})
 
-export const timelineFail = (timelineId, error) =>
-  ({ type: TIMELINE_FAIL, timelineId, error })
+export const timelineFail = (timelineId, error) => ({
+  type: TIMELINE_FAIL,
+  timelineId,
+  error
+})
 
-export const timelineConfigure = (timelineId, opts) =>
-  ({ type: TIMELINE_CONFIGURE, timelineId, opts })
+export const timelineConfigure = (timelineId, opts) => ({
+  type: TIMELINE_CONFIGURE,
+  timelineId,
+  opts
+})
 
-export const timelineFetchPaged = (timelineId, opts) =>
-  ({ type: TIMELINE_FETCH_PAGED, timelineId, opts })
+export const timelineFetchPaged = (timelineId, opts) => ({
+  type: TIMELINE_FETCH_PAGED,
+  timelineId,
+  opts
+})
 
-export const timelineFetchPins = (timelineId, opts) =>
-  ({ type: TIMELINE_FETCH_PINS, timelineId, opts })
+export const timelineFetchPins = (timelineId, opts) => ({
+  type: TIMELINE_FETCH_PINS,
+  timelineId,
+  opts
+})
 
-export const timelineLoading = (timelineId, isLoading = true) =>
-  ({ type: TIMELINE_LOADING, timelineId, isLoading })
+export const timelineLoading = (timelineId, isLoading = true) => ({
+  type: TIMELINE_LOADING,
+  timelineId,
+  isLoading
+})
 
-export const timelineSort = (timelineId, sortByValue) =>
-  ({ type: TIMELINE_SORT, timelineId, sortByValue })
+export const timelineSort = (timelineId, sortByValue) => ({
+  type: TIMELINE_SORT,
+  timelineId,
+  sortByValue
+})
 
-export const timelineSortTop = (timelineId, sortByTopValue) =>
-  ({ type: TIMELINE_SORT_TOP, timelineId, sortByTopValue })
+export const timelineSortTop = (timelineId, sortByTopValue) => ({
+  type: TIMELINE_SORT_TOP,
+  timelineId,
+  sortByTopValue
+})
 
-export const timelineRemoveStale = timelineId =>
-  ({ type: TIMELINE_REMOVE_STALE, timelineId })
+export const timelineRemoveStale = timelineId => ({
+  type: TIMELINE_REMOVE_STALE,
+  timelineId
+})
 
-export const timelineUnloaded = timelineId =>
-  ({ type: TIMELINE_UNLOADED, timelineId })
+export const timelineUnloaded = timelineId => ({
+  type: TIMELINE_UNLOADED,
+  timelineId
+})
+
+export const timelineStatusDelete = ({ timelineId, statusId }) => ({
+  type: TIMELINE_STATUS_DELETE,
+  timelineId,
+  statusId
+})
 
 //
 // reducer
@@ -96,7 +142,7 @@ export const timelineUnloaded = timelineId =>
  * @param {List} list
  * @returns {boolean}
  */
-const unique = (item, index, list) => list.indexOf(item) === index
+export const unique = (item, index, list) => list.indexOf(item) === index
 
 /**
  * Create a timelime
@@ -119,45 +165,45 @@ export function createTimeline() {
     prevUri: null,
     hasPrev: null,
     error: null,
-    page: null,
+    page: null
   })
+}
+
+function deleteStatusFromTimeline(timeline, statusId) {
+  if (isMap(timeline)) {
+    ;['items', 'queuedItems', 'pins'].forEach(function (key) {
+      const list = timeline.get(key)
+      if (isList(list) && list.includes(statusId)) {
+        timeline = timeline.set(
+          key,
+          list.filter(item => item !== statusId)
+        )
+      }
+    })
+  }
+  return timeline
 }
 
 export default function timelinesReducer(state = ImmutableMap(), action) {
   const { type, timelineId } = action
 
   //
-  // timelines garbage collector
+  // delete a status from ALL timelines
   //
-  
+
   if (
-    (
-      type === STATUS_DELETE_SUCCESS ||
-      (
-        type === STATUS_DELETE_FAIL &&
-        get(action, 'error.response.status') === 404
-      )
-    ) &&
+    (type === STATUS_DELETE_SUCCESS ||
+      (type === STATUS_DELETE_FAIL &&
+        get(action, 'error.response.status') === 404)) &&
     hasCharacters(action.id)
   ) {
     const { id: statusId } = action
-    return state.mapEntries(function([timelineId, timeline]) {
-      if (isMap(timeline)) {
-        ['items', 'queuedItems', 'pins'].forEach(function(key) {
-          const list = timeline.get(key)
-          if (isList(list) && list.includes(statusId)) {
-            timeline = timeline.set(key, list.filter(item => item !== statusId))
-          }
-        })
-      }
-      return [timelineId, timeline]
+    return state.mapEntries(function ([timelineId, timeline]) {
+      return [timelineId, deleteStatusFromTimeline(timeline, statusId)]
     })
   }
 
-  if (
-    type.startsWith('TIMELINE_') === false ||
-    timelineId === undefined
-  ) {
+  if (type.startsWith('TIMELINE_') === false || timelineId === undefined) {
     // skip
     return state
   }
@@ -183,9 +229,7 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
   const notInItems = item => timeline.get('items').includes(item) === false
 
   function notLoading() {
-    timeline = timeline
-      .set('isLoading', false)
-      .set('isFetched', true)
+    timeline = timeline.set('isLoading', false).set('isFetched', true)
   }
 
   function dequeue() {
@@ -204,6 +248,15 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
     const newItems = ImmutableList()
       .concat(timeline.get('items'))
       .concat(items)
+      .filter(notInPins)
+      .filter(unique)
+    timeline = timeline.set('items', newItems)
+  }
+
+  function prependOne({ statusId }) {
+    const newItems = ImmutableList()
+      .concat([statusId])
+      .concat(timeline.get('items'))
       .filter(notInPins)
       .filter(unique)
     timeline = timeline.set('items', newItems)
@@ -264,7 +317,9 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
   }
 
   function configure({ opts }) {
-    ['prevUri', 'hasPrev', 'nextUri', 'hasNext', 'page'].forEach(function(key) {
+    ;['prevUri', 'hasPrev', 'nextUri', 'hasNext', 'page'].forEach(function (
+      key
+    ) {
       const val = opts[key]
       if (val !== undefined && timeline.get(key) !== val) {
         timeline = timeline.set(key, val)
@@ -274,6 +329,10 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
 
   function loading({ isLoading }) {
     timeline = timeline.set('isLoading', isLoading)
+  }
+
+  function statusDelete({ statusId }) {
+    timeline = deleteStatusFromTimeline(timeline, statusId)
   }
 
   function removeStale() {
@@ -292,6 +351,7 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
   const transformMap = {
     [TIMELINE_DEQUEUE]: dequeue,
     [TIMELINE_ITEMS]: appendItems,
+    [TIMELINE_PREPEND_ITEM]: prependOne,
     [TIMELINE_PINS]: prependPins,
     [TIMELINE_QUEUE]: queue,
     [TIMELINE_FAIL]: fail,
@@ -299,8 +359,9 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
     [TIMELINE_SORT_TOP]: sortTop,
     [TIMELINE_CONFIGURE]: configure,
     [TIMELINE_LOADING]: loading,
+    [TIMELINE_STATUS_DELETE]: statusDelete,
     [TIMELINE_REMOVE_STALE]: removeStale,
-    [TIMELINE_UNLOADED]: unloaded,
+    [TIMELINE_UNLOADED]: unloaded
   }
 
   const transform = transformMap[type]
@@ -308,7 +369,8 @@ export default function timelinesReducer(state = ImmutableMap(), action) {
   if (typeof transform === 'function') {
     transform(action)
     if (type !== TIMELINE_UNLOADED) {
-      state = state.set(timelineId, timeline)
+      state = state
+        .set(timelineId, timeline)
         .set('currentTimelineId', timelineId)
     }
   }
@@ -327,261 +389,280 @@ function getLinkUri(res, rel) {
 }
 
 // load list(feed) side panel info
-const loadList = throttle((dispatch, listId) =>
-  dispatch(fetchList(listId)),
+const loadList = throttle(
+  (dispatch, listId) => dispatch(fetchList(listId)),
   1000
 )
 
-export const timelinesMiddleware = ({ getState, dispatch }) => next => function(action) {
-  next(action) // do whatever mutations the messages do first
+export const timelinesMiddleware =
+  ({ getState, dispatch }) =>
+  next =>
+    function (action) {
+      next(action) // do whatever mutations the messages do first
 
-  const { type, timelineId } = action
+      const { type, timelineId } = action
 
-  if (
-    isString(type) === false ||
-    type.startsWith('TIMELINE_') === false ||
-    timelineId === undefined
-  ) {
-    // skip
-    return
-  }
-
-  const state = getState()
-  const timeline = state.getIn(['timelines', timelineId]) ||
-    createTimeline()
-
-  // Is it a list(feed) timeline? Then it also needs the panel info.
-  const isListTimeline = timelineId.startsWith('list:')
-  if (isListTimeline) {
-    const listId = timelineId.substring(5)
-    const list = state.getIn(['lists', 'items', listId])
-    if (!list) {
-      loadList(dispatch, listId)
-    }
-  }
-
-  function fetchError(error) {
-    const { message, stack } = error
-    console.error(
-      'error fetching timeline:',
-      timeline.toJS(),
-      'action:',
-      action,
-      message,
-      stack
-    )
-    dispatch(timelineFail(timelineId, error))
-  }
-
-  function fetchPins({ opts = {} }) {
-    const { pinsEndpoint, endpoint } = opts
-    const params = { pinned: true }
-    return api(getState).get(pinsEndpoint || endpoint, { params })
-      .then(function({ data: statuses }) {
-        dispatch(importFetchedStatuses(statuses))
-        const ids = statuses.map(({ id }) => id)
-        dispatch(timelinePins(timelineId, ids))
-      })
-      .catch(fetchError)
-  }
-
-  function fetchPaged({ opts = {} }) {
-    const combined = Object.assign({}, timeline.toJS(), opts)
-    let page = timeline.get('page') || 1
-
-    const {
-      prevUri,
-      nextUri,
-      endpoint,
-      isLoading,
-      isComments,
-      mediaType,
-      maxPages,
-      queueResults,
-      dequeueResults,
-      createParams,
-      sorts = [],
-      topSorts = [],
-      withReplies,
-      limit = defaultLimit,
-    } = combined
-
-    if (isNumber(maxPages) && page >= maxPages) {
-      return
-    }
-
-    if (isLoading) {
-      return
-    }
-
-    dispatch(timelineLoading(timelineId))
-
-    const defaultSort = sorts.find(item => item.isDefault) || {}
-    const defaultTopSort = topSorts.find(item => item.isDefault) || {}
-    const settings = getSettings(timelineId)
-
-    // can be undefined for timelines with no sort options dropdown
-    const sortByValue = combined.sortByValue ||
-      settings.get('sortByValue') ||
-      defaultSort.key
-
-    let sortByTopValue
-    if (sortByValue === 'top') {
-      sortByTopValue = combined.sortByTopValue ||
-        settings.get('sortByTopValue') ||
-        defaultTopSort.key
-    }
-
-    combined.sortByValue = sortByValue
-    combined.sortByTopValue = sortByTopValue
-
-    //
-    // fix wrong sort values
-    //
-
-    if (sorts.length > 0 && hasCharacters(sortByValue)) {
-      const sortKeys = sorts.map(({ key }) => key)
-      if (sortKeys.includes(sortByValue) === false && hasCharacters(defaultSort.key)) {
-        // the value is not in our list
-        return dispatch(timelineSort(timelineId, defaultSort.key))
+      if (
+        isString(type) === false ||
+        type.startsWith('TIMELINE_') === false ||
+        timelineId === undefined
+      ) {
+        // skip
+        return
       }
-    }
 
-    if (topSorts.length > 0 && hasCharacters(sortByTopValue)) {
-      const topSortKeys = topSorts.map(({ key }) => key)
-      if (topSortKeys.includes(sortByTopValue) === false && hasCharacters(defaultTopSort.key)) {
-        // the value is not in our list
-        return dispatch(timelineSortTop(timelineId, defaultTopSort.key))
-      }
-    }
+      const state = getState()
+      const timeline =
+        state.getIn(['timelines', timelineId]) || createTimeline()
 
-    //
-    // update sorts if it had none but it needs it
-    //
-
-    if (
-      sortByValue !== undefined &&
-      sortByValue !== timeline.get('sortByValue')
-    ) {
-      dispatch(timelineSort(timelineId, sortByValue))
-    }
-
-    if (
-      sortByTopValue !== undefined &&
-      sortByTopValue !== timeline.get('sortByTopValue')
-    ) {
-      dispatch(timelineSortTop(timelineId, sortByTopValue))
-    }
-
-    let pathname
-    let params = {}
-
-    if (queueResults && hasCharacters(prevUri)) {
-      // prev is a link to a previous page provided by rails endpoints
-      pathname = prevUri
-    } else if (hasCharacters(nextUri)) {
-      // next page
-      pathname = nextUri
-    } else {
-      if (page > 1) {
-        params.page = page
-      }
-      pathname = endpoint
-    }
-
-    if (isComments) {
-      params.only_comments = true
-    }
-
-    if (hasCharacters(mediaType)) {
-      params.media_type = mediaType
-      params.only_media = true
-    }
-
-    if (isNumber(limit) && limit !== defaultLimit) {
-      params.limit = limit
-    }
-
-    if (isBoolean(withReplies)) {
-      params.with_replies = withReplies
-    }
-
-    if (isFunction(createParams)) {
-      // createParams is provided by the timeline component
-      params = Object.assign(params, createParams(combined))
-    }
-
-    api(getState).get(pathname, { params }).then(function(res) {
-      const { data: statuses } = res
-      const ids = statuses.map(({ id }) => id)
-      const prevUri = getLinkUri(res, 'prev') || combined.prevUri
-      const hasPrev = hasCharacters(prevUri)
-      dispatch(importFetchedStatuses(statuses))
-      if (queueResults) {
-        // polling for queued items
-        dispatch(timelineConfigure(timelineId, { prevUri, hasPrev }))
-        dispatch(timelineQueue(timelineId, ids))
-        if (dequeueResults) {
-          // it might seem confusing but the user is PTR-ing so we get previous
-          // page and immediately dequeue
-          dispatch(timelineDequeue(timelineId))
+      // Is it a list(feed) timeline? Then it also needs the panel info.
+      const isListTimeline = timelineId.startsWith('list:')
+      if (isListTimeline) {
+        const listId = timelineId.substring(5)
+        const list = state.getIn(['lists', 'items', listId])
+        if (!list) {
+          loadList(dispatch, listId)
         }
-      } else {
-        // loading new items at the bottom
-        const nextUri = getLinkUri(res, 'next')
-
-        let a = new Set(ids);
-        let b = new Set(timeline.get("items"));
-        let diffIds = new Set(
-          [...a].filter(x => !b.has(x)));
-
-        const isIdenticalSet = diffIds.size === 0 ? true : false;
-
-        // is there a next page? items not blank
-        const hasNext = hasItems(ids) && !isIdenticalSet
-
-        page += 1
-        const configOpts = { nextUri, hasNext, page }
-        if (hasPrev && timeline.get('prevUri') === null) {
-          // normal request can only set prevUri the first time, next time
-          // is done by queue
-          Object.assign(configOpts, { prevUri, hasPrev })
-        }
-        dispatch(timelineConfigure(timelineId, configOpts))
-        dispatch(timelineItems(timelineId, ids))
       }
-    }).catch(fetchError)
-  }
 
-  function sort ({ sortByValue }) {
-    const settings = getSettings(timelineId)
-    if (hasCharacters(sortByValue)) {
-      settings.set('sortByValue', sortByValue)
-    } else {
-      settings.remove(sortByValue)
+      function fetchError(error) {
+        const { message, stack } = error
+        console.error(
+          'error fetching timeline:',
+          timeline.toJS(),
+          'action:',
+          action,
+          message,
+          stack
+        )
+        dispatch(timelineFail(timelineId, error))
+      }
+
+      function fetchPins({ opts = {} }) {
+        const { pinsEndpoint, endpoint } = opts
+        const params = { pinned: true }
+        return api(getState)
+          .get(pinsEndpoint || endpoint, { params })
+          .then(function ({ data: statuses }) {
+            dispatch(importFetchedStatuses(statuses))
+            const ids = statuses.map(({ id }) => id)
+            dispatch(timelinePins(timelineId, ids))
+          })
+          .catch(fetchError)
+      }
+
+      function fetchPaged({ opts = {} }) {
+        const combined = Object.assign({}, timeline.toJS(), opts)
+        let page = timeline.get('page') || 1
+
+        const {
+          prevUri,
+          nextUri,
+          endpoint,
+          isLoading,
+          isComments,
+          mediaType,
+          maxPages,
+          queueResults,
+          dequeueResults,
+          createParams,
+          sorts = [],
+          topSorts = [],
+          withReplies,
+          limit = defaultLimit,
+          maxId,
+          only_media
+        } = combined
+
+        if (isNumber(maxPages) && page >= maxPages) {
+          return
+        }
+
+        if (isLoading) {
+          return
+        }
+
+        dispatch(timelineLoading(timelineId))
+
+        const defaultSort = sorts.find(item => item.isDefault) || {}
+        const defaultTopSort = topSorts.find(item => item.isDefault) || {}
+        const settings = getSettings(timelineId)
+
+        // can be undefined for timelines with no sort options dropdown
+        const sortByValue =
+          combined.sortByValue || settings.get('sortByValue') || defaultSort.key
+
+        let sortByTopValue
+        if (sortByValue === 'top') {
+          sortByTopValue =
+            combined.sortByTopValue ||
+            settings.get('sortByTopValue') ||
+            defaultTopSort.key
+        }
+
+        combined.sortByValue = sortByValue
+        combined.sortByTopValue = sortByTopValue
+
+        //
+        // fix wrong sort values
+        //
+
+        if (sorts.length > 0 && hasCharacters(sortByValue)) {
+          const sortKeys = sorts.map(({ key }) => key)
+          if (
+            sortKeys.includes(sortByValue) === false &&
+            hasCharacters(defaultSort.key)
+          ) {
+            // the value is not in our list
+            return dispatch(timelineSort(timelineId, defaultSort.key))
+          }
+        }
+
+        if (topSorts.length > 0 && hasCharacters(sortByTopValue)) {
+          const topSortKeys = topSorts.map(({ key }) => key)
+          if (
+            topSortKeys.includes(sortByTopValue) === false &&
+            hasCharacters(defaultTopSort.key)
+          ) {
+            // the value is not in our list
+            return dispatch(timelineSortTop(timelineId, defaultTopSort.key))
+          }
+        }
+
+        //
+        // update sorts if it had none but it needs it
+        //
+
+        if (
+          sortByValue !== undefined &&
+          sortByValue !== timeline.get('sortByValue')
+        ) {
+          dispatch(timelineSort(timelineId, sortByValue))
+        }
+
+        if (
+          sortByTopValue !== undefined &&
+          sortByTopValue !== timeline.get('sortByTopValue')
+        ) {
+          dispatch(timelineSortTop(timelineId, sortByTopValue))
+        }
+
+        let pathname
+        let params = {}
+
+        if (queueResults && hasCharacters(prevUri)) {
+          // prev is a link to a previous page provided by rails endpoints
+          pathname = prevUri
+        } else if (hasCharacters(nextUri)) {
+          // next page
+          pathname = nextUri
+        } else {
+          if (maxId !== undefined) {
+            params.max_id = maxId
+          } else if (page > 1) {
+            params.page = page
+          }
+          pathname = endpoint
+        }
+
+        if (isComments) {
+          params.only_comments = true
+        }
+
+        if (hasCharacters(mediaType)) {
+          params.media_type = mediaType
+          params.only_media = true
+        }
+
+        if (only_media) {
+          params.only_media = true
+        }
+
+        if (isNumber(limit) && limit !== defaultLimit) {
+          params.limit = limit
+        }
+
+        if (isBoolean(withReplies)) {
+          params.with_replies = withReplies
+        }
+
+        if (isFunction(createParams)) {
+          // createParams is provided by the timeline component
+          params = Object.assign(params, createParams(combined))
+        }
+
+        api(getState)
+          .get(pathname, { params })
+          .then(function (res) {
+            const { data: statuses } = res
+            const ids = statuses.map(({ id }) => id)
+            const prevUri = getLinkUri(res, 'prev') || combined.prevUri
+            const hasPrev = hasCharacters(prevUri)
+            dispatch(importFetchedStatuses(statuses))
+            if (queueResults) {
+              // polling for queued items
+              dispatch(timelineConfigure(timelineId, { prevUri, hasPrev }))
+              dispatch(timelineQueue(timelineId, ids))
+              if (dequeueResults) {
+                // it might seem confusing but the user is PTR-ing so we get previous
+                // page and immediately dequeue
+                dispatch(timelineDequeue(timelineId))
+              }
+            } else {
+              // loading new items at the bottom
+              const nextUri = getLinkUri(res, 'next')
+
+              let a = new Set(ids)
+              let b = new Set(timeline.get('items'))
+              let diffIds = new Set([...a].filter(x => !b.has(x)))
+
+              const isIdenticalSet = diffIds.size === 0 ? true : false
+
+              // is there a next page? items not blank
+              const hasNext = hasItems(ids) && !isIdenticalSet
+
+              page += 1
+              const configOpts = { nextUri, hasNext, page }
+              if (hasPrev && timeline.get('prevUri') === null) {
+                // normal request can only set prevUri the first time, next time
+                // is done by queue
+                Object.assign(configOpts, { prevUri, hasPrev })
+              }
+              dispatch(timelineConfigure(timelineId, configOpts))
+              dispatch(timelineItems(timelineId, ids))
+            }
+          })
+          .catch(fetchError)
+      }
+
+      function sort({ sortByValue }) {
+        const settings = getSettings(timelineId)
+        if (hasCharacters(sortByValue)) {
+          settings.set('sortByValue', sortByValue)
+        } else {
+          settings.remove(sortByValue)
+        }
+      }
+
+      function sortTop({ sortByTopValue }) {
+        const settings = getSettings(timelineId)
+        if (hasCharacters(sortByTopValue)) {
+          settings.set('sortByTopValue', sortByTopValue)
+        } else {
+          settings.remove(sortByTopValue)
+        }
+      }
+
+      const reactionMap = {
+        [TIMELINE_SORT]: sort,
+        [TIMELINE_SORT_TOP]: sortTop,
+        [TIMELINE_FETCH_PAGED]: fetchPaged,
+        [TIMELINE_FETCH_PINS]: fetchPins
+      }
+
+      const reaction = reactionMap[type]
+
+      if (isFunction(reaction)) {
+        reaction(action)
+      }
     }
-  }
-
-  function sortTop ({ sortByTopValue }) {
-    const settings = getSettings(timelineId)
-    if (hasCharacters(sortByTopValue)) {
-      settings.set('sortByTopValue', sortByTopValue)
-    } else {
-      settings.remove(sortByTopValue)
-    }
-  }
-
-  const reactionMap = {
-    [TIMELINE_SORT]: sort,
-    [TIMELINE_SORT_TOP]: sortTop,
-    [TIMELINE_FETCH_PAGED]: fetchPaged,
-    [TIMELINE_FETCH_PINS]: fetchPins,
-  }
-
-  const reaction = reactionMap[type]
-
-  if (isFunction(reaction)) {
-    reaction(action)
-  }
-}
-

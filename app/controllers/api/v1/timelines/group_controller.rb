@@ -9,10 +9,23 @@ class Api::V1::Timelines::GroupController < Api::BaseController
 
   def show
     if current_user
+      # for group admin or moderators do not apply blocks
+      group_relationships = GroupRelationshipsPresenter.new([@group.id], current_user.account_id)
+      is_admin_or_mod = group_relationships.admin[@group.id] == true or group_relationships.moderator[@group.id] == true
+      is_member = group_relationships.member[@group.id] == true
+      if @group.is_private and !is_admin_or_mod and !is_member
+        render json: { error: 'Not authorized' }, status: :forbidden
+        return
+      end
+      status_relationships = nil
+      if not is_admin_or_mod
+        # for normal users apply blocks e.g. "user blocks you"
+        status_relationships = StatusRelationshipsPresenter.new(@statuses, current_user.account_id, group_id: @group.id)
+      end
       render json: @statuses,
             each_serializer: REST::StatusSerializer,
             group_id: params[:id], # : todo :
-            relationships: StatusRelationshipsPresenter.new(@statuses, current_user.account_id, group_id: @group.id)
+            relationships: status_relationships
     else
       render json: @statuses, each_serializer: REST::StatusSerializer
     end

@@ -1,0 +1,87 @@
+- content_for :header_tags do
+  = javascript_pack_tag 'admin', integrity: true, async: true, crossorigin: 'anonymous'
+
+- total_found = @statuses.total_count
+
+- content_for :page_title do
+  = "All Statuses"
+
+= form_tag settings_statuses_url, method: 'GET', class: 'simple_form' do
+  .fields-group
+    .input.string.optional
+      %label{for: 'text', style: 'display:block;margin-bottom:10px;'} Text
+      = text_field_tag :text, params[:text], class: 'string optional', placeholder: ""
+  .fields-row
+    .fields-row__column.fields-row__column-6.fields-group
+      .input.string.optional
+        %label{for: 'created_at_gte', style: 'display:block;margin-bottom:10px;'} Created after
+        = text_field_tag :created_at_gte, params[:created_at_gte], class: 'string optional', placeholder: "MM-DD-YYYY"
+    .fields-row__column.fields-row__column-6.fields-group
+      .input.string.optional
+        %label{for: 'created_at_lte', style: 'display:block;margin-bottom:10px;'} Created before
+        = text_field_tag :created_at_lte, params[:created_at_lte], class: 'string optional', placeholder: "MM-DD-YYYY"
+  .fields-row
+    .fields-row__column.fields-row__column.fields-group
+      .input.string.optional
+        %label{for: 'is_repost'} Is repost or quote?
+        = check_box_tag :is_repost, nil, params[:is_repost]
+    .fields-row__column.fields-row__column-3.fields-group
+      .input.string.optional
+        %label{for: 'is_comment'} Is comment?
+        = check_box_tag :is_comment, nil, params[:is_comment]
+    .fields-row__column.fields-row__column-3.fields-group
+      .input.string.optional
+        %label{for: 'contains_media'} Contains media?
+        = check_box_tag :contains_media, nil, params[:contains_media]
+    .fields-row__column.fields-row__column-3.fields-group
+      .input.string.optional
+        %label{for: 'contains_poll'} Contains poll?
+        = check_box_tag :contains_poll, nil, params[:contains_poll]
+
+  .actions
+    %button Search
+    = link_to 'Reset', settings_statuses_path, class: 'button negative'
+
+  - has_params = !params[:contains_poll].blank? || !params[:contains_media].blank? || !params[:is_comment].blank? || !params[:is_repost].blank? || !params[:created_at_lte].blank? || !params[:created_at_gte].blank? || !params[:text].blank?
+  - if total_found > 0 && has_params
+    %div{style: 'display:flex;margin:20px 0 10px 0;'}
+      %button.table-action-link{name: :delete_query_by_user, value: '1', style: 'display:inline-block;margin-left:auto;width:auto;text-align:right;color:#CE4D5D;background-color:transparent!important;', data: { confirm: "Are you sure you want to delete all #{total_found} filtered statuses?" }}
+        = safe_join([fa_icon('trash'), "Delete all filtered #{total_found}"])
+
+  %div{style:'display:flex;margin:5px 0 15px 0;flex-direction:row;flex-wrap:wrap;'}
+    %div{style:'display:flex;color:#757575;padding:10px;margin-right:auto;'}
+      %span{style:'display:flex;color:#757575;margin-right:10px;'} Sort by:
+      %div{style:'display:flex;flex-direction:row;'}
+        - sort_btn_styles = 'display:flex;color:#757575;padding:0;line-height:20px;background:none;background-color:transparent;font-size:16px;margin:0;cursor:pointer;outline:none;'
+        - sort_btn_active_styles = 'color:#fff;text-decoration:underline;'
+        - newest_styles = params[:sort] != 'top' ? "#{sort_btn_styles}#{sort_btn_active_styles}" : sort_btn_styles
+        - top_styles = params[:sort] == 'top' ? "#{sort_btn_styles}#{sort_btn_active_styles}" : sort_btn_styles
+        %button{name: 'sort', value: 'newest', style: newest_styles} Newest
+        %span{style:'display:flex;color:#757575;padding:0 10px;'} ·
+        %button{name: 'sort', value: 'top', style: top_styles} Top
+    %div{style:'display:block;color:#757575;padding:10px;'}
+      = page_entries_info @statuses
+
+= form_for(@form, url: settings_statuses_path) do |f|
+  = hidden_field_tag :page, params[:page]
+  = hidden_field_tag :media, params[:media]
+
+  .batch-table{style:'margin-top:15px;'}
+    .batch-table__toolbar
+      %label.batch-table__toolbar__select.batch-checkbox-all
+        = check_box_tag :batch_checkbox_all, nil, false, data: { batch_checkbox_all: true }
+      .batch-table__toolbar__actions
+        = f.button safe_join([fa_icon('trash'), 'Delete selected']), name: :delete_by_user, class: 'table-action-link', type: :submit, style: 'color: #CE4D5D;', data: { confirm: t('admin.reports.are_you_sure') }
+    .batch-table__body
+      = render partial: 'admin/reports/status', collection: @statuses, locals: { f: f, public_route: true }
+
+= paginate @statuses
+
+
+%hr.spacer/
+%h4 Delete all statuses
+%p.muted-hint
+  %span If you wish to delete all of your statuses and comments, you can proceed 
+  %a(href="/settings/delete_statuses") here
+  %span .
+  %span You will be asked for confirmation.

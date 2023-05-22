@@ -49,13 +49,18 @@ class StatusMedia extends ImmutablePureComponent {
     if (!status) return null
 
     let media = []
+    const statusId = status.get('id')
 
     if (status.get('media_attachments').size > 0) {
       if (status.getIn(['media_attachments', 0, 'type']) === 'video') {
         const video = status.getIn(['media_attachments', 0])
 
         media.push(
-          <Bundle fetchComponent={Video} loading={this.renderLoadingMedia}>
+          <Bundle
+              key={`status-${statusId}-attachments`}
+              fetchComponent={Video}
+              loading={this.renderLoadingMedia}
+            >
             {Component => (
               <Component
                 inline
@@ -81,7 +86,11 @@ class StatusMedia extends ImmutablePureComponent {
         )
       } else {
         media.push(
-          <Bundle fetchComponent={MediaGallery} loading={this.renderLoadingMedia}>
+          <Bundle
+             key={`status-${statusId}-gallery`}
+            fetchComponent={MediaGallery}
+            loading={this.renderLoadingMedia}
+          >
             {Component => (
               <Component
                 isComment={isComment}
@@ -102,6 +111,7 @@ class StatusMedia extends ImmutablePureComponent {
       if (status.get('spoiler_text').length === 0 && status.get('card')) {
         media.push(
           <StatusCard
+             key={`status-${statusId}-card`}
             card={status.get('card')}
             onOpenMedia={onOpenMedia}
             cacheWidth={cacheWidth}
@@ -114,10 +124,20 @@ class StatusMedia extends ImmutablePureComponent {
     }
     
     if (status.get('poll')) {
-      media.push(<Poll pollId={status.get('poll')} />)
+      media.push(<Poll  key={`status-${statusId}-poll`} pollId={status.get('poll')} />)
     }
 
-    return media
+    if (media.length > 1) {
+      // if you have multiple elements space them out
+      media = media.map((item, index) =>
+        <div
+          key={`status-${statusId}-spacer-${index}`}
+          className={_s.mt10}
+        >{item}</div>
+      )
+    }
+
+    return <div className={_s.mt10}>{media}</div>
   }
 
 }

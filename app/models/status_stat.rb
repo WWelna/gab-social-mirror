@@ -10,6 +10,7 @@
 #  favourites_count :bigint(8)        default(0), not null
 #  created_at       :datetime         not null
 #  updated_at       :datetime         not null
+#  quotes_count     :integer
 #
 
 class StatusStat < ApplicationRecord
@@ -20,6 +21,7 @@ class StatusStat < ApplicationRecord
   private
 
   def reset_parent_cache
+    Rails.cache.delete("reactions_counts:#{status_id}")
     Rails.cache.delete("statuses/#{status_id}")
   end
 end

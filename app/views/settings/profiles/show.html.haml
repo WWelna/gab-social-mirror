@@ -6,8 +6,7 @@
 
   .fields-row
     .fields-row__column.fields-group.fields-row__column-6
-      - if @account.is_pro
-        = f.input :username, wrapper: :with_label, input_html: { maxlength: 30 }, hint: false
+      = f.input :username, wrapper: :with_label, input_html: { maxlength: 30 }, hint: 'You may only change your username once per day'
 
       - if @account.is_verified
         %div 
