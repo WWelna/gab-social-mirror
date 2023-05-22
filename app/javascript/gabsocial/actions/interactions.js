@@ -71,6 +71,10 @@ export const LIKES_EXPAND_REQUEST = 'LIKES_EXPAND_REQUEST'
 export const LIKES_EXPAND_SUCCESS = 'LIKES_EXPAND_SUCCESS'
 export const LIKES_EXPAND_FAIL    = 'LIKES_EXPAND_FAIL'
 
+export const UNMENTION_REQUEST = 'UNMENTION_REQUEST'
+export const UNMENTION_SUCCESS = 'UNMENTION_SUCCESS'
+export const UNMENTION_FAIL    = 'UNMENTION_FAIL'
+
 /**
  * @description Repost the given status. Set status to status.reblogged:true and
  *              increment status.reblogs_count by 1 on success.
@@ -144,70 +148,74 @@ const unrepostFail = (status, error) => ({
 /**
  * @description Favorite the given status. Set status to status.favourited:true and
  *              increment status.favourites_count by 1 on success.
- * @param {ImmutableMap} status
+ * @param {String} statusId
+ * @param {Integer} reactionId (optional) [default:null]
  */
-export const favorite = (status) => (dispatch, getState) => {
-  if (!me || !status) return
+export const favorite = (statusId, reactionId) => (dispatch, getState) => {
+  if (!me || !statusId) return
 
-  dispatch(favoriteRequest(status))
+  dispatch(favoriteRequest(statusId, reactionId))
 
-  api(getState).post(`/api/v1/statuses/${status.get('id')}/favourite`).then((response) => {
+  api(getState).post(`/api/v1/statuses/${statusId}/favourite`, {
+    reaction_id: reactionId,
+  }).then((response) => {
     dispatch(updateStatusStats(response.data))
-    dispatch(favoriteSuccess(response.data))
+    //dispatch(favoriteSuccess(response.data))
   }).catch((error) => {
-    dispatch(favoriteFail(status, error))
+    dispatch(favoriteFail(statusId, error))
   })
 }
 
-const favoriteRequest = (status) => ({
+const favoriteRequest = (statusId, reactionId) => ({
   type: FAVORITE_REQUEST,
-  status,
+  reactionId,
+  statusId,
 })
 
-const favoriteSuccess = (data) => ({
-  type: FAVORITE_SUCCESS,
-  data,
-})
+// const favoriteSuccess = (data) => ({
+//   type: FAVORITE_SUCCESS,
+//   data,
+// })
 
-const favoriteFail = (status, error) => ({
+const favoriteFail = (statusId, error) => ({
   type: FAVORITE_FAIL,
   showToast: true,
-  status,
+  statusId,
   error,
 })
 
 /**
  * @description Unfavorite the given status. Set status to status.favourited:false and
  *              decrement status.favourites_count by 1 on success.
- * @param {ImmutableMap} status
+ * @param {String} statusId
  */
-export const unfavorite = (status) => (dispatch, getState) => {
-  if (!me || !status) return
+export const unfavorite = (statusId) => (dispatch, getState) => {
+  if (!me || !statusId) return
 
-  dispatch(unfavoriteRequest(status))
+  dispatch(unfavoriteRequest(statusId))
 
-  api(getState).post(`/api/v1/statuses/${status.get('id')}/unfavourite`).then((response) => {
+  api(getState).post(`/api/v1/statuses/${statusId}/unfavourite`).then((response) => {
     dispatch(updateStatusStats(response.data))
-    dispatch(unfavoriteSuccess(status))
+    //dispatch(unfavoriteSuccess(status))
   }).catch((error) => {
-    dispatch(unfavoriteFail(status, error))
+    dispatch(unfavoriteFail(statusId, error))
   })
 }
 
-const unfavoriteRequest = (status) => ({
+const unfavoriteRequest = (statusId) => ({
   type: UNFAVORITE_REQUEST,
-  status,
+  statusId,
 })
 
-const unfavoriteSuccess = (status) => ({
-  type: UNFAVORITE_SUCCESS,
-  status,
-})
+// const unfavoriteSuccess = (status) => ({
+//   type: UNFAVORITE_SUCCESS,
+//   status,
+// })
 
-const unfavoriteFail = (status, error) => ({
+const unfavoriteFail = (statusId, error) => ({
   type: UNFAVORITE_FAIL,
   showToast: true,
-  status,
+  statusId,
   error,
 })
 
@@ -478,7 +486,7 @@ export const expandReposts = (statusId) => (dispatch, getState) => {
     dispatch(importFetchedAccounts(response.data))
     dispatch(expandRepostsSuccess(statusId, response.data, next ? next.uri : null))
     dispatch(fetchRelationships(response.data.map(item => item.id)))
-  }).catch(error => dispatch(expandRepostsFail(error)))
+  }).catch(error => dispatch(expandRepostsFail(statusId, error)))
 }
 
 const expandRepostsRequest = (statusId) => ({
@@ -558,7 +566,7 @@ export const expandQuotes = (statusId) => (dispatch, getState) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     dispatch(importFetchedStatuses(response.data))
     dispatch(expandQuotesSuccess(statusId, response.data, next ? next.uri : null))
-  }).catch(error => dispatch(expandQuotesFail(error)))
+  }).catch(error => dispatch(expandQuotesFail(statusId, error)))
 }
 
 const expandQuotesRequest = (statusId) => ({
@@ -573,7 +581,7 @@ const expandQuotesSuccess = (statusId, items, next) => ({
   next,
 })
 
-const expandQuotesFail = (statusId, error) => ({
+const expandQuotesFail = (statusId, error) => ({ 
   type: QUOTES_EXPAND_FAIL,
   statusId,
   error,
@@ -585,37 +593,44 @@ const expandQuotesFail = (statusId, error) => ({
  * @description Fetch likes for the given statusId and imports paginated accounts
  *              and sets in user_lists reducer.
  * @param {String} statusId
+ * @param {String} reactionId 
  */
-export const fetchLikes = (statusId) => (dispatch, getState) => {
+export const fetchLikes = (statusId, reactionId) => (dispatch, getState) => {
   if (!me || !statusId) return
+
+  // [-1 = all], [0,1 = normal like], [2-n = reaction]
+  const thisQS = (reactionId !== -1) ? `?reaction_id=${reactionId}` : ''
 
   dispatch(fetchLikesRequest(statusId))
 
-  api(getState).get(`/api/v1/statuses/${statusId}/favourited_by`).then((response) => {
+  api(getState).get(`/api/v1/statuses/${statusId}/favourited_by${thisQS}`).then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     dispatch(importFetchedAccounts(response.data))
-    dispatch(fetchLikesSuccess(statusId, response.data, next ? next.uri : null))
+    dispatch(fetchLikesSuccess(statusId, reactionId, response.data, next ? next.uri : null))
     dispatch(fetchRelationships(response.data.map(item => item.id)))
   }).catch((error) => {
-    dispatch(fetchLikesFail(statusId, error))
+    dispatch(fetchLikesFail(statusId, reactionId, error))
   })
 }
 
-const fetchLikesRequest = (statusId) => ({
+const fetchLikesRequest = (statusId, reactionId) => ({
   type: LIKES_FETCH_REQUEST,
   statusId,
+  reactionId,
 })
 
-const fetchLikesSuccess = (statusId, accounts, next) => ({
+const fetchLikesSuccess = (statusId, reactionId, accounts, next) => ({
   type: LIKES_FETCH_SUCCESS,
   statusId,
+  reactionId,
   accounts,
   next,
 })
 
-const fetchLikesFail = (statusId, error) => ({
+const fetchLikesFail = (statusId, reactionId, error) => ({
   type: LIKES_FETCH_FAIL,
   statusId,
+  reactionId,
   error,
 })
 
@@ -623,40 +638,81 @@ const fetchLikesFail = (statusId, error) => ({
  * @description Expand likes for the given statusId and imports paginated accounts
  *              and sets in user_lists reducer.
  * @param {String} statusId
+ * @param {String} reactionId
  */
-export const expandLikes = (statusId) => (dispatch, getState) => {
+export const expandLikes = (statusId, reactionId) => (dispatch, getState) => {
   if (!me || !statusId) return
 
-  const url = getState().getIn(['user_lists', 'liked_by', statusId, 'next'])
-  const isLoading = getState().getIn(['user_lists', 'liked_by', statusId, 'isLoading'])
+  if (!reactionId) reactionId = 1 //default for 'likes' aka no reaction, just basic "like"
+  
+  const url = getState().getIn(['user_lists', 'reactions', statusId, reactionId, 'next'])
+  const isLoading = getState().getIn(['user_lists', 'reactions', statusId, reactionId, 'isLoading'])
 
   if (url === null || isLoading) return
 
-  dispatch(expandLikesRequest(statusId))
+  dispatch(expandLikesRequest(statusId, reactionId))
 
   api(getState).get(url).then(response => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     dispatch(importFetchedAccounts(response.data))
-    dispatch(expandLikesSuccess(statusId, response.data, next ? next.uri : null))
+    dispatch(expandLikesSuccess(statusId, reactionId, response.data, next ? next.uri : null))
     dispatch(fetchRelationships(response.data.map(item => item.id)))
-  }).catch(error => dispatch(expandLikesFail(error)))
+  }).catch(error => dispatch(expandLikesFail(statusId, reactionId, error)))
 }
 
-const expandLikesRequest = (statusId) => ({
+const expandLikesRequest = (statusId, reactionId) => ({
   type: LIKES_EXPAND_REQUEST,
   statusId,
+  reactionId,
 })
 
-const expandLikesSuccess = (statusId, accounts, next) => ({
+const expandLikesSuccess = (statusId, reactionId, accounts, next) => ({
   type: LIKES_EXPAND_SUCCESS,
   statusId,
+  reactionId,
   accounts,
   next,
 })
 
-const expandLikesFail = (statusId, error) => ({
+const expandLikesFail = (statusId, reactionId, error) => ({
   type: LIKES_EXPAND_FAIL,
   showToast: true,
   statusId,
+  reactionId,
   error,
+})
+
+/**
+ * @description 
+ * @param {ImmutableMap} status
+ */
+ export const unmention = (status) => (dispatch, getState) => {
+  if (!me || !status) return
+
+  dispatch(unmentionRequest(status))
+
+  api(getState).delete(`/api/v1/statuses/${status.get('id')}/mentions`)
+    .then((response) => {
+      dispatch(unmentionSuccess(response.data))
+    }).catch((error) => {
+      dispatch(unmentionFail(status, error))
+    })
+}
+
+const unmentionRequest = (status) => ({
+  type: UNMENTION_REQUEST,
+  status,
+})
+
+const unmentionSuccess = (response) => ({
+  type: UNMENTION_SUCCESS,
+  response,
+  showToast: true,
+})
+
+const unmentionFail = (status, error) => ({
+  type: UNMENTION_FAIL,
+  status,
+  error,
+  showToast: true,
 })

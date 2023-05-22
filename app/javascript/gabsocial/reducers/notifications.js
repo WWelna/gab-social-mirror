@@ -15,9 +15,9 @@ import {
   ACCOUNT_BLOCK_SUCCESS,
   ACCOUNT_MUTE_SUCCESS,
 } from '../actions/accounts'
-import { TIMELINE_DELETE, TIMELINE_DISCONNECT } from '../actions/timelines'
 import { Range, Map as ImmutableMap, List as ImmutableList } from 'immutable'
-import { unreadCount, lastReadNotificationId } from '../initial_state'
+import get from 'lodash.get'
+import { unreadCount } from '../initial_state'
 import compareId from '../utils/compare_id';
 
 const DEFAULT_NOTIFICATIONS_LIMIT = 20
@@ -33,7 +33,6 @@ const initialState = ImmutableMap({
   isError: false,
   queuedNotifications: ImmutableList(), //max = MAX_QUEUED_NOTIFICATIONS
   totalQueuedNotificationsCount: 0, //used for queuedItems overflow for MAX_QUEUED_NOTIFICATIONS+
-  lastReadId: lastReadNotificationId || -1,
   filter: ImmutableMap({
     active: 'all',
     onlyVerified: false,
@@ -46,13 +45,13 @@ const notificationToMap = (notification) => ImmutableMap({
   type: notification.type,
   account: notification.account.id,
   created_at: notification.created_at,
+  reaction_id: notification.favourite && notification.favourite.reaction_id ? notification.favourite.reaction_id : null,
   status: notification.status ? notification.status.id : null,
 });
 
 const makeSortedNotifications = (state) => {
   let finalSortedItems = ImmutableList()
   const items = state.get('items')
-  const lastReadId = state.get('lastReadId')
 
   const chunks = Range(0, items.count(), DEFAULT_NOTIFICATIONS_LIMIT)
     .map((chunkStart) => items.slice(chunkStart, chunkStart + DEFAULT_NOTIFICATIONS_LIMIT)) 
@@ -61,6 +60,8 @@ const makeSortedNotifications = (state) => {
     let sortedItems = ImmutableList()
 
     let follows = ImmutableList()
+
+    // schema: likes [statusId] [reactionTypeId]
     let likes = {}
     let reposts = {}
   
@@ -81,16 +82,27 @@ const makeSortedNotifications = (state) => {
             break
           }
           case 'favourite': {
+            let reactionTypeId = notification.get('reaction_id')
+
             if (likes[statusId] === undefined) {
+              // init outer
+              likes[statusId] = {}
+              indexesForStatusesForFavorites[statusId] = {}
+            }
+            if (likes[statusId][reactionTypeId] === undefined) {
+              // init inner
+              likes[statusId][reactionTypeId] = []
+
               let size = sortedItems.size
               sortedItems = sortedItems.set(size, ImmutableMap())
-              indexesForStatusesForFavorites[statusId] = size
-              likes[statusId] = []
+              indexesForStatusesForFavorites[statusId][reactionTypeId] = size
             }
-            likes[statusId].push({
+
+            likes[statusId][reactionTypeId].push({
               account: notification.get('account'),
               created_at: notification.get('created_at'),
               id: notification.get('id'),
+              reaction_id: reactionTypeId,
             })
             break
           }
@@ -119,19 +131,19 @@ const makeSortedNotifications = (state) => {
             follow: follows,
           }))
         }
+
         if (Object.keys(likes).length > 0) {
           for (const statusId in likes) {
-            if (likes.hasOwnProperty(statusId)) {
-              const likeArr = likes[statusId]
+            for (const reactionTypeId in likes[statusId]) {
+              const likeArr = likes[statusId][reactionTypeId]
               const accounts = likeArr.map((l) => l.account)
               const lastUpdated = likeArr[0]['created_at']
-              const isUnread = parseInt(likeArr[0]['id']) > lastReadId
 
-              sortedItems = sortedItems.set(indexesForStatusesForFavorites[statusId], ImmutableMap({
+              sortedItems = sortedItems.set(indexesForStatusesForFavorites[statusId][reactionTypeId], ImmutableMap({
                 like: ImmutableMap({
                   accounts,
                   lastUpdated,
-                  isUnread,
+                  reactionTypeId,
                   status: statusId,
                 })
               }))
@@ -144,13 +156,11 @@ const makeSortedNotifications = (state) => {
               const repostArr = reposts[statusId]
               const accounts = repostArr.map((l) => l.account)
               const lastUpdated = repostArr[0]['created_at']
-              const isUnread = parseInt(repostArr[0]['id']) > lastReadId
 
               sortedItems = sortedItems.set(indexesForStatusesForReposts[statusId], ImmutableMap({
                 repost: ImmutableMap({
                   accounts,
                   lastUpdated,
-                  isUnread,
                   status: statusId,
                 })
               }))
@@ -167,14 +177,7 @@ const makeSortedNotifications = (state) => {
 }
 
 const normalizeNotification = (state, notification) => {
-  const top = state.get('top')
-
-  if (!top) {
-    state = state.update('unread', (unread) => unread + 1)
-  }
-
   state = state.update('items', (list) => {
-    if (top && list.size > 40) list = list.take(20)
     return list.unshift(notificationToMap(notification))
   })
 
@@ -261,8 +264,6 @@ const updateNotificationsQueue = (state, notification, intlMessages, intlLocale)
 
 export default function notifications(state = initialState, action) {
   switch(action.type) {
-  case NOTIFICATIONS_MARK_READ:
-    return state.set('lastReadId', action.lastReadId);
   case NOTIFICATIONS_EXPAND_REQUEST:
     return state.set('isLoading', true);
   case NOTIFICATIONS_EXPAND_FAIL:
@@ -278,28 +279,31 @@ export default function notifications(state = initialState, action) {
   case NOTIFICATIONS_SCROLL_TOP:
     return updateTop(state, action.top);
   case NOTIFICATIONS_UPDATE:
+    state = state.set('unread', state.get('unread') + 1);
     return normalizeNotification(state, action.notification);
   case NOTIFICATIONS_UPDATE_QUEUE:
     return updateNotificationsQueue(state, action.notification, action.intlMessages, action.intlLocale);
+  case NOTIFICATIONS_MARK_READ:
+    return state.set('unread', 0);    
   case NOTIFICATIONS_DEQUEUE:
     return state.withMutations(mutable => {
       mutable.set('queuedNotifications', ImmutableList())
       mutable.set('totalQueuedNotificationsCount', 0)
+      mutable.set('unread', 0)
     });
   case NOTIFICATIONS_EXPAND_SUCCESS:
-    return expandNormalizedNotifications(state, action.notifications, action.next);
+    return expandNormalizedNotifications(state.withMutations(mutable => {
+      mutable.set('unread', 0)
+    }), action.notifications, action.next);
   case ACCOUNT_BLOCK_SUCCESS:
     return filterNotifications(state, action.relationship);
   case ACCOUNT_MUTE_SUCCESS:
     return action.relationship.muting_notifications ? filterNotifications(state, action.relationship) : state;
   case NOTIFICATIONS_CLEAR:
-    return state.set('items', ImmutableList()).set('hasMore', false);
-  case TIMELINE_DELETE:
-    return deleteByStatus(state, action.id);
-  case TIMELINE_DISCONNECT:
-    return action.timeline === 'home' ?
-      state.update('items', items => items.first() ? items.unshift(null) : items) :
-      state;
+    state = initialState
+    return state.withMutations(mutable => {
+      mutable.set('unread', 0)
+    });
   default:
     return state;
   }

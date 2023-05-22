@@ -1,16 +1,5 @@
-import api, { getLinks } from '../api'
-import { importFetchedStatuses } from './importer'
+import api from '../api'
 import { me, meUsername } from '../initial_state'
-
-export const BOOKMARKED_STATUSES_FETCH_REQUEST = 'BOOKMARKED_STATUSES_FETCH_REQUEST'
-export const BOOKMARKED_STATUSES_FETCH_SUCCESS = 'BOOKMARKED_STATUSES_FETCH_SUCCESS'
-export const BOOKMARKED_STATUSES_FETCH_FAIL = 'BOOKMARKED_STATUSES_FETCH_FAIL'
-
-export const BOOKMARKED_STATUSES_EXPAND_REQUEST = 'BOOKMARKED_STATUSES_EXPAND_REQUEST'
-export const BOOKMARKED_STATUSES_EXPAND_SUCCESS = 'BOOKMARKED_STATUSES_EXPAND_SUCCESS'
-export const BOOKMARKED_STATUSES_EXPAND_FAIL = 'BOOKMARKED_STATUSES_EXPAND_FAIL'
-
-//
 
 export const BOOKMARK_COLLECTIONS_FETCH_REQUEST = 'BOOKMARK_COLLECTIONS_FETCH_REQUEST'
 export const BOOKMARK_COLLECTIONS_FETCH_SUCCESS = 'BOOKMARK_COLLECTIONS_FETCH_SUCCESS'
@@ -24,8 +13,6 @@ export const BOOKMARK_COLLECTIONS_REMOVE_REQUEST = 'BOOKMARK_COLLECTIONS_REMOVE_
 export const BOOKMARK_COLLECTIONS_REMOVE_SUCCESS = 'BOOKMARK_COLLECTIONS_REMOVE_SUCCESS'
 export const BOOKMARK_COLLECTIONS_REMOVE_FAIL = 'BOOKMARK_COLLECTIONS_REMOVE_FAIL'
 
-//
-
 export const BOOKMARK_COLLECTIONS_UPDATE_FAIL = 'BOOKMARK_COLLECTIONS_UPDATE_FAIL'
 export const BOOKMARK_COLLECTIONS_UPDATE_REQUEST = 'BOOKMARK_COLLECTIONS_UPDATE_REQUEST'
 export const BOOKMARK_COLLECTIONS_UPDATE_SUCCESS = 'BOOKMARK_COLLECTIONS_UPDATE_SUCCESS'
@@ -34,91 +21,6 @@ export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_FAIL = 'BOOKMARK_COLLECTIONS_UPD
 export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST'
 export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS'
 
-/**
- * 
- */
-export const fetchBookmarkedStatuses = (bookmarkCollectionId) => (dispatch, getState) => {
-  if (!me) return
-
-  if (getState().getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'isLoading'])) {
-    return
-  }
-
-  dispatch(fetchBookmarkedStatusesRequest(bookmarkCollectionId))
-
-  api(getState).get(`/api/v1/bookmark_collections/${bookmarkCollectionId}/bookmarks`).then((response) => {
-    const next = getLinks(response).refs.find(link => link.rel === 'next')
-    dispatch(importFetchedStatuses(response.data))
-    dispatch(fetchBookmarkedStatusesSuccess(response.data, bookmarkCollectionId, next ? next.uri : null))
-  }).catch((error) => {
-    dispatch(fetchBookmarkedStatusesFail(bookmarkCollectionId, error))
-  })
-}
-
-const fetchBookmarkedStatusesRequest = (bookmarkCollectionId) => ({
-  type: BOOKMARKED_STATUSES_FETCH_REQUEST,
-  bookmarkCollectionId,
-})
-
-const fetchBookmarkedStatusesSuccess = (statuses, bookmarkCollectionId, next) => ({
-  type: BOOKMARKED_STATUSES_FETCH_SUCCESS,
-  bookmarkCollectionId,
-  statuses,
-  next,
-})
-
-const fetchBookmarkedStatusesFail = (bookmarkCollectionId, error) => ({
-  type: BOOKMARKED_STATUSES_FETCH_FAIL,
-  showToast: true,
-  bookmarkCollectionId,
-  error,
-})
-
-/**
- * 
- */
-export const expandBookmarkedStatuses = (bookmarkCollectionId) => (dispatch, getState) => {
-  if (!me) return
-
-  const url = getState().getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'next'], null)
-
-  if (url === null || getState().getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'isLoading'])) {
-    return
-  }
-
-  dispatch(expandBookmarkedStatusesRequest(bookmarkCollectionId))
-
-  api(getState).get(url).then((response) => {
-    const next = getLinks(response).refs.find(link => link.rel === 'next')
-    dispatch(importFetchedStatuses(response.data))
-    dispatch(expandBookmarkedStatusesSuccess(response.data, bookmarkCollectionId, next ? next.uri : null))
-  }).catch((error) => {
-    dispatch(expandBookmarkedStatusesFail(bookmarkCollectionId, error))
-  })
-}
-
-const expandBookmarkedStatusesRequest = (bookmarkCollectionId) => ({
-  type: BOOKMARKED_STATUSES_EXPAND_REQUEST,
-  bookmarkCollectionId,
-})
-
-const expandBookmarkedStatusesSuccess = (statuses, bookmarkCollectionId, next) => ({
-  type: BOOKMARKED_STATUSES_EXPAND_SUCCESS,
-  bookmarkCollectionId,
-  statuses,
-  next,
-})
-
-const expandBookmarkedStatusesFail = (bookmarkCollectionId, error) => ({
-  type: BOOKMARKED_STATUSES_EXPAND_FAIL,
-  showToast: true,
-  bookmarkCollectionId,
-  error,
-})
-
-/**
- * 
- */
 export const fetchBookmarkCollections = () => (dispatch, getState) => {
   if (!me) return
 
@@ -148,9 +50,6 @@ const fetchBookmarkCollectionsFail = (error) => ({
   error,
 })
 
-/**
- * 
- */
 export const createBookmarkCollection = (title) => (dispatch, getState) => {
   if (!me || !title) return
 
@@ -178,9 +77,6 @@ const createBookmarkCollectionFail = (error) => ({
   error,
 })
 
-/**
- * 
- */
 export const removeBookmarkCollection = (bookmarkCollectionId, routerHistory) => (dispatch, getState) => {
   if (!me || !bookmarkCollectionId) return
 
@@ -210,9 +106,6 @@ const removeBookmarkCollectionFail = (error) => ({
   error,
 })
 
-/**
- * 
- */
 export const updateBookmarkCollection = (bookmarkCollectionId, title) => (dispatch, getState) => {
   if (!me || !bookmarkCollectionId || !title) return
 
@@ -240,9 +133,6 @@ const updateBookmarkCollectionFail = (error) => ({
   error,
 })
 
-/**
- * 
- */
 export const updateBookmarkCollectionStatus = (statusId, bookmarkCollectionId) => (dispatch, getState) => {
   if (!me || !statusId) return
 

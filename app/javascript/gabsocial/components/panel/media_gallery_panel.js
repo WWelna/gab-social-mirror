@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import { expandAccountMediaTimeline } from '../../actions/timelines'
+import { timelineFetchPaged } from '../../store/timelines'
 import { getAccountGallery } from '../../selectors'
 import PanelLayout from './panel_layout'
 import MediaItem from '../media_item'
@@ -12,30 +12,24 @@ import MediaGalleryPanelPlaceholder from '../placeholder/media_gallery_panel_pla
 
 class MediaGalleryPanel extends ImmutablePureComponent {
 
-  state = {
-    fetched: false,
-  }
-
-  static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.shouldLoad && !prevState.fetched) {
-      return { fetched: true }
+  load = opts => {
+    const { accountId } = this.props
+    if (!accountId || accountId === -1) {
+      return
     }
-
-    return null
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (!prevState.fetched && this.state.fetched && this.props.isLazy) {
-      this.props.dispatch(expandAccountMediaTimeline(this.props.accountId, { limit: 8 }))
-    }
+    const timelineId = `account:${accountId}:media`
+    const endpoint = `/api/v1/accounts/${accountId}/statuses`
+    const expandOpts = Object.assign({ endpoint, limit: 8, only_media: true }, opts)
+    this.props.dispatch(timelineFetchPaged(timelineId, expandOpts))
   }
 
   componentDidMount() {
-    const { accountId, isLazy } = this.props
+    this.load()
+  }
 
-    if (!isLazy && !!accountId && accountId !== -1) {
-      this.props.dispatch(expandAccountMediaTimeline(accountId, { limit: 8 }))
-      this.setState({ fetched: true })
+  componentDidUpdate(prevProps) {
+    if (prevProps.accountId !== this.props.accountId) {
+      this.load()
     }
   }
 
@@ -46,9 +40,8 @@ class MediaGalleryPanel extends ImmutablePureComponent {
       intl,
       isLoading,
     } = this.props
-    const { fetched } = this.state
 
-    if (!attachments && fetched) return null
+    if (!attachments) return null
 
     return (
       <PanelLayout
@@ -56,13 +49,13 @@ class MediaGalleryPanel extends ImmutablePureComponent {
         title={intl.formatMessage(messages.title)}
         headerButtonTitle={!!account ? intl.formatMessage(messages.show_all) : undefined}
         headerButtonTo={!!account ? `/${account.get('acct')}/photos` : undefined}
-      > 
+      >
         <div className={[_s.d, _s.w100PC, _s.px10, _s.pb10, _s.flexRow, _s.flexWrap].join(' ')}>
           {
             !!account && attachments.size > 0 &&
             <React.Fragment>
               {
-                attachments.slice(0, 9).map((attachment, i) => (
+                attachments.slice(0, 9).map(attachment => (
                   <MediaItem
                     isSmall
                     key={attachment.get('id')}
@@ -83,6 +76,7 @@ class MediaGalleryPanel extends ImmutablePureComponent {
       </PanelLayout>
     )
   }
+
 }
 
 const messages = defineMessages({
@@ -95,14 +89,14 @@ const mapStateToProps = (state, { account }) => {
 
   return {
     accountId,
-    isLoading: state.getIn(['timelines', `account:${accountId}:media`, 'isLoading'], true), 
+    isLoading: state.getIn(['timelines', `account:${accountId}:media`, 'isLoading'], true),
     attachments: getAccountGallery(state, accountId),
   }
 }
 
 MediaGalleryPanel.propTypes = {
   dispatch: PropTypes.func.isRequired,
-  accountId: PropTypes.string,
+  accountId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   account: ImmutablePropTypes.map,
   isLoading: PropTypes.bool,
   attachments: ImmutablePropTypes.list.isRequired,

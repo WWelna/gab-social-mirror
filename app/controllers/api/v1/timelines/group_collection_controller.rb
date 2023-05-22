@@ -6,7 +6,7 @@ class Api::V1::Timelines::GroupCollectionController < Api::BaseController
   before_action :set_sort_type
   before_action :set_statuses
 
-  after_action :insert_pagination_headers, unless: -> { @statuses.empty? }
+  # after_action :insert_pagination_headers, unless: -> { @statuses.empty? }
 
   def show
     if current_account
@@ -80,28 +80,30 @@ class Api::V1::Timelines::GroupCollectionController < Api::BaseController
     end
   end
 
-  def insert_pagination_headers
-    set_pagination_headers(next_path, prev_path)
-  end
+  # ❕ enable these again if you figure out how to use max_id cursors
 
-  def pagination_params(core_params)
-    params.slice(:limit).permit(:limit).merge(core_params)
-  end
+  # def insert_pagination_headers
+  #   set_pagination_headers(next_path, prev_path)
+  # end
 
-  def next_path
-    api_v1_timelines_group_collection_url pagination_params(max_id: pagination_max_id)
-  end
+  # def pagination_params(core_params)
+  #   params.slice(:limit).permit(:limit).merge(core_params)
+  # end
 
-  def prev_path
-    api_v1_timelines_group_collection_url pagination_params(min_id: pagination_since_id)
-  end
+  # def next_path
+  #   api_v1_timelines_group_collection_url pagination_params(max_id: pagination_max_id)
+  # end
 
-  def pagination_max_id
-    @statuses.last.id
-  end
+  # def prev_path
+  #   api_v1_timelines_group_collection_url pagination_params(min_id: pagination_since_id)
+  # end
 
-  def pagination_since_id
-    @statuses.first.id
-  end
+  # def pagination_max_id
+  #   @statuses.last.id
+  # end
+
+  # def pagination_since_id
+  #   @statuses.first.id
+  # end
 
 end

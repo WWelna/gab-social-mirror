@@ -22,6 +22,9 @@ class UserSettingsDecorator
     user.settings['default_language']    = default_language_preference if change?('setting_default_language')
     user.settings['unfollow_modal']      = unfollow_modal_preference if change?('setting_unfollow_modal')
     user.settings['boost_modal']         = boost_modal_preference if change?('setting_boost_modal')
+    user.settings['show_videos']         = show_videos_preference if change?('setting_show_videos')
+    user.settings['show_suggested_users']  = show_suggested_users_preference if change?('setting_show_suggested_users')
+    user.settings['show_groups']         = show_groups_preference if change?('setting_show_groups')
     user.settings['delete_modal']        = delete_modal_preference if change?('setting_delete_modal')
     user.settings['auto_play_gif']       = auto_play_gif_preference if change?('setting_auto_play_gif')
     user.settings['display_media']       = display_media_preference if change?('setting_display_media')
@@ -32,6 +35,7 @@ class UserSettingsDecorator
     user.settings['aggregate_reblogs']   = aggregate_reblogs_preference if change?('setting_aggregate_reblogs')
     user.settings['group_in_home_feed']  = group_in_home_feed_preference if change?('setting_group_in_home_feed')
     user.settings['show_pro_life']       = show_pro_life_preference if change?('setting_show_pro_life')
+    user.settings['remote_rss_feed']     = Addressable::URI.parse(remote_rss_feed_entry).to_s if actually_changed?('setting_remote_rss_feed')
   end
 
   def merged_notification_emails
@@ -58,6 +62,18 @@ class UserSettingsDecorator
     boolean_cast_setting 'setting_boost_modal'
   end
 
+  def show_videos_preference
+    boolean_cast_setting 'setting_show_videos'
+  end
+
+  def show_suggested_users_preference
+    boolean_cast_setting 'setting_show_suggested_users'
+  end
+
+  def show_groups_preference
+    boolean_cast_setting 'setting_show_groups'
+  end
+
   def delete_modal_preference
     boolean_cast_setting 'setting_delete_modal'
   end
@@ -76,6 +92,12 @@ class UserSettingsDecorator
 
   def noindex_preference
     boolean_cast_setting 'setting_noindex'
+  end
+
+  def remote_rss_feed_entry
+    if user.account.vpdi? && settings['setting_remote_rss_feed'].starts_with?('http')
+      settings['setting_remote_rss_feed'].downcase
+    end
   end
 
   def hide_network_preference
@@ -116,5 +138,9 @@ class UserSettingsDecorator
 
   def change?(key)
     !settings[key].nil?
+  end
+
+  def actually_changed?(key)
+    settings[key] != user.settings[key]
   end
 end

@@ -42,8 +42,6 @@ class Status < ApplicationRecord
   # will be based on current time instead of `created_at`
   attr_accessor :override_timestamps
 
-  update_index('statuses#status', :proper) if Chewy.enabled?
-
   enum visibility: [
     :public,
     :unlisted,
@@ -74,6 +72,7 @@ class Status < ApplicationRecord
   has_many :active_mentions, -> { active }, class_name: 'Mention', inverse_of: :status
   has_many :media_attachments, dependent: :nullify
   has_many :revisions, class_name: 'StatusRevision', dependent: :destroy
+  has_many :status_links, dependent: :destroy
 
   has_and_belongs_to_many :tags
   has_and_belongs_to_many :preview_cards
@@ -128,45 +127,76 @@ class Status < ApplicationRecord
     where(id: GabSocial::Snowflake.id_at(timestamp)..)
   }
 
-  cache_associated :application,
-                   :media_attachments,
-                   :conversation,
-                   :status_stat,
-                   :tags,
-                   :preview_cards,
-                   :preloadable_poll,
-                   account: :account_stat,
-                   active_mentions: { account: :account_stat },
-                   group: :group_categories,
+
+  # These are all of the Status fields that get preloaded.
+  # They're used in top-level posts, as well as nested includes for
+  # reblogs & quotes.
+  cached_fields = [
+    :application,
+    :tags,
+    :media_attachments,
+    :preview_cards,
+    :conversation,
+    :status_stat,
+    :preloadable_poll,
+    :revisions,
+    {
+      account: :account_stat,
+      active_mentions: { account: :account_stat },
+      group: :group_categories,
+    },
+  ].freeze
+
+  cache_associated *cached_fields,
                    reblog: [
-                     :application,
-                     :tags,
-                     :preview_cards,
-                     :media_attachments,
-                     :conversation,
-                     :status_stat,
-                     :preloadable_poll,
-                     account: :account_stat,
-                     active_mentions: { account: :account_stat },
+                     *cached_fields,
+                     { quote: cached_fields },
                    ],
+                   quote: cached_fields,
                    thread: { account: :account_stat }
 
   delegate :domain, to: :account, prefix: true
 
-  def searchable_by(preloaded = nil)
-    ids = [account_id]
-
-    if preloaded.nil?
-      ids += mentions.pluck(:account_id)
-      ids += favourites.pluck(:account_id)
-      ids += reblogs.pluck(:account_id)
-    else
-      ids += preloaded.mentions[id] || []
-      ids += preloaded.favourites[id] || []
-      ids += preloaded.reblogs[id] || []
+  searchable :if => proc { |status|
+    status.visibility == 'public' &&
+    status.tombstoned_at.nil? &&
+    status.reblog_of_id.nil?
+  } do
+    text :text
+    text :username do
+      account.username
     end
+    text :display do
+      account.display_name ? account.display_name : account.username
+    end
+    boolean :pro do
+      account.is_pro?
+    end
+    boolean :verified do
+      account.is_verified?
+    end
+    integer :group_id
+    long :account_id
+    integer :likes do
+      status_stat ? status_stat.favourites_count : 0
+    end
+    integer :reposts do
+      status_stat ? status_stat.reblogs_count : 0
+    end
+    boolean :media do
+      media_attachments.any?
+    end
+    long :in_reply_to_id
+    long :created do
+      created_at.to_time.to_i
+    end
+    long :updated do
+      updated_at.to_time.to_i
+    end
+  end
 
-    ids.uniq
+  def cache_key
+    "statuses/#{id}"
   end
 
   def reply?
@@ -263,7 +293,7 @@ class Status < ApplicationRecord
   end
 
   def quotes_count
-    @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 1.minutes) do
+    @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 4.hours) do
       self.class.quotes_count_map(id)[id] || 0
     end
   end
@@ -279,6 +309,10 @@ class Status < ApplicationRecord
 
   def favourites_count
     status_stat&.favourites_count || 0
+  end
+
+  def reactions_counts
+    self.class.reactions_map(id) || {}
   end
 
   def increment_count!(key)
@@ -346,7 +380,24 @@ class Status < ApplicationRecord
     end
 
     def favourites_map(status_ids, account_id)
-      Favourite.select('status_id').where(status_id: status_ids).where(account_id: account_id).each_with_object({}) { |f, h| h[f.status_id] = true }
+      Favourite.select('status_id, reaction_id').where(status_id: status_ids).where(account_id: account_id).each_with_object({}) { |f, h| h[f.status_id] = f.reaction_id.nil? ? 1 : f.reaction_id }
+    end
+
+    def reactions_map(status_id)
+      Rails.cache.fetch("reactions_counts:#{status_id}", expires_in: 4.hours) do
+        Favourite.where(status_id: status_id).group('reaction_id').pluck('reaction_id', Arel.sql('count(*)')).each_with_object({}) { |(reactionId, count), h|
+          key = reactionId.nil? ? 1 : reactionId
+          if h.has_key?(key)
+            h[key] += count
+          else
+            h[key] = count
+          end
+        }
+      end
+    end
+
+    def mutes_map(conversation_ids, account_id)
+      ConversationMute.select('conversation_id').where(conversation_id: conversation_ids).where(account_id: account_id).each_with_object({}) { |m, h| h[m.conversation_id] = true }
     end
 
     def bookmarks_map(status_ids, account_id)

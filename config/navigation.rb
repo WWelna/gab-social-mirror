@@ -38,8 +38,10 @@ SimpleNavigation::Configuration.run do |navigation|
       s.item :action_logs, safe_join([fa_icon('bars fw'), t('admin.action_logs.title')]), admin_action_logs_url
       s.item :email_domain_blocks, safe_join([fa_icon('envelope fw'), t('admin.email_domain_blocks.title')]), admin_email_domain_blocks_url, highlights_on: %r{/admin/email_domain_blocks}, if: -> { current_user.admin? }
       s.item :link_blocks, safe_join([fa_icon('link fw'), t('admin.link_blocks.title')]), admin_link_blocks_url
+      s.item :image_blocks, safe_join([fa_icon('link fw'), 'Image Blocks']), admin_image_blocks_url
       s.item :tombstones, safe_join([fa_icon('bars fw'), "Tombstones"]), admin_tombstones_url
       s.item :account_warnings, safe_join([fa_icon('link fw'), "Account Warnings"]), admin_account_warnings_url
+      s.item :marketplace_listings, safe_join([fa_icon('id-card-o fw'), "Marketplace Listings"]), '/admin/marketplace_listings?status=0'
     end
 
     n.item :admin, safe_join([fa_icon('cogs fw'), t('admin.title')]), admin_dashboard_url, if: proc { current_user.staff? } do |s|
@@ -52,7 +54,8 @@ SimpleNavigation::Configuration.run do |navigation|
       s.item :promotions, safe_join([fa_icon('star fw'), t('promotions.title')]), admin_promotions_url, if: -> { current_user.admin? }
       s.item :monthly_funding, safe_join([fa_icon('money fw'), t('monthly_funding.title')]), admin_expenses_url, if: -> { current_user.admin? }
       s.item :group_categories, safe_join([fa_icon('users fw'), t('group_categories.title')]), admin_group_categories_url, if: -> { current_user.admin? }
-      s.item :trending_hashtags, safe_join([fa_icon('hashtag fw'), 'Trending Hashtags']), admin_trending_hashtags_url, if: -> { current_user.admin? }
+      s.item :marketplace_listing_categories, safe_join([fa_icon('bars fw'), 'Marketplace Categories']), admin_marketplace_listing_categories_url, if: -> { current_user.admin? }
+      s.item :reaction_types, safe_join([fa_icon('thumbs-up fw'), 'Reaction Types']), admin_reaction_types_url, if: -> { current_user.admin? }
     end
 
     n.item :logout, safe_join([fa_icon('sign-out fw'), t('auth.logout')]), destroy_user_session_url, link_html: { 'data-method' => 'delete' }

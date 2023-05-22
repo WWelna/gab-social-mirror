@@ -82,6 +82,8 @@ module AccountInteractions
     has_many :muted_by_relationships, class_name: 'Mute', foreign_key: :target_account_id, dependent: :destroy
     has_many :muted_by, -> { order('mutes.id desc') }, through: :muted_by_relationships, source: :account
 
+    has_many :conversation_mutes
+
     # Chat block relationships
     has_many :chat_block_relationships, class_name: 'ChatBlock', foreign_key: 'account_id', dependent: :destroy
     has_many :chat_blocking, -> { order('chat_blocks.id desc') }, through: :chat_block_relationships, source: :target_account
@@ -144,6 +146,15 @@ module AccountInteractions
     mute&.destroy
   end
 
+  def mute_conversation!(conversation)
+    conversation_mutes.find_or_create_by!(conversation: conversation)
+  end
+
+  def unmute_conversation!(conversation)
+    conversation_mute = conversation_mutes.find_by(conversation: conversation)
+    conversation_mute&.destroy!
+  end
+
   def following?(other_account)
     active_relationships.where(target_account: other_account).exists?
   end
@@ -180,8 +191,29 @@ module AccountInteractions
     status.proper.favourites.where(account: self).exists?
   end
 
+  def reaction_id(status)
+    fav = status.proper.favourites.where(account: self).first
+    if !fav.nil?
+      return fav.reaction_id
+    end
+    nil
+  end
+
+  def reaction(status)
+    fav = status.proper.favourites.where(account: self).first
+    reaction = nil
+    if !fav.nil? && !fav.reaction_id.nil?
+      reaction = ReactionType.find(fav.reaction_id)
+    end
+    reaction
+  end
+
   def bookmarked?(status)
     status_bookmarks.where(account: self, status: status).exists?
+  end
+
+  def marketplace_listing_saved?(marketplace_listing)
+    marketplace_listing_saves.where(account: self, marketplace_listing: marketplace_listing).exists?
   end
 
   def reblogged?(status)
@@ -190,6 +222,10 @@ module AccountInteractions
 
   def pinned?(status)
     status_pins.where(status: status).exists?
+  end
+
+  def muting_conversation?(conversation)
+    conversation_mutes.where(conversation: conversation).exists?
   end
 
   def followers_for_local_distribution

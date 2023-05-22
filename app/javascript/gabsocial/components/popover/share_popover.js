@@ -34,6 +34,7 @@ class SharePopover extends ImmutablePureComponent {
       group,
       status,
       list,
+      marketplaceListing,
     } = this.props
     let url, type
     
@@ -49,6 +50,9 @@ class SharePopover extends ImmutablePureComponent {
     } else if (!!list) {
       type = 'list'
       url = list.get('url')
+    } else if (!!marketplaceListing) {
+      type = 'Marketplace listing'
+      url = marketplaceListing.get('url')
     }
 
     this.setState({ url, type })
@@ -205,6 +209,7 @@ SharePopover.propTypes = {
   group: ImmutablePropTypes.map,
   status: ImmutablePropTypes.map,
   list: ImmutablePropTypes.map,
+  marketplaceListing: ImmutablePropTypes.map,
 }
 
 export default connect(null, mapDispatchToProps)(SharePopover)

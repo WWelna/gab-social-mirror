@@ -20,6 +20,7 @@ class Textarea extends React.PureComponent {
       title,
       isRequired,
       maxLength,
+      isDisabled,
     } = this.props
 
     const inputClasses = CX({
@@ -38,6 +39,7 @@ class Textarea extends React.PureComponent {
       minH106PX: 1,
       px5: !!prependIcon,
       pl15: !prependIcon,
+      cursorNotAllowed: isDisabled,
     })
 
     return (
@@ -61,6 +63,7 @@ class Textarea extends React.PureComponent {
             onFocus={onFocus}
             onBlur={onBlur}
             maxLength={maxLength}
+            disabled={isDisabled}
             required={isRequired ? true : undefined}
           />
 
@@ -80,6 +83,7 @@ Textarea.propTypes = {
   onBlur: PropTypes.func,
   title: PropTypes.string,
   isRequired: PropTypes.bool,
+  isDisabled: PropTypes.bool,
   maxLength: PropTypes.number,
 }
 

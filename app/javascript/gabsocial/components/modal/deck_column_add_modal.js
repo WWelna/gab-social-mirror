@@ -43,7 +43,7 @@ class DeckColumnAddModal extends React.PureComponent {
             <DeckColumnAddModalButton icon='notifications' type='Notifications' onClick={() => this.onAdd('notifications')} />
           </div>
           <div className={[_s.d, _s.pl10, _s.borderBottom1PX, _s.borderColorSecondary, _s.flexRow, _s.aiCenter, _s.jcCenter].join(' ')}>
-            <DeckColumnAddModalButton icon='list' type='List' onClick={() => this.onAdd('list')} />
+            <DeckColumnAddModalButton icon='list' type='Feed' onClick={() => this.onAdd('list')} />
             <DeckColumnAddModalButton icon='like' type='Likes' onClick={() => this.onAdd('likes')} />
             <DeckColumnAddModalButton icon='bookmark' type='Bookmarks' onClick={() => this.onAdd('bookmarks')} />
           </div>

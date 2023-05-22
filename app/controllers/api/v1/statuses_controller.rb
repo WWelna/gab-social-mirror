@@ -7,6 +7,7 @@ class Api::V1::StatusesController < Api::BaseController
   before_action -> { doorkeeper_authorize! :write, :'write:statuses' }, only:   [:create, :update, :destroy]
   before_action :require_user!, except:  [:show, :comments, :context, :card]
   before_action :set_status, only:       [:show, :comments, :context, :card, :update, :revisions]
+  after_action :update_stream, only: [:create, :update]
 
   # This API was originally unlimited, pagination cannot be introduced without
   # breaking backwards-compatibility. Arbitrarily high number to cover most
@@ -16,8 +17,7 @@ class Api::V1::StatusesController < Api::BaseController
   CONTEXT_LIMIT = 512
 
   def show
-    @status = cache_collection([@status], Status).first
-    render json: @status, serializer: REST::StatusSerializer
+    render json: @status, serializer: REST::StatusSerializer, relationships: StatusRelationshipsPresenter.new([@status], current_user&.account_id)
   end
 
   # all desendants
@@ -65,7 +65,6 @@ class Api::V1::StatusesController < Api::BaseController
                                          expires_at: status_params[:expires_at],
                                          application: doorkeeper_token.application,
                                          poll: status_params[:poll],
-                                         idempotency: request.headers['Idempotency-Key'],
                                          group_id: status_params[:group_id],
                                          quote_of_id: status_params[:quote_of_id])
 
@@ -84,8 +83,7 @@ class Api::V1::StatusesController < Api::BaseController
                                          sensitive: status_params[:sensitive],
                                          spoiler_text: status_params[:spoiler_text],
                                          visibility: status_params[:visibility],
-                                         application: doorkeeper_token.application,
-                                         idempotency: request.headers['Idempotency-Key'])
+                                         application: doorkeeper_token.application)
 
     render json: @status, serializer: REST::StatusSerializer
   end
@@ -101,6 +99,10 @@ class Api::V1::StatusesController < Api::BaseController
   end
 
   private
+
+  def update_stream
+    FeedManager.instance.push_to_home(@status.account, @status)
+  end
 
   def set_status
     @status = Status.find(params[:id])

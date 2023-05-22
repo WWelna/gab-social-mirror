@@ -7,7 +7,6 @@ import Text from './text'
 class LoadMore extends React.PureComponent {
 
   handleClick = (e) => {
-    this.props.visible = false
     this.props.onClick(e)
   }
 

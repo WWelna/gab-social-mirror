@@ -48,8 +48,6 @@ class NavigationBarButton extends React.PureComponent {
       px2: !title && !isXS,
       py5: !title && !isXS,
       px5: !title,
-      mr2: !title && isXS,
-      ml2: !title && isXS,
     })
 
     const countClasses = CX({

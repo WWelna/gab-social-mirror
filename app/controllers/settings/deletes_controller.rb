@@ -11,6 +11,12 @@ class Settings::DeletesController < Settings::BaseController
 
   def destroy
     if current_user.valid_password?(delete_params[:password])
+      # don't allow if vpdi. from SuspendAccountService. force return error
+      if current_account.vpdi?
+        redirect_to settings_delete_path, alert: "Error. Please email support@gab.com to delete your account."
+        return
+      end
+
       Admin::SuspensionWorker.perform_async(current_user.account_id, true)
       sign_out
       redirect_to new_user_session_path, notice: I18n.t('deletes.success_msg')

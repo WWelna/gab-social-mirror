@@ -106,7 +106,7 @@ PanelLayout.propTypes = {
   title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   subtitle: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   children: PropTypes.node,
-  headerButtonTitle: PropTypes.string,
+  headerButtonTitle: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   headerButtonAction: PropTypes.func,
   headerButtonTo: PropTypes.string,
   headerButtonTooltip: PropTypes.string,

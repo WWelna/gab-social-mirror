@@ -6,7 +6,6 @@ import {
   LinkFooter,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class LinkPage extends React.PureComponent {
@@ -16,7 +15,16 @@ class LinkPage extends React.PureComponent {
       children,
       page,
       title,
+      showSuggestedUsers,
     } = this.props
+
+    let sidebarLayout = [TrendsBreakingPanel]
+
+    if(showSuggestedUsers) {
+      sidebarLayout.push(UserSuggestionsPanel)
+    }
+
+    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
@@ -24,12 +32,7 @@ class LinkPage extends React.PureComponent {
         showBackBtn
         title={title}
         page={page}
-        layout={[
-          GabAdPanel,
-          TrendsBreakingPanel,
-          UserSuggestionsPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
       >
         <PageTitle path={title} />
         {children}

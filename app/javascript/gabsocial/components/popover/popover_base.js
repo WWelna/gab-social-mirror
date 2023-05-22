@@ -1,22 +1,26 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import detectPassiveEvents from 'detect-passive-events'
+import { supportsPassiveEvents, primaryInput } from 'detect-it'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { Popper } from 'react-popper'
 import { withRouter } from 'react-router-dom'
 import get from 'lodash.get'
-import { CX, POPOVER_SHARE } from '../../constants'
+import {
+  CX,
+  POPOVER_SHARE,
+  POPOVER_STATUS_REACTIONS_SELECTOR,
+} from '../../constants'
 import { cancelPopover } from '../../actions/popover'
 
-const listenerOptions = detectPassiveEvents.hasSupport ? { passive: true } : false
+const listenerOptions = supportsPassiveEvents ? { passive: true } : false
 
 /**
  * How far away from the popover can mouse go before we close it?
  * @type {number}
  */
-const moveAwayMargin = 100
+const moveAwayMargin = 40
 
 /**
  * Does parentElement contain checkElement? It will traverse up the tree from
@@ -90,11 +94,14 @@ class PopoverBase extends ImmutablePureComponent {
     if (this.bound) {
       return // it's already bound
     }
-    document.addEventListener('click', this.handleDocumentClick, false)
+    if (primaryInput === 'touch') {
+      document.addEventListener('touchend', this.handleDocumentClick, listenerOptions)
+    } else {
+      document.addEventListener('click', this.handleDocumentClick, false)
+    }
     document.addEventListener('keydown', this.handleKeyDown, false)
-    document.addEventListener('touchend', this.handleDocumentClick, listenerOptions)
     window.addEventListener('popstate', this.handleClose, false)
-    window.addEventListener('mousemove', this.mouseMove)
+    window.addEventListener('mousemove', this.mouseMove, listenerOptions)
     this.bound = true
   }
 
@@ -102,9 +109,12 @@ class PopoverBase extends ImmutablePureComponent {
     if (!this.bound) {
       return // it wasn't bound, skip
     }
-    document.removeEventListener('click', this.handleDocumentClick, false)
+    if (primaryInput === 'touch') {
+      document.removeEventListener('touchend', this.handleDocumentClick, listenerOptions)
+    } else {
+      document.removeEventListener('click', this.handleDocumentClick, false)
+    }
     document.removeEventListener('keydown', this.handleKeyDown, false)
-    document.removeEventListener('touchend', this.handleDocumentClick, listenerOptions)
     window.removeEventListener('hashchange', this.handleClose)
     window.removeEventListener('mousemove', this.mouseMove)
     this.bound = false
@@ -229,13 +239,20 @@ class PopoverBase extends ImmutablePureComponent {
 
   render() {
     const { outerRef, arrowRef } = this
-    const { children, visible, position, targetRef } = this.props
+    const {
+      children,
+      visible,
+      position,
+      targetRef,
+      popoverType,
+    } = this.props
 
     const containerClasses = CX({
       d: 1,
       z4: 1,
-      boxShadowPopover: visible,
+      boxShadowPopover: popoverType !== POPOVER_STATUS_REACTIONS_SELECTOR && visible,
       displayNone: !visible,
+      circle: popoverType === POPOVER_STATUS_REACTIONS_SELECTOR,
     })
 
     return (
@@ -287,7 +304,7 @@ PopoverBase.propTypes = {
   onClose: PropTypes.func.isRequired,
   position: PropTypes.string,
   visible: PropTypes.bool,
-  targetRef: PropTypes.node
+  targetRef: PropTypes.any
 }
 
 PopoverBase.defaultProps = {

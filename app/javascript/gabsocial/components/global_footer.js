@@ -41,10 +41,6 @@ const GlobalFooter = () => (
                   title: 'Gab Social',
                 },
                 {
-                  href: 'https://dissenter.com',
-                  title: 'Dissenter Browser',
-                },
-                {
                   href: 'https://chat.gab.com',
                   title: 'Gab Chat',
                 },
@@ -61,10 +57,6 @@ const GlobalFooter = () => (
                 {
                   href: 'https://news.gab.com',
                   title: 'Gab News',
-                },
-                {
-                  href: 'https://apps.gab.com',
-                  title: 'Gab Apps',
                 },
               ]}
             />

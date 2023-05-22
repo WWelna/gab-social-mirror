@@ -10,7 +10,6 @@ import GroupLayout from '../layouts/group_layout'
 import TimelineComposeBlock from '../components/timeline_compose_block'
 import Block from '../components/block'
 import ColumnIndicator from '../components/column_indicator'
-import Divider from '../components/divider'
 
 class GroupPage extends ImmutablePureComponent {
 
@@ -57,7 +56,6 @@ class GroupPage extends ImmutablePureComponent {
 					!!relationships && isTimeline && isMember &&
 					<React.Fragment>
 						<TimelineComposeBlock size={46} groupId={groupId} autoFocus />
-						<Divider />
 					</React.Fragment>
 				}
 

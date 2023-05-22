@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class StatusRelationshipsPresenter
-  attr_reader :reblogs_map, :favourites_map, :direct_replies_count_map,
-    :quotes_count_map
+  attr_reader :reblogs_map, :favourites_map, :mutes_map, :direct_replies_count_map,
+              :quotes_count_map, :blocked_by_map
 
   def initialize(statuses, current_account_id = nil, **options)
     statuses = statuses.compact
@@ -11,9 +11,16 @@ class StatusRelationshipsPresenter
     if current_account_id.nil?
       @reblogs_map = {}
       @favourites_map = {}
+      @mutes_map = {}
+      @blocked_by_map = {}
     else
+      conversation_ids = statuses.map(&:conversation_id).compact.uniq
+      status_account_ids = statuses.map(&:account_id).compact.uniq.reject { |account_id| account_id.to_s == current_account_id.to_s }
+
       @reblogs_map = Status.reblogs_map(status_ids, current_account_id).merge(options[:reblogs_map] || {})
-      @favourites_map  = Status.favourites_map(status_ids, current_account_id).merge(options[:favourites_map] || {})
+      @favourites_map = Status.favourites_map(status_ids, current_account_id).merge(options[:favourites_map] || {})
+      @mutes_map = Status.mutes_map(conversation_ids, current_account_id).merge(options[:mutes_map] || {})
+      @blocked_by_map = Account.blocked_by_map(status_account_ids, current_account_id)
     end
 
     @direct_replies_count_map = Status.direct_replies_count_map(status_ids)

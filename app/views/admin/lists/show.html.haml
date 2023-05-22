@@ -11,6 +11,13 @@
     = f.input :slug, wrapper: :with_label, label: 'Slug'
   
   .fields-group
+    .input.with_label.string.optional
+      .label_input
+        %label.string.optional Visibility
+        .label_input__wrapper
+          %input.string.optional{value: @list.visibility.to_s, disabled: true, type: 'text' }
+    
+  .fields-group
     = f.input :is_featured, as: :boolean, wrapper: :with_label, label: 'Is Featured?'
 
   .actions

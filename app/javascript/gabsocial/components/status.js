@@ -10,8 +10,13 @@ import {
   COMMENT_SORTING_TYPE_NEWEST,
   COMMENT_SORTING_TYPE_TOP,
 } from '../constants'
-import { me, displayMedia } from '../initial_state'
+import {
+  me,
+  displayMedia,
+  displayShowAnyways,
+} from '../initial_state'
 import scheduleIdleTask from '../utils/schedule_idle_task'
+import { canShowStatus } from '../utils/can_show'
 import ComposeFormContainer from '../features/compose/containers/compose_form_container'
 import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_component'
 import CommentPlaceholder from './placeholder/comment_placeholder'
@@ -21,6 +26,7 @@ import StatusActionBar from './status_action_bar'
 import StatusMedia from './status_media'
 import StatusHeader from './status_header'
 import CommentList from './comment_list'
+import SensitiveMediaItem from './sensitive_media_item'
 import Button from './button'
 import Text from './text'
 import SortBlock from './sort_block'
@@ -171,6 +177,13 @@ class Status extends ImmutablePureComponent {
     this.props.onExpandComments(statusId)
   }
 
+  handleOnShowStatusAnyways = (e) => {
+    e.preventDefault()
+    // const status = this._properStatus()
+    this.props.onShowStatusAnyways(this.props.status.get('id'))
+    return false
+  }
+
   _properStatus() {
     const { status, ancestorStatus } = this.props
 
@@ -199,10 +212,12 @@ class Status extends ImmutablePureComponent {
   render() {
     const {
       intl,
+      id,
       isFeatured,
       isPinnedInGroup,
       isPromoted,
       isChild,
+      quoteParent,
       isQuoteHidden,
       isHidden,
       isNotification,
@@ -215,11 +230,14 @@ class Status extends ImmutablePureComponent {
       commentSortingType,
       onOpenProModal,
       isDeckConnected,
+      isReacting,
+      hoveringReactionId,
+      reactionPopoverOpenForStatusId,
       statusId,
       loadedDirectDescendantsCount,
       next,
+      scrollKey,
     } = this.props
-
     let { status } = this.props
 
     if (!status) {
@@ -231,46 +249,24 @@ class Status extends ImmutablePureComponent {
       return null
     }
 
-    //If blocked or muted, hide
-    const blocks = !!me ? localStorage.getItem('blocks') : ''
-    const mutes = !!me ? localStorage.getItem('mutes') : ''
-    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
-    let blocked = false
-
-    if (
-        !!me && (
-          (blockedby && blockedby.split(',').includes(status.getIn(['account', 'id'])))
-          ||
-          (blocks && blocks.split(',').includes(status.getIn(['account', 'id'])))
-          ||
-          (mutes && mutes.split(',').includes(status.getIn(['account', 'id'])))
-        )
-    ) {
-      blocked = true
-    }
-
-    if (blocked && isChild) {
-      const blockedContainerClasses = [
-        _s.d, _s.py10, _s.px10, _s.radiusSmall, _s.bgSubtle,
-        _s.borderColorSecondary, _s.statusContent, _s.border2PX
-      ].join(' ')
-      return (
-        <div className={blockedContainerClasses}>
-          The quoted status is unavailable.
-        </div>
-      )
-    }
-
-    if (blocked) {
-      return null
-    }
-
     if (isComment && !ancestorStatus && !isChild) {
       // Wait to load...
       // return <StatusPlaceholder />
       if (contextType === 'feature') {
         return <ColumnIndicator type='loading' />
       }
+      return null
+    }
+
+    const csd = canShowStatus(status, {
+      isChild,
+      quoteParent,
+      scrollKey,
+      contextType,
+      ancestorStatus,
+    })
+
+    if (csd.canShow === false) {
       return null
     }
 
@@ -296,7 +292,7 @@ class Status extends ImmutablePureComponent {
       sortByTitle = intl.formatMessage(messages.top)
     }
 
-    const handlers = (this.props.isMuted || isChild) ? {} : {
+    const handlers = {
       reply: this.handleHotkeyReply,
       favorite: this.handleHotkeyFavorite,
       repost: this.handleHotkeyRepost,
@@ -336,24 +332,11 @@ class Status extends ImmutablePureComponent {
       border1PX: isChild,
       pb10: isChild && (status.get('media_attachments').size === 0 && !isNotification) || status.get('sensitive'),
       pb5: isChild && status.get('media_attachments').size > 1 && !isNotification,
-      cursorPointer: isChild,
-      bgSubtle_onHover: isChild,
+      pt10: csd.nulled && isChild,
+      cursorNotAllowed: isChild && csd.nulled,
+      cursorPointer: isChild && !csd.nulled,
+      bgSubtle_onHover: isChild && !csd.nulled,
     })
-
-    if (status.get('filtered') || status.getIn(['reblog', 'filtered'])) {
-      return null
-    }
-
-    // if (isHidden) {
-    //   return (
-    //     <HotKeys handlers={handlers}>
-    //       <div ref={this.handleRef} className={parentClasses} tabIndex='0'>
-    //         {status.getIn(['account', 'display_name']) || status.getIn(['account', 'username'])}
-    //         {status.get('content')}
-    //       </div>
-    //     </HotKeys>
-    //   )
-    // }
 
     return (
       <HotKeys handlers={handlers} className={_s.outlineNone}>
@@ -366,9 +349,9 @@ class Status extends ImmutablePureComponent {
               className={[_s.d, _s.outlineNone].join(' ')}
               tabIndex={this.props.isMuted ? null : 0}
               data-featured={(isFeatured || isPinnedInGroup) ? 'true' : null}
-              aria-label={textForScreenReader(intl, status, rebloggedByText)}
+              aria-label={!!csd.label ? csd.label : textForScreenReader(intl, status, rebloggedByText)}
               ref={this.handleRef}
-              onClick={isChild && !isNotification ? this.handleClick : undefined}
+              onClick={(isChild && !csd.label) && !isNotification ? this.handleClick : undefined}
             >
               <div className={innerContainerClasses}>
 
@@ -383,48 +366,88 @@ class Status extends ImmutablePureComponent {
                     onOpenProModal={onOpenProModal}
                   />
 
-                  <StatusHeader
-                    status={status}
-                    reduced={isChild}
-                    isCompact={isDeckConnected}
-                    onOpenStatusModal={this.handleOnOpenStatusModal}
-                  />
-
-                  <div className={_s.d}>
-                    <StatusContent
+                  {
+                    !(csd.nulled && isChild) &&
+                    <StatusHeader
+                      nulled={!!csd.label}
                       status={status}
-                      reblogContent={reblogContent}
-                      onClick={this.handleClick}
-                      expanded={!status.get('hidden')}
-                      onExpandedToggle={this.handleExpandedToggle}
-                      collapsable={contextType !== 'feature'}
+                      reduced={isChild}
+                      isCompact={isDeckConnected}
+                      onOpenStatusModal={this.handleOnOpenStatusModal}
                     />
-                  </div>
-
-                  <StatusMedia
-                    isChild={isChild || isDeckConnected}
-                    isComposeModalOpen={isComposeModalOpen}
-                    status={status}
-                    onOpenMedia={this.props.onOpenMedia}
-                    cacheWidth={this.props.cacheMediaWidth}
-                    defaultWidth={this.props.cachedMediaWidth}
-                    visible={this.state.showMedia}
-                    onToggleVisibility={this.handleToggleMediaVisibility}
-                    width={this.props.cachedMediaWidth}
-                    onOpenVideo={this.handleOpenVideo}
-                  />
+                  }
 
                   {
-                    (!!status.get('quote') || status.get('has_quote')) && !isChild && !isQuoteHidden &&
+                    (csd.nulled && !!csd.label) &&
+                    <div className={[_s.d, _s.px15].join(' ')}>
+                      <div className={[_s.d, _s.px15, _s.py15, _s.bgSubtle, _s.radiusSmall].join(' ')}>
+                        <Text color='tertiary'>{csd.label}</Text>
+                      </div>
+                    </div>
+                  }
+
+                  {
+                    (!csd.nulled && !!csd.label) &&
+                    <div className={[_s.d, _s.px15].join(' ')}>
+                      <SensitiveMediaItem
+                        noPadding
+                        onClick={this.handleOnShowStatusAnyways}
+                        message={csd.label}
+                        btnTitle='View'
+                      />
+                    </div>
+                  }
+
+                  {
+                    (!csd.label && !csd.nulled) &&
+                    <div className={_s.d}>
+                      <StatusContent
+                        status={status}
+                        reblogContent={reblogContent}
+                        onClick={this.handleClick}
+                        expanded={!status.get('hidden')}
+                        onExpandedToggle={this.handleExpandedToggle}
+                        collapsable={contextType !== 'feature'}
+                      />
+                    </div>
+                  }
+
+                  {
+                    (!csd.label && !csd.nulled) &&
+                    <StatusMedia
+                      isChild={isChild || isDeckConnected}
+                      isComposeModalOpen={isComposeModalOpen}
+                      status={status}
+                      onOpenMedia={this.props.onOpenMedia}
+                      cacheWidth={this.props.cacheMediaWidth}
+                      defaultWidth={this.props.cachedMediaWidth}
+                      visible={this.state.showMedia}
+                      onToggleVisibility={this.handleToggleMediaVisibility}
+                      width={this.props.cachedMediaWidth}
+                      onOpenVideo={this.handleOpenVideo}
+                    />
+                  }
+
+                  {
+                    (!!status.get('quote') || status.get('has_quote')) && !isChild && !isQuoteHidden && !csd.label &&
                     <div className={[_s.d, _s.mt10, _s.px10].join(' ')}>
                       {
                         !!status.get('quoted_status') &&
-                        <Status status={status.get('quoted_status')} isChild intl={intl} history={this.props.history} />
+                        <Status
+                          isChild
+                          quoteParent={status}
+                          status={status.get('quoted_status')}
+                          contextType={contextType}
+                          scrollKey={scrollKey}
+                          intl={intl}
+                          history={this.props.history}
+                          onShowStatusAnyways={this.props.onShowStatusAnyways}
+                        />
                       }
                       {
                         !status.get('quoted_status') &&
                         <div className={[_s.d, _s.border1PX, _s.bgSubtle, _s.radiusSmall, _s.py15, _s.px15, _s.borderColorSecondary].join(' ')}>
-                          <Text color='tertiary' size='medium'>The quoted gab is unavailable.</Text>
+                          <Text color='tertiary' size='medium'>The quoted status is unavailable.</Text>
                         </div>
                       }
                     </div>
@@ -433,6 +456,7 @@ class Status extends ImmutablePureComponent {
                   {
                     (!isChild || isNotification) &&
                     <StatusActionBar
+                      nulled={!!csd.label}
                       status={status}
                       onFavorite={this.props.onFavorite}
                       onReply={this.handleOnReply}
@@ -443,57 +467,75 @@ class Status extends ImmutablePureComponent {
                       onOpenQuotes={this.props.onOpenQuotes}
                       onQuote={this.handleOnQuote}
                       isCompact={isDeckConnected}
+                      isReacting={isReacting}
+                      hoveringReactionId={hoveringReactionId}
+                      reactionPopoverOpenForStatusId={reactionPopoverOpenForStatusId}
                       onOpenStatusModal={this.handleOnOpenStatusModal}
+                      feature={contextType == 'feature' || isNotification}
                     />
                   }
 
-                  {
-                    !isChild && !!me && !isDeckConnected &&
-                    <ResponsiveClassesComponent
-                      classNames={[_s.d, _s.borderTop1PX, _s.borderColorSecondary, _s.pt10, _s.px15, _s.mb10].join(' ')}
-                      classNamesXS={[_s.d, _s.borderTop1PX, _s.borderColorSecondary, _s.pt10, _s.px10, _s.mb10].join(' ')}
-                    >
-                      <ComposeFormContainer replyToId={status.get('id')} shouldCondense />
-                    </ResponsiveClassesComponent>
-                  }
-                  
-                  {
-                    status.get('replies_count') > 0 && !isChild && !isNotification && !commentsLimited &&
-                    <React.Fragment>
-                      <div className={[_s.d, _s.mr10, _s.ml10, _s.mb10, _s.borderColorSecondary, _s.borderBottom1PX].join(' ')} />
-
-                      <SortBlock
-                        value={sortByTitle}
-                        onClickValue={this.handleOnCommentSortOpen}
-                      />
-
-                      {
-                        descendantsIds.size === 0 &&
-                        <React.Fragment>
-                          <CommentPlaceholder />
-                          <CommentPlaceholder />
-                          <CommentPlaceholder />
-                        </React.Fragment>
-                      }
-                      
-                      {
-                        descendantsIds.size > 0 &&
-                        <CommentList
-                          totalDirectDescendants={status.get('direct_replies_count')}
-                          ancestorAccountId={status.getIn(['account', 'id'])}
-                          descendants={descendantsIds}
-                          loadedDirectDescendantsCount={loadedDirectDescendantsCount}
-                          onViewComments={this.handleOnExpandComments}
-                          ancestorStatusId={status.get('id')}
-                        />
-                      }
-                    </React.Fragment>
-                  }
                 </div>
               </div>
             </div>
           </ResponsiveClassesComponent>
         </div>
+        { 
+          !isChild && !isNotification && !commentsLimited &&
+          <div className={parentClasses}>
+            <ResponsiveClassesComponent
+              classNames={containerClasses}
+              classNamesXS={containerClassesXS}
+            >
+              <div className={innerContainerClasses}>
+                <div data-id={status.get('id')}>
+
+                {
+                  contextType == 'feature' &&
+                  <ComposeFormContainer replyToId={status.get('id')} feature="true" formLocation="status" />
+                }
+                
+                {
+                  status.get('direct_replies_count') > 0 && !isChild && !isNotification && !commentsLimited &&
+                  <React.Fragment>
+                    <div className={[_s.d, _s.mr10, _s.ml10, _s.mb10, _s.borderColorSecondary, _s.borderBottom1PX].join(' ')} />
+
+                    <SortBlock
+                      value={sortByTitle}
+                      onClickValue={this.handleOnCommentSortOpen}
+                    />
+
+                    {
+                      descendantsIds.size === 0 &&
+                      <React.Fragment>
+                        <CommentPlaceholder />
+                        <CommentPlaceholder />
+                        <CommentPlaceholder />
+                      </React.Fragment>
+                    }
+                    
+                    {/* only show comments to blocked by if is mentioned */}
+                    {
+                      descendantsIds.size > 0 &&
+                      <CommentList
+                        totalDirectDescendants={status.get('direct_replies_count')}
+                        ancestorAccountId={status.getIn(['account', 'id'])}
+                        descendants={descendantsIds}
+                        loadedDirectDescendantsCount={loadedDirectDescendantsCount}
+                        onViewComments={this.handleOnExpandComments}
+                        ancestorStatusId={status.get('id')}
+                      />
+                    }
+                  </React.Fragment>
+                }
+
+
+                </div>
+              </div>
+
+            </ResponsiveClassesComponent>
+          </div>
+        }
       </HotKeys>
     )
   }
@@ -540,6 +582,10 @@ Status.propTypes = {
   onCommentSortOpen: PropTypes.func,
   isComposeModalOpen: PropTypes.bool,
   commentSortingType: PropTypes.string,
+  scrollKey: PropTypes.string,
+  onShowStatusAnyways: PropTypes.func,
+  hoveringReactionId: PropTypes.string,
+  reactionPopoverOpenForStatusId: PropTypes.string,
 }
 
 export default withRouter(injectIntl(Status))

@@ -21,6 +21,9 @@ class InitialStateSerializer < ActiveModel::Serializer
       store[:me]                 = object.current_account.id.to_s
       store[:unfollow_modal]     = object.current_account.user.setting_unfollow_modal
       store[:boost_modal]        = object.current_account.user.setting_boost_modal
+      store[:show_videos]        = object.current_account.user.setting_show_videos
+      store[:show_suggested_users]  = object.current_account.user.setting_show_suggested_users
+      store[:show_groups]        = object.current_account.user.setting_show_groups
       store[:delete_modal]       = object.current_account.user.setting_delete_modal
       store[:auto_play_gif]      = object.current_account.user.setting_auto_play_gif
       store[:display_media]      = object.current_account.user.setting_display_media
@@ -32,11 +35,14 @@ class InitialStateSerializer < ActiveModel::Serializer
       store[:is_first_session]   = is_first_session object.current_account
       store[:email_confirmed]    = object.current_account.user.confirmed?
       store[:email]              = object.current_account.user.confirmed? ? '[hidden]' : object.current_account.user.email
+      store[:active_reactions]   = ReactionType.serialized_active_reactions
+      store[:all_reactions]      = ReactionType.serialized_all_reactions
+    else
+      store[:all_reactions]      = ReactionType.serialized_all_reactions
     end
 
     store
   end
-
 
   def compose
     store = {}
@@ -65,16 +71,7 @@ class InitialStateSerializer < ActiveModel::Serializer
   private
 
   def unread_count(account)
-    account.
-      notifications.
-      then do |r|
-        last_read = account.user.last_read_notification || 0
-
-        # Only include `AND id > ?` if last_read is > 0.
-        # The query planner was taking 1 second with `AND id > 0` but microseconds without it.
-        last_read.positive? ? r.where('id > ?', last_read) : r
-      end.
-      count
+    account.unread_count
   end
 
   def instance_presenter

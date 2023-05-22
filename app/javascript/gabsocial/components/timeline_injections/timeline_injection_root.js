@@ -1,7 +1,6 @@
 import {
   BREAKPOINT_EXTRA_SMALL,
   TIMELINE_INJECTION_FEATURED_GROUPS,
-  TIMELINE_INJECTION_GROUP_CATEGORIES,
   TIMELINE_INJECTION_PROGRESS,
   TIMELINE_INJECTION_PRO_UPGRADE,
   TIMELINE_INJECTION_PWA,
@@ -11,7 +10,7 @@ import {
 } from '../../constants'
 import {
   FeaturedGroupsInjection,
-  GroupCategoriesInjection,
+  // GroupCategoriesInjection,
   ProgressInjection,
   ProUpgradeInjection,
   PWAInjection,
@@ -47,23 +46,25 @@ class TimelineInjectionRoot extends React.PureComponent {
 
   render() {
     const { props, type, width } = this.props
+    const visible = typeof type === 'string' &&
+      typeof INJECTION_COMPONENTS[type] === 'string'
 
-    const visible = !!type
-
-    if (!visible) return <div />
+    if (!visible) return null
 
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
     //If is not XS and popover is pwa, dont show
     //Since not on mobile this should not be visible
-    if (!isXS && type === TIMELINE_INJECTION_PWA) return <div />
-    
-    if (type === TIMELINE_INJECTION_USER_SUGGESTIONS) return <div />
+    if (!isXS && type === TIMELINE_INJECTION_PWA) return null
+
+    const comp = INJECTION_COMPONENTS[type]
+
+    if (!comp) return null // not loaded yet
 
     return (
       <div>
         <Bundle
-          fetchComponent={INJECTION_COMPONENTS[type]}
+          fetchComponent={comp}
           loading={this.renderLoading}
           error={this.renderError}
           renderDelay={150}
@@ -87,9 +88,10 @@ class TimelineInjectionRoot extends React.PureComponent {
 const mapStateToProps = (state) => ({
   width: state.getIn(['settings', 'window_dimensions', 'width']),
 })
-  
+
 TimelineInjectionRoot.propTypes = {
-  type: PropTypes.string,
+  // type is not supposed to be an object but while loading it is inexplicably
+  type: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   props: PropTypes.object,
 }
 

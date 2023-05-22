@@ -96,8 +96,13 @@ class Api::V1::GroupsController < Api::BaseController
   def destroy_status
     authorize @group, :destroy_status?
 
-    status = Status.find(params[:status_id])
-    GroupUnlinkStatusService.new.call(current_account, @group, status)
+    begin
+      status = Status.find(params[:status_id])
+      GroupUnlinkStatusService.new.call(current_account, @group, status)
+    rescue => e
+      Rails.logger.error "Exception in groups_controller#destroy_status. #{e.class}: #{e.message}"
+      # Succeed anyway
+    end
     render_empty_success
   end
 

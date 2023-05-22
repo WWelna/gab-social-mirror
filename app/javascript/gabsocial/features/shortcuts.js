@@ -28,6 +28,7 @@ class Shortcuts extends ImmutablePureComponent {
       to: s.get('to'),
       title: s.get('title'),
       image: s.get('image'),
+      icon: s.get('icon'),
     }))
 
     return (

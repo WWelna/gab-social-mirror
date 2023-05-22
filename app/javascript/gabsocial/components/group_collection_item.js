@@ -8,6 +8,7 @@ import { defineMessages, injectIntl } from 'react-intl'
 import { PLACEHOLDER_MISSING_HEADER_SRC, CX } from '../constants'
 import { shortNumberFormat } from '../utils/numbers'
 import Image from './image'
+import Icon from './icon'
 import Text from './text'
 import GroupActionButton from './group_action_button'
 
@@ -27,7 +28,7 @@ class GroupCollectionItem extends ImmutablePureComponent {
     const isMember = relationships.get('member')
     const isAdmin = relationships.get('admin')
     const isModerator = relationships.get('moderator')
-    const coverSrc = group.get('cover_image_url') || ''
+    const coverSrc = group.get('cover_image_medium_url') || group.get('cover_image_url') || ''
     const coverMissing = coverSrc.indexOf(PLACEHOLDER_MISSING_HEADER_SRC) > -1 || !coverSrc
 
     if (isHidden) {
@@ -68,6 +69,7 @@ class GroupCollectionItem extends ImmutablePureComponent {
           {
             !!coverSrc && !coverMissing &&
             <Image
+              isLazy
               src={coverSrc}
               alt={group.get('title')}
               className={_s.h158PX}
@@ -119,9 +121,15 @@ class GroupCollectionItem extends ImmutablePureComponent {
           }
 
           <div className={[_s.d, _s.px10, _s.my10].join(' ')}>
-            <Text color='primary' size='medium' weight='bold'>
-              {groupTitle}
-            </Text>
+            <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
+              <Text color='primary' size='medium' weight='bold'>
+                {groupTitle}
+              </Text>
+              {
+                group.get('is_verified') &&
+                <Icon id='verified-group' size='14px' className={_s.ml5} />
+              }
+            </div>
 
             <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.mt5, _s.mb5].join(' ')}>
               <Text color='secondary' size='small'>

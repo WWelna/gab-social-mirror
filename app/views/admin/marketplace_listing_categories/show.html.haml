@@ -1,0 +1,19 @@
+- content_for :page_title do
+  = 'Update Marketplace Listing Category'
+
+= simple_form_for @marketplace_listing_category, url: admin_marketplace_listing_category_path(@marketplace_listing_category.id), html: { method: :put } do |f|
+  = render 'shared/error_messages', object: @marketplace_listing_category
+
+  %img{src: @marketplace_listing_category.cover_image.url, width:'100px', height:'100px'}
+
+  .fields-group
+    = f.input :name, wrapper: :with_label, label: 'Name', required: true
+  .fields-group
+    = f.input :slug, wrapper: :with_label, label: 'Unique Slug', required: true
+  .fields-group
+    = f.input :description, wrapper: :with_label, label: 'Description', required: true
+  .fields-group
+    = f.input :cover_image, wrapper: :with_label, label: 'New Cover Image', input_html: { accept: 'image/png' }, required: true
+
+  .actions
+    = f.button :button, 'Update', type: :submit

@@ -12,7 +12,7 @@ class Instance
   end
 
   def cached_sample_accounts
-    Rails.cache.fetch("#{cache_key}/sample_accounts", expires_in: 12.hours) { Account.where(domain: domain).searchable.joins(:account_stat).popular.limit(3) }
+    Rails.cache.fetch("#{cache_key}/sample_accounts", expires_in: 12.hours) { Account.where(domain: domain).old_searchable.joins(:account_stat).popular.limit(3) }
   end
 
   def cached_accounts_count

@@ -3,8 +3,6 @@
 require 'sidekiq/web'
 require 'sidekiq-scheduler/web'
 
-Sidekiq::Web.set :session_secret, Rails.application.secrets[:secret_key_base]
-
 username_regex = /([^\/]*)/
 html_only = lambda { |req| req.format.nil? || req.format.html? }
 
@@ -38,6 +36,8 @@ Rails.application.routes.draw do
     passwords:          'auth/passwords',
     confirmations:      'auth/confirmations',
   }
+
+  get '/:username/avatar', to: 'account_assets#avatar'
 
   namespace :settings do
     resource :profile, only: [:show, :update]
@@ -96,6 +96,7 @@ Rails.application.routes.draw do
 
     resources :email_domain_blocks, only: [:index, :new, :create, :destroy]
     resources :link_blocks, only: [:index, :new, :create, :destroy]
+    resources :image_blocks, only: [:index, :new, :create, :destroy]
     resources :statuses, only: [:index, :show, :create, :update, :destroy]
     resources :preview_cards, only: [:index, :create, :destroy]
     resources :account_warnings, only: [:index]
@@ -107,9 +108,19 @@ Rails.application.routes.draw do
     resources :promotions, only: [:index, :new, :create, :edit, :update, :destroy]
     resources :expenses, only: [:index, :new, :create, :edit, :update, :destroy]
     resources :group_categories, only: [:index, :new, :create, :edit, :update, :destroy]
-    resources :trending_hashtags, only: [:index, :new, :create, :edit, :update, :destroy]
+    resources :marketplace_listing_categories, only: [:index, :new, :create, :show, :update, :destroy]
+    resources :reaction_types, only: [:index, :new, :create, :show, :update]
     resources :lists, only: [:index, :show, :create, :edit, :update, :destroy]
     
+
+    resources :marketplace_listings, only: [:index, :show, :destroy] do
+      member do
+        post :approve
+        post :request_revisions
+        post :set_status
+      end
+    end
+
     resources :reports, only: [:index, :show] do
       member do
         post :assign_to_self
@@ -120,6 +131,7 @@ Rails.application.routes.draw do
 
       resources :reported_statuses, only: [:create]
       resources :reported_links, only: [:create]
+      resources :reported_images, only: [:create]
     end
 
     resources :report_notes, only: [:create, :destroy]
@@ -213,8 +225,13 @@ Rails.application.routes.draw do
           resource :bookmark, only: [:show, :create]
           post :unbookmark, to: 'bookmarks#destroy'
 
+          delete :mentions, to: 'mentions#destroy'
+
           resource :pin, only: [:show, :create]
           post :unpin, to: 'pins#destroy'
+
+          resource :mute, only: [:show, :create]
+          post :unmute, to: 'mutes#destroy'
         end
 
         member do
@@ -309,10 +326,11 @@ Rails.application.routes.draw do
       resources :shortcuts,    only: [:index, :create, :show, :destroy]
       resources :albums,       only: [:create, :update, :show, :destroy]
       resources :album_lists,  only: [:show]
-      resource :trending_hashtags,  only: [:show]
       resource :expenses,     only: [:show]
       resources :comments,    only: [:show]
       resources :blocks_and_mutes, only: [:index]
+      resources :marketplace_listing_categories, only: [:index]
+      resources :marketplace_listing_search, only: [:index]
 
       resources :warnings, only: [:index, :show, :destroy] do
         collection do
@@ -356,7 +374,9 @@ Rails.application.routes.draw do
         resources :followers, only: :index, controller: 'accounts/follower_accounts'
         resources :following, only: :index, controller: 'accounts/following_accounts'
         resources :lists, only: :index, controller: 'accounts/lists'
-
+        resources :marketplace_listing_saves, only: :index, controller: 'accounts/marketplace_listing_saves'
+        resources :marketplace_listings, only: :index, controller: 'accounts/marketplace_listings'
+        
         member do
           post :follow
           post :unfollow
@@ -399,6 +419,16 @@ Rails.application.routes.draw do
         post :unpin, to: 'groups/pins#destroy'
       end
 
+      resources :marketplace_listings, only: [:show, :create, :update, :destroy] do
+        member do
+          post :set_status
+        end
+
+        resource :buyers, only: [:show], controller: 'marketplace_listings/buyers'
+        resource :status_changes, only: [:show], controller: 'marketplace_listings/status_changes'
+        resource :saves, only: [:show, :create, :destroy], controller: 'marketplace_listings/saves'
+      end
+
       post :group_relationships, to: 'group_relationships#relationships'
       post :list_relationships, to: 'list_relationships#relationships'
 
@@ -413,6 +443,11 @@ Rails.application.routes.draw do
 
     namespace :v2 do
       get '/search', to: 'search#index', as: :search
+      resources :lists, only: [:index]
+    end
+
+    namespace :v3 do
+      get '/search', to: 'search#index', as: :search_v3
     end
 
     namespace :web do

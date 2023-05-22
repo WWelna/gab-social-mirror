@@ -5,12 +5,21 @@ import { withRouter } from 'react-router-dom'
 import queryString from 'query-string'
 import get from 'lodash.get'
 import { me } from '../initial_state'
-import { CX } from '../constants'
+import {
+  CX,
+  SEARCH_TAB_ACCOUNT,
+  SEARCH_TAB_STATUS,
+  SEARCH_TAB_GROUP,
+  SEARCH_TAB_LINK,
+  SEARCH_TAB_LIST,
+  SEARCH_TAB_HASHTAG,
+} from '../constants'
 import {
   changeSearch,
   clearSearch,
   submitSearch,
   toggleFocused,
+  setSearchTab,
 } from '../actions/search'
 import Button from './button'
 
@@ -31,6 +40,34 @@ class Search extends React.PureComponent {
     return pathname
   }
 
+  getTabByPathname = () => {
+    const pathname = this.props.location.pathname
+    let tab = ''
+    switch (pathname) {
+    case '/search/people':
+      tab = SEARCH_TAB_ACCOUNT
+      break;
+    case '/search/groups':
+      tab = SEARCH_TAB_GROUP
+      break;
+    case '/search/statuses':
+      tab = SEARCH_TAB_STATUS
+      break;
+    case '/search/links':
+      tab = SEARCH_TAB_LINK
+      break;
+    case '/search/feeds':
+      tab = SEARCH_TAB_LIST
+      break;
+    case '/search/hashtags':
+      tab = SEARCH_TAB_HASHTAG
+      break;
+    default:
+      break;
+    }
+    return tab
+  }
+
   componentDidMount() {
     const { pathname } = this.props.location
 
@@ -39,6 +76,7 @@ class Search extends React.PureComponent {
     }
 
     const { q } = this
+    this.props.onSetSearchTab(this.getTabByPathname())
     this.props.onChange(q)
     this.props.onSubmit()
 
@@ -102,7 +140,6 @@ class Search extends React.PureComponent {
     const {
       value,
       focused,
-      submitted,
       onClear,
       isInNav,
       theme,
@@ -181,21 +218,20 @@ const mapStateToProps = (state) => ({
   value: state.getIn(['search', 'value']),
   action: state.getIn(['search', 'action']),
   focused: state.getIn(['search', 'focused']),
-  submitted: state.getIn(['search', 'submitted']),
   theme: state.getIn(['settings', 'displayOptions', 'theme']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
   onChange: (value) => dispatch(changeSearch(value)),
   onClear: () => dispatch(clearSearch()),
-  onSubmit: () => dispatch(submitSearch()),
-  onToggleFocused: focused => dispatch(toggleFocused(focused)),
+  onSubmit: (type) => dispatch(submitSearch(type)),
+  onToggleFocused: (focused) => dispatch(toggleFocused(focused)),
+  onSetSearchTab: (tab) => dispatch(setSearchTab(tab)),
 })
 
 Search.propTypes = {
   value: PropTypes.string.isRequired,
   focused: PropTypes.bool,
-  submitted: PropTypes.bool,
   onToggleFocused: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
   withOverlay: PropTypes.bool,

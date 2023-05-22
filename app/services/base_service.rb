@@ -5,4 +5,5 @@ class BaseService
   include ActionView::Helpers::SanitizeHelper
 
   include RoutingHelper
+
 end

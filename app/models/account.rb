@@ -101,8 +101,8 @@ class Account < ApplicationRecord
   scope :matches_display_name, ->(value) { matching(:display_name, :starts_with, value) }
   scope :contains_display_name, ->(value) { matching(:display_name, :contains, value) }
   scope :matches_domain, ->(value) { matching(:domain, :contains, value) }
-  scope :searchable, -> { without_suspended.where(moved_to_account_id: nil) }
-  scope :discoverable, -> { searchable.without_silenced.where(discoverable: true).joins(:account_stat).where(AccountStat.arel_table[:followers_count].gteq(MIN_FOLLOWERS_DISCOVERY)) }
+  scope :old_searchable, -> { without_suspended.where(moved_to_account_id: nil) }
+  scope :discoverable, -> { old_searchable.without_silenced.where(discoverable: true).joins(:account_stat).where(AccountStat.arel_table[:followers_count].gteq(MIN_FOLLOWERS_DISCOVERY)) }
   scope :tagged_with, ->(tag) { joins(:accounts_tags).where(accounts_tags: { tag_id: tag }) }
   scope :by_recent_status, -> { order(Arel.sql('(case when account_stats.last_status_at is null then 1 else 0 end) asc, account_stats.last_status_at desc')) }
   scope :popular, -> { order('account_stats.followers_count desc') }
@@ -124,6 +124,10 @@ class Account < ApplicationRecord
 
   delegate :chosen_languages, to: :user, prefix: false, allow_nil: true
 
+  def cache_key
+    "accounts/#{id}-#{updated_at.to_i}"
+  end
+
   def local?
     true
   end
@@ -142,6 +146,10 @@ class Account < ApplicationRecord
 
   def vpdi?
     is_verified || is_pro || is_donor || is_investor?
+  end
+
+  def has_running_marketplace_listings?
+    marketplace_listings.only_running.any?
   end
 
   def is_pro_life?
@@ -436,8 +444,9 @@ class Account < ApplicationRecord
     private
 
     def generate_query_for_search(terms)
-      terms      = Arel.sql(connection.quote(terms.gsub(/['?\|\W\\:]/, ' ')))
-      individual_terms = terms.split(' ')
+      terms      = Arel.sql(connection.quote(terms.gsub(/[^a-zA-Z0-9_.]/, ' ').strip))
+      individual_terms = terms.split(/\s+/)
+
       terms_string = individual_terms.map { |t| "#{t}" }.join(" | ")
 
       if individual_terms.size == 1
@@ -481,13 +490,13 @@ class Account < ApplicationRecord
       reblog_key       = FeedManager.instance.key(:home, id, 'reblogs')
       reblogged_id_set = conn.zrange(reblog_key, 0, -1)
 
-      conn.pipelined do
-        conn.del(FeedManager.instance.key(:home, id))
-        conn.del(reblog_key)
+      conn.pipelined do |pipeline|
+        pipeline.del(FeedManager.instance.key(:home, id))
+        pipeline.del(reblog_key)
 
         reblogged_id_set.each do |reblogged_id|
           reblog_set_key = FeedManager.instance.key(:home, id, "reblogs:#{reblogged_id}")
-          conn.del(reblog_set_key)
+          pipeline.del(reblog_set_key)
         end
       end
     end

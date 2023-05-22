@@ -6,6 +6,10 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import { openModal } from '../actions/modal'
 import { openPopover } from '../actions/popover'
 import {
+  addShortcut,
+  removeShortcut,
+} from '../actions/shortcuts'
+import {
   POPOVER_SHARE,
   MODAL_LIST_EDITOR,
   BREAKPOINT_EXTRA_SMALL,
@@ -19,28 +23,25 @@ import {
   ListDetailsPanel,
   LinkFooter,
   GabTVVideosPanel,
-  GabAdPanel,
   ListHeader,
 } from '../features/ui/util/async_components'
 
 class ListPage extends ImmutablePureComponent {
   
   handleOnOpenListEditModal = () => {
-    const { listId } = this.props
-    
-    if (!listId) return
-    
-    this.props.dispatch(openModal(MODAL_LIST_EDITOR, {
-      id: listId,
-      tab: 'settings',
-    }))
+    this.props.onOpenEditModal(this.props.listId)
   }
 
   handleOnShare = () => {
-    this.props.dispatch(openPopover(POPOVER_SHARE, {
-      targetRef:this.shareNode,
-      list: this.props.list,
-    }))
+    this.props.onOpenSharePopover(this.shareNode, this.props.list)
+  }
+
+  handleOnToggleShortcut = () => {
+    if (this.props.isShortcut) {
+      this.props.onRemoveShortcut(this.props.list.get('id'))
+    } else {
+      this.props.onAddShortcut(this.props.list.get('id'))
+    }
   }
 
   setShareNode = (c) => {
@@ -53,7 +54,9 @@ class ListPage extends ImmutablePureComponent {
       list,
       listId,
       isListOwner,
+      isShortcut,
       width,
+      showVideos, 
     } = this.props
 
     const listTitle = !!list ? list.get('title') : ''
@@ -70,7 +73,21 @@ class ListPage extends ImmutablePureComponent {
         icon: 'share',
         onClick: this.handleOnShare,
       },
-    ] : null
+    ] : []
+    if (!!me) {
+      actions.push({
+        icon: isShortcut ? 'star' : 'star-outline',
+        onClick: this.handleOnToggleShortcut,
+      })
+    }
+
+    let sidebarLayout = [ <WrappedBundle component={ListDetailsPanel} componentParams={{ listId }} />]
+
+    if(showVideos) {
+      sidebarLayout.push(GabTVVideosPanel)
+    }
+
+    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
@@ -78,12 +95,7 @@ class ListPage extends ImmutablePureComponent {
         title={title}
         page='list'
         actions={actions}
-        layout={[
-          <WrappedBundle component={ListDetailsPanel} componentParams={{ listId }} />,
-          GabAdPanel,
-          GabTVVideosPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
       >
         <PageTitle path={[listTitle, title]} />
         <ResponsiveComponent max={BREAKPOINT_EXTRA_SMALL}>
@@ -98,13 +110,43 @@ class ListPage extends ImmutablePureComponent {
 
 const mapStateToProps = (state, props) => {
   const listId = props.params.id
+  const shortcuts = state.getIn(['shortcuts', 'items'])
+  const isShortcut = !!shortcuts.find((s) => {
+    return s.get('shortcut_id') == listId && s.get('shortcut_type') === 'list'
+  })
   return {
     listId,
+    isShortcut,
     list: state.getIn(['lists', 'items', listId]),
     isListOwner: state.getIn(['lists', 'items', listId, 'account', 'id'], null) === me,
     width: state.getIn(['settings', 'window_dimensions', 'width']),
   }
 }
+
+const mapDispatchToProps = (dispatch) => ({
+  onAddShortcut(listId) {
+    dispatch(addShortcut('list', listId))
+  },
+  onRemoveShortcut(listId) {
+    dispatch(removeShortcut(null, 'list', listId))
+  },
+  onOpenEditModal(listId) {
+    if (!listId) return
+
+    dispatch(openModal(MODAL_LIST_EDITOR, {
+      id: listId,
+      tab: 'settings',
+    }))
+  },
+  onOpenSharePopover(targetRef, list) {
+    if (!list) return
+
+    dispatch(openPopover(POPOVER_SHARE, {
+      targetRef,
+      list,
+    }))
+  },
+})
 
 ListPage.propTypes = {
   children: PropTypes.node.isRequired,
@@ -114,4 +156,4 @@ ListPage.propTypes = {
   list: ImmutablePropTypes.map,
 }
 
-export default connect(mapStateToProps)(ListPage)
+export default connect(mapStateToProps, mapDispatchToProps)(ListPage)

@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { fromJS } from 'immutable'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import {
@@ -80,6 +81,7 @@ class Deck extends React.PureComponent {
         title = 'Notifications'
         icon = 'notifications'
         Component = Notifications
+        componentParams = { expandOnMount: true }
         break
       case 'home':
         title = 'Home'
@@ -129,11 +131,13 @@ class Deck extends React.PureComponent {
         const userAccountId = deckColumn.replace('user.', '')
         title = 'User'
         Component = AccountTimeline
-        componentParams = { id: userAccountId }
+        const account = this.props.accounts.get(userAccountId) ||
+          fromJS({ id: userAccountId })
+        componentParams = { account }
         accountId = userAccountId
       } else if (deckColumn.indexOf('list.') > -1)  {
         const listId = deckColumn.replace('list.', '')
-        title = 'List'
+        title = 'Feed'
         subtitle = listId
         icon = 'list'
         Component = ListTimeline
@@ -257,6 +261,7 @@ const SortableContainer = sortableContainer(({children}) => (
 const mapStateToProps = (state) => ({
   isPro: state.getIn(['accounts', me, 'is_pro']),
   gabDeckOrder: state.getIn(['settings', 'gabDeckOrder']),
+  accounts: state.get('accounts')
 })
 
 Deck.propTypes = {

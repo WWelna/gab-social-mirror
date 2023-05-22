@@ -26,10 +26,9 @@ import {
   UserSuggestionsPanel,
   ProPanel,
   ShopPanel,
-  TrendingHashtagsPanel,
   ProgressPanel,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
+import { supportsPassiveEvents } from 'detect-it'
 
 class HomePage extends React.PureComponent {
 
@@ -41,7 +40,7 @@ class HomePage extends React.PureComponent {
     this.window = window
     this.documentElement = document.scrollingElement || document.documentElement
 
-    this.window.addEventListener('scroll', this.handleScroll)
+    this.window.addEventListener('scroll', this.handleScroll, supportsPassiveEvents ? { passive: true } : false)
   }
 
   componentWillUnmount() {
@@ -74,26 +73,38 @@ class HomePage extends React.PureComponent {
       children,
       intl,
       isPro,
-      totalQueuedItemsCount,
+      notificationCount,
       unreadChatsCount,
       unreadWarningsCount,
+      showVideos,
+      showSuggestedUsers,
+      showGroups,
     } = this.props
     const { lazyLoaded } = this.state
 
     const title = intl.formatMessage(messages.home)
-    const sidebarLayout = [
+    let sidebarLayout = [
       UserPanel,
       ProgressPanel,
-      GabAdPanel,
       <WrappedBundle key='home-page-pro-panel' component={ProPanel} componentParams={{ isPro: isPro }} />,
       <WrappedBundle key='home-page-lists-panel' component={ListsPanel} />,
-      <WrappedBundle key='home-page-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'member' }}  />,
-      <WrappedBundle key='home-page-gabtv-videos-panel' component={GabTVVideosPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />,
-      <WrappedBundle key='home-page-shop-panel' component={ShopPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
-      <WrappedBundle key='home-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
-      <WrappedBundle key='home-page-trending-hashtags-panel' component={TrendingHashtagsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
-      LinkFooter,
     ]
+
+    if(showGroups) {
+      sidebarLayout.push((<WrappedBundle key='home-page-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'member' }}  />))
+    }
+
+    if(showVideos) {
+      sidebarLayout.push((<WrappedBundle key='home-page-gabtv-videos-panel' component={GabTVVideosPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />))
+    }
+
+    sidebarLayout.push((<WrappedBundle key='home-page-shop-panel' component={ShopPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />))
+
+    if(showSuggestedUsers) {
+      sidebarLayout.push((<WrappedBundle key='home-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />))
+    }
+
+    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
@@ -112,14 +123,14 @@ class HomePage extends React.PureComponent {
             icon: 'chat',
             to: '/messages',
             count: unreadChatsCount,
-          },           
+          }
         ]}
         layout={sidebarLayout}
       >
 
         <PageTitle
           path={title}
-          badge={totalQueuedItemsCount}
+          badge={notificationCount}
         />
 
         {
@@ -149,7 +160,7 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  totalQueuedItemsCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount'], 0),
+  notificationCount: state.getIn(['notifications', 'unread']),
   unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount'], 0),
   unreadWarningsCount: state.getIn(['warnings', 'unreadCount'], 0),
   isPro: state.getIn(['accounts', me, 'is_pro']),
@@ -161,8 +172,8 @@ HomePage.propTypes = {
   intl: PropTypes.object.isRequired,
   isPro: PropTypes.bool,
   unreadChatsCount: PropTypes.number.isRequired,
-  totalQueuedItemsCount: PropTypes.number.isRequired,
   unreadWarningsCount: PropTypes.number.isRequired,
+  notificationCount: PropTypes.number,
 }
 
 export default injectIntl(connect(mapStateToProps)(HomePage))

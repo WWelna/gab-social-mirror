@@ -71,6 +71,10 @@ class DefaultNavigationBar extends ImmutablePureComponent {
       notificationCount,
     } = this.props
 
+    const currentPathname = window.location.pathname
+
+    const isNotifications = currentPathname.startsWith('/notifications')
+
     const navigationContainerClasses = CX({
       d: 1,
       z4: 1,
@@ -93,6 +97,33 @@ class DefaultNavigationBar extends ImmutablePureComponent {
     })
 
     const isHome = title === 'Home'
+
+    let homeTo = '/home'
+    let homeClick = undefined
+    if (isHome) {
+      homeTo = undefined
+      homeClick = () => {
+        window.scrollTo(0,0)
+      }
+    }
+
+    let notificationsTo = '/notifications'
+    let notificationsClick = undefined
+    if (isNotifications) {
+      notificationsTo = undefined
+      notificationsClick = () => {
+        window.scrollTo(0,0)
+      }
+    }
+
+    let groupsTo = '/groups'
+    let groupsClick = undefined
+    if (currentPathname.startsWith('/groups')) {
+      groupsTo = undefined
+      groupsClick = () => {
+        window.scrollTo(0,0)
+      }
+    }
 
     return (
       <div className={navigationContainerClasses}>
@@ -166,15 +197,16 @@ class DefaultNavigationBar extends ImmutablePureComponent {
                   !noActions &&
                   <div className={[_s.d, _s.h53PX, _s.pl15, _s.flexRow, _s.aiCenter, _s.jcSpaceBetween].join(' ')}>
 
-                    <NavigationBarButton title='Home' icon='home' to='/home' />
+                    <NavigationBarButton title='Home' icon='home' to={homeTo} onClick={homeClick} />
                     <NavigationBarButton title='Explore' icon='explore' to='/explore' />
+                    <NavigationBarButton title='Marketplace' icon='shop' to='/marketplace' />
                     <NavigationBarButton title='News' icon='news' to='/news' />
-                    <NavigationBarButton title='Groups' icon='group' to='/groups' />
+                    <NavigationBarButton title='Groups' icon='group' to={groupsTo} onClick={groupsClick} />
                     <NavigationBarButton title='TV' icon='tv' href='https://tv.gab.com' />
 
                     <div className={[_s.d, _s.h20PX, _s.w1PX, _s.mr10, _s.ml10, _s.bgNavigationBlend].join(' ')} />
 
-                    <NavigationBarButton attrTitle='Notifications' icon='notifications' to='/notifications' count={notificationCount} />
+                    <NavigationBarButton attrTitle='Notifications' icon='notifications' to={notificationsTo} onClick={notificationsClick} count={notificationCount} />
                     <NavigationBarButton attrTitle='Chats' icon='chat' to='/messages' count={unreadChatsCount} />
                     <NavigationBarButton attrTitle='Dark/Muted/Light/White Mode' icon='light-bulb' onClick={this.handleOnClickLightBulb} />
 

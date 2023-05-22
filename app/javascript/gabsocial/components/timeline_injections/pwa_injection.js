@@ -9,18 +9,12 @@ class PWAInjection extends React.PureComponent {
 
   componentDidMount() {
     window.addEventListener('beforeinstallprompt',(e) => {
-      console.log("e:",e)
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault()
       // Stash the event so it can be triggered later.
       this.deferredPrompt=e
       // Update UI notify the user they can install the PWA
       // showInstallPromotion()
-    })
-
-    window.addEventListener('appinstalled',(evt) => {
-      // Log install to analytics
-      console.log('INSTALL: Success')
     })
 
     window.addEventListener('DOMContentLoaded',() => {
@@ -32,7 +26,7 @@ class PWAInjection extends React.PureComponent {
         displayMode='standalone'
       }
       // Log launch display mode to analytics
-      console.log('DISPLAY_MODE_LAUNCH:',displayMode)
+      //console.log('DISPLAY_MODE_LAUNCH:',displayMode)
 
       window.matchMedia('(display-mode: standalone)').addListener((evt) => {
         let displayMode='browser tab';
@@ -40,7 +34,7 @@ class PWAInjection extends React.PureComponent {
           displayMode='standalone';
         }
         // Log display mode change to analytics
-        console.log('DISPLAY_MODE_CHANGED',displayMode);
+        //console.log('DISPLAY_MODE_CHANGED',displayMode);
       });
     })
   }
@@ -53,9 +47,9 @@ class PWAInjection extends React.PureComponent {
     // Wait for the user to respond to the prompt
     this.deferredPrompt.userChoice.then((choiceResult) => {
       if(choiceResult.outcome==='accepted') {
-        console.log('User accepted the install prompt')
+        //console.log('User accepted the install prompt')
       } else {
-        console.log('User dismissed the install prompt')
+        //console.log('User dismissed the install prompt')
       }
     })
   }

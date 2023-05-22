@@ -109,7 +109,6 @@ class GroupMembers extends ImmutablePureComponent {
 					>
 						{
 							accountIds && accountIds.map((id) => (
-								// : todo : add badges for isAdmin, isModerator
 								<Account
 									compact
 									key={id}

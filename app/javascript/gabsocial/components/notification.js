@@ -18,6 +18,7 @@ import DotTextSeperator from './dot_text_seperator'
 import RelativeTimestamp from './relative_timestamp'
 import DisplayName from './display_name'
 import Dummy from './dummy'
+import ReactionTypeImage from './reaction_type_image'
 
 class Notification extends ImmutablePureComponent {
 
@@ -26,6 +27,7 @@ class Notification extends ImmutablePureComponent {
       intl,
       accounts,
       createdAt,
+      reactionType,
       type,
       status,
       isHidden,
@@ -55,6 +57,15 @@ class Notification extends ImmutablePureComponent {
         message = intl.formatMessage(count > 1 ? messages.likedStatusMultiple : messages.likedStatusOne, {
           count: count - 1,
         })
+        break
+      case 'reaction':
+        const actionTaken = !!reactionType && reactionType.get('name_past') ? reactionType.get('name_past').toLowerCase() : 'reacted to'
+        icon = !!reactionType ? null : 'like'
+        if (count > 1) {
+          message = `and ${count - 1} others ${actionTaken} your post`
+        } else {
+          message = `${actionTaken} your post`
+        }
         break
       case 'repost':
         icon = 'repost'
@@ -112,7 +123,16 @@ class Notification extends ImmutablePureComponent {
             {
               !isDeckConnected &&
               <Responsive min={BREAKPOINT_EXTRA_SMALL}>
-                <Icon id={icon} size='20px' className={[_s.cPrimary, _s.minW20PX, _s.mt5, _s.mr15].join(' ')} />
+                {
+                  !!icon &&
+                  <Icon id={icon} size='20px' className={[_s.cPrimary, _s.minW20PX, _s.mt5, _s.mr15].join(' ')} />
+                }
+                {
+                  (!icon && type === 'reaction' && !!reactionType) &&
+                  <div className={[_s.cPrimary, _s.minW20PX, _s.mt5, _s.mr15].join(' ')}>
+                    <ReactionTypeImage reactionTypeId={reactionType.get('id')} size='20px' />
+                  </div>
+                }
               </Responsive>
             }
 
@@ -135,7 +155,12 @@ class Notification extends ImmutablePureComponent {
                   <div className={_s.text}>
                     {
                       accounts && accounts.slice(0, 1).map((account, i) => (
-                        <DisplayName key={i} account={account} noUsername isInline />
+                        <NavLink
+                          to={`/${account.get('acct')}`}
+                          key={`noti-display-name-${i}`}
+                        >
+                          <DisplayName account={account} noUsername isInline />
+                        </NavLink>
                       ))
                     }
                   </div>
@@ -164,6 +189,7 @@ class Notification extends ImmutablePureComponent {
                     id={statusId}
                     isChild
                     isNotification
+                    
                   />
                 </div>
               }

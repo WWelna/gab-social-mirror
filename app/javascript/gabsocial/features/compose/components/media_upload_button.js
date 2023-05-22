@@ -27,13 +27,10 @@ class UploadButton extends ImmutablePureComponent {
     const {
       intl,
       resetFileKey,
-      unavailable,
       disabled,
       acceptContentTypes,
       small,
     } = this.props
-
-    if (unavailable) return null
 
     return (
       <ComposeExtraButton
@@ -72,7 +69,6 @@ const makeMapStateToProps = () => {
   const mapStateToProps = (state) => ({
     acceptContentTypes: state.getIn(['media_attachments', 'accept_content_types']),
     disabled: state.getIn(['compose', 'is_uploading']) || (state.getIn(['compose', 'media_attachments']).size + state.getIn(['compose', 'pending_media_attachments']) > 3 || state.getIn(['compose', 'media_attachments']).some(m => ['video', 'audio', 'gifv'].includes(m.get('type')))),
-    unavailable: state.getIn(['compose', 'poll']) !== null,
     resetFileKey: state.getIn(['compose', 'resetFileKey']),
   })
 
@@ -85,7 +81,6 @@ const mapDispatchToProps = (dispatch) => ({
 
 UploadButton.propTypes = {
   disabled: PropTypes.bool,
-  unavailable: PropTypes.bool,
   onSelectFile: PropTypes.func.isRequired,
   style: PropTypes.object,
   resetFileKey: PropTypes.number,

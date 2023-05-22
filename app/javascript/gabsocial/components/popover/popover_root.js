@@ -18,8 +18,13 @@ import {
   POPOVER_GROUP_OPTIONS,
   POPOVER_GROUP_TIMELINE_SORT_OPTIONS,
   POPOVER_GROUP_TIMELINE_SORT_TOP_OPTIONS,
+  POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS,
+  POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS,
   POPOVER_HOME_TIMELINE_SORT_OPTIONS,
   POPOVER_LISTS_SORT_OPTIONS,
+  POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS,
+  POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS,
+  POPOVER_MARKETPLACE_LISTING_OPTIONS,
   POPOVER_NAV_SETTINGS,
   POPOVER_NOTIFICATION_SETTINGS,
   POPOVER_PROFILE_OPTIONS,
@@ -27,6 +32,8 @@ import {
   POPOVER_STATUS_OPTIONS,
   POPOVER_STATUS_EXPIRATION_OPTIONS,
   POPOVER_SHARE,
+  POPOVER_STATUS_REACTIONS_COUNT,
+  POPOVER_STATUS_REACTIONS_SELECTOR,
   POPOVER_STATUS_VISIBILITY,
   POPOVER_TIMELINE_INJECTION_OPTIONS,
   POPOVER_USER_INFO,
@@ -46,8 +53,13 @@ import {
   GroupOptionsPopover,
   GroupTimelineSortOptionsPopover,
   GroupTimelineSortTopOptionsPopover,
+  ExploreTimelineSortOptionsPopover,
+  ExploreTimelineSortTopOptionsPopover,
   HomeTimelineSortOptionsPopover,
   ListsSortOptionsPopover,
+  MarketplaceListingChangeStatusPopover,
+  MarketplaceListingDashboardStatusOptionsPopover,
+  MarketplaceListingOptionsPopover,
   NavSettingsPopover,
   NotificationSettingsPopover,
   ProfileOptionsPopover,
@@ -55,6 +67,8 @@ import {
   StatusExpirationOptionsPopover,
   StatusOptionsPopover,
   SharePopover,
+  StatusReactionsCountPopover,
+  StatusReactionsSelectorPopover,
   StatusVisibilityPopover,
   TimelineInjectionOptionsPopover,
   UserInfoPopover,
@@ -82,8 +96,13 @@ const POPOVER_COMPONENTS = {
   [POPOVER_GROUP_OPTIONS]: GroupOptionsPopover,
   [POPOVER_GROUP_TIMELINE_SORT_OPTIONS]: GroupTimelineSortOptionsPopover,
   [POPOVER_GROUP_TIMELINE_SORT_TOP_OPTIONS]: GroupTimelineSortTopOptionsPopover,
+  [POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS]: ExploreTimelineSortOptionsPopover,
+  [POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS]: ExploreTimelineSortTopOptionsPopover,
   [POPOVER_HOME_TIMELINE_SORT_OPTIONS]: HomeTimelineSortOptionsPopover,
   [POPOVER_LISTS_SORT_OPTIONS]: ListsSortOptionsPopover,
+  [POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS]: MarketplaceListingChangeStatusPopover,
+  [POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS]: MarketplaceListingDashboardStatusOptionsPopover,
+  [POPOVER_MARKETPLACE_LISTING_OPTIONS]: MarketplaceListingOptionsPopover,
   [POPOVER_NAV_SETTINGS]: NavSettingsPopover,
   [POPOVER_NOTIFICATION_SETTINGS]: NotificationSettingsPopover,
   [POPOVER_PROFILE_OPTIONS]: ProfileOptionsPopover,
@@ -91,6 +110,8 @@ const POPOVER_COMPONENTS = {
   [POPOVER_STATUS_OPTIONS]: StatusOptionsPopover,
   [POPOVER_STATUS_EXPIRATION_OPTIONS]: StatusExpirationOptionsPopover,
   [POPOVER_SHARE]: SharePopover,
+  [POPOVER_STATUS_REACTIONS_COUNT]: StatusReactionsCountPopover,
+  [POPOVER_STATUS_REACTIONS_SELECTOR]: StatusReactionsSelectorPopover,
   [POPOVER_STATUS_VISIBILITY]: StatusVisibilityPopover,
   [POPOVER_TIMELINE_INJECTION_OPTIONS]: TimelineInjectionOptionsPopover,
   [POPOVER_USER_INFO]: UserInfoPopover,
@@ -98,8 +119,15 @@ const POPOVER_COMPONENTS = {
 }
 
 class PopoverRoot extends React.PureComponent {
+
+  get isReactionsSelectorPopover() {
+    return this.props.type === POPOVER_STATUS_REACTIONS_SELECTOR
+  }
+
   renderLoading = () => {
     const { width } = this.props
+    if (this.isReactionsSelectorPopover) return null
+    
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
     return <LoadingPopover isXS={isXS} onClose={this.props.onClose} />
@@ -107,6 +135,8 @@ class PopoverRoot extends React.PureComponent {
 
   renderError = () => {
     const { width } = this.props
+    if (this.isReactionsSelectorPopover) return null
+    
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
     return <ErrorPopover isXS={isXS} onClose={this.props.onClose} />
@@ -118,7 +148,7 @@ class PopoverRoot extends React.PureComponent {
     const visible = !!type
 
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
-    const Wrapper = isXS ? ModalBase : PopoverBase
+    const Wrapper = (isXS && !this.isReactionsSelectorPopover) ? ModalBase : PopoverBase
 
     //If is XS and popover is user info, dont show
     //Since on mobile this should not be visible
@@ -162,13 +192,14 @@ const mapDispatchToProps = (dispatch) => ({
       return dispatch(closePopoverDeferred())
     }
     dispatch(closePopover())
-  }
+  },
 })
 
 PopoverRoot.propTypes = {
   type: PropTypes.string,
   props: PropTypes.object,
   onClose: PropTypes.func.isRequired,
+  width: PropTypes.number,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(PopoverRoot)

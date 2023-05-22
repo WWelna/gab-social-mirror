@@ -146,6 +146,10 @@ class ProfileHeader extends ImmutablePureComponent {
         to: `/${account.get('acct')}/videos`,
         title: intl.formatMessage(messages.videos),
       },
+      {
+        to: `/${account.get('acct')}/listings`,
+        title: 'Listings',
+      },
     ]
 
     const isMyProfile = !account ? false : account.get('id') === me

@@ -39,7 +39,7 @@ class Avatar extends ImmutablePureComponent {
       targetRef,
       position: 'top',
       accountId: this.props.account.get('id'),
-      timeout: 1250
+      timeout: 1500,
     })
   }
 
@@ -66,7 +66,10 @@ class Avatar extends ImmutablePureComponent {
     let src;
 
     if (account) {
-      const srcKey = hovering || autoPlayGif ? 'avatar' : 'avatar_static'
+      const srcKeyBase = hovering || autoPlayGif ? 'avatar' : 'avatar_static'
+      // const srcKey = size <= 50 ? `${srcKeyBase}_small` : srcKeyBase
+      const srcKey = srcKeyBase
+
       src = account.get(srcKey)
     }
     

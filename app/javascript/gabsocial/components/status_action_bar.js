@@ -3,11 +3,17 @@ import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
-import { me, isStaff } from '../initial_state'
+import { me, allReactions } from '../initial_state'
 import Text from './text'
 import Button from './button'
 import StatusActionBarItem from './status_action_bar_item'
-import { CX } from '../constants'
+import ReactionsDisplayBlock from './reactions_display_block'
+import {
+  CX,
+  BREAKPOINT_EXTRA_SMALL,
+} from '../constants'
+import { getWindowDimension } from '../utils/is_mobile'
+import { shortNumberFormat } from '../utils/numbers'
 
 class StatusActionBar extends ImmutablePureComponent {
 
@@ -17,8 +23,9 @@ class StatusActionBar extends ImmutablePureComponent {
     this.props.onShare(this.shareButton, this.props.status)
   }
 
-  handleReplyClick = () => {
+  handleReplyClick = (e) => {
     this.props.onReply(this.props.status, null, true)
+    e.preventDefault()
   }
 
   handleFavoriteClick = () => {
@@ -38,7 +45,7 @@ class StatusActionBar extends ImmutablePureComponent {
   }
 
   openLikesList = () => {
-    this.props.onOpenLikes(this.props.status)
+    this.props.onOpenLikes(this.props.status, this.likeButton)
   }
 
   openRepostsList = () => {
@@ -53,19 +60,33 @@ class StatusActionBar extends ImmutablePureComponent {
     this.shareButton = n
   }
 
+  setLikeButton = (n) => {
+    this.likeButton = n
+  }
+
   render() {
     const {
       status,
       intl,
+      nulled,
       isCompact,
+      feature,
+      isReacting,
+      hoveringReactionId,
+      reactionPopoverOpenForStatusId,
     } = this.props
 
     const publicStatus = ['public', 'unlisted'].includes(status.get('visibility'))
 
-    const replyCount = status.get('replies_count')
+    const directReplyCount = status.get('direct_replies_count')
+    const replyCount = status.get('replies_count') || directReplyCount
     const repostCount = status.get('reblogs_count')
     const favoriteCount = status.get('favourites_count')
     const quotesCount = status.get('quotes_count')
+    const reactionsMap = status.get('reactions_counts')
+    const replyLabel = replyCount === 1 ? 'reply' : 'replies'
+    const repostLabel = repostCount === 1 ? 'repost' : 'reposts'
+    const quotesLabel = quotesCount === 1 ? 'quote' : 'quotes'
 
     const hasInteractions = favoriteCount > 0 || replyCount > 0 || repostCount > 0 || quotesCount > 0
     const shouldCondense = (
@@ -75,110 +96,115 @@ class StatusActionBar extends ImmutablePureComponent {
     ) && !hasInteractions
 
     const statusUrl = `/${status.getIn(['account', 'acct'])}/posts/${status.get('id')}`
-    const myStatus = status.getIn(['account', 'id']) === me
+    const isMyStatus = status.getIn(['account', 'id']) === me
 
-    const containerClasses = CX({
-      d: 1,
-      px10: !isCompact,
-      mt10: !shouldCondense,
-      mt5: shouldCondense,
-    })
+    const initialState = getWindowDimension()
+    const width = initialState.width
+    const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
     const innerContainerClasses = CX({
       d: 1,
-      py2: 1,
       flexRow: 1,
       w100PC: 1,
-      borderTop1PX: !shouldCondense && !isCompact,
       borderColorSecondary: !shouldCondense || isCompact,
       borderBottom1PX: isCompact,
-      mt5: hasInteractions,
-    })
-
-    const likeBtnClasses = CX({
-      d: 1,
-      text: 1,
-      cursorPointer: myStatus || isStaff,
-      fw400: 1,
-      noUnderline: 1,
-      underline_onHover: myStatus || isStaff,
-      bgTransparent: 1,
-      mr10: 1,
-      py5: 1,
     })
 
     const interactionBtnClasses = CX({
       d: 1,
       text: 1,
-      cursorPointer: 1,
       fw400: 1,
       noUnderline: 1,
-      underline_onHover: 1,
       bgTransparent: 1,
       outlineNone: 1,
       mr10: 1,
       py5: 1,
+      cursorPointer: !nulled,
+      underline_onHover: !nulled,
+      cursorNotAllowed: nulled,
     })
 
     const interactionContainerClasses = CX({
       d: 1,
       flexRow: 1,
       aiEnd: 1,
-      px5: !isCompact,
-      px15: isCompact,
+      px15: 1,
     })
 
+    const isReactingOnThisStatus = isReacting && !!status && reactionPopoverOpenForStatusId === status.get('id')
+    const reactionHelperText = !!hoveringReactionId ? 'Slide Finger Across' : 'Release to Cancel'
+
+    const barItemContainerClasses = CX({
+      d: 1,
+      flexRow: 1,
+      py2: 1,
+      w100PC: 1,
+      h40PX: 1,
+      visibilityHidden: isReactingOnThisStatus && isXS,
+    })
+
+    const myReaction = status.get('reaction')
+
     return (
-      <div className={containerClasses}>
+      <div className={[_s.d, _s.mt10, _s.pb2].join(' ')}>
         {
           hasInteractions && 
           <div className={interactionContainerClasses}>
             {
               favoriteCount > 0 &&
-              <button
-                className={likeBtnClasses}
-                onClick={this.openLikesList}
-                disabled={!(myStatus || isStaff)}
-              >
-                <Text color='secondary' size='small'>
-                  {intl.formatMessage(messages.likesLabel, {
-                    number: favoriteCount,
-                  })}
-                </Text>
-              </button>
+              <div className={[_s.mrAuto, _s.py5].join(' ')}>
+                <ReactionsDisplayBlock
+                  showIcons
+                  showText
+                  isBasicText
+                  iconSize='16px'
+                  totalCount={favoriteCount}
+                  reactions={reactionsMap}
+                  onClick={this.openLikesList}
+                  isDisabled={nulled}
+                />
+              </div>
             }
             {
               replyCount > 0 &&
               <Button
                 noClasses
+                isDisabled={nulled}
                 className={interactionBtnClasses}
-                to={isCompact ? undefined : statusUrl}
-                onClick={isCompact ? this.handleOnOpenStatusModal : undefined}
+                to={statusUrl}
               >
                 <Text color='secondary' size='small'>
-                  {intl.formatMessage(messages.commentsLabel, {
-                    number: replyCount,
-                  })}
+                  {shortNumberFormat(replyCount)}
+                  {' '}
+                  {replyLabel}
                 </Text>
               </Button>
             }
             {
               repostCount > 0 &&
-              <button className={interactionBtnClasses} onClick={this.openRepostsList}>
+              <button
+                className={interactionBtnClasses}
+                onClick={this.openRepostsList}
+                disabled={nulled}
+              >
                 <Text color='secondary' size='small'>
-                  {intl.formatMessage(messages.repostsLabel, {
-                    number: repostCount,
-                  })}
+                  {shortNumberFormat(repostCount)}
+                  {' '}
+                  {repostLabel}
                 </Text>
               </button>
             }
             {
               quotesCount > 0 &&
-              <button className={interactionBtnClasses} onClick={this.openQuotesList}>
+              <button
+                className={interactionBtnClasses}
+                onClick={this.openQuotesList}
+                disabled={nulled}
+              >
                 <Text color='secondary' size='small'>
-                  {intl.formatMessage(messages.quotesLabel, {
-                    number: quotesCount,
-                  })}
+                  {shortNumberFormat(quotesCount)}
+                  {' '}
+                  {quotesLabel}
                 </Text>
               </button>
             }
@@ -186,25 +212,44 @@ class StatusActionBar extends ImmutablePureComponent {
           </div>
         }
         <div className={innerContainerClasses}>
-          <div className={[_s.d, _s.flexRow, _s.py2, _s.w100PC].join(' ')}>
+          {
+            (isXS && isReactingOnThisStatus) &&
+            <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.jcCenter, _s.py2, _s.w100PC, _s.h40PX, _s.posAbs, _s.top0, _s.left0, _s.right0, _s.bottom0].join(' ')}>
+              <Text size='medium' weight='medium' color='secondary'>
+                {reactionHelperText}
+              </Text>
+            </div>
+          }
+          <div className={barItemContainerClasses}>
             <StatusActionBarItem
-              title={intl.formatMessage(messages.like)}
+              isLike
+              statusId={status.get('id')}
               icon={!!status.get('favourited') && !!me ? 'liked' : 'like'}
+              reactionTypeId={!!myReaction ? myReaction.get('id') : undefined}
+              title={
+                !!myReaction ? myReaction.get('name_past').charAt(0).toUpperCase() + myReaction.get('name_past').slice(1) :
+                !!status.get('favourited') && !!me ?
+                'Liked' : intl.formatMessage(messages.like)
+              }
               active={!!status.get('favourited') && !!me}
               onClick={this.handleFavoriteClick}
               isCompact={isCompact}
+              disabled={nulled && !status.get('favourited')}
+              buttonRef={this.setLikeButton}
             />
             <StatusActionBarItem
               title={intl.formatMessage(messages.comment)}
               icon='comment'
+              to={statusUrl}
               onClick={this.handleReplyClick}
               isCompact={isCompact}
+              disabled={nulled}
             />
             <StatusActionBarItem
               title={intl.formatMessage(messages.repost)}
               altTitle={!publicStatus ? intl.formatMessage(messages.cannot_repost) : ''}
               icon={!publicStatus ? 'lock' : 'repost'}
-              disabled={!publicStatus}
+              disabled={(!publicStatus || nulled) && !status.get('reblogged')}
               active={!!status.get('reblogged') && !!me}
               onClick={this.handleRepostClick}
               isCompact={isCompact}
@@ -213,7 +258,7 @@ class StatusActionBar extends ImmutablePureComponent {
               title={intl.formatMessage(messages.quote)}
               altTitle={!publicStatus ? intl.formatMessage(messages.cannot_repost) : ''}
               icon={!publicStatus ? 'lock' : 'quote'}
-              disabled={!publicStatus}
+              disabled={!publicStatus || nulled}
               onClick={this.handleQuoteClick}
               isCompact={isCompact}
             />
@@ -224,6 +269,7 @@ class StatusActionBar extends ImmutablePureComponent {
               icon='share'
               onClick={this.handleShareClick}
               isCompact={isCompact}
+              disabled={nulled}
             />
           </div>
         </div>
@@ -240,10 +286,9 @@ const messages = defineMessages({
   repost: { id: 'status.repost', defaultMessage: 'Repost' },
   cannot_repost: { id: 'status.cannot_repost', defaultMessage: 'This post cannot be reposted' },
   like: { id: 'status.like', defaultMessage: 'Like' },
-  likesLabel: { id: 'likes.label', defaultMessage: '{number, plural, one {# like} other {# likes}}' },
-  repostsLabel: { id: 'reposts.label', defaultMessage: '{number, plural, one {# repost} other {# reposts}}' },
-  quotesLabel: { id: 'quotes.label', defaultMessage: '{number, plural, one {# quote} other {# quotes}}' },
-  commentsLabel: { id: 'comments.label', defaultMessage: '{number, plural, one {# comment} other {# comments}}' },
+  // repostsLabel: { id: 'reposts.label', defaultMessage: '{number, plural, one {# repost} other {# reposts}}' },
+  // quotesLabel: { id: 'quotes.label', defaultMessage: '{number, plural, one {# quote} other {# quotes}}' },
+  // commentsLabel: { id: 'comments.label', defaultMessage: '{number, plural, one {# comment} other {# comments}}' },
 })
 
 StatusActionBar.propTypes = {
@@ -259,6 +304,11 @@ StatusActionBar.propTypes = {
   onOpenQuotes: PropTypes.func.isRequired,
   onOpenStatusModal: PropTypes.func.isRequired,
   isCompact: PropTypes.bool,
+  isReacting: PropTypes.bool,
+  hoveringReactionId: PropTypes.string,
+  reactionPopoverOpenForStatusId: PropTypes.string,
+  nulled: PropTypes.bool,
+  feature: PropTypes.bool,
 }
 
 export default injectIntl(StatusActionBar)

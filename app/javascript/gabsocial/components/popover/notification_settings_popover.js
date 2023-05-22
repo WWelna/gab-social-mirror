@@ -5,18 +5,15 @@ import { closePopover } from '../../actions/popover'
 import { openModal } from '../../actions/modal'
 import { MODAL_CONFIRM } from '../../constants'
 import {
-  markReadNotifications,
   clearNotifications,
 } from '../../actions/notifications'
+import { setFilter } from '../../actions/notifications'
 import PopoverLayout from './popover_layout'
+import SettingSwitch from '../setting_switch'
 import List from '../list'
+import Text from '../text'
 
 class NotificationSettingsPopover extends React.PureComponent {
-
-  handleOnMarkAsRead = () => {
-    this.props.onMarkReadNotifications()
-    this.props.onClosePopover()
-  }
 
   handleOnClear = () => {
     this.props.onClearNotifications()
@@ -27,23 +24,22 @@ class NotificationSettingsPopover extends React.PureComponent {
   }
 
   render() {
-    const { isXS } = this.props
+    const {
+      isXS,
+      settings,
+      onChangeSetting
+    } = this.props
+
 
     const listItems = [
-      {
-        title: 'Mark all notifications as read',
-        onClick: () => this.handleOnMarkAsRead(),
-        isActive: false,
-        hideArrow: true,
-      },
-      {},
+      isXS && {}, // spacer
       {
         title: 'Clear all notifications',
         onClick: () => this.handleOnClear(),
         isActive: false,
         hideArrow: true,
       },
-    ]
+    ].filter(Boolean)
 
     return (
       <PopoverLayout
@@ -51,20 +47,62 @@ class NotificationSettingsPopover extends React.PureComponent {
         isXS={isXS}
         onClose={this.handleOnClosePopover}
       >
-        <List
-          scrollKey='notification_settings'
-          items={listItems}
-          size={isXS ? 'large' : 'small'}
-        />
+        <div className={[_s.d, _s.boxShadowNone].join(' ')}>
+          {
+            isXS &&
+            <Text size='extraLarge' weight='medium' className={[_s.d, _s.px15, _s.py15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
+              Notification Settings
+            </Text>
+          }
+
+          {
+            isXS &&
+            <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
+              <SettingSwitch
+                prefix='notification'
+                settings={settings}
+                settingPath={'onlyVerified'}
+                onChange={onChangeSetting}
+                label='Only Verified Users'
+                labelProps={{
+                  size: 'large'
+                }}
+              />
+
+              <SettingSwitch
+                prefix='notification'
+                settings={settings}
+                settingPath={'onlyFollowing'}
+                onChange={onChangeSetting}
+                label='Only People I Follow'
+                labelProps={{
+                  size: 'large'
+                }}
+              />
+            </div>
+          }
+
+          <List
+            scrollKey='notification_settings'
+            items={listItems}
+            size={isXS ? 'large' : 'small'}
+          />
+        </div>
       </PopoverLayout>
     )
   }
 
 }
 
+const mapStateToProps = (state) => ({
+  settings: state.getIn(['notifications', 'filter']),
+})
+
 const mapDispatchToProps = (dispatch) => ({
-  onMarkReadNotifications: () => dispatch(markReadNotifications(true)),
   onClosePopover:() => dispatch(closePopover()),
+  onChangeSetting(path, value) {
+    dispatch(setFilter(path, value))
+  },
   onClearNotifications: () => {
     dispatch(closePopover()),
     dispatch(openModal(MODAL_CONFIRM, {
@@ -82,4 +120,4 @@ NotificationSettingsPopover.defaultProps = {
   onSortLists: PropTypes.func.isRequired,
 }
 
-export default connect(null, mapDispatchToProps)(NotificationSettingsPopover)
+export default connect(mapStateToProps, mapDispatchToProps)(NotificationSettingsPopover)

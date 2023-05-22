@@ -30,7 +30,10 @@ class Input extends React.PureComponent {
       id,
       hideLabel,
       maxLength,
+      radiusSmall,
       isRequired,
+      hasButtonAppended,
+      type,
     } = this.props
 
     const inputClasses = CX({
@@ -44,16 +47,34 @@ class Input extends React.PureComponent {
       py5: small,
       bgTransparent: !readOnly,
       bgSecondary: readOnly,
+      bgTertiary: hasButtonAppended, // && not focused
       cPrimary: !readOnly,
       cSecondary: readOnly,
       fs15PX: !small,
       fs13PX: small,
       flexGrow1: 1,
-      circle: 1,
+      circle: !radiusSmall,
+      radiusSmall: radiusSmall,
+      topRightRadius0: radiusSmall && hasButtonAppended,
+      bottomRightRadius0: radiusSmall && hasButtonAppended,
       px5: !!prependIcon,
       pl15: !prependIcon,
       pr15: !hasClear,
       cursorNotAllowed: isDisabled,
+    })
+
+    const containerClasses = CX({
+      d: 1,
+      flexGrow1: 1,
+      bgPrimary: 1,
+      border1PX: 1,
+      borderColorSecondary: 1,
+      flexRow: 1,
+      circle: !radiusSmall,
+      radiusSmall: radiusSmall,
+      topRightRadius0: radiusSmall && hasButtonAppended,
+      bottomRightRadius0: radiusSmall && hasButtonAppended,
+      aiCenter: 1,
     })
 
     const btnClasses = CX({
@@ -72,7 +93,7 @@ class Input extends React.PureComponent {
             </Text>
           </div>
         }
-        <div className={[_s.d, _s.flexGrow1, _s.bgPrimary, _s.border1PX, _s.borderColorSecondary, _s.flexRow, _s.circle, _s.aiCenter].join(' ')}>
+        <div className={containerClasses}>
           {
             !!prependIcon &&
             <Icon id={prependIcon} size='16px' className={[_s.cPrimary, _s.ml15, _s.mr5].join(' ')} />
@@ -86,7 +107,7 @@ class Input extends React.PureComponent {
           <input
             id={id}
             className={inputClasses}
-            type='text'
+            type={type}
             placeholder={placeholder}
             ref={inputRef}
             value={value}
@@ -137,6 +158,13 @@ Input.propTypes = {
   hideLabel: PropTypes.bool,
   maxLength: PropTypes.number,
   isDisabled: PropTypes.bool,
+  radiusSmall: PropTypes.bool,
+  type: PropTypes.string,
+  hasButtonAppended: PropTypes.bool,
+}
+
+Input.defaultProps = {
+  type: 'text',
 }
 
 export default Input

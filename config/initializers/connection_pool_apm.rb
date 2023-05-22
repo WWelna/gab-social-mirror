@@ -2,8 +2,8 @@
 #
 # Documentation: https://www.elastic.co/guide/en/apm/agent/ruby/current/custom-instrumentation.html
 
-ConnectionPool.class_eval do
-  include ElasticAPM::SpanHelpers
+# ConnectionPool.class_eval do
+  # include ElasticAPM::SpanHelpers
 
-  span_method :with
-end
+  # span_method :with
+# end

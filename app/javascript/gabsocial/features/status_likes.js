@@ -6,65 +6,120 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import { FormattedMessage } from 'react-intl'
 import debounce from 'lodash.debounce'
 import { fetchLikes, expandLikes } from '../actions/interactions'
-import { fetchStatus } from '../actions/statuses'
-import { makeGetStatus } from '../selectors'
+import { CX } from '../constants'
+import { shortNumberFormat } from '../utils/numbers'
 import Account from '../components/account'
+import ReactionTypeImage from '../components/reaction_type_image'
+import Text from '../components/text'
 import ColumnIndicator from '../components/column_indicator'
 import ScrollableList from '../components/scrollable_list'
 import AccountPlaceholder from '../components/placeholder/account_placeholder'
 
+const getStatusLikesTabClasses = (tab, activeTab) => CX({
+  d: 1,
+  h40PX: 1,
+  px15: 1,
+  aiCenter: 1,
+  jcCenter: 1,
+  outlineNone: 1,
+  bgTransparent: 1,
+  noUnderline: 1,
+  cursorPointer: 1,
+  borderBottom3PX: 1,
+  flexRow: tab !== -1,
+  bgSubtle_onHover: tab !== activeTab,
+  borderColorTransparent: tab !== activeTab,
+  borderColorBrand: tab === activeTab,
+})
+
 class StatusLikes extends ImmutablePureComponent {
 
+  state = {
+    activeTab: -1, // [-1 = all], [0,1 = normal like], [2-n = reaction]
+  }
+
   componentDidMount () {
-    this.props.dispatch(fetchLikes(this.props.statusId))
+    this.props.dispatch(fetchLikes(this.props.statusId, this.state.activeTab))
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.statusId !== this.props.statusId && nextProps.statusId) {
-      this.props.dispatch(fetchLikes(nextProps.statusId))
+      this.props.dispatch(fetchLikes(nextProps.statusId, this.state.activeTab))
     }
   }
 
   handleLoadMore = debounce(() => {
-    this.props.dispatch(expandLikes(this.props.statusId))
+    this.props.dispatch(expandLikes(this.props.statusId, this.state.activeTab))
   }, 300, { leading: true })
 
-  render () {
-    const {
-      accountIds,
-      isLoading,
-      hasMore,
-      list,
-      statusId,
-    } = this.props
+  handleOnChangeTab = (reactionId) => {
+    this.setState({ activeTab: reactionId })
+    this.props.dispatch(fetchLikes(this.props.statusId, reactionId))
+  }
 
+  render () {
+    const { status, statusId, statusReactions } = this.props
+    const { activeTab } = this.state
+    const reactionsMap = status.get('reactions_counts')
+  
     if (!statusId) {
       return <ColumnIndicator type='missing' />
     }
 
+    const accountIds = !!statusReactions ? statusReactions.getIn([activeTab, 'items']) : null
     const accountIdCount = !!accountIds ? accountIds.count() : 0
+    const hasMore = !!statusReactions ? !!statusReactions.getIn([activeTab, 'next']) : false
+    const isLoading = !!statusReactions ? statusReactions.getIn([activeTab, 'isLoading']) : false
 
     return (
-      <ScrollableList
-        scrollKey='likes'
-        emptyMessage={<FormattedMessage id='status.likes.empty' defaultMessage='No one has liked this gab yet. When someone does, they will show up here.' />}
-        onLoadMore={this.handleLoadMore}
-        hasMore={hasMore}
-        isLoading={isLoading && accountIdCount === 0}
-        showLoading={isLoading && accountIdCount === 0}
-        placeholderComponent={AccountPlaceholder}
-        placeholderCount={3}
-      >
-        {
-          accountIdCount > 0 && accountIds.map((id) => (
-            <Account
-              compact
-              key={`liked-by-${id}`}
-              id={id}
-            />
-          ))
-        }
-      </ScrollableList>
+      <div className={[_s.d, _s.w100PC].join(' ')}>
+        <div className={[_s.d, _s.h40PX, _s.px10, _s.w100PC, _s.borderBottom1PX, _s.borderColorSecondary, _s.flexRow, _s.aiCenter, _s.noScrollbar, _s.overflowXScroll].join(' ')}>
+          <button
+            className={getStatusLikesTabClasses(-1, activeTab)}
+            onClick={() => this.handleOnChangeTab(-1)}
+          >
+            <Text weight='bold'>All</Text>
+          </button>
+          {
+            !!reactionsMap && reactionsMap.map((block) => {
+              const reactionId = block.get('reactionId')
+              const count = block.get('count')
+              return (
+                <button
+                  key={`status-${statusId}-reaction-${reactionId}`}
+                  onClick={() => this.handleOnChangeTab(reactionId)}
+                  className={getStatusLikesTabClasses(reactionId, activeTab)}
+                >
+                  <span>
+                    <ReactionTypeImage reactionTypeId={reactionId} size='18px' />
+                  </span>
+                  <Text weight='medium' className={_s.ml7}>{shortNumberFormat(count)}</Text>
+                </button>
+              )
+            })
+          }
+        </div>
+        <ScrollableList
+          scrollKey='likes'
+          emptyMessage={<FormattedMessage id='status.likes.empty' defaultMessage='No one has liked this gab yet. When someone does, they will show up here.' />}
+          onLoadMore={this.handleLoadMore}
+          hasMore={hasMore}
+          isLoading={isLoading && accountIdCount === 0}
+          showLoading={isLoading && accountIdCount === 0}
+          placeholderComponent={AccountPlaceholder}
+          placeholderCount={3}
+        >
+          {
+            !!accountIds && accountIds.map((id) => (
+              <Account
+                compact
+                key={`liked-by-${id}`}
+                id={id}
+              />
+            ))
+          }
+        </ScrollableList>
+      </div>
     )
   }
 
@@ -73,9 +128,8 @@ class StatusLikes extends ImmutablePureComponent {
 const mapStateToProps = (state, props) => {
   const statusId = props.params ? props.params.statusId : props.statusId
   return {
-    accountIds: state.getIn(['user_lists', 'liked_by', statusId, 'items']),
-    hasMore: !!state.getIn(['user_lists', 'liked_by', statusId, 'next']),
-    isLoading: state.getIn(['user_lists', 'liked_by', statusId, 'isLoading']),
+    status: state.getIn(['statuses', statusId]),
+    statusReactions: state.getIn(['user_lists', 'reactions', statusId]),
   }
 }
 

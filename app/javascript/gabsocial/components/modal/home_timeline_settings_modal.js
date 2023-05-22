@@ -44,32 +44,49 @@ class HomeTimelineSettingsModal extends ImmutablePureComponent {
               onChange={onChange}
               label={intl.formatMessage(messages.showPhotos)}
             />
+            
+            <SettingSwitch
+            prefix='home_timeline'
+            settings={settings}
+            settingPath={['shows', 'repost']}
+            onChange={onChange}
+            label={intl.formatMessage(messages.showReposts)}
+            />
 
             <SettingSwitch
+            prefix='home_timeline'
+            settings={settings}
+            settingPath={['shows', 'reply']}
+            onChange={onChange}
+            label={intl.formatMessage(messages.showReplies)}
+            />         
+            */
+          }
+
+          <SettingSwitch
               prefix='home_timeline'
               settings={settings}
               settingPath={['shows', 'videos']}
               onChange={onChange}
               label={intl.formatMessage(messages.showVideos)}
             />
-            */
-          }
+         
+         <SettingSwitch
+              prefix='home_timeline'
+              settings={settings}
+              settingPath={['shows', 'suggestedUsers']}
+              onChange={onChange}
+              label={intl.formatMessage(messages.showSuggestedUsers)}
+            />
 
-          <SettingSwitch
-            prefix='home_timeline'
-            settings={settings}
-            settingPath={['shows', 'repost']}
-            onChange={onChange}
-            label={intl.formatMessage(messages.showReposts)}
-          />
+        <SettingSwitch
+              prefix='home_timeline'
+              settings={settings}
+              settingPath={['shows', 'groups']}
+              onChange={onChange}
+              label={intl.formatMessage(messages.showGroups)}
+            />
 
-          <SettingSwitch
-            prefix='home_timeline'
-            settings={settings}
-            settingPath={['shows', 'reply']}
-            onChange={onChange}
-            label={intl.formatMessage(messages.showReplies)}
-          />
         </div>
 
         <Button
@@ -91,7 +108,9 @@ class HomeTimelineSettingsModal extends ImmutablePureComponent {
 const messages = defineMessages({
   title: { id: 'home_timeline_settings', defaultMessage: 'Home Timeline Settings' },
   saveAndClose: { id: 'saveClose', defaultMessage: 'Save & Close' },
-  showVideos: { id: 'home.column_settings.show_videos', defaultMessage: 'Show videos' },
+  showVideos: { id: 'home.column_settings.show_videos', defaultMessage: 'Show Gab TV panel' },
+  showSuggestedUsers: { id: 'home.column_settings.show_suggested_users', defaultMessage: 'Show suggested users panel' },
+  showGroups: { id: 'home.column_settings.show_groups', defaultMessage: 'Show groups panel' },
   showPhotos: { id: 'home.column_settings.show_photos', defaultMessage: 'Show photos' },
   showPolls: { id: 'home.column_settings.show_polls', defaultMessage: 'Show polls' },
   showReposts: { id: 'home.column_settings.show_reposts', defaultMessage: 'Show comments' },

@@ -1,0 +1,15 @@
+- content_for :page_title do
+  = 'Marketplace Listing Categories'
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th Name
+        %th Slug
+        %th Edit
+        %th
+    %tbody
+      = render @marketplace_listing_categories
+
+= link_to 'New Category', new_admin_marketplace_listing_category_path, class: 'button'

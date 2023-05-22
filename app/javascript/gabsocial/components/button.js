@@ -35,6 +35,8 @@ const COLORS = {
  * @param {func} [props.onClick] - function to call on button click
  * @param {func} [props.onMouseEnter] - function to call on button mouse enter
  * @param {func} [props.onMouseLeave] - function to call on button mouse leave
+ * @param {func} [props.onTouchStart] - function to call on button touch start
+ * @param {func} [props.onTouchEnd] - function to call on button touch end
  * @param {bool} [props.radiusSmall] - if the button has small radius
  * @param {bool} [props.rel] - rel for the button
  * @param {bool} [props.target] - target for the button
@@ -54,6 +56,18 @@ class Button extends React.PureComponent {
   handleClick = (e) => {
     if (!this.props.isDisabled && this.props.onClick) {
       this.props.onClick(e)
+    }
+  }
+
+  handleOnTouchStart = (e) => {
+    if (!this.props.isDisabled && this.props.onTouchStart) {
+      this.props.onTouchStart(e)
+    }
+  }
+
+  handleOnTouchEnd = (e) => {
+    if (!this.props.isDisabled && this.props.onTouchEnd) {
+      this.props.onTouchEnd(e)
     }
   }
 
@@ -107,6 +121,8 @@ class Button extends React.PureComponent {
       onClick,
       onMouseEnter,
       onMouseLeave,
+      onTouchStart,
+      onTouchEnd,
       radiusSmall,
       rel,
       target,
@@ -198,6 +214,8 @@ class Button extends React.PureComponent {
       onClick: !!onClick ? this.handleClick : undefined,
       onMouseEnter: !!onMouseEnter || !!tooltip ? this.handleOnMouseEnter : undefined,
       onMouseLeave: !!onMouseLeave || !!tooltip ? this.handleOnMouseLeave : undefined,
+      onTouchStart: !!onTouchStart ? this.handleOnTouchStart : undefined,
+      onTouchEnd: !!onTouchEnd ? this.handleOnTouchEnd : undefined,
     }
 
     if (tagName === 'NavLink' && !!to) {
@@ -258,6 +276,8 @@ Button.propTypes = {
   onClick: PropTypes.func,
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
+  onTouchStart: PropTypes.func,
+  onTouchEnd: PropTypes.func,
   isOutline: PropTypes.bool,
   radiusSmall: PropTypes.bool,
   rel: PropTypes.string,

@@ -22,7 +22,7 @@ class VerifiedSuggestions
       end
 
       if account_ids.nil? || account_ids.empty?
-        account_ids = Account.searchable
+        account_ids = Account.old_searchable
           .where(is_verified: true)
           .discoverable
           .by_recent_status

@@ -6,9 +6,9 @@
 # Copied the original method definition and added a few lines
 # Only adds the tablespace in production, since it won't exist in development
 #
-# https://github.com/rails/rails/blob/v6.0.3.6/activerecord/lib/active_record/connection_adapters/postgresql/schema_statements.rb#L441-L446
+# https://github.com/rails/rails/blob/v6.0.4.7/activerecord/lib/active_record/connection_adapters/postgresql/schema_statements.rb#L441-L446
 
-raise 'Make sure this patch still works' unless ActiveRecord.version.to_s == '6.0.3.6'
+raise 'Make sure this patch still works' unless ActiveRecord.version.to_s == '6.0.4.7'
 
 ActiveRecord::ConnectionAdapters::PostgreSQL::SchemaStatements.class_eval do
   def add_index(table_name, column_name, options = {})

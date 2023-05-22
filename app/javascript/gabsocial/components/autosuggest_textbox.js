@@ -9,13 +9,12 @@ import {
   CX,
   BREAKPOINT_EXTRA_SMALL,
 } from '../constants'
-import { isRtl } from '../utils/rtl'
 import { textAtCursorMatchesToken } from '../utils/cursor_token_match'
 import Responsive from '../features/ui/util/responsive_component'
 import AutosuggestAccount from './autosuggest_account'
 import AutosuggestEmoji from './autosuggest_emoji'
-import Input from './input'
 import Composer from './composer'
+import Icon from './icon'
 
 class AutosuggestTextbox extends ImmutablePureComponent {
 
@@ -215,10 +214,8 @@ class AutosuggestTextbox extends ImmutablePureComponent {
       lineHeight125: 1,
       cPrimary: 1,
       w100PC: !small,
-      pt15: !small,
-      px15: !small,
-      px10: small,
-      pb10: !small,
+      py10: 1,
+      px15: 1,
       fs16PX: !small,
       fs14PX: small,
       maxH200PX: small,
@@ -231,7 +228,7 @@ class AutosuggestTextbox extends ImmutablePureComponent {
           <label htmlFor={id} className={[_s.visiblyHidden, _s.displayNone].join(' ')}>
             {placeholder}
           </label>
-          
+
           <Responsive max={BREAKPOINT_EXTRA_SMALL}>
             <Textarea
               id={id}
@@ -249,6 +246,9 @@ class AutosuggestTextbox extends ImmutablePureComponent {
               onPaste={this.onPaste}
               aria-autocomplete='list'
             />
+            { !isModalOpen &&
+              <Icon id='pencil' className={[_s.cSecondary, _s.posAbs, _s.mt15, _s.mr15, _s.right0, _s.pointerEventsNone].join(' ')} size='0.9em' />
+            }
           </Responsive>
 
           <Responsive min={BREAKPOINT_EXTRA_SMALL}>

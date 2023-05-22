@@ -1,0 +1,17 @@
+- content_for :page_title do
+  = 'New Marketplace Listing Category'
+
+= simple_form_for @marketplace_listing_category, url: admin_marketplace_listing_categories_path do |f|
+  = render 'shared/error_messages', object: @marketplace_listing_category
+
+  .fields-group
+    = f.input :name, wrapper: :with_label, label: 'Name', required: true
+  .fields-group
+    = f.input :slug, wrapper: :with_label, label: 'Unique Slug', required: true
+  .fields-group
+    = f.input :description, wrapper: :with_label, label: 'Description', required: true
+  .fields-group
+    = f.input :cover_image, wrapper: :with_label, input_html: { accept: 'image/png' }, required: true
+
+  .actions
+    = f.button :button, 'Submit', type: :submit

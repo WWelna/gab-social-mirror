@@ -27,8 +27,16 @@ import hashtags from './hashtags'
 import height_cache from './height_cache'
 import links from './links.js'
 import lists from './lists'
+import lists_lists from './lists_lists'
 import list_editor from './list_editor'
 import list_relationships from './list_relationships'
+import marketplace_listing_categories from './marketplace_listing_categories'
+import marketplace_listing_dashboard from './marketplace_listing_dashboard'
+import marketplace_listing_editor from './marketplace_listing_editor'
+import marketplace_listing_search from './marketplace_listing_search'
+import marketplace_listing_status_changes from './marketplace_listing_status_changes'
+import marketplace_listings_lists from './marketplace_listings_lists'
+import marketplace_listings from './marketplace_listings'
 import media_attachments from './media_attachments'
 import meta from './meta'
 import modal from './modal'
@@ -39,8 +47,10 @@ import polls from './polls'
 import popover from './popover'
 import promotions from './promotions'
 import push_notifications from './push_notifications'
+import reactions from './reactions'
 import relationships from './relationships'
 import reports from './reports'
+import router from './router'
 import search from './search'
 import settings from './settings'
 import shop from './shop'
@@ -50,10 +60,10 @@ import statuses from './statuses'
 import status_lists from './status_lists'
 import status_revisions from './status_revisions'
 import suggestions from './suggestions'
-import timelines from './timelines'
+import swipe from './swipe'
+import timelines from '../store/timelines'
 import timeline_injections from './timeline_injections'
 import toasts from './toasts'
-import trending_hashtags from './trending_hashtags'
 import user from './user'
 import user_lists from './user_lists'
 import warnings from './warnings'
@@ -86,9 +96,17 @@ const reducers = {
   height_cache,
   links,
   lists,
+  lists_lists,
   list_editor,
   list_relationships,
   loadingBar: loadingBarReducer,
+  marketplace_listing_categories,
+  marketplace_listing_dashboard,
+  marketplace_listing_editor,
+  marketplace_listing_search,
+  marketplace_listing_status_changes,
+  marketplace_listings_lists,
+  marketplace_listings,
   media_attachments,
   meta,
   modal,
@@ -99,7 +117,9 @@ const reducers = {
   popover,
   promotions,
   push_notifications,
+  reactions,
   relationships,
+  router,
   reports,
   search,
   settings,
@@ -110,10 +130,10 @@ const reducers = {
   status_lists,
   status_revisions,
   suggestions,
+  swipe,
   timelines,
   timeline_injections,
   toasts,
-  trending_hashtags,
   user,
   user_lists,
   warnings,

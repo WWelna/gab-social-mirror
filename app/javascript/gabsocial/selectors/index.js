@@ -26,11 +26,17 @@ export const makeGetChatMessage = () => {
       (state) => state,
       (state, { id }) => state.getIn(['chat_messages', id]),
       (state, { id }) => state.getIn(['accounts', `${state.getIn(['chat_messages', `${id}`, 'from_account_id'])}`]),
+      (state) => getFilters(state, { contextType: 'chats' }),
     ],
-    (state, base, account) => {
+    (state, base, account, filters) => {
       if (!base) return null
+
+      const regex = !!account && account.get('id') !== me && regexFromFilters(filters)
+      const filtered = regex && regex.test(base.get('text'))
+
       return base.withMutations((map) => {
         map.set('account', account)
+        map.set('filtered', filtered)
       })
     }
   )
@@ -41,11 +47,12 @@ export const makeGetChatConversation = () => {
     [
       (state) => state,
       (state, { id }) => state.getIn(['chat_conversations', `${id}`]),
+      (state, { id }) => makeGetChatMessage()(state, { id: `${state.getIn(['chat_conversations', `${id}`, 'last_chat_message', 'id'])}` }),
       (state) => state.get('accounts'),
     ],
-    (state, base, allAccounts) => {
+    (state, base, chatMessage, allAccounts) => {
       if (!base) return null
-    
+
       let otherAccounts = ImmutableList()
       if (allAccounts) {
         base.get('other_account_ids').forEach((acctId) => {
@@ -58,18 +65,22 @@ export const makeGetChatConversation = () => {
 
       return base.withMutations((map) => {
         map.set('other_accounts', otherAccounts)
+        map.set('last_chat_message', chatMessage)
       })
     }
   )
 }
 
-const toServerSideType = columnType => {
+const toServerSideType = (columnType) => {
   switch (columnType) {
     case 'home':
     case 'notifications':
     case 'public':
-    case 'thread':
+    case 'chats':
       return columnType
+    case 'comments':
+    case 'thread':
+      return 'comments'
     default:
       if (columnType.indexOf('list:') > -1) {
         return 'home'
@@ -79,22 +90,19 @@ const toServerSideType = columnType => {
   }
 };
 
-export const getFilters = (state, { contextType }) => state.get('filters', ImmutableList()).filter(filter => contextType && filter.get('context').includes(toServerSideType(contextType)) && (filter.get('expires_at') === null || Date.parse(filter.get('expires_at')) > (new Date())));
-
-export const getPromotions = () => {
-  return createSelector([
-    (state) => state,
-    (state) => state.getIn(['accounts', me, 'is_pro']),
-    (state) => state.get('promotions'),
-  ], (state, isPro, promotions) => {
-    return !isPro ? promotions : []
+export const getFilters = (state, { contextType }) => {
+  return state.get('filters', ImmutableList()).filter((filter) => {
+    return !contextType || (contextType && 
+            filter.get('context').includes(toServerSideType(contextType)) &&
+            (filter.get('expires_at') === null || Date.parse(filter.get('expires_at')) > (new Date())))
   })
 }
+// export const getFilters = (state) => state.get('filters')
 
 const escapeRegExp = string =>
   string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 
-export const regexFromFilters = filters => {
+export const regexFromFilters = (filters) => {
   if (filters.size === 0) {
     return null;
   }
@@ -122,18 +130,20 @@ export const makeGetStatus = () => {
       (state) => state,
       (state, { id }) => state.getIn(['statuses', id]),
       (state, { id }) => state.getIn(['groups', state.getIn(['statuses', id, 'group'])]),
-      (state, { id }) => state.getIn(['groups', state.getIn(['statuses', state.getIn(['statuses', id, 'reblog']), 'group'])]),
-      (state, { id }) => state.getIn(['statuses', state.getIn(['statuses', id, 'quote_of_id'])]),
-      (state, { id }) => state.getIn(['groups', state.getIn(['statuses', state.getIn(['statuses', id, 'quote_of_id']), 'group'])]),
-      (state, { id }) => state.getIn(['statuses', state.getIn(['statuses', id, 'reblog'])]),
+      (state, { id }) => {
+        const quoteId = state.getIn(['statuses', id, 'quote_of_id'])
+        return !!quoteId ? makeGetStatus()(state, { id: quoteId }) : null
+      },
+      (state, { id }) => {
+        const repostId = state.getIn(['statuses', id, 'reblog'])
+        return !!repostId ? makeGetStatus()(state, { id: repostId }) : null
+      },
       (state, { id }) => state.getIn(['accounts', state.getIn(['statuses', id, 'account'])]),
-      (state, { id }) => state.getIn(['accounts', state.getIn(['statuses', state.getIn(['statuses', id, 'quote_of_id']), 'account'])]),
-      (state, { id }) => state.getIn(['accounts', state.getIn(['statuses', state.getIn(['statuses', id, 'reblog']), 'account'])]),
       (state, { username }) => username,
+      (state, { id }) => state.getIn(['reactions', 'all', `${state.getIn(['statuses', id, 'reaction'])}`]),
       getFilters,
     ],
-
-    (state, statusBase, group, groupRepost, quotedStatus, quotedStatusGroup, statusRepost, accountBase, accountQuoted, accountRepost, username, filters) => {
+    (state, statusBase, group, quotedStatus, statusRepost, accountBase, username, reaction, filters) => {
       if (!statusBase) {
         return null
       }
@@ -144,34 +154,8 @@ export const makeGetStatus = () => {
         return null
       }
 
-      if (statusRepost) {
-        statusRepost = statusRepost.set('account', accountRepost)
-        if (groupRepost) statusRepost = statusRepost.set('group', groupRepost)
-
-        //Check if theres a quoted post that
-        const statusRepostQuoteId = statusRepost.get('quote_of_id')
-        if (!!statusRepostQuoteId) {
-          //Get repost's quoted post
-          let repostedQuotedStatus = state.getIn(['statuses', statusRepostQuoteId])
-          if (repostedQuotedStatus) {
-            //Get/set account and set quoted_status
-            const repostedQuotedStatusAccount = state.getIn(['accounts', repostedQuotedStatus.get('account')])
-            repostedQuotedStatus = repostedQuotedStatus.set('account', repostedQuotedStatusAccount)
-
-            statusRepost = statusRepost.set('quoted_status', repostedQuotedStatus)
-          }
-        }
-      } else {
-        statusRepost = null;
-      }
-
-      if (quotedStatus) {
-        quotedStatus = quotedStatus.set('account', accountQuoted);
-        if (quotedStatusGroup) quotedStatus = quotedStatus.set('group', quotedStatusGroup)
-      }
-
       //Find ancestor status
-
+      const accountRepost = !!statusRepost ? statusRepost.get('account') : null
       const regex = (accountRepost || accountBase).get('id') !== me && regexFromFilters(filters);
       const filtered = regex && regex.test(statusBase.get('reblog') ? statusRepost.get('search_index') : statusBase.get('search_index'));
 
@@ -179,6 +163,7 @@ export const makeGetStatus = () => {
         map.set('quoted_status', quotedStatus);
         map.set('reblog', statusRepost);
         map.set('account', accountBase);
+        map.set('reaction', reaction);
         map.set('filtered', filtered);
         map.set('group', group);
       });
@@ -201,7 +186,6 @@ export const getAccountGallery = createSelector([
   (state, id, mediaType) => mediaType,
 ], (statusIds, statuses, mediaType) => {
   let medias = ImmutableList()
-
   statusIds.forEach((statusId) => {
     const status = statuses.get(statusId)
     medias = medias.concat(
@@ -210,18 +194,16 @@ export const getAccountGallery = createSelector([
           if (mediaType === 'video') {
             return media.get('type') === 'video'
           }
-          
           return media.get('type') !== 'video'
         })
-        .map((media) => media.set('status', status))
+        .map(media => media.set('status', status))
     )
   })
-
   return medias
 })
 
 export const getOrderedLists = createSelector([
-  (state, tab) => state.getIn(['lists', 'lists', tab], ImmutableList()),
+  (state, tab) => state.getIn(['lists_lists', tab, 'items'], ImmutableList()),
   (state) => state.getIn(['lists', 'items']),
 ], (listIdsByTab, allLists) => {
   let returner = ImmutableList()
@@ -237,7 +219,7 @@ export const getToasts = createSelector([
 ], (base) => {
   if (!base) return null
 
-  let arr = []
+  const arr = []
 
   base.forEach((item) => {
     arr.push({

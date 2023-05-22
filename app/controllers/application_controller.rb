@@ -104,6 +104,9 @@ class ApplicationController < ActionController::Base
     cached_keys_with_value = Rails.cache.read_multi(*raw).transform_keys(&:id)
     uncached_ids           = raw.map(&:id) - cached_keys_with_value.keys
 
+    # hit_count = cached_keys_with_value.length
+    # ElasticAPM.set_label("cache_collection.#{klass.class}.hits", hit_count)
+
     klass.reload_stale_associations!(cached_keys_with_value.values) if klass.respond_to?(:reload_stale_associations!)
 
     unless uncached_ids.empty?
@@ -112,6 +115,9 @@ class ApplicationController < ActionController::Base
       cache_entries = records.index_by(&:cache_key)
 
       Rails.cache.write_multi(cache_entries)
+
+      # miss_count = uncached_ids.length
+      # ElasticAPM.set_label("cache_collection.#{klass.class}.misses", miss_count)
     end
 
     raw.map { |item| cached_keys_with_value[item.id] || uncached[item.id] }.compact
@@ -124,18 +130,6 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def render_cached_json(cache_key, **options)
-    options[:expires_in] ||= 3.minutes
-    cache_public           = options.key?(:public) ? options.delete(:public) : true
-    content_type           = options.delete(:content_type) || 'application/json'
-
-    data = Rails.cache.fetch(cache_key, { raw: true }.merge(options)) do
-      yield.to_json
-    end
-
-    expires_in options[:expires_in], public: cache_public
-    render json: data, content_type: content_type
-  end
 
   def set_cache_headers
     response.headers['Vary'] = 'Accept'

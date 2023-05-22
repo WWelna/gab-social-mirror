@@ -58,8 +58,6 @@ class AccountAlbums extends ImmutablePureComponent {
     if (!account) return null
     const hasAlbums = !!albumIds ? albumIds.size > 0 : false
 
-    console.log("albumIds:", albumIds)
-
     return (
       <Block>
         <div className={[_s.d, _s.px10, _s.py10].join(' ')}>

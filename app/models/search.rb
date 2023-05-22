@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 class Search < ActiveModelSerializers::Model
-  attributes :accounts, :statuses, :hashtags, :groups, :links
+  attributes :accounts, :statuses, :hashtags, :groups, :links, :lists
 end

@@ -12,6 +12,7 @@ import {
   uploadCompose,
   changeScheduledAt,
   changeComposeGroupId,
+  changeComposeReplyToId,
   upstreamChangesAccepted,
 } from '../../../actions/compose'
 import { openModal } from '../../../actions/modal'
@@ -24,6 +25,7 @@ const mapStateToProps = (state, props) => {
     formLocation,
     shouldCondense,
     isModal,
+    feature,
   } = props
 
   const isStandalone = formLocation === 'standalone'
@@ -44,6 +46,8 @@ const mapStateToProps = (state, props) => {
   if (isModalOpen && shouldCondense) isMatch = false
   if (isModalOpen && (!isModal && !isStandalone)) isMatch = false
   
+  if (feature) isMatch = true
+
   if (!isMatch) {
     return {
       isStandalone,
@@ -68,7 +72,8 @@ const mapStateToProps = (state, props) => {
       scheduledAt: null,
       account: state.getIn(['accounts', me]),
       hasPoll,
-      hasUpstreamChanges: false
+      hasUpstreamChanges: false,
+      feature,
     }
   }
 
@@ -139,6 +144,10 @@ const mapDispatchToProps = (dispatch, { formLocation }) => ({
 
   onChangeComposeGroupId(groupId) {
     dispatch(changeComposeGroupId(groupId))
+  },
+
+  onChangeComposeReplyToId(replyToId) {
+    dispatch(changeComposeReplyToId(replyToId))
   },
 
   onUpstreamChangesAccepted() {

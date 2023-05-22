@@ -26,6 +26,10 @@ import {
   UNPIN_CHAT_CONVERSATION_SUCCESS,
   LEAVE_GROUP_CHAT_CONVERSATION_SUCCESS,
 } from '../actions/chat_conversation_accounts'
+import {
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_SUCCESS,
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_SUCCESS,
+} from '../actions/marketplace_listings'
 
 const initialState = ImmutableMap()
 
@@ -62,6 +66,8 @@ export default function chat_conversations(state = initialState, action) {
   case CHAT_CONVERSATIONS_MUTED_FETCH_SUCCESS:
   case CHAT_CONVERSATIONS_MUTED_EXPAND_SUCCESS:
   case CHAT_CONVERSATION_APPROVED_SEARCH_FETCH_SUCCESS:
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_SUCCESS:
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_SUCCESS:
     return importChatConversations(state, action.chatConversations)
   case CHAT_MESSAGES_SEND_SUCCESS:
     return setLastChatMessage(state, action.chatMessage)

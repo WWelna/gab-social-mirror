@@ -11,7 +11,7 @@ class ManifestsController < EmptyController
         sizes: '192x192',
         type: 'image/png',
       }],
-      theme_color: '#21D07B',
+      theme_color: '#21cf7a',
       background_color: '#191b22',
       display: 'standalone',
       start_url: '/home',

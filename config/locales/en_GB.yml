@@ -623,6 +623,7 @@ en_GB:
       notifications: Notifications
       public: Public timelines
       thread: Conversations
+      chats: Chat messages
     edit:
       title: Edit filter
     errors:

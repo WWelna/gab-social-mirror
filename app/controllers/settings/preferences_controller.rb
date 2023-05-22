@@ -39,6 +39,9 @@ class Settings::PreferencesController < Settings::BaseController
       :setting_default_language,
       :setting_unfollow_modal,
       :setting_boost_modal,
+      :setting_show_videos,
+      :setting_show_suggested_users,
+      :setting_show_groups,
       :setting_delete_modal,
       :setting_auto_play_gif,
       :setting_display_media,
@@ -49,6 +52,7 @@ class Settings::PreferencesController < Settings::BaseController
       :setting_group_in_home_feed,
       :setting_pro_wants_ads,
       :setting_show_pro_life,
+      :setting_remote_rss_feed,
       notification_emails: %i(follow follow_request reblog favourite mention digest report pro_reminder emails_from_gabcom),
       interactions: %i(must_be_follower must_be_following)
     )

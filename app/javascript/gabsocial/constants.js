@@ -1,4 +1,7 @@
+import React from 'react'
 import classNames from 'classnames/bind'
+import { FormattedMessage } from 'react-intl'
+
 export const CX = classNames.bind(_s)
 
 export const APP_NAME = 'Gab Social'
@@ -16,6 +19,8 @@ export const MOUSE_IDLE_DELAY = 300
 export const MIN_UNAUTHENTICATED_PAGES = 1
 
 export const LAZY_LOAD_SCROLL_OFFSET = 50
+
+export const MAX_POLL_OPTOINS = 8
 
 export const ALLOWED_AROUND_SHORT_CODE = '><\u0085\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000\u2028\u2029\u0009\u000a\u000b\u000c\u000d'
 export const MAX_POST_CHARACTER_COUNT = 3000
@@ -39,8 +44,13 @@ export const POPOVER_GROUP_MEMBER_OPTIONS = 'GROUP_MEMBER_OPTIONS'
 export const POPOVER_GROUP_OPTIONS = 'GROUP_OPTIONS'
 export const POPOVER_GROUP_TIMELINE_SORT_OPTIONS = 'GROUP_TIMELINE_SORT_OPTIONS'
 export const POPOVER_GROUP_TIMELINE_SORT_TOP_OPTIONS = 'GROUP_TIMELINE_SORT_TOP_OPTIONS'
+export const POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS = 'POPOVER_EXPLORE_TIMELINE_SORT_OPTIONS'
+export const POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS = 'POPOVER_EXPLORE_TIMELINE_SORT_TOP_OPTIONS'
 export const POPOVER_HOME_TIMELINE_SORT_OPTIONS = 'HOME_TIMELINE_SORT_OPTIONS'
 export const POPOVER_LISTS_SORT_OPTIONS = 'LISTS_SORT_OPTIONS'
+export const POPOVER_MARKETPLACE_LISTING_CHANGE_STATUS = 'MARKETPLACE_LISTING_CHANGE_STATUS'
+export const POPOVER_MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS = 'MARKETPLACE_LISTING_DASHBOARD_STATUS_OPTIONS'
+export const POPOVER_MARKETPLACE_LISTING_OPTIONS = 'MARKETPLACE_LISTING_OPTIONS'
 export const POPOVER_NAV_SETTINGS = 'NAV_SETTINGS'
 export const POPOVER_NOTIFICATION_SETTINGS = 'NOTIFICATION_SETTINGS'
 export const POPOVER_PROFILE_OPTIONS = 'PROFILE_OPTIONS'
@@ -48,6 +58,8 @@ export const POPOVER_SIDEBAR_MORE = 'SIDEBAR_MORE'
 export const POPOVER_STATUS_OPTIONS = 'STATUS_OPTIONS'
 export const POPOVER_STATUS_EXPIRATION_OPTIONS = 'STATUS_EXPIRATION_OPTIONS'
 export const POPOVER_SHARE = 'POPOVER_SHARE'
+export const POPOVER_STATUS_REACTIONS_COUNT = 'STATUS_REACTIONS_COUNT'
+export const POPOVER_STATUS_REACTIONS_SELECTOR = 'STATUS_REACTIONS_SELECTOR'
 export const POPOVER_STATUS_VISIBILITY = 'STATUS_VISIBILITY'
 export const POPOVER_TIMELINE_INJECTION_OPTIONS = 'TIMELINE_INJECTION_OPTIONS'
 export const POPOVER_USER_INFO = 'USER_INFO'
@@ -81,6 +93,7 @@ export const MODAL_LIST_EDITOR = 'LIST_EDITOR'
 export const MODAL_LIST_MEMBERS = 'LIST_MEMBERS'
 export const MODAL_LIST_SUBSCRIBERS = 'LIST_SUBSCRIBERS'
 export const MODAL_LIST_TIMELINE_SETTINGS = 'LIST_TIMELINE_SETTINGS'
+export const MODAL_MARKETPLACE_LISTING_FILTER = 'MARKETPLACE_LISTING_FILTER'
 export const MODAL_MEDIA = 'MEDIA'
 export const MODAL_MUTE = 'MUTE'
 export const MODAL_PRO_UPGRADE = 'PRO_UPGRADE'
@@ -107,6 +120,11 @@ export const LISTS_SORTING_TYPE_SUBS_DESC = 'subs-desc'
 export const SUGGESTION_TYPE_VERIFIED = 'verified'
 export const SUGGESTION_TYPE_RELATED = 'related'
 
+export const LIST_TYPE_FEATURED = 'featured'
+export const LIST_TYPE_MEMBER_OF = 'member_of'
+export const LIST_TYPE_SUBSCRIBED_TO = 'subscribed_to'
+export const LIST_TYPE_OWN = 'own'
+
 export const FONT_SIZES_EXTRA_SMALL = '12px'
 export const FONT_SIZES_SMALL = '13px'
 export const FONT_SIZES_NORMAL = '14px'
@@ -131,7 +149,7 @@ export const THEMES = [
 ]
 
 export const DEFAULT_THEME = 'white'
-export const DEFAULT_FONT_SIZE = 'normal' 
+export const DEFAULT_FONT_SIZE = 'normal'
 
 export const NOTIFICATION_FILTERS = [
   'all',
@@ -140,6 +158,7 @@ export const NOTIFICATION_FILTERS = [
   'reblog',
   'follow',
   'poll',
+  'quote',
   'follow_requests',
 ]
 
@@ -163,9 +182,40 @@ export const EXPIRATION_OPTION_NAMES = {
   [EXPIRATION_OPTION_7_DAYS]: '7d',
 }
 
+export const LOCAL_STORAGE_BLOCKS = 'blocks'
+export const LOCAL_STORAGE_MUTES = 'mutes'
+export const LOCAL_STORAGE_BLOCKED_BY = 'blockedby'
+
+/**
+ * On timelines how many queue items should we load before stopping the queue
+ * timer?
+ */
+export const TIMELINES_MAX_QUEUE_ITEMS = 10
+
 export const HOME_TIMELINE_SORTING_TYPE_NEWEST = 'newest'
 export const HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS = 'no-reposts'
 export const HOME_TIMELINE_SORTING_TYPE_TOP = 'top'
+
+export const homeSorts = Object.freeze([
+  {
+    key: HOME_TIMELINE_SORTING_TYPE_NEWEST,
+    title: <FormattedMessage id='home_timeline_sort.newest' defaultMessage='Newest' />,
+    subtitle: <FormattedMessage id='home_timeline_sort.newest_subtitle' defaultMessage='See all posts, reposts in chronological order' />,
+    queue: true,
+    isDefault: true,
+  },
+  {
+    key: HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS,
+    title: <FormattedMessage id='home_timeline_sort.no_reposts' defaultMessage='Newest, no reposts' />,
+    subtitle: <FormattedMessage id='home_timeline_sort.no_reposts_subtitle' defaultMessage='See all posts in chronological order' />,
+    queue: true,
+  },
+  {
+    key: HOME_TIMELINE_SORTING_TYPE_TOP,
+    title: <FormattedMessage id='home_timeline_sort.top' defaultMessage='Top posts from 24 hours' />,
+    subtitle: <FormattedMessage id='home_timeline_sort.top_subtitle' defaultMessage='See all posts sorted by most liked, commented and reposted' />,
+  },
+])
 
 export const GROUP_TIMELINE_SORTING_TYPE_HOT = 'hot'
 export const GROUP_TIMELINE_SORTING_TYPE_NEWEST = 'newest'
@@ -180,8 +230,136 @@ export const GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_MONTHLY = 'monthly'
 export const GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_YEARLY = 'yearly'
 export const GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_ALL_TIME = 'all_time'
 
+export const groupSortMessages = {
+  hotTitle: <FormattedMessage id='group_timeline_sorting.hot_title' defaultMessage='Hot Posts' />,
+  hotSubtitle: <FormattedMessage id='group_timeline_sorting.hot_subtitle' defaultMessage='See the most popular and recent gabs' />,
+  topTitle: <FormattedMessage id='group_timeline_sorting.top_title' defaultMessage='Top Posts' />,
+  topSubtitle: <FormattedMessage id='group_timeline_sorting.top_subtitle' defaultMessage='See gabs with most comments, likes and reposts first' />,
+  topTodayTitle: <FormattedMessage id='group_timeline_sorting.top_today_title' defaultMessage='Today' />,
+  topWeekTitle: <FormattedMessage id='group_timeline_sorting.top_week_title' defaultMessage='This Week' />,
+  topMonthTitle: <FormattedMessage id='group_timeline_sorting.top_month_title' defaultMessage='This Month' />,
+  topYearTitle: <FormattedMessage id='group_timeline_sorting.top_year_title' defaultMessage='This Year' />,
+  topAllTitle: <FormattedMessage id='group_timeline_sorting.top_all_title' defaultMessage='All Time' />,
+  recentTitle: <FormattedMessage id='group_timeline_sorting.recent_title' defaultMessage='Recent Activity' />,
+  recentSubtitle: <FormattedMessage id='group_timeline_sorting.recent_subtitle' defaultMessage='See gabs with most recent comments first' />,
+  newTitle: <FormattedMessage id='group_timeline_sorting.new_title' defaultMessage='New Posts' />,
+  newSubtitle: <FormattedMessage id='group_timeline_sorting.new_subtitle' defaultMessage='See most recent gabs first' />,
+}
+
+// ⚠️ groupSorts and exploreSorts are sharing titles and subtitles. If they need
+// to change please make a copy of the labels for explore.
+export const groupSorts = Object.freeze([
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_HOT,
+    title: groupSortMessages.hotTitle,
+    subtitle: groupSortMessages.hotSubtitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_NEWEST,
+    title: groupSortMessages.newTitle,
+    subtitle: groupSortMessages.newSubtitle,
+    isDefault: true,
+    hideForFeatured: true,
+    queue: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_RECENT_ACTIVITY,
+    title: groupSortMessages.recentTitle,
+    subtitle: groupSortMessages.recentSubtitle,
+    hideForFeatured: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP,
+    title: groupSortMessages.topTitle,
+    subtitle: groupSortMessages.topSubtitle,
+    usesTopSorts: true,
+  },
+])
+
+export const groupSortTops = Object.freeze([
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_TODAY,
+    title: groupSortMessages.topTodayTitle,
+    isDefault: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_WEEKLY,
+    title: groupSortMessages.topWeekTitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_MONTHLY,
+    title: groupSortMessages.topMonthTitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_YEARLY,
+    title: groupSortMessages.topYearTitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_ALL_TIME,
+    title: groupSortMessages.topAllTitle,
+  },
+])
+
+// ⚠️ groupSorts and exploreSorts are sharing titles and subtitles. If they need
+// to change please make a copy of the labels for explore.
+export const exploreSorts = Object.freeze([
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_HOT,
+    title: groupSortMessages.hotTitle,
+    subtitle: groupSortMessages.hotSubtitle,
+    isDefault: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP,
+    title: groupSortMessages.topTitle,
+    subtitle: groupSortMessages.topSubtitle,
+    usesTopSorts: true,
+  },
+])
+
+export const exploreSortTops = Object.freeze([
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_TODAY,
+    title: groupSortMessages.topTodayTitle,
+    isDefault: true,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_WEEKLY,
+    title: groupSortMessages.topWeekTitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_MONTHLY,
+    title: groupSortMessages.topMonthTitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_YEARLY,
+    title: groupSortMessages.topYearTitle,
+  },
+  {
+    key: GROUP_TIMELINE_SORTING_TYPE_TOP_OPTION_ALL_TIME,
+    title: groupSortMessages.topAllTitle,
+  },
+])
+
 export const TOAST_TYPE_ERROR = 'error'
 export const TOAST_TYPE_SUCCESS = 'success'
+
+// from server
+export const SEARCH_TAB_ACCOUNT = 'account'
+export const SEARCH_TAB_STATUS = 'status'
+export const SEARCH_TAB_GROUP = 'group'
+export const SEARCH_TAB_LINK = 'link'
+export const SEARCH_TAB_LIST = 'feed'
+export const SEARCH_TAB_HASHTAG = 'hashtag'
+
+export const VALID_SEARCH_TABS = [
+  SEARCH_TAB_ACCOUNT,
+  SEARCH_TAB_STATUS,
+  SEARCH_TAB_GROUP,
+  SEARCH_TAB_LINK,
+  SEARCH_TAB_LIST,
+  SEARCH_TAB_HASHTAG,
+]
 
 export const TIMELINE_INJECTION_FEATURED_GROUPS = 'TI_FEATURED_GROUPS'
 export const TIMELINE_INJECTION_GROUP_CATEGORIES = 'TI_GROUP_CATEGORIES'
@@ -201,19 +379,19 @@ export const GAB_DECK_MAX_ITEMS = 8
 export const GAB_DECK_OPTIONS = ['home', 'user.id', 'notifications', 'list.id', 'likes', 'bookmarks', 'pro', 'compose', 'group.id', 'explore', 'news', 'news.id', 'hashtag.id']
 
 export const TRENDS_RSS_SOURCES = [
-  {'id':'5faf4fb95ca43345214f7989','title':'American Greatness'},
-  {'id':'6036dd6fe09bb91be52bf445','title':'Big League Politics'},
-  {'id':'614fe9b133254e072452208a','title':'Infowars'},
-  {'id':'614d160133254e072443ccb6','title':'Red Voice Media'},
-  {'id':'5daf64b18e955e2433b0f5ce','title':'Breitbart'},
-  {'id':'5daf66772fea4d3ba000883b','title':'Gateway Pundit'},
-  {'id':'5dafa767300c0e2601330386','title':'RT'},
-  {'id':'5e1e0a7dc46f1d5487be1806','title':'Yahoo News'},
-  {'id':'5e5037159e35822b6afb0f77','title':'CBN'},
-  {'id':'5e52dfc91f94b1111db105ed','title':'National File'},
-  {'id':'5e56dcff1f94b1111db95a75','title':'WND'},
-  {'id':'5e7160f7a994095d6ca9bbee','title':'Redstate'},
-  {'id':'5e8275900d86876052a853ae','title':'CD Media'},
+  { 'id':'5faf4fb95ca43345214f7989', 'title':'American Greatness' },
+  { 'id':'6036dd6fe09bb91be52bf445', 'title':'Big League Politics' },
+  { 'id':'614fe9b133254e072452208a', 'title':'Infowars' },
+  { 'id':'614d160133254e072443ccb6', 'title':'Red Voice Media' },
+  { 'id':'5daf64b18e955e2433b0f5ce', 'title':'Breitbart' },
+  { 'id':'5daf66772fea4d3ba000883b', 'title':'Gateway Pundit' },
+  { 'id':'5dafa767300c0e2601330386', 'title':'RT' },
+  { 'id':'5e1e0a7dc46f1d5487be1806', 'title':'Yahoo News' },
+  { 'id':'5e5037159e35822b6afb0f77', 'title':'CBN' },
+  { 'id':'5e52dfc91f94b1111db105ed', 'title':'National File' },
+  { 'id':'5e56dcff1f94b1111db95a75', 'title':'WND' },
+  { 'id':'5e7160f7a994095d6ca9bbee', 'title':'Redstate' },
+  { 'id':'5e8275900d86876052a853ae', 'title':'CD Media' },
 ]
 
 export const GAB_AD_PLACEMENTS = {
@@ -226,4 +404,59 @@ export const TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS = [
   'account_timeline',
   'liked_statuses',
   'account_comments_timeline',
+]
+
+export const MARKETPLACE_LISTING_VIEW_TAB_TYPE_CARD = 'card'
+export const MARKETPLACE_LISTING_VIEW_TAB_TYPE_LIST = 'list'
+
+export const MARKETPLACE_LISTING_SORY_BY = {
+  'newest': 'Newest',
+  'oldest': 'Oldest',
+  'price-asc': 'Price Asc',
+  'price-desc': 'Price Desc',
+}
+
+// from server
+export const MARKETPLACE_LISTING_STATUS_PENDING_REVIEW = 0
+export const MARKETPLACE_LISTING_STATUS_PENDING_CHANGES = 1
+export const MARKETPLACE_LISTING_STATUS_REJECTED = 2
+export const MARKETPLACE_LISTING_STATUS_APPROVED = 3
+export const MARKETPLACE_LISTING_STATUS_RUNNING = 4
+export const MARKETPLACE_LISTING_STATUS_EXPIRED = 5
+export const MARKETPLACE_LISTING_STATUS_SOLD = 6
+export const MARKETPLACE_LISTING_STATUS_ARCHIVED = 7
+
+// from server
+export const MAX_MARKETPLACE_IMAGE_UPLOAD = 8
+
+// from server
+export const MARKETPLACE_LISTING_CONDITIONS = [
+  {
+    title: 'All',
+    value: null,
+  },
+  {
+    title: 'New',
+    value: 0,
+  },
+  {
+    title: 'Renewed',
+    value: 1,
+  },
+  {
+    title: 'Used - Like new',
+    value: 2,
+  },
+  {
+    title: 'Used - Very good',
+    value: 3,
+  },
+  {
+    title: 'Used - Good',
+    value: 4,
+  },
+  {
+    title: 'Used - Acceptable',
+    value: 5,
+  },
 ]

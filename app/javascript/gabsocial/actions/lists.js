@@ -59,6 +59,7 @@ export const LIST_RELATIONSHIPS_FETCH_FAIL    = 'LIST_RELATIONSHIPS_FETCH_FAIL'
 
 export const LIST_SORT = 'LIST_SORT'
 
+
 /**
  * Fetch list by id
  */
@@ -95,43 +96,41 @@ const fetchListFail = (id, error) => ({
 })
 
 /**
- * Fetch all lists for current user
+ * Fetch all lists by tab
  */
-export const fetchLists = () => (dispatch, getState) => {
-  if (!me) return
-  if (getState().getIn(['lists', 'isLoading'])) return false
+export const fetchLists = (tab) => (dispatch, getState) => {
+  const block = getState().getIn(['lists_lists', tab])
+  // must be valid tab
+  if (!block) return false
+  // if already got or fetched dont do again
+  if (block && (block.get('isLoading') || block.get('isFetched'))) return false
 
-  dispatch(fetchListsRequest())
-  api(getState).get('/api/v1/lists').then(({ data }) => {
-    dispatch(fetchListsSuccess(data))
+  dispatch(fetchListsRequest(tab))
 
-    if (isObject(data)) {
-      const ownAccounts = Array.isArray(data.own) ? data.own.map((list) => list.account) : null
-      if (ownAccounts) dispatch(importFetchedAccounts(ownAccounts))
-
-      const memberAccounts = Array.isArray(data.member_of) ? data.member_of.map((list) => list.account) : null
-      if (memberAccounts) dispatch(importFetchedAccounts(memberAccounts))
-      
-      const subscribedToAccounts = Array.isArray(data.subscribed_to) ? data.subscribed_to.map((list) => list.account) : null
-      if (subscribedToAccounts) dispatch(importFetchedAccounts(subscribedToAccounts))
-    }
+  api(getState).get(`/api/v2/lists?type=${tab}`).then(({ data }) => {
+    dispatch(fetchListsSuccess(data, tab))
+    const accts = Array.isArray(data) ? data.map((list) => list.account) : null
+    if (accts) dispatch(importFetchedAccounts(accts))
   }).catch((err) => {
-    dispatch(fetchListsFail(err))
-  })
+    dispatch(fetchListsFail(err, tab))
+  }) 
 }
 
-const fetchListsRequest = () => ({
+const fetchListsRequest = (tab) => ({
   type: LISTS_FETCH_REQUEST,
+  tab,
 })
 
-const fetchListsSuccess = (data) => ({
+const fetchListsSuccess = (data, tab) => ({
   type: LISTS_FETCH_SUCCESS,
+  tab,
   data,
 })
 
-const fetchListsFail = (error) => ({
+const fetchListsFail = (error, tab) => ({
   type: LISTS_FETCH_FAIL,
   showToast: false,
+  tab,
   error,
 })
 
@@ -339,7 +338,7 @@ const fetchAccountListsFail = (id, error) => ({
  * 
  */
  export const sortLists = (tab, sortType) => (dispatch, getState) => {
-  const listIdsByTab = getState().getIn(['lists', 'lists', tab], ImmutableList()).toJS()
+  const listIdsByTab = getState().getIn(['lists_lists', tab, 'items'], ImmutableList()).toJS()
   const listsByTab = []
   
   for (let i = 0; i < listIdsByTab.length; i++) {
@@ -501,3 +500,11 @@ const fetchListRelationshipsFail = (error) => ({
   type: LIST_RELATIONSHIPS_FETCH_FAIL,
   error,
 })
+
+/**
+ * @description Import a list into redux
+ * @param {ImmutableMap} list
+ */
+export const importList = (list) => (dispatch) => {
+  dispatch(fetchListSuccess(list))
+}

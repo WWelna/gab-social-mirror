@@ -116,7 +116,10 @@ class DeckColumn extends ImmutablePureComponent {
             noRefresh={noRefresh}
             onRefresh={this.handleOnRefresh}
           />
-          <div className={[_s.d, _s.w100PC, _s.overflowYScroll, _s.boxShadowNone, _s.posAbs, _s.top60PX, _s.left0, _s.right0, _s.bottom0].join(' ')}>
+          <div
+            className={[_s.d, _s.w100PC, _s.overflowYScroll, _s.boxShadowNone, _s.posAbs, _s.top60PX, _s.left0, _s.right0, _s.bottom0].join(' ')}
+            data-scrollable-parent={true}
+          >
             { !refreshBool && children}
           </div>
         </div>

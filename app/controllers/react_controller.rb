@@ -87,6 +87,9 @@ class ReactController < ApplicationController
     elsif request.path.match(/^\/feeds/)
       listIdFromPath = request.path.sub("/feeds", "").gsub("/", "")
       @list = List.public_only.where(id: listIdFromPath).first
+    elsif request.path.match(/^\/marketplace\/item/)
+      listingIdFromPath = request.path.sub("/marketplace/item", "").gsub("/", "")
+      @marketplace_listing = MarketplaceListing.only_running.where(id: listingIdFromPath).first
     elsif find_public_route_matches
       return
     elsif request.path.count("/") == 1 && request.path.length === 1
@@ -114,7 +117,7 @@ class ReactController < ApplicationController
   end
 
   def find_public_route_matches
-    request.path.match(/\A\/(about|news|search|group|groups|explore|feeds)/)
+    request.path.match(/\A\/(about|news|search|group|groups|explore|feeds|marketplace)/)
   end
 
   def set_initial_state_json

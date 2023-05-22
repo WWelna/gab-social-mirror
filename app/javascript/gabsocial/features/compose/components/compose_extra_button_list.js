@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import {
   CX,
   BREAKPOINT_EXTRA_SMALL,
+  BREAKPOINT_SMALL,
 } from '../../../constants'
 import Responsive from '../../ui/util/responsive_component'
 import ResponsiveClassesComponent from '../../ui/util/responsive_classes_component'
@@ -36,42 +37,40 @@ class ComposeExtraButtonList extends React.PureComponent {
       formLocation,
       width,
       height,
+      feature
     } = this.props
 
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
     const isStandalone = formLocation === 'standalone'
     const isTimeline = formLocation === 'timeline'
     const isIntroduction = formLocation === 'introduction'
-    const small = (!isModal && isXS && !isStandalone) || isTimeline
+    const small = true
 
     const containerClasses = CX({
       d: 1,
-      w100PC: 1,
+      w100PC: !feature,
       bgPrimary: 1,
       px5: 1,
       py5: 1,
-      mb10: 1,
-      mtAuto: 1,
-      radiusSmall: 1,
-      borderTop1PX: 1,
-      borderBottom1PX: 1,
-      boxShadowBlock: 1,
       borderColorSecondary: 1,
-      flexWrap: 1,
-      flexRow: (small || !isTimeline || isXS) && !isStandalone,
-      jcSpaceAround: isXS,
+      flexWrap: !feature,
+      flexRow: 1,
+      jcSpaceAround: !feature,
+      maxW450PX: 1,
     })
 
     return (
-      <div className={containerClasses}>
-        <UploadButton small={small} />
-        <EmojiPickerButton isMatch={isMatch} small={small} />
-        { !edit && <PollButton small={small} /> }
-        { !isIntroduction && <StatusVisibilityButton small={small} /> }
-        { !isIntroduction && <SpoilerButton small={small} /> }
-        { !hidePro && !edit && <SchedulePostButton small={small} /> }
-        { !hidePro && !edit && <ExpiresPostButton small={small} /> }
-        { !hidePro && !isXS && <RichTextEditorButton small={small} /> }
+      <div className={[_s.d, _s.px10].join(' ')}>
+        <div className={containerClasses}>
+          <UploadButton small={small} />
+          <EmojiPickerButton isMatch={isMatch} small={small} />
+          { !edit && <PollButton small={small} /> }
+          { !isIntroduction && <StatusVisibilityButton small={small} /> }
+          { !isIntroduction && <SpoilerButton small={small} /> }
+          { !feature && !hidePro && !edit && <SchedulePostButton small={small} /> }
+          { !hidePro && !edit && <ExpiresPostButton small={small} /> }
+          { !feature && !hidePro && !isXS && <RichTextEditorButton small={small} /> }
+        </div>
       </div>
     )
   }
@@ -87,7 +86,7 @@ ComposeExtraButtonList.propTypes = {
   edit: PropTypes.bool,
   isMatch: PropTypes.bool,
   isModal: PropTypes.bool,
-  formLocation: PropTypes.string,
+  formLocation: PropTypes.string
 }
 
 export default connect(mapStateToProps)(ComposeExtraButtonList)

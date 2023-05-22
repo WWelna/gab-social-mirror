@@ -2,12 +2,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import throttle from 'lodash.throttle'
 import Sticky from 'react-stickynode'
 import { me } from '../initial_state'
 import {
   BREAKPOINT_EXTRA_SMALL,
-  LAZY_LOAD_SCROLL_OFFSET,
 } from '../constants'
 import Layout from './layout'
 import SidebarPanelGroup from '../components/sidebar_panel_group'
@@ -20,45 +18,12 @@ import {
   UserSuggestionsPanel,
   GabTVVideosPanel,
   LinkFooter,
-  GabAdPanel,
-  TrendingHashtagsPanel,
 } from '../features/ui/util/async_components'
 
 class ExploreLayout extends ImmutablePureComponent {
 
-  state = {
-    lazyLoaded: false,
-  }
-
-  componentDidMount() {
-    this.window = window
-    this.documentElement = document.scrollingElement || document.documentElement
-
-    this.window.addEventListener('scroll', this.handleScroll)
-  }
-
-  componentWillUnmount() {
-    this.detachScrollListener()
-  }
-
-  detachScrollListener = () => {
-    this.window.removeEventListener('scroll', this.handleScroll)
-  }
-
-  handleScroll = throttle(() => {
-    if (this.window) {
-      const { scrollTop } = this.documentElement
-      
-      if (scrollTop > LAZY_LOAD_SCROLL_OFFSET && !this.state.lazyLoaded) {
-        this.setState({ lazyLoaded: true })
-        this.detachScrollListener()
-      }
-    }
-  }, 150, { trailing: true })
-
   render() {
-    const { children, title } = this.props
-    const { lazyLoaded } = this.state
+    const { children, title, showVideos, showSuggestedUsers, showGroups } = this.props
 
     const pageTitleBlock = (
       <div className={[_s.d, _s.pl15, _s.pb10].join(' ')}>
@@ -68,14 +33,21 @@ class ExploreLayout extends ImmutablePureComponent {
 
     const layout = [
       SignUpLogInPanel,
-      GabAdPanel,
     ]
     if (!!me) {
-      layout.push(<WrappedBundle key='explore-layout-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'featured' }} />)
-      layout.push(<WrappedBundle key='explore-layout-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, suggestionType: 'verified' }} />)
+      if(showGroups) {
+        layout.push(<WrappedBundle key='explore-layout-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'featured' }} />)
+      }
+
+      if(showSuggestedUsers) {
+        layout.push(<WrappedBundle key='explore-layout-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ suggestionType: 'verified' }} />)
+      }
     }
-    layout.push(<WrappedBundle key='explore-layout-gabtv-videos-panel' component={GabTVVideosPanel} />)
-    layout.push(<WrappedBundle key='explore-layout-trending-hashtags-panel' component={TrendingHashtagsPanel} />)
+    
+    if(showVideos) {
+      layout.push(<WrappedBundle key='explore-layout-gabtv-videos-panel' component={GabTVVideosPanel} />)
+    }
+    
     layout.push(<WrappedBundle key='explore-layout-link-footer' component={LinkFooter} />)
 
     return (

@@ -38,7 +38,7 @@ class PotentialFriendshipTracker
         account_ids = conn.zrevrange("interactions:#{account_id}", offset, limit)
       end
       return [] if account_ids.empty?
-      Account.searchable.where(id: account_ids).local
+      Account.old_searchable.where(id: account_ids).local
     end
   end
 end

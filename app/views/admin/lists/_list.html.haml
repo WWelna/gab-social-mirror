@@ -2,6 +2,7 @@
   %td= list.id
   %td= list.title
   %td= list.slug
+  %td= list.visibility.to_s
   %td= list.subscriber_count
   %td
     - if list.is_featured?

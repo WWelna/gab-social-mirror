@@ -1,0 +1,23 @@
+- content_for :page_title do
+  = 'Image Blocks'
+
+= form_tag admin_image_blocks_url, method: 'GET', class: 'simple_form' do
+  .fields-group
+    .input.string.optional
+      = text_field_tag :md5, params[:md5], class: 'string optional', placeholder: "MD5"
+
+    .actions
+      %button= t('admin.accounts.search')
+      = link_to t('admin.accounts.reset'), admin_image_blocks_path, class: 'button negative'
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th= 'MD5'
+        %th
+    %tbody
+      = render @image_blocks
+
+= paginate @image_blocks
+= link_to 'New', new_admin_image_block_path, class: 'button'

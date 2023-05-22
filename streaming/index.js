@@ -20,7 +20,7 @@ const fs = require('fs');
 const env = process.env.NODE_ENV || 'development';
 
 dotenv.config({
-  path: env === 'production' ? '.env.production' : '.env',
+  path: env == 'production' ? '.env.production' : '.env',
 });
 
 log.level = process.env.LOG_LEVEL || 'verbose';
@@ -87,35 +87,33 @@ const startMaster = () => {
 const startWorker = (workerId) => {
   log.warn(`Starting worker ${workerId}`);
 
-  const pgConfigs = {
-    development: {
-      user: process.env.DB_USER || pg.defaults.user,
-      password: process.env.DB_PASS || pg.defaults.password,
-      database: process.env.DB_NAME || 'gabsocial_development',
-      host: process.env.DB_HOST || pg.defaults.host,
-      port: process.env.DB_PORT || pg.defaults.port,
-      max: 10,
-    },
-
-    production: {
-      user: process.env.DB_USER || 'gabsocial',
-      password: process.env.DB_PASS || '',
-      database: process.env.DB_NAME || 'gabsocial_production',
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      max: 10,
-    },
+  const pgConfig = {
+    user: process.env.DB_USER || 'gabsocial',
+    password: process.env.DB_PASS || '',
+    database: process.env.DB_NAME || 'gabsocial_development',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    max: 10,
   };
-
-  if (!!process.env.DB_SSLMODE && process.env.DB_SSLMODE !== 'disable') {
-    pgConfigs.development.ssl = true;
-    pgConfigs.production.ssl = true;
-  }
 
   const app = express();
   app.set('trusted proxy', process.env.TRUSTED_PROXY_IP || 'loopback,uniquelocal');
 
-  const pgPool = new pg.Pool(Object.assign(pgConfigs[env], dbUrlToConfig(process.env.DATABASE_URL)));
+  const pgPool = new pg.Pool(pgConfig);
+
+  pgPool.connect((err, client, done) => {
+    if (err) {
+      log.warn(err);
+      process.exit(-1);
+      return;
+    }
+    client.query('SELECT NOW()', (err, result) => {
+      log.warn(result.rows[0]);
+      done();
+    });
+  });
+
+
   const server = http.createServer(app);
   const redisNamespace = process.env.REDIS_NAMESPACE || null;
 
@@ -125,15 +123,15 @@ const startWorker = (workerId) => {
     db: process.env.REDIS_DB || 0,
     password: process.env.REDIS_PASSWORD,
   };
-
   if (redisNamespace) {
     redisParams.namespace = redisNamespace;
   }
 
   const redisPrefix = redisNamespace ? `${redisNamespace}:` : '';
 
-  const redisSubscribeClient = redisUrlToClient(redisParams, `redis://${redisParams.host}:${redisParams.port}/${redisParams.db}`);
-  const redisClient = redisUrlToClient(redisParams, `redis://${redisParams.host}:${redisParams.port}/${redisParams.db}`);
+  const redisPassword = redisParams.password ? `:${redisParams.password}@` : ''
+  const redisSubscribeClient = redisUrlToClient(redisParams, `redis://${redisPassword}${redisParams.host}:${redisParams.port}/${redisParams.db}`);
+  const redisClient = redisUrlToClient(redisParams, `redis://${redisPassword}${redisParams.host}:${redisParams.port}/${redisParams.db}`);
 
   const subs = {};
 
@@ -204,6 +202,7 @@ const startWorker = (workerId) => {
   const accountFromToken = (token, allowedScopes, req, next) => {
     pgPool.connect((err, client, done) => {
       if (err) {
+        log.warn(err);
         next(err);
         return;
       }
@@ -212,6 +211,7 @@ const startWorker = (workerId) => {
         done();
 
         if (err) {
+          log.warn(err);
           next(err);
           return;
         }
@@ -544,6 +544,7 @@ const startWorker = (workerId) => {
   const wss = new WebSocket.Server({ server, verifyClient: wsVerifyClient });
 
   wss.on('connection', (ws, req) => {
+    console.log(req.url);
     const location = url.parse(req.url, true);
     req.requestId = uuid.v4();
     req.remoteAddress = ws._socket.remoteAddress;

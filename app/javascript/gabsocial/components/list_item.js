@@ -93,11 +93,13 @@ class ListItem extends React.PureComponent {
       flexShrink1: 1,
     })
 
+    const click = !!onClick ? this.handleOnClick : undefined
+
     return (
       <Button
         to={to}
         href={href}
-        onClick={!!onClick ? this.handleOnClick : undefined}
+        onClick={click}
         className={containerClasses}
         target={openInNewTab ? '_blank' : undefined}
         noClasses
@@ -121,7 +123,7 @@ class ListItem extends React.PureComponent {
             className={iconClasses}
           />
         }
-        
+
         <div className={textContainerClasses}>
           <Text color='primary' weight={!!subtitle ? 'bold' : 'normal'} size={textSize} className={[_s.overflowHidden, _s.flexNormal, _s.textOverflowEllipsis].join(' ')}>
             {title}
@@ -141,6 +143,7 @@ class ListItem extends React.PureComponent {
             type='radio'
             checked={isActive}
             className={[_s.mlAuto, _s.flexShrink1, _s.mt0].join(' ')}
+            onChange={click}
           />
         }
 
@@ -165,8 +168,8 @@ ListItem.propTypes = {
   isHidden: PropTypes.bool,
   to: PropTypes.string,
   href: PropTypes.string,
-  title: PropTypes.string,
-  subtitle: PropTypes.string,
+  title: PropTypes.oneOfType([PropTypes.node, PropTypes.string]),
+  subtitle: PropTypes.oneOfType([PropTypes.node, PropTypes.string]),
   isActive: PropTypes.bool,
   actionIcon: PropTypes.bool,
   onClick: PropTypes.func,

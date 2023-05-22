@@ -4,26 +4,39 @@ import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { injectIntl, defineMessages } from 'react-intl'
+import { withRouter } from 'react-router-dom'
 import { openPopover } from '../../actions/popover'
 import { fetchShortcuts } from '../../actions/shortcuts'
+import { routerReset } from '../../actions/router'
 import { me } from '../../initial_state'
 import Responsive from '../../features/ui/util/responsive_component'
 import Button from '../button'
 import Text from '../text'
+import Icon from '../icon'
 import SidebarSectionTitle from '../sidebar_section_title'
 import SidebarSectionItem from '../sidebar_section_item'
 import SidebarLayout from './sidebar_layout'
+
+const isHome = p => p === '/' || p === '/home'
 
 class DefaultSidebar extends ImmutablePureComponent {
 
   state = {
     hoveringShortcuts: false,
+    ctrlMeta: false
   }
 
   componentDidMount() {
     if (this.props.isPro) {
       this.props.onFetchShortcuts()
     }
+    window.addEventListener('keyup', this.globalKeyup)
+    window.addEventListener('keydown', this.globalKeydown)
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keyup', this.globalKeyup)
+    window.removeEventListener('keydown', this.globalKeydown)
   }
 
   handleOpenSidebarMorePopover = () => {
@@ -45,6 +58,14 @@ class DefaultSidebar extends ImmutablePureComponent {
     this.moreBtnRef = n
   }
 
+  globalKeydown = evt => {
+    if (evt && (evt.ctrlKey || evt.metaKey) && this.state.ctrlMeta === false) {
+      this.setState({ ctrlMeta: true })
+    }
+  }
+
+  globalKeyup = evt => this.setState({ ctrlMeta: false })
+
   render() {
     const {
       intl,
@@ -57,21 +78,92 @@ class DefaultSidebar extends ImmutablePureComponent {
       showBackBtn,
       shortcuts,
       unreadChatsCount,
+      routerEntries,
+      location,
+      history
     } = this.props
-    const { hoveringShortcuts } = this.state
+    const { hoveringShortcuts, ctrlMeta } = this.state
 
     if (!me) return null
 
     let shortcutItems = []
     if (!!shortcuts) {
       shortcuts.forEach((s) => {
+        let shortcutComponent = null
+        if (s.get('shortcut_type') === 'list') {
+          shortcutComponent = (
+            <div
+              className={[_s.d, _s.circle, _s.bgSecondary, _s.aiCenter, _s.jcCenter].join(' ')}
+              style={{ height: '16px', width: '16px' }}
+            >
+              <Icon id='list' size='8px' className={_s.cSecondary} />
+            </div>
+          )
+        }
+
         shortcutItems.push({
           to: s.get('to'),
           title: s.get('title'),
           image: s.get('image'),
+          shortcutComponent,
         })
       })
     }
+
+    const currentPathname = location.pathname
+    let backTimes = 0
+    let homeTo = '/home'
+    let homeOnClick
+
+    // find home in previous routes counting back how many times it is
+    let homeFound = routerEntries.slice(1).some(function({ pathname }) {
+      backTimes += 1
+      return isHome(pathname)
+    })
+
+    if (
+      isHome(currentPathname) === false &&
+      homeFound &&
+      backTimes > 0 &&
+      history.length >= backTimes &&
+      ctrlMeta === false // ctrl or meta means new tab
+    ) {
+      /*
+      We've determined that there is an opportunity to go back to home and
+      preserve the scroll Y position.
+      */
+      homeTo = undefined
+      homeOnClick = () => {
+        history.go(-backTimes)
+        this.props.onRouterReset()
+      }
+    }
+
+    if (isHome(currentPathname)) {
+      homeTo = undefined
+      homeOnClick = () => {
+        window.scroll(0,0)
+      }
+    }
+
+    let notificationsTo = '/notifications'
+    let notificationsOnClick = undefined
+    if (currentPathname.startsWith('/notifications')) {
+      notificationsTo = undefined
+      notificationsOnClick = () => {
+        window.scroll(0,0)
+      }
+    }
+
+    let groupsTo = '/groups'
+    let groupsOnClick = undefined
+    if (currentPathname.startsWith('/groups')) {
+      groupsTo = undefined
+      groupsOnClick = () => {
+        window.scroll(0,0)
+      }
+    }
+
 
     return (
       <SidebarLayout
@@ -83,10 +175,11 @@ class DefaultSidebar extends ImmutablePureComponent {
         <SidebarSectionTitle>
           {intl.formatMessage(messages.menu)}
         </SidebarSectionTitle>
-        <SidebarSectionItem title='Home' icon='home' to='/home' count={homeItemsQueueCount} />
-        <SidebarSectionItem title='Notifications' icon='notifications' to='/notifications' count={notificationCount} />
+        <SidebarSectionItem title='Home' icon='home' to={homeTo} onClick={homeOnClick} count={homeItemsQueueCount} />
+        <SidebarSectionItem title='Notifications' icon='notifications' to={notificationsTo} onClick={notificationsOnClick} count={notificationCount} />
+        <SidebarSectionItem title='Marketplace' icon='shop' to='/marketplace' />
         <SidebarSectionItem title='Chats' icon='chat' to='/messages' count={unreadChatsCount} />
-        <SidebarSectionItem title='Groups' icon='group' to='/groups' />
+        <SidebarSectionItem title='Groups' icon='group' to={groupsTo} onClick={groupsOnClick} />
         <SidebarSectionItem title='Feeds' icon='list' to='/feeds' />
         <SidebarSectionItem title='Explore' icon='explore' to='/explore' />
         <SidebarSectionItem title='Pro Feed' icon='explore' to='/timeline/pro' />
@@ -130,11 +223,9 @@ class DefaultSidebar extends ImmutablePureComponent {
         }
 
         <SidebarSectionTitle>{intl.formatMessage(messages.explore)}</SidebarSectionTitle>
-        <SidebarSectionItem title='Apps' icon='apps' href='https://apps.gab.com' />
         <SidebarSectionItem title='Shop' icon='shop' href='https://shop.dissenter.com' />
         <SidebarSectionItem title='Trends' icon='trends' href='https://trends.gab.com' />
         <SidebarSectionItem title='GabPRO' icon='pro' href='https://pro.gab.com' />
-        <SidebarSectionItem title='Dissenter' icon='dissenter' href='https://dissenter.com' />
          
       </SidebarLayout>
     )
@@ -157,6 +248,7 @@ const mapStateToProps = (state) => ({
   unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount']),
   homeItemsQueueCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount'], 0),
   isPro: state.getIn(['accounts', me, 'is_pro']),
+  routerEntries: state.getIn(['router', 'entries'], [])
 })
 
 const mapDispatchToProps = (dispatch) => ({
@@ -166,6 +258,9 @@ const mapDispatchToProps = (dispatch) => ({
   onFetchShortcuts() {
     dispatch(fetchShortcuts())
   },
+  onRouterReset(){
+    dispatch(routerReset())
+  }
 })
 
 DefaultSidebar.propTypes = {
@@ -183,4 +278,4 @@ DefaultSidebar.propTypes = {
   shortcuts: ImmutablePropTypes.list,
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(DefaultSidebar))
+export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(DefaultSidebar)))

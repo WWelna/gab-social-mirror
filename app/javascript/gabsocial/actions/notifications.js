@@ -102,17 +102,6 @@ export const updateNotificationsQueue = (notification, intlMessages, intlLocale,
   //   })
   // }
 
-  if (notification.messageSource === 'websocket') {
-    const state = getState()
-    const queuedNotifications = state.getIn(['notifications', 'queuedNotifications'], ImmutableList())
-    const listedNotifications = state.getIn(['notifications', 'items'], ImmutableList())
-    if (queuedNotifications.size === 0 && listedNotifications.size === 0) {
-      // a notification came from websockets but we don't have any other notifications
-      // check with HTTP for more
-      dispatch(expandNotifications())
-    }
-  }
-
   if (isOnNotificationsPage) {
     dispatch({
       type: NOTIFICATIONS_UPDATE_QUEUE,
@@ -155,7 +144,6 @@ export const dequeueNotifications = () => (dispatch, getState) => {
   dispatch({
     type: NOTIFICATIONS_DEQUEUE,
   })
-  dispatch(markReadNotifications())
 }
 
 /**
@@ -201,6 +189,7 @@ export const expandNotifications = ({ maxId } = {}, done = noop) => (dispatch, g
 
     done()
   }).catch((error) => {
+    console.log(error)
     dispatch(expandNotificationsFail(error, isLoadingMore))
     done()
   })
@@ -239,16 +228,20 @@ export const clearNotifications = () => (dispatch, getState) => {
   api(getState).post('/api/v1/notifications/clear')
 }
 
-/**
- * 
- */
-export const scrollTopNotifications = (top) => (dispatch, getState) => {
-  dispatch({
-    type: NOTIFICATIONS_SCROLL_TOP,
-    top,
-  })
-  dispatch(markReadNotifications())
+export const markReadNotifications = (force) => (dispatch, getState) => {
+  if (!me) return
+  debouncedMarkReadNotifications(dispatch, getState, force)
 }
+
+export const debouncedMarkReadNotifications = debounce((dispatch, getState, force) => {
+  if (!me) return
+
+  api(getState).post('/api/v1/notifications/mark_read', {}).then(() => {
+    dispatch({
+      type: NOTIFICATIONS_MARK_READ,
+    })
+  })
+}, 3000, { leading: true })
 
 /**
  * 
@@ -263,29 +256,3 @@ export const setFilter = (path, value) => (dispatch) => {
   })
   dispatch(expandNotifications())
 }
-
-/**
- * 
- */
-
-export const markReadNotifications = (force) => (dispatch, getState) => {
-  if (!me) return
-  debouncedMarkReadNotifications(dispatch, getState, force)
-}
-
-export const debouncedMarkReadNotifications = debounce((dispatch, getState, force) => {
-  if (!me) return
-  const topNotification = parseInt(getState().getIn(['notifications', 'items', 0, 'id']))
-  const lastReadId = getState().getIn(['notifications', 'lastReadId'])
-
-  if ((topNotification && topNotification > lastReadId && lastReadId !== -1) || force) {
-    api(getState).post('/api/v1/notifications/mark_read', {
-      id: topNotification
-    }).then(() => {
-      dispatch({
-        type: NOTIFICATIONS_MARK_READ,
-        notification: topNotification,
-      })
-    })
-  }
-}, 5000, { leading: true })

@@ -16,6 +16,7 @@ import {
   bookmark,
   unbookmark,
   isBookmark,
+  unmention,
 } from '../../actions/interactions';
 import {
   muteAccount,
@@ -24,6 +25,8 @@ import {
 import {
   deleteStatus,
   editStatus,
+  muteStatus,
+  unmuteStatus,
 } from '../../actions/statuses';
 import { quoteCompose } from '../../actions/compose'
 import {
@@ -170,6 +173,14 @@ class StatusOptionsPopover extends ImmutablePureComponent {
     this.props.onOpenSharePopover(this.props.innerRef, this.props.status)
   }
 
+  handleOnUnmention = () => {
+    this.props.onUnmention(this.props.status)
+  }
+
+  handleOnConversationMuteClick = () => {
+    this.props.onMuteConversation(this.props.status)
+  }
+
   handleClosePopover = () => {
     this.props.onClosePopover()
   }
@@ -181,12 +192,12 @@ class StatusOptionsPopover extends ImmutablePureComponent {
       status,
       groupRelationships,
       bookmarkCollections,
+      isMentioned,
     } = this.props
     const { showingBookmarkCollections } = this.state
 
     if (!status) return <div />
 
-    const mutingConversation = status.get('muted')
     const publicStatus = ['public', 'unlisted'].includes(status.get('visibility'))
     const isReply = !!status.get('in_reply_to_id')
     const withGroupAdmin = !!groupRelationships ? (groupRelationships.get('admin') || groupRelationships.get('moderator')) : false
@@ -217,6 +228,22 @@ class StatusOptionsPopover extends ImmutablePureComponent {
           onClick: this.handleBookmarkChangeClick,
         })
       }
+
+      if (isMentioned) {
+        menu.push({
+          icon: 'subtract',
+          hideArrow: true,
+          title: 'Untag myself',
+          onClick: this.handleOnUnmention,
+        })
+      }
+
+      menu.push({
+        icon: 'audio-mute',
+        hideArrow: true,
+        title: status.get('muted') ? 'Unmute conversation' : 'Mute Conversation',
+        onClick: this.handleOnConversationMuteClick,
+      })
 
       if (status.getIn(['account', 'id']) === me) {
         if (publicStatus) {
@@ -397,7 +424,7 @@ const messages = defineMessages({
   admin_status: { id: 'status.admin_status', defaultMessage: 'Open this status in the moderation interface' },
   group_remove_account: { id: 'status.remove_account_from_group', defaultMessage: 'Remove account from group' },
   group_remove_post: { id: 'status.remove_post_from_group', defaultMessage: 'Remove status from group' },
-  repostWithComment: { id: 'repost_with_comment', defaultMessage: 'Repost with comment' },
+  repostWithComment: { id: 'quote_repost_comment', defaultMessage: 'Quote repost' },
   share: { id: 'status.share_gab', defaultMessage: 'Share gab' },
 })
 
@@ -407,11 +434,13 @@ const mapStateToProps = (state, { statusId }) => {
   const status = statusId ? makeGetStatus()(state, { id: statusId }) : undefined
   const groupId = status ? status.getIn(['group', 'id']) : undefined
   const groupRelationships = state.getIn(['group_relationships', groupId])
+  const isMentioned = (status && me) ? !!status.get('mentions').find((item) => `${item.get('id')}` === `${me}`) : false
 
   return {
     status,
     groupId,
     groupRelationships,
+    isMentioned,
     isPro: state.getIn(['accounts', me, 'is_pro']),
     bookmarkCollectionsIsFetched: state.getIn(['bookmark_collections', 'isFetched']),
     bookmarkCollections: state.getIn(['bookmark_collections', 'items']),
@@ -523,6 +552,10 @@ const mapDispatchToProps = (dispatch) => ({
       }))
     }
   },
+  onUnmention(status) {
+    dispatch(closePopover())
+    dispatch(unmention(status))
+  },
   onReport(status) {
     dispatch(closePopover())
     dispatch(initReport(status.get('account'), status))
@@ -549,6 +582,14 @@ const mapDispatchToProps = (dispatch) => ({
       status,
       position: 'top',
     }))
+  },
+
+  onMuteConversation (status) {
+    if (status.get('muted')) {
+      dispatch(unmuteStatus(status.get('id')))
+    } else {
+      dispatch(muteStatus(status.get('id')))
+    }
   },
 
   onOpenProUpgradeModal() {
@@ -595,6 +636,7 @@ StatusOptionsPopover.propTypes = {
   fetchIsPin: PropTypes.func.isRequired,
   onFetchBookmarkCollections: PropTypes.func.isRequired,
   onUpdateBookmarkCollectionStatus: PropTypes.func.isRequired,
+  onUnmention: PropTypes.func.isRequired,
   isXS: PropTypes.bool,
   isPro: PropTypes.bool,
 }

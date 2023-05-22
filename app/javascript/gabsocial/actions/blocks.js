@@ -2,6 +2,11 @@ import api, { getLinks } from '../api'
 import { fetchRelationships } from './accounts'
 import { importFetchedAccounts } from './importer'
 import { me } from '../initial_state'
+import {
+  setIsBlockingIds,
+  setIsMutingIds,
+  setIsBlockedByIds,
+} from '../utils/local_storage_blocks_mutes'
 import isObject from 'lodash.isobject'
 
 export const BLOCKS_FETCH_REQUEST = 'BLOCKS_FETCH_REQUEST'
@@ -92,9 +97,9 @@ export const fetchBlocksAndMutes = (dispatch, getState) => {
 
   api(getState).get('/api/v1/blocks_and_mutes').then(({ data }) => {
     if (isObject(data)) {
-      if (Array.isArray(data.bb)) localStorage.setItem('blockedby', data.bb)
-      if (Array.isArray(data.b)) localStorage.setItem('blocks', data.b)
-      if (Array.isArray(data.m)) localStorage.setItem('mutes', data.m)
+      if (Array.isArray(data.bb)) setIsBlockedByIds(data.bb)
+      if (Array.isArray(data.b)) setIsBlockingIds(data.b)
+      if (Array.isArray(data.m)) setIsMutingIds(data.m)
     }
   })
 }

@@ -2,9 +2,10 @@
 
 class REST::GroupSerializer < ActiveModel::Serializer
   include RoutingHelper
-  
+
   attributes :id, :title, :description, :description_html,
-             :cover_image_url, :is_archived, :member_count,
+             :cover_image_url, :cover_image_thumbnail_url, :cover_image_medium_url,
+             :is_archived, :member_count, :is_verified,
              :created_at, :is_private, :is_visible, :slug, :url,
              :tags, :group_category, :password, :has_password
 
@@ -52,16 +53,24 @@ class REST::GroupSerializer < ActiveModel::Serializer
       .sub("gab://groups/", "https://gab.com/media/user/")
   end
 
-  def cover_image_url
+  def cover_image_url(**options)
     if object.cover_image_file_name and object.cover_image_file_name.start_with? "gab://groups/"
       return clean_migrated_url
     end
 
-    full_asset_url(object.cover_image.url)
+    full_asset_url(object.cover_image.url, **options)
+  end
+
+  def cover_image_medium_url
+    cover_image_url(cloudflare_options: { width: 580, fit: 'scale-down' })
+  end
+
+  def cover_image_thumbnail_url
+    cover_image_url(cloudflare_options: { width: 168, fit: 'scale-down' })
   end
 
   def url
     group_show_page_url(object)
   end
-  
+
 end

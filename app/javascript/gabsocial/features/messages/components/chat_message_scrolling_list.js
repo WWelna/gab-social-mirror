@@ -23,6 +23,7 @@ import ChatMessageItem from './chat_message_item'
 import ColumnIndicator from '../../../components/column_indicator'
 import LoadMore from '../../../components/load_more'
 import Text from '../../../components/text'
+import { supportsPassiveEvents } from 'detect-it'
 
 class ChatMessageScrollingList extends ImmutablePureComponent {
 
@@ -74,7 +75,7 @@ class ChatMessageScrollingList extends ImmutablePureComponent {
 
   attachScrollListener() {
     if (!this.scrollContainerRef) return
-    this.scrollContainerRef.addEventListener('scroll', this.handleScroll)
+    this.scrollContainerRef.addEventListener('scroll', this.handleScroll, supportsPassiveEvents ? { passive: true } : false)
     this.scrollContainerRef.addEventListener('wheel', this.handleWheel)
   }
 

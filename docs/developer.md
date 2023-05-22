@@ -208,6 +208,13 @@ You can check code quality with:
 
     rubocop
 
+## Solr
+
+On a Mac run `brew install solr` then `brew services start solr`. This will install Solr and start
+the service. Now run `solr create_core -c development -p 8983` to create a database.
+`development` corresponds to the `path` in config/sunspot.yml and `8983` is the default port that
+Homebrew installs Solr at, which is also the `port` set in config/sunspot.yml.
+
 ## Federation development tips
 
 Federation absolutely requires your Gab Social instance to have a domain name. If you want to operate a permanently-federated development server (Gab does), set up a [Gab Social](https://code.gab.com/gab/gab-open-source) instance with a domain, and update it against your development fork/branch while doing that development on your local workstation or as a team.

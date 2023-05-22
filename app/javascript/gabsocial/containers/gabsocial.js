@@ -5,29 +5,24 @@ import PropTypes from 'prop-types'
 import { connect, Provider } from 'react-redux'
 import configureStore from '../store/configureStore'
 import { BrowserRouter, Route } from 'react-router-dom'
-import moment from 'moment-mini'
-import { ScrollContext } from 'react-router-scroll-4'
 import { IntlProvider, addLocaleData } from 'react-intl'
 import { fetchCustomEmojis } from '../actions/custom_emojis'
 import { fetchPromotions } from '../actions/promotions'
 import { fetchChatConversationUnreadCount } from '../actions/chat_conversations'
 import { routerChange } from '../actions/router'
 import { hydrateStore } from '../actions/store'
-import { MIN_ACCOUNT_CREATED_AT_ONBOARDING } from '../constants'
-import {
-  connectUserStream,
-  connectStatusUpdateStream,
-  connectChatMessagesStream,
-} from '../actions/streaming'
+import { connectAltStream } from '../actions/streaming'
 import { saveWindowDimensions } from '../actions/settings'
+import { hydrateActiveReactions } from '../actions/reactions'
 import { getLocale } from '../locales'
 import initialState from '../initial_state'
-import { me, isFirstSession } from '../initial_state'
+import { me } from '../initial_state'
 import UI from '../features/ui'
 import IntroductionPage from '../pages/introduction_page'
 import ErrorBoundary from '../components/error_boundary'
 import Display from './display'
 import { fetchBlocksAndMutes } from '../actions/blocks'
+import { fetchFilters } from '../actions/filters'
 
 const { localeData, messages } = getLocale()
 addLocaleData(localeData)
@@ -40,33 +35,12 @@ store.dispatch(fetchCustomEmojis())
 store.dispatch(fetchPromotions())
 store.dispatch(fetchChatConversationUnreadCount())
 store.dispatch(saveWindowDimensions())
+store.dispatch(hydrateActiveReactions())
 
-const mapStateToProps = (state) => ({
-  accountCreatedAt: !!me ? state.getIn(['accounts', me, 'created_at']) : undefined,
-  shownOnboarding: state.getIn(['settings', 'shownOnboarding']),
-})
-
-@connect(mapStateToProps)
 class GabSocialMount extends React.PureComponent {
-
-  static propTypes = {
-    shownOnboarding: PropTypes.bool.isRequired,
-    accountCreatedAt: PropTypes.string,
-  }
-
-  state = {
-    shownOnboarding: this.props.shownOnboarding,
-    shouldShow: false,
-  }
-
   componentDidMount() {
-    if (!!me && this.props.accountCreatedAt) {
-      //If first time opening app, and is new user, show onboarding
-      const accountCreatedAtValue = moment(this.props.accountCreatedAt).valueOf()
-      const shouldShow = isFirstSession && !this.state.shownOnboarding && accountCreatedAtValue > MIN_ACCOUNT_CREATED_AT_ONBOARDING
-
-      if (shouldShow) this.setState({ shouldShow })
-    }
+    // this runs before other things or else they can prevent us bubbling up
+    window.addEventListener('popstate', details => store.dispatch(routerChange({ popstate: true, ...details })))
 
     if (!!me) {
       const metricsUpdated = Date.parse(localStorage.getItem('metrics_updated')) || null
@@ -74,6 +48,7 @@ class GabSocialMount extends React.PureComponent {
         localStorage.setItem('metrics_updated', Date.now().valueOf())
         store.dispatch(fetchBlocksAndMutes())
       }
+      store.dispatch(fetchFilters())
     }
 
     this.handleResize()
@@ -85,7 +60,7 @@ class GabSocialMount extends React.PureComponent {
   }
 
   handleResize = () => {
-    this.props.dispatch(saveWindowDimensions())
+    store.dispatch(saveWindowDimensions())
   }
 
   routerRef = r => {
@@ -95,21 +70,9 @@ class GabSocialMount extends React.PureComponent {
   }
 
   render () {
-    const { shownOnboarding, shouldShow } = this.state
-    
-    if (!shownOnboarding && shouldShow) {
-      return (
-        <BrowserRouter>
-          <Route path='/' component={IntroductionPage} />
-        </BrowserRouter>
-      )
-    }
-
     return (
       <BrowserRouter ref={this.routerRef}>
-        <ScrollContext>
-          <Route path='/' component={UI} />
-        </ScrollContext>
+        <Route path='/' component={UI} />
       </BrowserRouter>
     )
   }
@@ -124,9 +87,7 @@ export default class GabSocial extends React.PureComponent {
 
   componentDidMount() {
     if (!!me) {
-      this.disconnect = store.dispatch(connectUserStream())
-      store.dispatch(connectStatusUpdateStream())
-      store.dispatch(connectChatMessagesStream(me))
+      store.dispatch(connectAltStream(store.dispatch, messages))
     }
 
     console.log('%cGab Social ', [

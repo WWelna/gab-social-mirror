@@ -4,6 +4,7 @@ import { CX } from '../constants'
 import Icon from './icon'
 import Image from './image'
 import Text from './text'
+import Button from './button'
 
 class FileInput extends React.PureComponent {
 
@@ -12,8 +13,17 @@ class FileInput extends React.PureComponent {
     hovering: false,
   }
 
+  handleOnClear = () => {
+    const { onClear } = this.props
+    !!onClear && onClear()
+    
+    this.setState({ file: null })
+  }
+
   handleOnChange = (e) => {
-    this.props.onChange(e)
+    const { onChange } = this.props
+    !!onChange && onChange(e)
+
     this.setState({
       file: URL.createObjectURL(e.target.files[0])
     })
@@ -37,6 +47,7 @@ class FileInput extends React.PureComponent {
       width,
       className,
       isBordered,
+      hasClear,
     } = this.props
     const { file, hovering } = this.state
 
@@ -56,7 +67,7 @@ class FileInput extends React.PureComponent {
     })
 
     const iconClasses = CX({
-      cSecondary: !hovering,
+      cSecondary: !hovering && !disabled,
       cWhite: hovering,
     })
 
@@ -88,12 +99,24 @@ class FileInput extends React.PureComponent {
             src={fileType === 'image' ? file : null}
           />
           {
-            (!file || hovering) &&
+            ((!file || hovering) && !disabled) &&
             <div className={[_s.d, _s.posAbs, _s.cursorPointer, _s.top0, _s.bottom0, _s.left0, _s.right0, _s.aiCenter, _s.jcCenter, _s.bgBlackOpaquest_onHover].join(' ')}>
               <Icon id='add-image' size='32px' className={iconClasses} />
             </div>
           }
         </label>
+
+        {
+          hasClear && !!file &&
+          <Button
+            noClasses
+            icon='close'
+            iconSize='10px'
+            iconClasses={_s.cWhite}
+            onClick={this.handleOnClear}
+            className={[_s.d, _s.outlineNone, _s.topRightRadiusSmall, _s.px10, _s.py10, _s.bgBlack, _s.bgBlackOpaque_onHover, _s.cursorPointer, _s.posAbs, _s.top0, _s.right0, _s.aiCenter, _s.jcCenter, _s.mt10, _s.mr10, _s.cWhite].join(' ')}
+          />
+        }
 
         <input
           id={`file-input-${id}`}
@@ -111,6 +134,7 @@ class FileInput extends React.PureComponent {
 
 FileInput.propTypes = {
   onChange: PropTypes.func,
+  onClear: PropTypes.func,
   file: PropTypes.any,
   fileType: PropTypes.string,
   disabled: PropTypes.bool,
@@ -120,6 +144,7 @@ FileInput.propTypes = {
   width: PropTypes.string,
   isBordered: PropTypes.bool,
   className: PropTypes.string,
+  hasClear: PropTypes.bool,
 }
 
 FileInput.defaultProps = {

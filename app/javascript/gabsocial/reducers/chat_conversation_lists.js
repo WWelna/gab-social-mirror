@@ -26,6 +26,14 @@ import {
   CHAT_CONVERSATION_APPROVED_SEARCH_FETCH_SUCCESS,
 } from '../actions/chat_conversations'
 import {
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_REQUEST,
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_SUCCESS,
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_FAIL,
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_REQUEST,
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_SUCCESS,
+  MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_FAIL,
+} from '../actions/marketplace_listings'
+import {
   PIN_CHAT_CONVERSATION_SUCCESS,
   UNPIN_CHAT_CONVERSATION_SUCCESS
 } from '../actions/chat_conversation_accounts'
@@ -52,6 +60,8 @@ const initialState = ImmutableMap({
   approved_pinned: ImmutableMap({
     items: ImmutableList(),
   }),
+  // by marketplace listing id, only visible to seller
+  marketplace_listing_buyer: ImmutableMap({}),
 })
 
 const normalizeList = (state, source, chatConversations, next) => {
@@ -148,6 +158,28 @@ export default function chat_conversation_lists(state = initialState, action) {
     state = removeOneFromList(state, 'approved_pinned', action.chatConversation.chat_conversation_id)
     return appendOneToList(state, 'approved', action.chatConversation, action.next)
 
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_REQUEST:
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_REQUEST:
+    return state.setIn(['marketplace_listing_buyer', action.marketplaceListingId, 'isLoading'], true)
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_FAIL:
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_FAIL:
+    return state.setIn(['marketplace_listing_buyer', action.marketplaceListingId, 'isLoading'], false)
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_FETCH_SUCCESS:
+    return state.updateIn(['marketplace_listing_buyer', action.marketplaceListingId], listMap => listMap.withMutations(map => {
+      const items = Array.isArray(action.chatConversations) ? ImmutableList(action.chatConversations.map(chatConversation => chatConversation.chat_conversation_id)) : ImmutableList()
+      map.set('next', action.next)
+      map.set('loaded', true)
+      map.set('isLoading', false)
+      map.set('items', items)
+    }))
+  case MARKETPLACE_LISTING_BUYER_CONVERSATIONS_EXPAND_SUCCESS:
+    return state.updateIn(['marketplace_listing_buyer', action.marketplaceListingId], listMap => listMap.withMutations(map => {
+      const items = Array.isArray(action.chatConversations) ? action.chatConversations.map(chatConversation => chatConversation.chat_conversation_id) : []
+      map.set('next', action.next)
+      map.set('isLoading', false)
+      map.set('items', map.get('items').concat(items))
+    }))
+ 
   default:
     return state
   }

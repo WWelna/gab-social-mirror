@@ -17,7 +17,17 @@ import Slider from '../slider'
 import SettingSwitch from '../setting_switch'
 import ResponsiveClassesComponent from '../../features/ui/util/responsive_classes_component'
 
-class DisplayOptionsModal extends ImmutablePureComponent {
+const messages = defineMessages({
+  message: { id: 'display_options.message', defaultMessage: 'Display settings affect your Gab account on this browser. These settings are only visible to you.' },
+  title: { id: 'display_options', defaultMessage: 'Customize your view' },
+})
+
+/**
+ * The DisplayOptions component was originally used in only one place in the
+ * modal popup. Later it was exported to be used separately in other pages like
+ * Introduction.
+ */
+class DisplayOptions extends ImmutablePureComponent {
 
   handleOnFontSizeChange = (value) => {
     const fontSizeNames = Object.keys(FONT_SIZES)
@@ -41,17 +51,19 @@ class DisplayOptionsModal extends ImmutablePureComponent {
       intl,
       theme,
       onClose,
+      showOptions = true,
+      showDone = true
     } = this.props
 
     const fontSizeNames = Object.keys(FONT_SIZES)
     const currentFontSizeIndex = fontSizeNames.indexOf(fontSize)
 
+    // Options and done are optional and hidden on Introduction to simplify
+    const optionsOuterClasses = showOptions ? [_s.d, _s.mb15].join(' ') : _s.displayNone
+    const doneOuterClasses = showDone ? [_s.mlAuto, _s.my10, _s.mrAuto].join(' ') : _s.displayNone
+
     return (
-      <ModalLayout
-        onClose={onClose}
-        width={520}
-        title={intl.formatMessage(messages.title)}
-      >
+      <>
 
         <div className={[_s.d, _s.mb15].join(' ')}>
           <Text align='center' color='secondary' size='medium'>
@@ -83,7 +95,7 @@ class DisplayOptionsModal extends ImmutablePureComponent {
           </div>
         </div>
 
-        <div className={[_s.d, _s.mb15].join(' ')}>
+        <div className={optionsOuterClasses}>
           <Text weight='bold' size='small' color='secondary'>
             Options
           </Text>
@@ -172,7 +184,7 @@ class DisplayOptionsModal extends ImmutablePureComponent {
           </div>
         </div>
 
-        <div className={[_s.mlAuto, _s.my10, _s.mrAuto].join(' ')}>
+        <div className={doneOuterClasses}>
           <Button onClick={onClose}>
             <Text size='medium' color='inherit' className={_s.px10}>
               Done
@@ -180,11 +192,38 @@ class DisplayOptionsModal extends ImmutablePureComponent {
           </Button>
         </div>
 
-      </ModalLayout>
+      </>
     )
   }
 
 }
+
+const mapStateToProps = (state) => ({
+  displayOptionsSettings: state.getIn(['settings', 'displayOptions']),
+  fontSize: state.getIn(['settings', 'displayOptions', 'fontSize'], DEFAULT_FONT_SIZE),
+  theme: state.getIn(['settings', 'displayOptions', 'theme'], DEFAULT_THEME),
+})
+
+const mapDispatchToProps = (dispatch) => ({
+  onChange(key, value) {
+    dispatch(changeSetting(['displayOptions', key], value))
+    dispatch(saveSettings())
+  },
+})
+
+DisplayOptions.propTypes = {
+  fontSize: PropTypes.string,
+  intl: PropTypes.object.isRequired,
+  displayOptionsSettings: ImmutablePropTypes.map,
+  theme: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
+  showOptions: PropTypes.bool,
+  showDone: PropTypes.bool
+}
+
+DisplayOptions = injectIntl(connect(mapStateToProps, mapDispatchToProps)(DisplayOptions))
+export { DisplayOptions }
 
 class ThemeBlock extends React.PureComponent {
 
@@ -242,32 +281,24 @@ ThemeBlock.propTypes = {
   style: PropTypes.object,
 }
 
-const messages = defineMessages({
-  message: { id: 'display_options.message', defaultMessage: 'Display settings affect your Gab account on this browser. These settings are only visible to you.' },
-  title: { id: 'display_options', defaultMessage: 'Customize your view' },
-})
-
-const mapStateToProps = (state) => ({
-  displayOptionsSettings: state.getIn(['settings', 'displayOptions']),
-  fontSize: state.getIn(['settings', 'displayOptions', 'fontSize'], DEFAULT_FONT_SIZE),
-  theme: state.getIn(['settings', 'displayOptions', 'theme'], DEFAULT_THEME),
-})
-
-const mapDispatchToProps = (dispatch) => ({
-  onChange(key, value) {
-    dispatch(changeSetting(['displayOptions', key], value))
-    dispatch(saveSettings())
-  },
-})
-
-DisplayOptionsModal.propTypes = {
-  fontSize: PropTypes.string,
-  intl: PropTypes.object.isRequired,
-  onClose: PropTypes.func.isRequired,
-  displayOptionsSettings: ImmutablePropTypes.map,
-  theme: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  onClose: PropTypes.func.isRequired,
+class DisplayOptionsModal extends React.Component {
+  render() {
+    const { onClose, intl } = this.props
+    return (
+      <ModalLayout
+        onClose={onClose}
+        width={520}
+        title={intl.formatMessage(messages.title)}
+      >
+        <DisplayOptions onClose={onClose}/>
+      </ModalLayout>
+    )
+  }
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(DisplayOptionsModal))
+DisplayOptionsModal.propTypes = {
+  intl: PropTypes.object.isRequired,
+  onClose: PropTypes.func.isRequired
+}
+
+export default injectIntl(DisplayOptionsModal)

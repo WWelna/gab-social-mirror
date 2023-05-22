@@ -117,6 +117,33 @@
                     - else
                       = t('admin.link_blocks.not_blocked')
 
+  - if @blockable_images.present?
+    %hr.spacer/
+
+    = form_for(@image_block_form, url: admin_report_reported_images_path(@report.id)) do |f|
+      .batch-table
+        .batch-table__toolbar
+          %label.batch-table__toolbar__select.batch-checkbox-all
+            = check_box_tag :batch_checkbox_all_links, nil, false, data: { batch_checkbox_all: true }
+          .batch-table__toolbar__actions
+            = f.button safe_join([fa_icon('eye-slash'), t('admin.link_blocks.block')]), name: :block, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
+            = f.button safe_join([fa_icon('eye'), t('admin.link_blocks.unblock')]), name: :unblock, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
+        .batch-table__body
+          - @blockable_images.each do |image|
+            .batch-table__row
+              %label.batch-table__row__select.batch-checkbox
+                = f.check_box :md5s, { multiple: true, include_hidden: false }, image
+              .batch-table__row__content
+                .status__content{ style: 'display: flex; justify-content: space-between;' }
+                  %span
+                    = image
+                  %span
+                    - if @blocked_images.include?(image)
+                      = t('admin.link_blocks.blocked')
+                    - else
+                      = t('admin.link_blocks.not_blocked')
+
+
   %hr.spacer/
 
   %h2

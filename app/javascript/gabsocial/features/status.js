@@ -17,21 +17,27 @@ class Status extends ImmutablePureComponent {
 
   componentDidMount() {
     const statusId = this.props.id || this.props.params.statusId
-    this.props.onFetchStatus(statusId)
+    this.props.onFetchStatus(statusId)    
+    const { status, account } = this.props
 
-    if (!!this.props.status) {
-      this.shouldFetchStatusParts(this.props.status)
+    if (!!status) {
+      this.shouldFetchStatusParts(status)
+    }
+    if (!!account) {
+      document.title = `${account.get('display_name') || account.get('username')} on Gab: '${status.get('content').substr(0, 50)}…'`
     }
   }
 
   componentDidUpdate(prevProps) {
-    const { status } = this.props
-
+    const { status, account } = this.props
     if (prevProps.status !== status && !!status) {
       this.shouldFetchStatusParts(status)
     }
     if (prevProps.statusId !== this.props.statusId && !this.props.status) {
       this.props.onFetchStatus(this.props.statusId)
+    }
+    if (!!account) {
+      document.title = `${account.get('display_name') || account.get('username')} on Gab: '${status.get('content').substr(0, 50)}…'`
     }
   }
 
@@ -39,7 +45,7 @@ class Status extends ImmutablePureComponent {
     if (!status) return
 
     const isComment = !!status.get('in_reply_to_account_id')
-    const hasComments = status.get('replies_count') > 0 
+    const hasComments = status.get('replies_count') > 0 || status.get('direct_replies_count') > 0
 
     if (isComment) {
       this.props.onFetchContext(status.get('id'))
@@ -55,7 +61,7 @@ class Status extends ImmutablePureComponent {
       return <StatusPlaceholder />
     }
 
-    const shouldShowGabAdStatus = status.get('replies_count') < 3
+    const shouldShowGabAdStatus = status.get('direct_replies_count') < 3
 
     return (
       <React.Fragment>
@@ -72,10 +78,13 @@ class Status extends ImmutablePureComponent {
 
 const mapStateToProps = (state, props) => {
   const statusId = props.id || props.params.statusId
+  let status = state.getIn(['statuses', statusId])
+  let account = status ? state.getIn(['accounts', status.get('account')]) : undefined
 
   return {
     statusId,
-    status: state.getIn(['statuses', statusId]),
+    status,
+    account,
   }
 }
 
@@ -91,6 +100,7 @@ Status.propTypes = {
   onFetchComments: PropTypes.func.isRequired,
   params: PropTypes.object,
   status: ImmutablePropTypes.map,
+  account: ImmutablePropTypes.map,  
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Status)

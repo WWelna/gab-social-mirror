@@ -13,7 +13,7 @@
 
     %link{ rel: 'icon', href: favicon_path, type: 'image/x-icon' }/
     %link{ rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }/
-    %link{ rel: 'mask-icon', href: '/mask-icon.svg', color: '#21D07B' }/
+    %link{ rel: 'mask-icon', href: '/mask-icon.svg', color: '#21cf7a' }/
 
     %link{ href: "splash/light/iphone5_splash.png", media: '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)', rel: 'apple-touch-startup-image' }/
     %link{ href: "splash/light/iphone6_splash.png", media: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)', rel: 'apple-touch-startup-image' }/
@@ -28,7 +28,7 @@
 
     %link{ rel: 'manifest', href: '/manifest.json' }/
     %meta{ name: 'msapplication-config', content: '/browserconfig.xml' }/
-    %meta{ name: 'theme-color', content: '#21D07B' }/
+    %meta{ name: 'theme-color', content: '#21cf7a' }/
     %meta{ name: 'apple-mobile-web-app-capable', content: 'yes' }/
     %meta{ name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }/
 
@@ -40,6 +40,8 @@
       = render 'groups/meta', group: @group
     - elsif @list
       = render 'lists/meta', list: @list
+    - elsif @marketplace_listing
+      = render 'marketplace_listings/meta', marketplace_listing: @marketplace_listing
     - else
       %meta{ name: 'description', content: 'Gab is a social network that champions free speech, individual liberty and the free flow of information online. All are welcome.' }/
 

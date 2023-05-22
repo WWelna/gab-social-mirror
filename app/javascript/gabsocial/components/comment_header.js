@@ -4,18 +4,19 @@ import { NavLink } from 'react-router-dom'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import { me } from '../initial_state'
+import { me, isStaff } from '../initial_state'
 import Button from './button'
 import DisplayName from './display_name'
 import DotTextSeperator from './dot_text_seperator'
 import Icon from './icon'
 import RelativeTimestamp from './relative_timestamp'
+import ReactionsDisplayBlock from './reactions_display_block'
 import Text from './text'
 
 class CommentHeader extends ImmutablePureComponent {
 
   openLikesList = () => {
-    this.props.onOpenLikes(this.props.status)
+    this.props.onOpenLikes(this.props.status, this.likeButton)
   }
 
   openRepostsList = () => {
@@ -29,6 +30,10 @@ class CommentHeader extends ImmutablePureComponent {
 
   openRevisions = () => {
     this.props.onOpenRevisions(this.props.status)
+  }
+  
+  setLikeButton = (n) => {
+    this.likeButton = n
   }
 
   render() {
@@ -47,6 +52,7 @@ class CommentHeader extends ImmutablePureComponent {
     const statusUrl = `/${status.getIn(['account', 'acct'])}/posts/${status.get('id')}`;
     const isOwner = ancestorAccountId === status.getIn(['account', 'id'])
     const myComment = status.getIn(['account', 'id']) === me
+    const reactionsMap = status.get('reactions_counts')
 
     return (
       <div className={[_s.d, _s.aiStart, _s.py2, _s.maxW100PC, _s.flexGrow1].join(' ')}>
@@ -116,20 +122,17 @@ class CommentHeader extends ImmutablePureComponent {
             favoriteCount > 0 &&
             <React.Fragment>
               <DotTextSeperator />
-                <Button
-                  isText
-                  underlineOnHover={myComment}
-                  backgroundColor='none'
-                  color='tertiary'
-                  className={_s.ml5}
-                  onClick={myComment ? this.openLikesList : undefined}
-                >
-                <Text size='extraSmall' color='inherit'>
-                  {intl.formatMessage(messages.likesLabel, {
-                    number: favoriteCount,
-                  })}
-                </Text>
-              </Button>
+              <div className={_s.ml5} ref={this.setLikeButton}>
+                <ReactionsDisplayBlock
+                  showText
+                  totalCount={favoriteCount}
+                  reactions={reactionsMap}
+                  onClick={this.openLikesList}
+                  iconSize='16px'
+                  textSize='extraSmall'
+                  textColor='tertiary'
+                />
+              </div>
             </React.Fragment>
           }
 

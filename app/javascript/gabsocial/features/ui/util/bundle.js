@@ -2,11 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import noop from 'lodash.noop'
-import {
-  fetchBundleRequest,
-  fetchBundleSuccess,
-  fetchBundleFail,
-} from '../../../actions/bundles'
 
 const emptyComponent = () => null
 
@@ -36,36 +31,20 @@ class Bundle extends React.PureComponent {
   }
 
   load = (props) => {
-    const {
-      fetchComponent,
-      onFetch,
-      onFetchSuccess,
-      onFetchFail,
-      renderDelay
-    } = props || this.props
-
+    const { fetchComponent, renderDelay } = props || this.props
     const cachedMod = Bundle.cache.get(fetchComponent)
 
     if (fetchComponent === undefined) {
-      this.setState({
-        mod: null
-      })
+      this.setState({ mod: null })
       return Promise.resolve()
     }
-
-    onFetch()
 
     if (cachedMod) {
-      this.setState({
-        mod: cachedMod.default
-      })
-      onFetchSuccess()
+      this.setState({ mod: cachedMod.default })
       return Promise.resolve()
     }
 
-    this.setState({
-      mod: undefined
-    })
+    this.setState({ mod: undefined })
 
     if (renderDelay !== 0) {
       this.timestamp = new Date()
@@ -80,13 +59,11 @@ class Bundle extends React.PureComponent {
         this.setState({
           mod: mod.default
         })
-        onFetchSuccess()
       })
-      .catch((error) => {
-        this.setState({
-          mod: null
-        })
-        onFetchFail(error)
+      .catch(error => {
+        const { message, stack } = error
+        console.error('Bundle error', message, stack)
+        this.setState({ mod: null })
       })
   }
 
@@ -112,36 +89,18 @@ class Bundle extends React.PureComponent {
 
 }
 
-const mapDispatchToProps = (dispatch) => ({
-  onFetch() {
-    dispatch(fetchBundleRequest())
-  },
-  onFetchSuccess() {
-    dispatch(fetchBundleSuccess())
-  },
-  onFetchFail(error) {
-    dispatch(fetchBundleFail(error))
-  },
-})
-
 Bundle.propTypes = {
   fetchComponent: PropTypes.func,
   loading: PropTypes.func,
   error: PropTypes.func,
   children: PropTypes.func.isRequired,
-  renderDelay: PropTypes.number,
-  onFetch: PropTypes.func,
-  onFetchSuccess: PropTypes.func,
-  onFetchFail: PropTypes.func,
+  renderDelay: PropTypes.number
 }
 
 Bundle.defaultProps = {
   loading: emptyComponent,
   error: emptyComponent,
-  renderDelay: 0,
-  onFetch: noop,
-  onFetchSuccess: noop,
-  onFetchFail: noop,
+  renderDelay: 0
 }
 
-export default connect(null, mapDispatchToProps)(Bundle)
+export default Bundle

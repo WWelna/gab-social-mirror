@@ -125,6 +125,11 @@ class SidebarXS extends ImmutablePureComponent {
                     onClick: this.handleSidebarClose,
                     title: intl.formatMessage(messages.shortcuts),
                   },
+                  {
+                    to: '/news',
+                    onClick: this.handleSidebarClose,
+                    title: 'News',
+                  },
                 ]}
               />
             </div>
@@ -216,7 +221,7 @@ const messages = defineMessages({
   mutes: { id: 'navigation_bar.mutes', defaultMessage: 'Muted users' },
   filters: { id: 'navigation_bar.filters', defaultMessage: 'Muted words' },
   logout: { id: 'navigation_bar.logout', defaultMessage: 'Logout' },
-  lists: { id: 'column.lists', defaultMessage: 'Lists', },
+  lists: { id: 'column.lists', defaultMessage: 'Feeds', },
   apps: { id: 'tabs_bar.apps', defaultMessage: 'Apps' },
   more: { id: 'sidebar.more', defaultMessage: 'More' },
   pro: { id: 'promo.gab_pro', defaultMessage: 'Upgrade to GabPRO' },

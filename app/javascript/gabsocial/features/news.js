@@ -5,7 +5,6 @@ import throttle from 'lodash.throttle'
 import { fetchPopularLinks } from '../actions/links'
 import {
   BREAKPOINT_EXTRA_SMALL,
-  LAZY_LOAD_SCROLL_OFFSET,
 } from '../constants'
 import Button from '../components/button'
 import Text from '../components/text'
@@ -25,42 +24,8 @@ import {
 
 class News extends React.PureComponent {
 
-  state = {
-    lazyLoaded: false,
-  }
-
-  componentDidMount() {
-    this.window = window
-    this.documentElement = document.scrollingElement || document.documentElement
-
-    this.window.addEventListener('scroll', this.handleScroll)
-    
-    window.addEventListener('keyup', this.handleKeyUp, false)
-  }
-
-  componentWillUnmount() {
-    this.detachScrollListener()
-    window.removeEventListener('keyup', this.handleKeyUp)
-  }
-
-  detachScrollListener = () => {
-    this.window.removeEventListener('scroll', this.handleScroll)
-  }
-
-  handleScroll = throttle(() => {
-    if (this.window) {
-      const { scrollTop } = this.documentElement
-      
-      if (scrollTop > LAZY_LOAD_SCROLL_OFFSET && !this.state.lazyLoaded) {
-        this.setState({ lazyLoaded: true })
-        this.detachScrollListener()
-      }
-    }
-  }, 150, { trailing: true })
-
   render() {
     const { children, isSmall, width } = this.props
-    const { lazyLoaded } = this.state
 
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
@@ -72,9 +37,9 @@ class News extends React.PureComponent {
               <WrappedBundle component={TrendsHeadlinesPanel} />
               <WrappedBundle component={GabAdStatus} />
               <WrappedBundle component={TrendsBreakingPanel} componentParams={{ hideReadMore: true }} />
-              <WrappedBundle component={PopularLinksPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
-              <WrappedBundle component={LatestFromGabPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
-              <WrappedBundle component={GabNewsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
+              <WrappedBundle component={PopularLinksPanel} />
+              <WrappedBundle component={LatestFromGabPanel} />
+              <WrappedBundle component={GabNewsPanel} />
               <WrappedBundle component={TrendsFeedsPanel} />
             </div>
           </div>
@@ -88,13 +53,13 @@ class News extends React.PureComponent {
           <div className={[_s.d, _s.pr15, _s.w50PC].join(' ')}>
             <WrappedBundle component={TrendsHeadlinesPanel} />
             <WrappedBundle component={TrendsBreakingPanel} componentParams={{ hideReadMore: true }} />
-            <WrappedBundle component={LatestFromGabPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
+            <WrappedBundle component={LatestFromGabPanel} />
           </div>
           <div className={[_s.d, _s.w50PC].join(' ')}>
             <WrappedBundle component={GabAdStatus} />
             <WrappedBundle component={PopularLinksPanel} />
             <WrappedBundle component={TrendsFeedsPanel} />
-            <WrappedBundle component={GabNewsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
+            <WrappedBundle component={GabNewsPanel} />
           </div>
         </div>
       </div>

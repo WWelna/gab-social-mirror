@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { supportsPassiveEvents } from 'detect-it'
 
 const MIN_SCALE = 1
 const MAX_SCALE = 4
@@ -8,6 +9,8 @@ const getMidpoint = (p1, p2) => ({
   x: (p1.clientX + p2.clientX) / 2,
   y: (p1.clientY + p2.clientY) / 2,
 })
+
+const evtOpts = supportsPassiveEvents ? { passive: true } : false
 
 const getDistance = (p1, p2) => {
   return Math.sqrt(Math.pow(p1.clientX - p2.clientX, 2) + Math.pow(p1.clientY - p2.clientY, 2))
@@ -31,12 +34,10 @@ class ZoomableImage extends React.PureComponent {
 
   componentDidMount () {
     let handler = this.handleTouchStart
-    this.container.addEventListener('touchstart', handler)
+    this.container.addEventListener('touchstart', handler, evtOpts)
     this.removers.push(() => this.container.removeEventListener('touchstart', handler))
     handler = this.handleTouchMove
-    // on Chrome 56+, touch event listeners will default to passive
-    // https://www.chromestatus.com/features/5093566007214080
-    this.container.addEventListener('touchmove', handler, { passive: false })
+    this.container.addEventListener('touchmove', handler, evtOpts)
     this.removers.push(() => this.container.removeEventListener('touchend', handler))
   }
 

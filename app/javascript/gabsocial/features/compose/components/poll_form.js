@@ -10,7 +10,10 @@ import {
   changePollOption,
   changePollSettings,
 } from '../../../actions/compose'
-import { CX } from '../../../constants'
+import {
+  CX,
+  MAX_POLL_OPTOINS,
+} from '../../../constants'
 import Button from '../../../components/button'
 import Text from '../../../components/text'
 import Select from '../../../components/select'
@@ -55,7 +58,7 @@ class PollForm extends ImmutablePureComponent {
 
         <div className={[_s.d, _s.flexRow].join(' ')}>
           {
-            options.size < 4 && (
+            options.size < MAX_POLL_OPTOINS && (
               <Button
                 isOutline
                 backgroundColor='none'

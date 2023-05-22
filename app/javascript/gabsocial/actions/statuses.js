@@ -2,7 +2,6 @@ import debounce from 'lodash.debounce'
 import api, { getLinks } from '../api'
 import openDB from '../storage/db'
 import { evictStatus } from '../storage/modifier'
-import { deleteFromTimelines } from './timelines'
 import { importFetchedStatus, importFetchedStatuses, importAccount, importStatus } from './importer'
 import { openModal } from './modal'
 import { me } from '../initial_state'
@@ -20,12 +19,23 @@ export const CONTEXT_FETCH_REQUEST = 'CONTEXT_FETCH_REQUEST'
 export const CONTEXT_FETCH_SUCCESS = 'CONTEXT_FETCH_SUCCESS'
 export const CONTEXT_FETCH_FAIL    = 'CONTEXT_FETCH_FAIL'
 
+export const STATUS_MUTE_REQUEST = 'STATUS_MUTE_REQUEST'
+export const STATUS_MUTE_SUCCESS = 'STATUS_MUTE_SUCCESS'
+export const STATUS_MUTE_FAIL    = 'STATUS_MUTE_FAIL'
+
+export const STATUS_UNMUTE_REQUEST = 'STATUS_UNMUTE_REQUEST'
+export const STATUS_UNMUTE_SUCCESS = 'STATUS_UNMUTE_SUCCESS'
+export const STATUS_UNMUTE_FAIL    = 'STATUS_UNMUTE_FAIL'
+
 export const COMMENTS_FETCH_REQUEST = 'COMMENTS_FETCH_REQUEST'
 export const COMMENTS_FETCH_SUCCESS = 'COMMENTS_FETCH_SUCCESS'
 export const COMMENTS_FETCH_FAIL    = 'COMMENTS_FETCH_FAIL'
 
 export const STATUS_REVEAL = 'STATUS_REVEAL'
 export const STATUS_HIDE   = 'STATUS_HIDE'
+
+export const STATUS_SHOW_ANYWAYS         = 'STATUS_SHOW_ANYWAYS'
+export const STATUS_SHOW_ACCOUNT_ANYWAYS = 'STATUS_SHOW_ACCOUNT_ANYWAYS'
 
 export const STATUS_EDIT = 'STATUS_EDIT'
 
@@ -34,7 +44,7 @@ export const UPDATE_STATUS_STATS = 'UPDATE_STATUS_STATS'
 export const CLEAR_ALL_COMMENTS = 'CLEAR_ALL_COMMENTS'
 
 /**
- * 
+ *
  */
 function getFromDB(dispatch, getState, accountIndex, index, id) {
   return new Promise((resolve, reject) => {
@@ -79,11 +89,11 @@ function getFromDB(dispatch, getState, accountIndex, index, id) {
 }
 
 /**
- * 
+ *
  */
 export const fetchStatus = (id) => (dispatch, getState) => {
   if (!id) return
-  
+
   const skipLoading = getState().getIn(['statuses', id], null) !== null
   if (skipLoading) return
 
@@ -130,7 +140,7 @@ const fetchStatusFail = (id, error, skipLoading) => ({
 })
 
 /**
- * 
+ *
  */
 export const editStatus = (status) => (dispatch) => {
   dispatch({
@@ -142,9 +152,9 @@ export const editStatus = (status) => (dispatch) => {
 }
 
 /**
- * 
+ *
  */
-export const deleteStatus = (id, routerHistory) => (dispatch, getState) => {
+export const deleteStatus = (id) => (dispatch, getState) => {
   if (!me || !id) return
 
   let status = getState().getIn(['statuses', id])
@@ -155,10 +165,10 @@ export const deleteStatus = (id, routerHistory) => (dispatch, getState) => {
 
   dispatch(deleteStatusRequest(id))
 
-  api(getState).delete(`/api/v1/statuses/${id}`).then((response) => {
+  api(getState).delete(`/api/v1/statuses/${id}`).then(() => {
     evictStatus(id)
     dispatch(deleteStatusSuccess(id))
-    dispatch(deleteFromTimelines(id))
+    // dispatch(deleteFromTimelines(id))
   }).catch((error) => {
     dispatch(deleteStatusFail(id, error))
   })
@@ -181,7 +191,7 @@ const deleteStatusFail = (id, error) => ({
 })
 
 /**
- * 
+ *
  */
 export const fetchContext = (id, ensureIsReply) => (dispatch, getState) => {
   if (!id) return
@@ -197,15 +207,12 @@ export const fetchContext = (id, ensureIsReply) => (dispatch, getState) => {
     dispatch(importFetchedStatuses(response.data.ancestors.concat(response.data.descendants)))
     dispatch(fetchContextSuccess(id, response.data.ancestors, response.data.descendants))
   }).catch((error) => {
-    if (error.response && error.response.status === 404) {
-      dispatch(deleteFromTimelines(id))
-    }
     dispatch(fetchContextFail(id, error))
   })
 }
 
 /**
- * 
+ *
  */
 const fetchContextRequest = (id) => ({
   type: CONTEXT_FETCH_REQUEST,
@@ -228,7 +235,7 @@ const fetchContextFail = (id, error) => ({
 })
 
 /**
- * 
+ *
  */
 export const fetchComments = (id, forceNewest) => (dispatch, getState) => {
   debouncedFetchComments(id, forceNewest, dispatch, getState)
@@ -246,10 +253,10 @@ export const debouncedFetchComments = debounce((id, forceNewest, dispatch, getSt
   api(getState).get(url).then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     dispatch(importFetchedStatuses(response.data))
-    dispatch(fetchCommentsSuccess(id, response.data, next.uri)) 
+    dispatch(fetchCommentsSuccess(id, response.data, next.uri))
   }).catch((error) => {
     if (error.response && error.response.status === 404) {
-      dispatch(deleteFromTimelines(id))
+      // dispatch(deleteFromTimelines(id))
     }
 
     dispatch(fetchCommentsFail(id, error))
@@ -286,7 +293,7 @@ export const clearAllComments = (id) => (dispatch) => {
 }
 
 /**
- * 
+ *
  */
 export const hideStatus = (ids) => {
   if (!Array.isArray(ids)) {
@@ -300,7 +307,7 @@ export const hideStatus = (ids) => {
 }
 
 /**
- * 
+ *
  */
 export const revealStatus = (ids) => {
   if (!Array.isArray(ids)) {
@@ -314,9 +321,81 @@ export const revealStatus = (ids) => {
 }
 
 /**
+ *
+ */
+export const showStatusAnyways = (statusId) => ({
+  type: STATUS_SHOW_ANYWAYS,
+  statusId,
+})
+
+export const toggleAccountStatusAnyways = (accountId, onOrOff) => ({
+  type: STATUS_SHOW_ACCOUNT_ANYWAYS,
+  accountId,
+  onOrOff,
+})
+
+/**
  * 
  */
 export const updateStatusStats = (data) => ({
   type: UPDATE_STATUS_STATS,
   data,
+})
+
+/**
+ *
+ */
+export const muteStatus = (id) => (dispatch, getState) => {
+  dispatch(muteStatusRequest(id))
+
+  api(getState).post(`/api/v1/statuses/${id}/mute`).then(() => {
+    dispatch(muteStatusSuccess(id))
+  }).catch((error) => {
+    dispatch(muteStatusFail(id, error))
+  })
+}
+
+const muteStatusRequest = (id) => ({
+  type: STATUS_MUTE_REQUEST,
+  id,
+})
+
+const muteStatusSuccess = (id) => ({
+  type: STATUS_MUTE_SUCCESS,
+  id,
+})
+
+const muteStatusFail = (id, error) => ({
+  type: STATUS_MUTE_FAIL,
+  id,
+  error,
+})
+
+/**
+ *
+ */
+export const unmuteStatus = (id) => (dispatch, getState) => {
+  dispatch(unmuteStatusRequest(id))
+
+  api(getState).post(`/api/v1/statuses/${id}/unmute`).then(() => {
+    dispatch(unmuteStatusSuccess(id))
+  }).catch((error) => {
+    dispatch(unmuteStatusFail(id, error))
+  })
+}
+
+const unmuteStatusRequest = (id) => ({
+  type: STATUS_UNMUTE_REQUEST,
+  id,
+})
+
+const unmuteStatusSuccess = (id) => ({
+  type: STATUS_UNMUTE_SUCCESS,
+  id,
+})
+
+const unmuteStatusFail = (id, error) => ({
+  type: STATUS_UNMUTE_FAIL,
+  id,
+  error,
 })

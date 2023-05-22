@@ -5,10 +5,11 @@ class REST::StatusSerializer < ActiveModel::Serializer
              :sensitive, :spoiler_text, :visibility, :language, :uri,
              :url, :direct_replies_count, :replies_count, :reblogs_count, :pinnable, :pinnable_by_group,
              :favourites_count, :quote_of_id, :expires_at, :has_quote, :bookmark_collection_id,
-             :quotes_count
+             :quotes_count, :reaction_id, :reactions_counts
 
   attribute :favourited, if: :current_user?
   attribute :reblogged, if: :current_user?
+  attribute :muted, if: :current_user?
 
   attribute :content, unless: :source_requested?
   attribute :rich_content, unless: :source_requested?
@@ -84,15 +85,42 @@ class REST::StatusSerializer < ActiveModel::Serializer
   end
 
   def content
-    Formatter.instance.format(object).strip
+    blocked_by_status_owner = false
+    if instance_options && instance_options[:relationships]
+      blocked_by_status_owner = instance_options[:relationships].blocked_by_map[object.account_id] || false
+    end
+
+    if blocked_by_status_owner
+      '[HIDDEN – USER BLOCKS YOU]'
+    else
+      Formatter.instance.format(object).strip
+    end
   end
 
   def rich_content
-    Formatter.instance.format(object, use_markdown: true).strip
+    blocked_by_status_owner = false
+    if instance_options && instance_options[:relationships]
+      blocked_by_status_owner = instance_options[:relationships].blocked_by_map[object.account_id] || false
+    end
+
+    if blocked_by_status_owner
+      '[HIDDEN – USER BLOCKS YOU]'
+    else
+      Formatter.instance.format(object, use_markdown: true).strip
+    end
   end
 
   def plain_markdown
-    object.markdown
+    blocked_by_status_owner = false
+    if instance_options && instance_options[:relationships]
+      blocked_by_status_owner = instance_options[:relationships].blocked_by_map[object.account_id] || false
+    end
+
+    if blocked_by_status_owner
+      '[HIDDEN – USER BLOCKS YOU]'
+    else
+      object.markdown
+    end
   end
 
   def url
@@ -101,17 +129,29 @@ class REST::StatusSerializer < ActiveModel::Serializer
 
   def favourited
     if instance_options && instance_options[:relationships]
-      instance_options[:relationships].favourites_map[object.id] || false
+      !!instance_options[:relationships].favourites_map[object.id] || false
     else
       current_user.account.favourited?(object)
     end
   end
 
-  def favourites_count
-    if instance_options && instance_options[:unfavourite]
-      object.favourites_count - 1
+  def muted
+    if instance_options && instance_options[:relationships]
+      instance_options[:relationships].mutes_map[object.conversation_id] || false
     else
-      object.favourites_count
+      current_user.account.muting_conversation?(object.conversation)
+    end
+  end
+
+  def favourites_count
+    object.favourites_count
+  end
+
+  def reaction_id
+    if instance_options && instance_options[:relationships]
+      instance_options[:relationships].favourites_map[object.id] || nil
+    else
+      current_user&.account&.reaction_id(object)
     end
   end
 

@@ -20,17 +20,16 @@ class Api::V1::NotificationsController < Api::BaseController
   end
 
   def clear
-    # : todo : put in worker
-    current_account.notifications.delete_all
+    max_notification_id = GabSocial::Snowflake.id_at(Time.current)
+    PurgeNotificationsWorker.perform_async(current_account.id, max_notification_id)
     render_empty_success
   end
 
   def mark_read
-    if !params[:id].nil? && !current_account.user.nil?
-      conn = ActiveRecord::Base.connection
-      conn.exec_query "UPDATE users SET last_read_notification = #{params[:id].to_i} WHERE id = #{current_account.user.id} AND #{params[:id].to_i} > last_read_notification"
+    ActiveRecord::Base.connected_to(role: :writing) do
+      current_account.unread_count = 0
+      current_account.save!
     end
-    # current_account.notifications.find(params[:id]).mark_read!
     render_empty_success
   end
 
@@ -41,19 +40,10 @@ class Api::V1::NotificationsController < Api::BaseController
   end
 
   def paginated_notifications
-    if params[:max_id] && params[:max_id].present?
-      # dont use "latest" if not first load
-      browserable_account_notifications.paginate_by_id(
-        limit_param(DEFAULT_NOTIFICATIONS_LIMIT),
-        params_slice(:max_id, :since_id, :min_id)
-      )
-    else
-      # USE "latest" if IS first load
-      browserable_account_notifications.latest.paginate_by_id(
-        limit_param(DEFAULT_NOTIFICATIONS_LIMIT),
-        params_slice(:max_id, :since_id, :min_id)
-      )
-    end
+    browserable_account_notifications.paginate_by_id(
+      limit_param(DEFAULT_NOTIFICATIONS_LIMIT),
+      params_slice(:max_id, :since_id, :min_id)
+    )
   end
 
   def browserable_account_notifications
@@ -64,6 +54,7 @@ class Api::V1::NotificationsController < Api::BaseController
         from_account,
         params[:only_verified],
         params[:only_following],
+        current_account,
       )
   end
 

@@ -1,0 +1,33 @@
+- content_for :page_title do
+  = 'New Reaction Type'
+
+= simple_form_for @reaction_type, url: admin_reaction_types_path do |f|
+  = render 'shared/error_messages', object: @reaction_type
+
+  .fields-row
+    .fields-row__column.fields-row__column-4.fields-group
+      = f.input :name, wrapper: :with_label, label: 'Name', required: true
+    .fields-row__column.fields-row__column-4.fields-group
+      = f.input :name_past, wrapper: :with_label, label: 'Name (Past Tense)', required: true
+    .fields-row__column.fields-row__column-4.fields-group
+      = f.input :name_plural, wrapper: :with_label, label: 'Name (Plural Tense)', required: true
+
+  .fields-group
+    = f.input :slug, wrapper: :with_label, label: 'Unique Slug (name. singular. lowercase. replace spaces with hypens. no special characters)', required: true
+  .fields-group
+    = f.input :index, wrapper: :with_label, label: 'Index in popover. Starting at 0 (zero)', as: :numeric
+
+  -# .fields-group
+    -# = f.input :rating, wrapper: :with_label, label: 'Rating', as: :decimal
+
+  .fields-row
+    .fields-row__column.fields-row__column-6.fields-group
+      = f.input :active_start_date, wrapper: :with_label, label: 'Start date', required: true, as: :date, html5: true
+    .fields-row__column.fields-row__column-6.fields-group
+      = f.input :active_end_date, wrapper: :with_label, label: 'Expires at (Optional)', as: :date, html5: true
+
+  .fields-group
+    = f.input :image, wrapper: :with_label, input_html: { accept: 'image/png' }, hint: 'Accepts: PNG / Max: 150kb'
+
+  .actions
+    = f.button :button, 'Submit', type: :submit

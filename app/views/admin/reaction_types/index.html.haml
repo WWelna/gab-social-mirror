@@ -1,0 +1,18 @@
+- content_for :page_title do
+  = 'Reaction Types'
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th Icon
+        %th Name
+        %th Slug
+        %th Index
+        %th Active
+        %th Edit
+        %th
+    %tbody
+      = render @reaction_types
+
+= link_to 'New Reaction', new_admin_reaction_type_path, class: 'button'

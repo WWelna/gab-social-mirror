@@ -1,0 +1,5 @@
+- content_for :page_title do
+  = "#{marketplace_listing.title} on #{site_hostname} Marketplace"
+
+- content_for :header_tags do
+  = render 'marketplace_listings/og', marketplace_listing: marketplace_listing, url: "https://gab.com/marketplace/item/#{marketplace_listing.id}"

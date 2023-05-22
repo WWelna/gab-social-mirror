@@ -8,6 +8,7 @@ import {
   MODAL_COMPOSE,
   MAX_POST_CHARACTER_COUNT,
   POPOVER_COMPOSE_POST_DESTINATION,
+  BREAKPOINT_EXTRA_SMALL,
 } from '../../../constants'
 import { openModal } from '../../../actions/modal'
 import { openPopover } from '../../../actions/popover'
@@ -41,9 +42,12 @@ class ComposeDestinationHeader extends ImmutablePureComponent {
       composeGroupId,
       formLocation,
       text,
+      width,
+      feature,
     } = this.props
 
     const isIntroduction = formLocation === 'introduction'
+    const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
     let editText = isEdit ? ' edit ' : ' '
     let groupTitle = !!composeGroup ? composeGroup.get('title') : ''
@@ -61,6 +65,10 @@ class ComposeDestinationHeader extends ImmutablePureComponent {
       if (isReply) {
         title = `Post${editText}as comment`
       }
+    }
+
+    if (feature || (!isModal && isXS)) {
+      return null
     }
 
     return (
@@ -118,6 +126,7 @@ const mapStateToProps = (state) => {
     isReply: !!state.getIn(['compose', 'in_reply_to']),
     isEdit: state.getIn(['compose', 'id']) !== null,
     composeGroup: state.getIn(['groups', composeGroupId]),
+    width: state.getIn(['settings', 'window_dimensions', 'width']),
   }
 }
 
@@ -141,6 +150,7 @@ ComposeDestinationHeader.propTypes = {
   formLocation: PropTypes.string,
   isReply: PropTypes.bool.isRequired,
   isEdit: PropTypes.bool.isRequired,
+  feature: PropTypes.string,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(ComposeDestinationHeader)

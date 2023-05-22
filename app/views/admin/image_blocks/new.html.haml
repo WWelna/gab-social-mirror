@@ -1,0 +1,11 @@
+- content_for :page_title do
+  = t('.title')
+
+= simple_form_for @image_block, url: admin_image_blocks_path do |f|
+  = render 'shared/error_messages', object: @image_block
+
+  .fields-group
+    = f.input :md5, wrapper: :with_label, label: 'md5 of image'
+
+  .actions
+    = f.button :button, 'Block it', type: :submit

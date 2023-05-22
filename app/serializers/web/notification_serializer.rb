@@ -25,7 +25,7 @@ class Web::NotificationSerializer < ActiveModel::Serializer
   end
 
   def icon
-    full_asset_url(object.from_account.avatar_static_url)
+    full_asset_url(object.from_account.avatar_static_url, cloudflare_options: { width: 68, fit: 'scale-down' })
   end
 
   def title

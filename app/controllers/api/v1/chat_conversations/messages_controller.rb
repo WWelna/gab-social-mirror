@@ -11,7 +11,7 @@ class Api::V1::ChatConversations::MessagesController < Api::BaseController
   after_action :insert_pagination_headers, unless: -> { @chats.empty? }
 
   def show
-    render json: @chats, each_serializer: REST::ChatMessageSerializer
+    render json: @chats, each_serializer: REST::ChatMessageSerializer, relationships: ChatMessageRelationshipsPresenter.new(@chats, current_user&.account_id)
   end
 
   def destroy_all

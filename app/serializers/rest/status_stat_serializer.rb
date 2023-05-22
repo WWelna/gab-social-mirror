@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class REST::StatusStatSerializer < ActiveModel::Serializer
-  attributes :status_id, :replies_count, :reblogs_count, :favourites_count
+  attributes :status_id, :replies_count, :reblogs_count, :favourites_count, :reaction_id, :reactions_counts
 
   attribute :favourited, if: :current_user?
   attribute :reblogged, if: :current_user?
@@ -12,18 +12,26 @@ class REST::StatusStatSerializer < ActiveModel::Serializer
 
   def favourited
     if instance_options && instance_options[:relationships]
-      instance_options[:relationships].favourites_map[object.id] || false
+      !!instance_options[:relationships].favourites_map[object.id] || false
     else
       current_user.account.favourited?(object)
     end
   end
 
-  def favourites_count
-    if instance_options && instance_options[:unfavourite]
-      object.favourites_count - 1
+  def reactions_counts
+    object.reactions_counts
+  end
+
+  def reaction_id
+    if instance_options && instance_options[:relationships]
+      instance_options[:relationships].favourites_map[object.id] || nil
     else
-      object.favourites_count
+      current_user.account.reaction_id(object)
     end
+  end
+  
+  def favourites_count
+    object.favourites_count
   end
 
   def reblogged
@@ -44,6 +52,12 @@ class REST::StatusStatSerializer < ActiveModel::Serializer
 
   def current_user?
     !current_user.nil?
+  end
+
+  private
+
+  def favourite
+    current_user.account.favourited?(object)
   end
 
 end

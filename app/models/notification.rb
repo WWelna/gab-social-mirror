@@ -43,28 +43,16 @@ class Notification < ApplicationRecord
   validates :activity_type, inclusion: { in: TYPE_CLASS_MAP.values }
 
   scope :latest, -> { where(created_at: 7.days.ago..) }
-  scope :browserable, ->(exclude_types = [], account_id = nil, only_verified = false, only_following = false) {
+  scope :browserable, ->(exclude_types = [], from_account_id = nil, only_verified = false, only_following = false, current_account) {
     types = TYPE_CLASS_MAP.values - activity_types_from_types(exclude_types + [:follow_request])
 
-    # Notification.includes(:from_account).where(activity_type: types, accounts: {
-    #   is_verified: true
-    # })
+    scope = all
+    scope = where(from_account_id: from_account_id) if from_account_id.present?
+    scope = scope.where(activity_type: types) unless exclude_types.empty?
+    scope = scope.joins(:from_account).where(accounts: { is_verified: true }) if only_verified
+    scope = scope.where('from_account_id IN (SELECT target_account_id FROM follows WHERE account_id = ?)', current_account.id) if only_following
 
-    theOptions = { :activity_type => types }
-
-    if !account_id.nil?
-      theOptions.from_account_id = account_id
-    end
-
-    if only_verified
-      theOptions[:accounts] = {
-        :is_verified => true
-      }
-
-      Notification.includes(:from_account).where(theOptions)
-    else
-      where(theOptions)
-    end
+    scope
   }
 
   cache_associated :from_account, status: STATUS_INCLUDES, mention: [status: STATUS_INCLUDES], favourite: [:account, status: STATUS_INCLUDES], follow: :account, poll: [status: STATUS_INCLUDES]
@@ -89,17 +77,6 @@ class Notification < ApplicationRecord
 
   def browserable?
     type != :follow_request
-  end
-
-  def mark_read!
-    user = account.user
-    is_newer = self.id > (user.last_read_notification || -1)
-
-    if is_newer
-      user.last_read_notification = self.id
-      user.save!
-    else false
-    end
   end
 
   class << self

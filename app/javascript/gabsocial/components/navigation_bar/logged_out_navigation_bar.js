@@ -5,13 +5,18 @@ import Button from '../button'
 import NavigationBarButton from '../navigation_bar_button'
 import Search from '../search'
 import Text from '../text'
+import BackButton from '../back_button'
 import ResponsiveComponent from '../../features/ui/util/responsive_component'
 import ResponsiveClassesComponent from '../../features/ui/util/responsive_classes_component'
 
 class LoggedOutNavigationBar extends React.PureComponent {
 
   render() {
-    const { isProfile } = this.props
+    const { isProfile, title } = this.props
+
+    // dont show back btn all footer bar tab titles or main page
+    const footerBarTabTitles = ['Gab.com', 'Groups', 'News', 'Feeds', 'Marketplace', 'Search']
+    const shouldShowBackBtn = footerBarTabTitles.indexOf(title) === -1
 
     return (
       <ResponsiveClassesComponent
@@ -30,6 +35,18 @@ class LoggedOutNavigationBar extends React.PureComponent {
               classNamesXS={[_s.d, _s.flexRow, _s.saveAreaInsetPT, _s.saveAreaInsetPL, _s.saveAreaInsetPR, _s.w100PC].join(' ')}
             >
 
+              <ResponsiveComponent max={BREAKPOINT_EXTRA_SMALL}>
+                {
+                  shouldShowBackBtn &&
+                  <BackButton
+                    className={[_s.h53PX, _s.pl10].join(' ')}
+                    icon='angle-left'
+                    iconSize='18px'
+                    iconClassName={[_s.mr5, _s.fillNavigation].join(' ')}
+                  />
+                }
+              </ResponsiveComponent>
+
               <Button
                 href='/'
                 color='none'
@@ -45,6 +62,7 @@ class LoggedOutNavigationBar extends React.PureComponent {
                   <div className={[_s.d, _s.flexRow, _s.mr15].join(' ')}>
                     <NavigationBarButton title='Home' icon='home' href='/home' />
                     <NavigationBarButton title='Explore' icon='explore' to='/explore' />
+                    <NavigationBarButton title='Marketplace' icon='shop' to='/marketplace' />
                     <NavigationBarButton title='News' icon='news' to='/news' />
                   </div>
                 </ResponsiveComponent>
@@ -99,7 +117,6 @@ class LoggedOutNavigationBar extends React.PureComponent {
 LoggedOutNavigationBar.propTypes = {
   isProfile: PropTypes.bool,
   title: PropTypes.string,
-  showBackBtn: PropTypes.bool,
 }
 
 export default LoggedOutNavigationBar

@@ -287,7 +287,7 @@ const messages = defineMessages({
 	idTitle: { id: 'groups.form.id_title', defaultMessage: 'Unique id' },
 	idDescription: { id: 'groups.form.id_description', defaultMessage: 'A unique id that links to this group. (Cannot be changed)' },
 	tagsTitle: { id: 'groups.form.tags_title', defaultMessage: 'Tags' },
-	tagsDescription: { id: 'groups.form.tags_description', defaultMessage: '(Optional) Add tags seperated by commas to increase group visibility' },
+	tagsDescription: { id: 'groups.form.tags_description', defaultMessage: '(Optional) Add tags separated by commas to increase group visibility' },
 	passwordTitle: { id: 'groups.form.password_title', defaultMessage: 'Password' },
 	passwordDescription: { id: 'groups.form.password_description', defaultMessage: '(Optional) Add a password to restrict access to this group. This password is NOT encrypted and is only visible to group admins.' },
 	categoryTitle: { id: 'groups.form.category_title', defaultMessage: 'Category' },

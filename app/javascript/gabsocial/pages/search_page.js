@@ -16,4 +16,4 @@ class SearchPage extends React.PureComponent {
 
 }
 
-export default SearchLayout
+export default SearchPage

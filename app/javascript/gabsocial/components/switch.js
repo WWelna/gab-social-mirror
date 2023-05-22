@@ -22,7 +22,7 @@ class Switch extends React.PureComponent {
     } = this.props
 
     const checkboxContainerClasses = CX({
-      cursorPointer: 1,
+      cursorPointer: !disabled,
       d: 1,
       h24PX: 1,
       w50PX: 1,
@@ -32,6 +32,7 @@ class Switch extends React.PureComponent {
       bgPrimary: 1,
       borderColorSecondary: 1,
       bgBrand: checked,
+      cursorNotAllowed: disabled,
     })
 
     const checkboxLabelClasses = CX({
@@ -55,7 +56,14 @@ class Switch extends React.PureComponent {
 
         <label className={checkboxContainerClasses} htmlFor={id}>
           <span className={checkboxLabelClasses} />
-          <input type='checkbox' id={id} onChange={this.handleOnChange} disabled={disabled} className={[_s.visibilityHidden].join(' ')} />
+          <input
+            id={id}
+            type='checkbox'
+            checked={checked}
+            onChange={this.handleOnChange}
+            disabled={disabled}
+            className={[_s.visibilityHidden].join(' ')}
+          />
         </label>
       </div>
     )

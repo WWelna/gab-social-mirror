@@ -9,6 +9,9 @@ import {
   fetchLists,
   addToList,
 } from '../../actions/lists'
+import {
+  LIST_TYPE_OWN,
+} from '../../constants'
 import ModalLayout from './modal_layout'
 import Button from '../button'
 import Text from '../text'
@@ -76,11 +79,11 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  lists: getOrderedLists(state, 'own'),
+  lists: getOrderedLists(state, LIST_TYPE_OWN),
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  onFetchLists: () => dispatch(fetchLists()),
+  onFetchLists: () => dispatch(fetchLists(LIST_TYPE_OWN)),
 
   onAddToList(listId, accountId) {
     dispatch(addToList(listId, accountId))

@@ -24,6 +24,16 @@ class List extends ImmutablePureComponent {
     const Wrapper = !!scrollKey ? ScrollableList : Dummy
     const itemsSize = !!items ? Array.isArray(items) ? items.length : items.size : 0
 
+    const inner = !!items && itemsSize > 0 ?
+      items.map((item, i) => (
+        <ListItem
+          size={size}
+          key={`list-item-${i}`}
+          isLast={itemsSize - 1 === i}
+          {...item}
+        />
+      )) : null;
+
     return (
       <Block>
         <Wrapper
@@ -33,19 +43,9 @@ class List extends ImmutablePureComponent {
           emptyMessage={emptyMessage}
           showLoading={showLoading}
           placeholderComponent={ListItemPlaceholder}
-          placeholderCount={12}
+          placeholderCount={5}
         >
-          {
-            !!items && itemsSize > 0 &&
-            items.map((item, i) => (
-              <ListItem
-                size={size}
-                key={`list-item-${i}`}
-                isLast={itemsSize - 1 === i}
-                {...item}
-              />
-            ))
-          }
+          {inner}
         </Wrapper>
       </Block>
     )

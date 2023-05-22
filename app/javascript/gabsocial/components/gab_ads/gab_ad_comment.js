@@ -1,13 +1,50 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { GAB_AD_PLACEMENTS } from '../../constants'
+import {
+  CX,
+  GAB_AD_PLACEMENTS,
+} from '../../constants'
 import GabAdRoot from './gab_ad_root'
 import GabAdBase from './gab_ad_base'
 import Button from '../button'
 import Text from '../text'
 import Image from '../image'
+import Video from '../video'
 import DotTextSeperator from '../dot_text_seperator'
 import ResponsiveClassesComponent from '../../features/ui/util/responsive_classes_component'
+
+const LowerWrapper = ({
+  ad,
+  className,
+  children,
+}) => {
+
+  if (!ad.video) {
+    return (
+      <div className={className}>
+        {children}
+      </div>
+    )
+  }
+
+  const classes = CX(className, {
+    bgTransparent: 1,
+    cursorPointer: 1,
+    outlineNone: 1,
+    noUnderline: 1,
+  })
+  return (
+    <Button
+      noClasses
+      className={classes}
+      href={ad.url}
+      target='_blank'
+      rel='noopener'
+    >
+      {children}
+    </Button>
+  )
+}
 
 const GabAdComment = (props = {}) => {
   const { pageKey, position } = props
@@ -85,11 +122,31 @@ const GabAdComment = (props = {}) => {
                       {/* GAB AD COMMENT MEDIA START */}
                       <div className={[_s.d].join(' ')}>
                         <div className={[_s.d, _s.w100PC, _s.outlineNone, _s.cursorPointer, _s.bgSubtle, _s.radiusSmall, _s.overflowHidden, _s.borderColorSecondary, _s.border1PX].join(' ')}>
-                          <Image
-                            width='100%'
-                            src={ad.image}
-                          />
-                          <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
+                          {
+                            !ad.video &&
+                            <Image width='100%' src={ad.image} />
+                          }
+                          {
+                            !!ad.video &&
+                            <div className={[_s.d, _s.w100PC, _s.pt5625PC].join(' ')}>
+                              <div className={[_s.d, _s.objectFitCover, _s.posAbs, _s.w100PC, _s.h100PC, _s.top0, _s.right0, _s.bottom0, _s.left0].join(' ')}>
+                                <Video
+                                  preview={ad.image}
+                                  src={ad.video}
+                                  fileContentType={ad.video_type || "video/mp4"}
+                                  width='100%'
+                                  height='100%'
+                                  className={[_s.w100PC, _s.h100PC, _s.mt0].join(' ')}
+                                  autoplay='true'
+                                  muted='true'
+                                />
+                              </div>
+                            </div>
+                          }
+                          <LowerWrapper
+                            ad={ad}
+                            className={[_s.d, _s.px15, _s.py10].join(' ')}
+                          >
                             <Text size='large' color='secondary' className={_s.py5}>
                               {ad.base_url}
                             </Text>
@@ -111,7 +168,7 @@ const GabAdComment = (props = {}) => {
                                 </Button>
                               </div>
                             </div>
-                          </div>
+                          </LowerWrapper>
                         </div>
                       </div>
                       {/* GAB AD COMMENT MEDIA END */}

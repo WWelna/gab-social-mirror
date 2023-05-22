@@ -12,10 +12,16 @@ class Api::V1::ChatMessagesController < Api::BaseController
       chat_conversation: chat_params[:chat_conversation_id]
     )
 
+    marketplace_listing = nil
+    if !params[:marketplace_listing_id].nil?
+      marketplace_listing = MarketplaceListing.only_running.find(params[:marketplace_listing_id])
+    end
+
     chat = PostChatMessageService.new.call(
       current_account,
       text: chat_params[:text],
-      chat_conversation_account: chat_conversation_account
+      chat_conversation_account: chat_conversation_account,
+      marketplace_listing: marketplace_listing
     )
 
     render json: chat, serializer: REST::ChatMessageSerializer
@@ -29,7 +35,7 @@ class Api::V1::ChatMessagesController < Api::BaseController
   private
 
   def chat_params
-    params.permit(:text, :chat_conversation_id)
+    params.permit(:text, :chat_conversation_id, :marketplace_listing)
   end
 
   def set_chat_message

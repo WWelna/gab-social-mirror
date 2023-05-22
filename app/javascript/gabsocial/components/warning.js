@@ -23,7 +23,6 @@ class Warning extends ImmutablePureComponent {
   render() {
     const { isDismissed } = this.state
     const { warning } = this.props
-    console.log("warning:", warning)
 
     if (isDismissed || !warning) {
       return null

@@ -4,7 +4,7 @@ class REST::AccountSerializer < ActiveModel::Serializer
   include RoutingHelper
 
   attributes :id, :username, :acct, :display_name, :locked, :bot, :created_at,
-             :note, :url, :avatar, :avatar_static, :header, :header_static, :is_spam,
+             :note, :url, :avatar, :avatar_static, :avatar_small, :avatar_static_small, :header, :header_static, :is_spam,
              :followers_count, :following_count, :statuses_count, :is_pro, :is_verified,
              :is_donor, :is_investor, :show_pro_life
 
@@ -42,35 +42,27 @@ class REST::AccountSerializer < ActiveModel::Serializer
   end
 
   def avatar
-    if object.avatar_file_name.nil? and object.avatar_remote_url and object.avatar_remote_url.start_with? "gab://avatar/"
-      return object.avatar_remote_url.sub("gab://avatar/", "https://gab.com/media/user/") 
-    end
+    AccountAsset.new(object).avatar_url
+  end
 
-    full_asset_url(object.avatar_original_url)
+  def avatar_small
+    AccountAsset.new(object).avatar_url(width: 92)
   end
 
   def avatar_static
-    if object.avatar_file_name.nil? and object.avatar_remote_url and object.avatar_remote_url.start_with? "gab://avatar/"
-      return object.avatar_remote_url.sub("gab://avatar/", "https://gab.com/media/user/") 
-    end
+    AccountAsset.new(object).avatar_static_url
+  end
 
-    full_asset_url(object.avatar_static_url)
+  def avatar_static_small
+    AccountAsset.new(object).avatar_static_url(width: 92)
   end
 
   def header
-    if object.header_file_name.nil? and object.header_remote_url and object.header_remote_url.start_with? "gab://header/"
-      return object.header_remote_url.sub("gab://header/", "https://gab.com/media/user/") 
-    end
-
-    full_asset_url(object.header_original_url)
+    AccountAsset.new(object).header_url
   end
 
   def header_static
-    if object.header_file_name.nil? and object.header_remote_url and object.header_remote_url.start_with? "gab://header/"
-      return object.header_remote_url.sub("gab://header/", "https://gab.com/media/user/") 
-    end
-
-    full_asset_url(object.header_static_url)
+    AccountAsset.new(object).header_static_url
   end
 
   def moved_and_not_nested?

@@ -6,7 +6,7 @@ import { OrderedSet } from 'immutable'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { changeReportComment, changeReportCategory, submitReport } from '../../actions/reports'
-import { expandAccountTimeline } from '../../actions/timelines'
+import { timelineFetchPaged } from '../../store/timelines'
 import { makeGetAccount } from '../../selectors'
 import ModalLayout from './modal_layout'
 import ResponsiveClassesComponent from '../../features/ui/util/responsive_classes_component'
@@ -36,13 +36,21 @@ class ReportModal extends ImmutablePureComponent {
     this.props.dispatch(changeReportCategory(e.target.value))
   }
 
+  load = () => {
+    const accountId = this.props.account.get('id')
+    const timelineId = `account:${accountId}`
+    const endpoint = `/api/v1/accounts/${accountId}/statuses`
+    const withReplies = true
+    this.props.dispatch(timelineFetchPaged(timelineId, { endpoint, withReplies }))
+  }
+
   componentDidMount () {
-    this.props.dispatch(expandAccountTimeline(this.props.account.get('id'), { withReplies: true }))
+    this.load()
   }
 
   UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.account !== nextProps.account && nextProps.account) {
-      this.props.dispatch(expandAccountTimeline(nextProps.account.get('id'), { withReplies: true }))
+      this.load()
     }
   }
 
@@ -53,7 +61,7 @@ class ReportModal extends ImmutablePureComponent {
       intl,
       statusIds,
       isDisabled,
-      onClose
+      onClose,
     } = this.props
 
     if (!account) return null
@@ -63,7 +71,7 @@ class ReportModal extends ImmutablePureComponent {
         width={760}
         noPadding
         title={intl.formatMessage(messages.target, {
-          target: account.get('acct')
+          target: account.get('acct'),
         })}
         onClose={onClose}
       >
@@ -191,11 +199,13 @@ const makeMapStateToProps = () => {
     const accountId = state.getIn(['reports', 'new', 'account_id'])
     const category = state.getIn(['reports', 'new', 'category'])
     const isSubmitting = state.getIn(['reports', 'new', 'isSubmitting'])
-
+    const statusIds = OrderedSet(
+      state.getIn(['timelines', `account:${accountId}:with_replies`, 'items'])
+    ).union(state.getIn(['reports', 'new', 'status_ids']))
     return {
       account: getAccount(state, accountId),
       comment: state.getIn(['reports', 'new', 'comment']),
-      statusIds: OrderedSet(state.getIn(['timelines', `account:${accountId}:with_replies`, 'items'])).union(state.getIn(['reports', 'new', 'status_ids'])),
+      statusIds,
       isDisabled: isSubmitting || !category,
       category,
     }

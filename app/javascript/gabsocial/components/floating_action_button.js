@@ -40,7 +40,7 @@ class FloatingActionButton extends React.PureComponent {
         <Button
           to={isDesktop ? undefined : '/compose'}
           onClick={isDesktop ? onOpenCompose : undefined}
-          className={[_s.py15, _s.h60PX, _s.saveAreaInsetMR, _s.saveAreaInsetMB, _s.w60PX, _s.jcCenter, _s.aiCenter].join(' ')}
+          className={[_s.py15, _s.h60PX, _s.saveAreaInsetMR, _s.saveAreaInsetMB, _s.w60PX, _s.jcCenter, _s.aiCenter, _s.boxShadowBlock].join(' ')}
           title={message}
           aria-label={message}
           icon='pencil'

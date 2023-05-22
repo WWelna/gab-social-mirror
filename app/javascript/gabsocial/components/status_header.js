@@ -17,6 +17,7 @@ import DotTextSeperator from './dot_text_seperator'
 import Icon from './icon'
 import Button from './button'
 import Avatar from './avatar'
+import Dummy from './dummy'
 
 class StatusHeader extends ImmutablePureComponent {
 
@@ -44,6 +45,7 @@ class StatusHeader extends ImmutablePureComponent {
       reduced,
       status,
       isCompact,
+      nulled,
     } = this.props
 
     const statusUrl = `/${status.getIn(['account', 'acct'])}/posts/${status.get('id')}`
@@ -58,6 +60,7 @@ class StatusHeader extends ImmutablePureComponent {
     const avatarSize = reduced ? 20 : isCompact ? 38 : 46
 
     const visibility = status.get('visibility')
+    const AvatarComponent = nulled ? Dummy : NavLink
 
     let visibilityIcon
     let visibilityText
@@ -96,13 +99,14 @@ class StatusHeader extends ImmutablePureComponent {
 
           {
             !reduced &&
-            <NavLink
-              to={`/${status.getIn(['account', 'acct'])}`}
-              title={status.getIn(['account', 'acct'])}
+            <AvatarComponent
+              to={nulled ? undefined : `/${status.getIn(['account', 'acct'])}`}
+              title={nulled ? undefined : status.getIn(['account', 'acct'])}
               className={[_s.d, _s.mr10].join(' ')}
             >
-              <Avatar account={status.get('account')} size={avatarSize} />
-            </NavLink>
+              { !nulled && <Avatar account={status.get('account')} size={avatarSize} /> }
+              { nulled && <div style={{ height: `${avatarSize}px`, width: `${avatarSize}px` }} className={[_s.d, _s.circle, _s.bgSecondary].join(' ')} /> }
+            </AvatarComponent>
           }
 
           <div className={textContainerClasses}>
@@ -122,6 +126,7 @@ class StatusHeader extends ImmutablePureComponent {
                 !reduced && !!me &&
                 <Button
                   isText
+                  isDisabled={nulled}
                   backgroundColor='none'
                   color='none'
                   icon='ellipsis'
@@ -248,6 +253,7 @@ StatusHeader.propTypes = {
   onOpenStatusModal: PropTypes.func.isRequired,
   reduced: PropTypes.bool,
   isCompact: PropTypes.bool,
+  nulled: PropTypes.bool,
 }
 
 export default injectIntl(connect(null, mapDispatchToProps)(StatusHeader))

@@ -41,9 +41,8 @@ class Api::V1::Accounts::StatusesController < Api::BaseController
     # : todo : if no current_user, limit date and no: tagged, reblogs, comments
     statuses = truthy_param?(:pinned) ? pinned_scope : permitted_account_statuses
 
-    if current_account.nil?
+    if current_account.nil? && !truthy_param?(:pinned)
       statuses = statuses.limit(8)
-      statuses = statuses.where("statuses.created_at > NOW() - INTERVAL '30 days'")
     else
       statuses = statuses.paginate_by_id(limit_param(DEFAULT_STATUSES_LIMIT), params_slice(:max_id, :since_id, :min_id))
     end

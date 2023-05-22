@@ -6,11 +6,13 @@ import { APP_NAME } from '../../../constants'
 class PageTitle extends React.PureComponent {
 
   componentDidMount() {
-    this.updatePageTitle(this.props) 
+    if (this.props.path !== "Status") {
+      this.updatePageTitle(this.props)
+    }
   }
 
   componentDidUpdate(prevProps) {
-    if (this.props.badge !== prevProps.badge || !isEqual(this.props.path, prevProps.path)) {
+    if (this.props.path !== "Status" && (this.props.badge !== prevProps.badge || !isEqual(this.props.path, prevProps.path))) {
       this.updatePageTitle(this.props)
     }
   }

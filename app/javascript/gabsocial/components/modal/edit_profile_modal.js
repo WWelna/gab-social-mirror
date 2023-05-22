@@ -26,6 +26,18 @@ class EditProfileModal extends ImmutablePureComponent {
     locked: this.props.account ? this.props.account.get('locked') : false,
   }
 
+  componentDidMount() {
+    if (this.props.embedded) {
+      window.addEventListener('profile-save', this.handleOnSave)
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.props.embedded) {
+      window.removeEventListener('profile-save', this.handleOnSave)
+    }
+  }
+
   componentDidUpdate (prevProps) {
     if (prevProps.account !== this.props.account) {
       if (this.props.account) {
@@ -77,10 +89,14 @@ class EditProfileModal extends ImmutablePureComponent {
   }
 
   handleOnClose = () => {
-    this.props.onClose()
+    // when embedded there isn't any onClose
+    const { onClose } = this.props
+    if (onClose) {
+      onClose()
+    }
   }
 
-  handleOnSave = () => {
+  handleOnSave = evt => {
     const { account } = this.props
     const {
       avatarSrc,
@@ -115,6 +131,85 @@ class EditProfileModal extends ImmutablePureComponent {
 
     const isVerified = account.get('is_verified')
 
+    /*
+    If embedded we can just display the form and not the modal, border, "X",
+    and "save" button. This would be nicer if put into a separate component
+    but for expediency we added a prop toggle.
+    */
+    const inner = (
+      <div className={[_s.d, _s.w100PC, _s.aiCenter].join(' ')}>
+        <FileInput
+          width='480px'
+          height='180px'
+          id='cover-photo'
+          onChange={this.handleCoverPhotoChange}
+          file={headerSrc}
+        />
+        <div className={[_s.d, _s.mtNeg50PX, _s.aiCenter, _s.jcCenter].join(' ')}>
+          <FileInput
+            width='132px'
+            height='132px'
+            id='profile-photo'
+            file={avatarSrc}
+            className={[_s.circle, _s.border6PX, _s.borderColorWhite, _s.bgPrimary].join(' ')}
+            onChange={this.handleProfilePhotoChange}
+          />
+        </div>
+        <div className={[_s.d, _s.py5, _s.mt5, _s.mb15, _s.w100PC].join(' ')}>
+          <div className={[_s.d, _s.mb10, _s.px15].join(' ')}>
+            <div className={[_s.d, _s.pl15].join(' ')}>
+              <Text htmlFor='display-name' size='small' weight='medium' color='secondary' tagName='label'>
+                Display name
+              </Text>
+              {
+                isVerified &&
+                <Text htmlFor='display-name' size='extraSmall' color='secondary' tagName='label' className={[_s.mt5, _s.mb10].join(' ')}>
+                  (Verified accounts cannot change display names.)
+                </Text>
+              }
+            </div>
+            <Input
+              id='display-name'
+              maxLength={30}
+              value={displayNameValue}
+              isDisabled={isVerified}
+              readOnly={isVerified}
+              onChange={this.handleDisplayNameChange}
+              onBlur={this.handleDisplayNameBlur}
+            />
+          </div>
+
+          <Divider />
+            
+          <div className={[_s.d, _s.mb10, _s.px15].join(' ')}>
+            <Textarea
+              title='Bio'
+              value={bioValue}
+              disabled={false}
+              maxLength={500}
+              onChange={this.handleBioChange}
+              placeholder='Add your bio...'
+            />
+          </div>
+
+          <Divider />
+
+          <div className={[_s.d, _s.mb10, _s.pl25, _s.pr15].join(' ')}>
+            <Switch
+              label='Private account'
+              checked={locked}
+              onChange={this.handleLockedChange}
+            />
+          </div>
+
+        </div>
+      </div>
+    )
+
+    if (this.props.embedded) {
+      return inner
+    }
+
     return (
       <div style={{ width: '480px' }} className={[_s.d, _s.modal].join(' ')}>
         <Block>
@@ -143,73 +238,7 @@ class EditProfileModal extends ImmutablePureComponent {
             </Button>
           </div>
           <div className={[_s.d, _s.maxH80VH, _s.overflowYScroll].join(' ')}>
-            <div className={[_s.d, _s.w100PC, _s.aiCenter].join(' ')}>
-              <FileInput
-                width='480px'
-                height='180px'
-                id='cover-photo'
-                onChange={this.handleCoverPhotoChange}
-                file={headerSrc}
-              />
-              <div className={[_s.d, _s.mtNeg50PX, _s.aiCenter, _s.jcCenter].join(' ')}>
-                <FileInput
-                  width='132px'
-                  height='132px'
-                  id='profile-photo'
-                  file={avatarSrc}
-                  className={[_s.circle, _s.border6PX, _s.borderColorWhite, _s.bgPrimary].join(' ')}
-                  onChange={this.handleProfilePhotoChange}
-                />
-              </div>
-              <div className={[_s.d, _s.py5, _s.mt5, _s.mb15, _s.w100PC].join(' ')}>
-                <div className={[_s.d, _s.mb10, _s.px15].join(' ')}>
-                  <div className={[_s.d, _s.pl15].join(' ')}>
-                    <Text htmlFor='display-name' size='small' weight='medium' color='secondary' tagName='label'>
-                      Display name
-                    </Text>
-                    {
-                      isVerified &&
-                      <Text htmlFor='display-name' size='extraSmall' color='secondary' tagName='label' className={[_s.mt5, _s.mb10].join(' ')}>
-                        (Verified accounts cannot change display names.)
-                      </Text>
-                    }
-                  </div>
-                  <Input
-                    id='display-name'
-                    maxLength={30}
-                    value={displayNameValue}
-                    isDisabled={isVerified}
-                    readOnly={isVerified}
-                    onChange={this.handleDisplayNameChange}
-                    onBlur={this.handleDisplayNameBlur}
-                  />
-                </div>
-
-                <Divider />
-                  
-                <div className={[_s.d, _s.mb10, _s.px15].join(' ')}>
-                  <Textarea
-                    title='Bio'
-                    value={bioValue}
-                    disabled={false}
-                    maxLength={500}
-                    onChange={this.handleBioChange}
-                    placeholder='Add your bio...'
-                  />
-                </div>
-
-                <Divider />
-
-                <div className={[_s.d, _s.mb10, _s.pl25, _s.pr15].join(' ')}>
-                  <Switch
-                    label='Private account'
-                    checked={locked}
-                    onChange={this.handleLockedChange}
-                  />
-                </div>
-
-              </div>
-            </div>
+            {inner}
           </div>
         </Block>
       </div>
@@ -235,8 +264,9 @@ const mapDispatchToProps = (dispatch) => ({
 EditProfileModal.propTypes = {
   account: ImmutablePropTypes.map,
   intl: PropTypes.object.isRequired,
-  onClose: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
   onSave: PropTypes.func.isRequired,
+  embedded: PropTypes.bool
 }
 
 export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(EditProfileModal))

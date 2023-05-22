@@ -9,8 +9,6 @@ import {
   ProgressPanel,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
-  TrendingHashtagsPanel,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class HashtagPage extends React.PureComponent {
@@ -20,23 +18,25 @@ class HashtagPage extends React.PureComponent {
       children,
       intl,
       params,
+      showSuggestedUsers,
     } = this.props
 
     const hashtag = isObject(params) ? params.id : ''
+
+    let sidebarLayout = [ProgressPanel, TrendsBreakingPanel]
+
+    if(showSuggestedUsers) {
+      sidebarLayout.push(UserSuggestionsPanel)
+    }
+
+    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
         showBackBtn
         title={intl.formatMessage(messages.hashtagTimeline)}
         page={`hashtag.${hashtag}`}
-        layout={[
-          ProgressPanel,
-          GabAdPanel,
-          TrendsBreakingPanel,
-          UserSuggestionsPanel,
-          TrendingHashtagsPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
       >
         <PageTitle path={intl.formatMessage(messages.hashtag)} />
         {children}

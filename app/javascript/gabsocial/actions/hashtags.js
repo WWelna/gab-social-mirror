@@ -27,3 +27,11 @@ export const fetchHashtagFail = error => ({
   type: HASHTAG_FETCH_FAIL,
   error,
 })
+
+/**
+ * @description Import a hashtag into redux
+ * @param {ImmutableMap} hashtag
+ */
+ export const importHashtag = (hashtag) => (dispatch) => {
+  dispatch(fetchHashtagSuccess(hashtag))
+}

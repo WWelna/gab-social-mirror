@@ -1,178 +1,121 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import throttle from 'lodash.throttle'
-import { List as ImmutableList } from 'immutable'
-import { withRouter } from 'react-router-dom'
-import IntersectionObserverWrapper from '../features/ui/util/intersection_observer_wrapper'
-import { MOUSE_IDLE_DELAY } from '../constants'
+import { supportsPassiveEvents } from 'detect-it'
 import Block from './block'
 import ColumnIndicator from './column_indicator'
 import LoadMore from './load_more'
+import { getScrollableParent } from '../utils/scrolling'
+
+const isFunction = val => typeof val === 'function'
+
+const evtOpts = supportsPassiveEvents ? { passive: true } : false
 
 class ScrollableList extends React.PureComponent {
 
-  state = {
-    cachedMediaWidth: 250, // Default media/card width using default Gab Social theme
+  state = { nearBottom: false }
+  scrollableParent = null
+
+  componentWillUnmount() {
+    this.unbindEvents()
   }
 
-  intersectionObserverWrapper = new IntersectionObserverWrapper();
-
-  mouseIdleTimer = null;
-  mouseMovedRecently = false;
-  lastScrollWasSynthetic = false;
-  scrollToTopOnMouseIdle = false;
-
-  setScrollTop = (newScrollTop) => {
-    if (this.documentElement.scrollTop !== newScrollTop) {
-      this.lastScrollWasSynthetic = true;
-      this.documentElement.scrollTop = newScrollTop;
-    }
-  };
-
-  clearMouseIdleTimer = () => {
-    if (this.mouseIdleTimer === null) return;
-
-    clearTimeout(this.mouseIdleTimer);
-    this.mouseIdleTimer = null;
-  };
-
-  handleMouseMove = throttle(() => {
-    // As long as the mouse keeps moving, clear and restart the idle timer.
-    this.clearMouseIdleTimer();
-    this.mouseIdleTimer = setTimeout(this.handleMouseIdle, MOUSE_IDLE_DELAY);
-
-    // Only set if we just started moving and are scrolled to the top.
-    if (!this.mouseMovedRecently && this.documentElement.scrollTop === 0) {
-      this.scrollToTopOnMouseIdle = true;
-    }
-
-    // Save setting this flag for last, so we can do the comparison above.
-    this.mouseMovedRecently = true;
-  }, MOUSE_IDLE_DELAY / 2);
-
-  handleMouseIdle = () => {
-    if (this.scrollToTopOnMouseIdle) {
-      this.setScrollTop(0);
-    }
-
-    this.mouseMovedRecently = false;
-    this.scrollToTopOnMouseIdle = false;
-  }
-
-  componentDidMount() {
-    this.window = window;
-    this.documentElement = document.scrollingElement || document.documentElement;
-
-    this.attachScrollListener();
-    this.attachIntersectionObserver();
-    // Handle initial scroll posiiton
-    this.handleScroll();
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    // Reset the scroll position when a new child comes in in order not to
-    // jerk the scrollbar around if you're already scrolled down the page.
-    if (snapshot !== null) {
-      this.setScrollTop(this.documentElement.scrollHeight - snapshot);
-    }
-  }
-
-  attachScrollListener() {
-    this.window.addEventListener('scroll', this.handleScroll);
-    this.window.addEventListener('wheel', this.handleWheel);
-  }
-
-  detachScrollListener() {
-    this.window.removeEventListener('scroll', this.handleScroll);
-    this.window.removeEventListener('wheel', this.handleWheel);
+  get useWindow() {
+    return this.scrollableParent.isSameNode(document.documentElement)
   }
 
   handleScroll = throttle(() => {
-    if (this.window) {
-      const { scrollTop, scrollHeight } = this.documentElement
-      const { innerHeight } = this.window
-      const offset = scrollHeight - scrollTop - innerHeight
-
-      if (600 > offset && this.props.onLoadMore && this.props.hasMore && !this.props.isLoading && !this.props.disableInfiniteScroll) {
-        this.props.onLoadMore()
-      }
-
-      if (scrollTop < 100 && this.props.onScrollToTop) {
-        this.props.onScrollToTop()
-      } else if (this.props.onScroll) {
-        this.props.onScroll()
-      }
-
-      if (!this.lastScrollWasSynthetic) {
-        // If the last scroll wasn't caused by setScrollTop(), assume it was
-        // intentional and cancel any pending scroll reset on mouse idle
-        this.scrollToTopOnMouseIdle = false
-      }
-      this.lastScrollWasSynthetic = false
-    }
-  }, 150, {
-    trailing: true,
-  })
-
-  handleWheel = throttle(() => {
-    this.scrollToTopOnMouseIdle = false;
-  }, 150, {
-    trailing: true,
-  });
-
-  getSnapshotBeforeUpdate(prevProps) {
-    const someItemInserted = React.Children.count(prevProps.children) > 0 &&
-      React.Children.count(prevProps.children) < React.Children.count(this.props.children) &&
-      this.getFirstChildKey(prevProps) !== this.getFirstChildKey(this.props);
-
-    if (someItemInserted && (this.documentElement.scrollTop > 0 || this.mouseMovedRecently)) {
-      return this.documentElement.scrollHeight - this.documentElement.scrollTop;
+    if (this.props.disableInfiniteScroll) {
+      return
     }
 
-    return null;
-  }
+    const {
+      onLoadMore,
+      hasMore,
+      isLoading,
+      onScrollToTop,
+      onScroll,
+    } = this.props
 
-  cacheMediaWidth = (width) => {
-    if (width && this.state.cachedMediaWidth !== width) {
-      this.setState({ cachedMediaWidth: width });
-    }
-  }
+    const { scrollableParent } = this
 
-  componentWillUnmount() {
-    this.clearMouseIdleTimer();
-    this.detachScrollListener();
-    this.detachIntersectionObserver();
-  }
-
-  attachIntersectionObserver() {
-    this.intersectionObserverWrapper.connect();
-  }
-
-  detachIntersectionObserver() {
-    this.intersectionObserverWrapper.disconnect();
-  }
-
-  getFirstChildKey(props) {
-    const { children } = props;
-    let firstChild = children;
-
-    if (children instanceof ImmutableList) {
-      firstChild = children.get(0);
-    } else if (Array.isArray(children)) {
-      firstChild = children[0];
+    if (!scrollableParent) {
+      return
     }
 
-    return firstChild && firstChild.key;
-  }
+    let nearBottom = false
+    const { scrollTop } = scrollableParent
+
+    if (this.useWindow) {
+      // Normal timelines case, scrolling body/html element down
+      const threshold = 2000 // px from the bottom
+      nearBottom = (document.body.offsetHeight - window.scrollY) < threshold
+    } else {
+      // scrolling inside a scrollable element, not main body/html, Deck column
+      const { scrollHeight, offsetHeight } = scrollableParent
+      const offset = scrollHeight - scrollTop - offsetHeight
+      const threshold = 1000
+      nearBottom = offset < threshold
+    }
+
+    if (this.state.nearBottom !== nearBottom) {
+      this.setState({ nearBottom })
+    }
+
+    if (
+      nearBottom &&
+      isFunction(onLoadMore) &&
+      hasMore &&
+      !isLoading
+    ) {
+      onLoadMore()
+    }
+
+    if (scrollTop < 100 && isFunction(onScrollToTop)) {
+      onScrollToTop()
+    } else if (isFunction(onScroll)) {
+      onScroll()
+    }
+  }, 500)
 
   handleLoadMore = (e) => {
     e.preventDefault()
-    this.props.onLoadMore();
+    this.props.onLoadMore()
   }
 
-  setRef = (c) => {
-    this.node = c
-    if (this.props.scrollRef) this.props.scrollRef(c)
+  bindEvents = () => {
+    const { scrollableParent } = this
+    if (scrollableParent === null) {
+      return
+    }
+    const el = this.useWindow ? window : scrollableParent
+    el.addEventListener('scroll', this.handleScroll, evtOpts)
+    el.addEventListener('wheel', this.handleScroll, evtOpts)
+    el.addEventListener('touchmove', this.handleScroll, evtOpts)
+  }
+
+  unbindEvents = () => {
+    const { scrollableParent } = this
+    if (scrollableParent === null) {
+      return
+    }
+    const el = this.useWindow ? window : scrollableParent
+    el.removeEventListener('scroll', this.handleScroll)
+    el.removeEventListener('wheel', this.handleScroll)
+    el.removeEventListener('touchmove', this.handleScroll)
+  }
+
+  outer = null
+  setRef = el => {
+    if (this.outer === null) {
+      this.outer = el
+      this.scrollableParent = getScrollableParent(el)
+      this.bindEvents()
+      if (typeof this.props.scrollRef === 'function') {
+        this.props.scrollRef(el)
+      }
+    }
+    return this.outer
   }
 
   render() {
@@ -185,18 +128,20 @@ class ScrollableList extends React.PureComponent {
       emptyMessage,
       onLoadMore,
       placeholderComponent: Placeholder,
-      placeholderCount,
-      onScrollToTop,
+      placeholderCount = 1,
     } = this.props
-    const childrenCount = React.Children.count(children);
+
+    const { nearBottom } = this.state
+
+    const childrenCount = React.Children.count(children)
 
     if (showLoading) {
       if (Placeholder) {
         return (
-          <React.Fragment>
+          <>
             {
               Array.apply(null, {
-                length: placeholderCount
+                length: placeholderCount,
               }).map((_, i) => (
                 <Placeholder
                   key={`${scrollKey}-placeholder-${i}`}
@@ -204,19 +149,19 @@ class ScrollableList extends React.PureComponent {
                 />
               ))
             }
-          </React.Fragment>
+          </>
         )
       }
 
       return <ColumnIndicator type='loading' />
-    } else if (isLoading || childrenCount > 0 || hasMore || !emptyMessage) {
+    }
+
+    if (isLoading || childrenCount > 0 || hasMore || !emptyMessage) {
       return (
-        <div onMouseMove={this.handleMouseMove} ref={this.setRef}>
-          <div role='feed'>
-            {children}
-            {(hasMore && onLoadMore && !isLoading) && <LoadMore onClick={this.handleLoadMore} />}
-            {isLoading && !!onScrollToTop && <ColumnIndicator type='loading' />}
-          </div>
+        <div ref={this.setRef}>
+          {children}
+          {(hasMore && onLoadMore && !isLoading) && <LoadMore onClick={this.handleLoadMore} />}
+          {isLoading && nearBottom && <ColumnIndicator type='loading' />}
         </div>
       )
     }
@@ -233,6 +178,7 @@ class ScrollableList extends React.PureComponent {
 ScrollableList.propTypes = {
   scrollKey: PropTypes.string.isRequired,
   onLoadMore: PropTypes.func,
+  scrollRef: PropTypes.func,
   isLoading: PropTypes.bool,
   showLoading: PropTypes.bool,
   hasMore: PropTypes.bool,
@@ -248,4 +194,4 @@ ScrollableList.propTypes = {
   disableInfiniteScroll: PropTypes.bool,
 }
 
-export default withRouter(ScrollableList)
+export default ScrollableList

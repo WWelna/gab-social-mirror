@@ -20,6 +20,9 @@ defaults: &defaults
   expand_spoilers: false
   preview_sensitive_media: false
   group_in_home_feed: true
+  show_videos: true
+  show_suggested_users: true
+  show_groups: true
   show_pro_life: false
   noindex: false
   aggregate_reblogs: true
@@ -91,6 +94,9 @@ defaults: &defaults
     - message
     - deck
     - warnings
+    - marketplace
+    - feed
+    - feeds
   bootstrap_timeline_accounts: ''
 
 development:

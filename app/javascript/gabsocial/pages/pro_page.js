@@ -9,30 +9,33 @@ import {
   UserSuggestionsPanel,
   ProgressPanel,
   GabTVVideosPanel,
-  GabAdPanel,
-  TrendingHashtagsPanel,
 } from '../features/ui/util/async_components'
 
 class ProPage extends React.PureComponent {
 
   render() {
-    const { intl, children } = this.props
+    const { intl, children, showVideos, showSuggestedUsers } = this.props
 
     const title = intl.formatMessage(messages.title)
+
+    let sidebarLayout = [ProgressPanel]
+
+    if(showVideos) {
+      sidebarLayout.push(GabTVVideosPanel)
+    }
+
+    if(showSuggestedUsers) {
+      sidebarLayout.push((<WrappedBundle key='pro-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ suggestionType: 'verified' }} />))
+    }
+
+    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
         showBackBtn
         title={title}
         page='pro'
-        layout={[
-          ProgressPanel,
-          GabAdPanel,
-          GabTVVideosPanel,
-          <WrappedBundle key='pro-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ suggestionType: 'verified' }} />,
-          TrendingHashtagsPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
       >
         <PageTitle path={title} />
         {children}

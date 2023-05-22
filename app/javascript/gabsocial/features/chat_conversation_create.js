@@ -23,6 +23,7 @@ class ChatConversationCreate extends ImmutablePureComponent {
   state = {
     query: '',
     selectedAccountIds: [],
+    isDisabled: false,
   }
 
   onChange = (query) => {
@@ -69,6 +70,8 @@ class ChatConversationCreate extends ImmutablePureComponent {
   handleOnCreateChatConversation = () => {
     const { selectedAccountIds } = this.state
 
+    this.setState({ isDisabled: true })
+
     if (this.props.isModal && !!this.props.onCloseModal) {
       this.props.onCloseModal()
     }
@@ -79,7 +82,7 @@ class ChatConversationCreate extends ImmutablePureComponent {
 
   render() {
     const { suggestionsIds } = this.props
-    const { query, selectedAccountIds } = this.state
+    const { query, selectedAccountIds, isDisabled } = this.state
 
     const pills = selectedAccountIds.map((accountId) => {
       return {
@@ -124,7 +127,7 @@ class ChatConversationCreate extends ImmutablePureComponent {
           }
         </div>
         <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
-          <Button onClick={this.handleOnCreateChatConversation}>
+          <Button isDisabled={isDisabled} onClick={this.handleOnCreateChatConversation}>
             <Text color='inherit' weight='medium' align='center'>
               Next
             </Text>

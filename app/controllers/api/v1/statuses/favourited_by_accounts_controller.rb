@@ -17,7 +17,6 @@ class Api::V1::Statuses::FavouritedByAccountsController < Api::BaseController
 
   def load_accounts
     scope = default_accounts
-    scope = scope.where.not(id: current_account.excluded_from_timeline_account_ids) unless current_account.nil?
     scope.merge(paginated_favourites).to_a
   end
 
@@ -29,7 +28,16 @@ class Api::V1::Statuses::FavouritedByAccountsController < Api::BaseController
   end
 
   def paginated_favourites
-    Favourite.paginate_by_max_id(
+    # basically if theres a reaction given, use it
+    # else just load all (backwards compatiblity, too)
+    # ...if the reaction is 1 (the first reaction_id should ALWAYS be a thumbs-up/like),
+    #    then use [nil, 1].. nil = normal like
+    reaction_id = params[:reaction_id]
+    reaction_id = [nil, 1] if reaction_id.nil? || reaction_id.to_i < 2
+
+    scope = Favourite
+    scope = scope.where(reaction_id: reaction_id) if !params[:reaction_id].nil?
+    scope = scope.paginate_by_max_id(
       limit_param(DEFAULT_ACCOUNTS_LIMIT),
       params[:max_id],
       params[:since_id]
@@ -72,7 +80,10 @@ class Api::V1::Statuses::FavouritedByAccountsController < Api::BaseController
   end
 
   def pagination_params(core_params)
-    params.slice(:limit).permit(:limit).merge(core_params)
+    params
+      .slice(:limit, :reaction_id)
+      .permit(:limit, :reaction_id)
+      .merge(core_params)
   end
 
   def verify_own_status

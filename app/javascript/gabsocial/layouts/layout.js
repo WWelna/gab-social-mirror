@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import Sticky from 'react-stickynode'
 import {
   CX,
   BREAKPOINT_EXTRA_SMALL,
@@ -20,6 +19,8 @@ import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_c
 import Pills from '../components/pills'
 import GlobalFooter from '../components/global_footer'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
+import PullToRefresh from '../components/pull_to_refresh'
+import { isIOS15, isPWA } from '../utils/is_mobile';
 import {
   SidebarXS,
 } from '../features/ui/util/async_components'
@@ -76,8 +77,12 @@ class Layout extends React.PureComponent {
           />
         }
         {
+          me && (!isIOS15() || isPWA()) &&
+          <PullToRefresh />
+        }
+        {
           !me &&
-          <LoggedOutNavigationBar />
+          <LoggedOutNavigationBar title={title} />
         }
 
         <div className={[_s.d, _s.flexRow, _s.w100PC, _s.flexGrow1].join(' ')}>
@@ -95,7 +100,12 @@ class Layout extends React.PureComponent {
               }
               {
                 !me &&
-                <LoggedOutSidebar title={title} showLinkFooter={showLinkFooterInSidebar} />
+                <LoggedOutSidebar
+                  showBackBtn={showBackBtn}
+                  tabs={tabs}
+                  title={title}
+                  showLinkFooter={showLinkFooterInSidebar}
+                />
               }
             </Responsive>
           }
@@ -139,11 +149,9 @@ class Layout extends React.PureComponent {
                   !noRightSidebar &&
                   <Responsive min={BREAKPOINT_EXTRA_SMALL}>
                     <div className={[_s.d, _s.w340PX, _s.ml15].join(' ')}>
-                      <Sticky top={73} enabled>
-                        <div className={[_s.d, _s.w340PX].join(' ')}>
-                          <SidebarPanelGroup layout={layout} page={page} />
-                        </div>
-                      </Sticky>
+                      <div className={[_s.d, _s.w340PX].join(' ')}>
+                        <SidebarPanelGroup layout={layout} page={page} />
+                      </div>
                     </div>
                   </Responsive>
                 }

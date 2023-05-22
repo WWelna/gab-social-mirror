@@ -1,5 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { connect } from 'react-redux'
+import { togglePaused } from '../actions/swipe'
 
 class Slider extends React.PureComponent {
 
@@ -17,6 +19,8 @@ class Slider extends React.PureComponent {
       min,
       max,
       value,
+      pauseSwipe,
+      unpauseSwipe
     } = this.props
 
     return (
@@ -27,6 +31,10 @@ class Slider extends React.PureComponent {
         max={max}
         onInput={this.handleOnInput}
         onChange={this.handleOnChange}
+        onTouchStart={pauseSwipe}
+        onTouchEnd={unpauseSwipe}
+        onMouseDown={pauseSwipe}
+        onMouseUp={unpauseSwipe}
         className={className}
       />
     )
@@ -41,6 +49,13 @@ Slider.propTypes = {
   onChange: PropTypes.func,
   onInput: PropTypes.func,
   value: PropTypes.number,
+  pauseSwipe: PropTypes.func,
+  unpauseSwipe: PropTypes.func
 }
 
-export default Slider
+const mapDispatchToProps = dispatch => ({
+  pauseSwipe: () => dispatch(togglePaused(true)),
+  unpauseSwipe: () => dispatch(togglePaused(false))
+})
+
+export default connect(null, mapDispatchToProps)(Slider)

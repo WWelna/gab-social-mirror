@@ -1,0 +1,7 @@
+%tr
+  %td= marketplace_listing_category.name
+  %td= marketplace_listing_category.slug
+  %td
+    = table_link_to 'pencil', 'Edit', admin_marketplace_listing_category_path(marketplace_listing_category)
+  %td
+    = table_link_to 'times', 'Delete', admin_marketplace_listing_category_path(marketplace_listing_category), method: :delete, data: { confirm: t('admin.accounts.are_you_sure') }

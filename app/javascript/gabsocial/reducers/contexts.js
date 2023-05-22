@@ -7,7 +7,6 @@ import {
   CONTEXT_FETCH_SUCCESS,
   CLEAR_ALL_COMMENTS,
 } from '../actions/statuses'
-import { TIMELINE_DELETE, TIMELINE_UPDATE } from '../actions/timelines'
 import { Map as ImmutableMap, List as ImmutableList } from 'immutable'
 import compareId from '../utils/compare_id'
 
@@ -78,22 +77,6 @@ const filterContexts = (state, relationship, statuses) => {
   return deleteFromContexts(state, ownedStatusIds);
 };
 
-const updateContext = (state, status) => {
-  if (status.in_reply_to_id) {
-    return state.withMutations(mutable => {
-      const replies = mutable.getIn(['replies', status.in_reply_to_id], ImmutableList());
-
-      mutable.setIn(['inReplyTos', status.id], status.in_reply_to_id);
-
-      if (!replies.includes(status.id)) {
-        mutable.setIn(['replies', status.in_reply_to_id], replies.push(status.id));
-      }
-    });
-  }
-
-  return state;
-};
-
 export default function replies(state = initialState, action) {
   switch(action.type) {
   case ACCOUNT_BLOCK_SUCCESS:
@@ -112,10 +95,6 @@ export default function replies(state = initialState, action) {
       mutable.setIn(['nexts', action.id], action.next);
     })
     return normalizeContext(state, action.id, ImmutableList(), action.descendants);
-  case TIMELINE_DELETE:
-    return deleteFromContexts(state, [action.id]);
-  case TIMELINE_UPDATE:
-    return updateContext(state, action.status);
   default:
     return state;
   }

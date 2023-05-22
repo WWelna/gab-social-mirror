@@ -88,7 +88,6 @@ const createGroup = (options, routerHistory) => (dispatch, getState) => {
 		}
 	}).then(({ data }) => {
 		dispatch(createGroupSuccess(data))
-		console.log("pushing routerHistory:", routerHistory)
 		routerHistory.push(`/groups/${data.id}`)
 	}).catch((err) => dispatch(createGroupFail(err)))
 }

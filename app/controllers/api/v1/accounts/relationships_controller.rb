@@ -19,7 +19,7 @@ class Api::V1::Accounts::RelationshipsController < Api::BaseController
   end
 
   def account_ids
-    the_take = current_user.staff? ? 100 : 25
+    the_take = 100
     params[:accountIds].map(&:to_i).take(the_take)
   end
 end

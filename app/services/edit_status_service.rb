@@ -14,7 +14,6 @@ class EditStatusService < BaseService
   # @option [String] :language
   # @option [Enumerable] :media_ids Optional array of media IDs to attach
   # @option [Doorkeeper::Application] :application
-  # @option [String] :idempotency Optional idempotency key
   # @return [Status]
   def call(status, options = {})
     @status      = status
@@ -22,8 +21,6 @@ class EditStatusService < BaseService
     @options     = options
     @text        = @options[:text] || ''
     @markdown    = @options[:markdown] if @account.is_pro
-
-    return idempotency_duplicate if idempotency_given? && idempotency_duplicate?
 
     # validate_similarity! unless @account.user&.staff? || @account.vpdi?
     validate_links! unless @account.user&.staff?
@@ -36,9 +33,7 @@ class EditStatusService < BaseService
     postprocess_status!
     create_revision! revision_text
 
-    redis.with do |conn|
-      conn.setex(idempotency_key, 3_600, @status.id) if idempotency_given?
-    end
+    reset_status_cache
 
     @status
   end
@@ -58,6 +53,7 @@ class EditStatusService < BaseService
 
     process_hashtags_service.call(@status)
     process_mentions_service.call(@status)
+    process_links_service.call(@status)
   end
 
   def postprocess_status!
@@ -124,23 +120,12 @@ class EditStatusService < BaseService
     ProcessHashtagsService.new
   end
 
-  def idempotency_key
-    "idempotency:status:#{@account.id}:#{@options[:idempotency]}"
+  def process_links_service
+    ProcessLinksService.new
   end
 
-  def idempotency_given?
-    @options[:idempotency].present?
-  end
-
-  def idempotency_duplicate
-    @account.statuses.find(@idempotency_duplicate)
-  end
-
-  def idempotency_duplicate?
-    redis.with do |conn|
-      @idempotency_duplicate = conn.get(idempotency_key)
-    end
-    @idempotency_duplicate
+  def reset_status_cache
+    Rails.cache.delete("statuses/#{@status.id}")
   end
 
   def status_attributes

@@ -5,18 +5,24 @@ import moment from 'moment-mini'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { NavLink } from 'react-router-dom'
+import {
+  canShowChatMessage,
+} from '../../../utils/can_show'
 import { openPopover } from '../../../actions/popover'
+import {
+  showChatMessageAnyways,
+} from '../../../actions/chat_messages'
 import {
   CX,
   POPOVER_CHAT_MESSAGE_OPTIONS,
  } from '../../../constants'
 import { me } from '../../../initial_state'
-import Input from '../../../components/input'
 import Icon from '../../../components/icon'
 import Avatar from '../../../components/avatar'
 import Button from '../../../components/button'
 import Text from '../../../components/text'
 import DotTextSeperator from '../../../components/dot_text_seperator'
+import SensitiveMediaItem from '../../../components/sensitive_media_item'
 import { makeGetChatMessage } from '../../../selectors'
 
 class ChatMessageItem extends ImmutablePureComponent {
@@ -77,6 +83,10 @@ class ChatMessageItem extends ImmutablePureComponent {
     this.props.onOpenChatMessageOptionsPopover(this.props.chatMessageId, this.deleteBtnRef)
   }
 
+  handleOnShowAnyways = () => {
+    this.props.onShowChatMessageAnyways(this.props.chatMessageId)
+  }
+
   setDeleteBtnRef = (c) => {
     this.deleteBtnRef = c
   }
@@ -99,17 +109,14 @@ class ChatMessageItem extends ImmutablePureComponent {
     const account = chatMessage.get('account')
     if (!account) return <div />
 
-    //If blocked or muted, hide
-    const blocks = !!me ? localStorage.getItem('blocks') : ''
-    const mutes = !!me ? localStorage.getItem('mutes') : ''
-    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
-    if (!!me && (
-      (blockedby && blockedby.split(',').includes(account.get('id'))) ||
-      (blocks && blocks.split(',').includes(account.get('id'))) ||
-      (mutes && mutes.split(',').includes(account.get('id'))))
-    ) {
+    const accountId = account.get('id')
+
+    //If account is spam and not mine, hide
+    if (chatMessage.getIn(['account', 'is_spam']) && accountId !== me) {
       return null
     }
+
+    const csd = canShowChatMessage(chatMessage)
 
     const content = { __html: chatMessage.get('text_html') }
     const alt = account.get('id', null) === me
@@ -133,14 +140,15 @@ class ChatMessageItem extends ImmutablePureComponent {
 
     const messageInnerContainerClasses = CX({
       d: 1,
-      px15: 1,
-      py5: 1,
+      px15: !csd.label,
+      py5: !csd.label,
       maxW80PC: 1,
-      bgTertiary: alt,
-      bgSecondary: !alt,
+      bgTertiary: alt || csd.nulled || !!csd.label,
+      bgSecondary: !alt && !csd.nulled && !csd.label,
       radiusRounded: 1,
       ml10: 1,
       mr10: 1,
+      overflowHidden: 1,
     })
 
     const lowerContainerClasses = CX({
@@ -170,8 +178,8 @@ class ChatMessageItem extends ImmutablePureComponent {
     return (
       <div
         className={[_s.d, _s.w100PC, _s.pb10].join(' ')}
-        onMouseEnter={this.handleOnMouseEnter}
-        onMouseLeave={this.handleOnMouseLeave}
+        onMouseEnter={!csd.label && !csd.nulled ? this.handleOnMouseEnter : undefined}
+        onMouseLeave={!csd.label && !csd.nulled ? this.handleOnMouseLeave : undefined}
       >
         {
           !!lastChatMessageDate && isNewDay &&
@@ -186,8 +194,27 @@ class ChatMessageItem extends ImmutablePureComponent {
             <NavLink to={`/${chatMessage.getIn(['account', 'username'])}`}>
               <Avatar account={chatMessage.get('account')} size={38} />
             </NavLink>
+
             <div className={messageInnerContainerClasses}>
-              <div className={[_s.py5, _s.dangerousContent, _s.cPrimary].join(' ')} dangerouslySetInnerHTML={content} />
+              {
+                csd.nulled &&
+                <div className={[_s.d, _s.px15, _s.py5, _s.mt5, _s.mb5].join(' ')}>
+                  <Text color='tertiary'>{csd.label}</Text>
+                </div>
+              }
+              {
+                (!!csd.label && !csd.nulled) &&
+                <SensitiveMediaItem
+                  noPadding
+                  onClick={this.handleOnShowAnyways}
+                  message={csd.label}
+                  btnTitle='View'
+                />
+              }
+              {
+                (!csd.label && !csd.nulled) &&
+                <div className={[_s.py5, _s.dangerousContent, _s.cPrimary].join(' ')} dangerouslySetInnerHTML={content} />
+              }
             </div>
             <div className={buttonContainerClasses}>
               <Button
@@ -234,6 +261,9 @@ const mapDispatchToProps = (dispatch) => ({
       chatMessageId,
       position: 'top',
     }))
+  },
+  onShowChatMessageAnyways(chatMessageId) {
+    dispatch(showChatMessageAnyways(chatMessageId))
   },
 })
 

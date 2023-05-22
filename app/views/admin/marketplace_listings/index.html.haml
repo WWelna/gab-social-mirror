@@ -1,0 +1,91 @@
+- content_for :page_title do
+  = "Marketplace Listings"
+
+.filters
+  .filter-subset
+    %strong= "Status"
+    %ul
+      %li= filter_link_to 'All', status: nil
+      %li= filter_link_to 'Pending Review', status: '0'
+      %li= filter_link_to 'Pending Changes', status: '1'
+      %li= filter_link_to 'Rejected', status: '2'
+      %li= filter_link_to 'Approved', status: '3'
+      %li= filter_link_to 'Running', status: '4'
+      %li= filter_link_to 'Expired', status: '5'
+      %li= filter_link_to 'Sold', status: '6'
+      %li= filter_link_to 'Archived', status: '7'
+
+= form_tag admin_marketplace_listings_url, method: 'GET', class: 'simple_form' do
+  .fields-group
+    .input.string.optional
+      = text_field_tag :id, params[:id], class: 'string optional', placeholder: "Id"
+    .input.string.optional
+      = text_field_tag :account_id, params[:account_id], class: 'string optional', placeholder: "Account id"
+    .input.string.optional
+      = text_field_tag :title, params[:title], class: 'string optional', placeholder: "Title"
+    .input.string.optional
+      = text_field_tag :description, params[:description], class: 'string optional', placeholder: "Description"
+
+    .actions
+      %button Search
+      = link_to t('admin.accounts.reset'), admin_marketplace_listings_path, class: 'button negative'
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th Primary Image
+        %th Admin
+        %th Information
+        %th
+    %tbody
+      = render @marketplace_listings
+
+= paginate @marketplace_listings
+
+%br
+%br
+%br
+%div
+  %strong{:style => "display:block;font-weight:600;margin-bottom:10px;"} Status Descriptions
+  %ul
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Pending Review:
+        %span{:style => "color:#fff;"} user submitted something for review by admin
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Pending User Changes
+        %span{:style => "color:#fff;"} admin sent back things for user to change
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Rejected
+        %span{:style => "color:#fff;"} admin nuked this entire listing. user is only able to archive listing from here
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Approved
+        %span{:style => "color:#fff;"} approved by admin and ready for user to turn to "running"
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Running
+        %span{:style => "color:#fff;"} running and visible to world. can mark as "sold", or edit it, or change turn off by going back to "approved".
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Expired,
+        %span{:style => "color:#fff;"} listing has spent its 30 day running period from first time it started running, can be marked as sold or archive from here
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Sold
+        %span{:style => "color:#fff;"} marked as sold by user, able to open again if not past 30 days for total running period
+    %li
+      %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+        %span{:style => "color:#999"} Archived 
+        %span{:style => "color:#fff;"} archived/deleted and not able to open again. only able to do this if listing is expired/rejected/sold not able to change status anymore
+  %span 
+
+
+
+
+
+
+

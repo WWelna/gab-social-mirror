@@ -59,6 +59,7 @@ class CommentList extends ImmutablePureComponent {
               ancestorAccountId={ancestorAccountId}
               indent={descendant.get('indent')}
               isHighlighted={descendant.get('isHighlighted')}
+              contextType='comments'
             />
           )
         }
@@ -66,15 +67,13 @@ class CommentList extends ImmutablePureComponent {
     }
 
     return (
-      <React.Fragment>
-        <ScrollableList
-          scrollKey='comments'
-          hasMore={size < max}
-          onLoadMore={onViewComments}
-        >
-          {scrollableContent}
-        </ScrollableList>
-      </React.Fragment>
+      <ScrollableList
+        scrollKey='comments'
+        hasMore={size < max}
+        onLoadMore={onViewComments}
+      >
+        {scrollableContent}
+      </ScrollableList>
     )
   }
 

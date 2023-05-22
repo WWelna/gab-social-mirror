@@ -3,7 +3,7 @@
 class DeleteSessionActivationWorker
   include Sidekiq::Worker
 
-  sidekiq_options unique: :until_executed
+  sidekiq_options lock: :until_executed
 
   def perform(session_activation_id)
     return if session_activation_id.nil?

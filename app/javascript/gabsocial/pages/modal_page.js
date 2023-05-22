@@ -15,18 +15,24 @@ class ModalPage extends React.PureComponent {
       children,
       title,
       page,
+      showSuggestedUsers,
     } = this.props
 
+    let sidebarLayout = []
+
+    if(showSuggestedUsers) {
+      sidebarLayout.push(UserSuggestionsPanel)
+    }
+
+    sidebarLayout.push(LinkFooter)
+    
     return (
       <DefaultLayout
         noComposeButton
         title={title}
         page={page}
         showBackBtn
-        layout={[
-          UserSuggestionsPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
       >
         <PageTitle path={title} />
         

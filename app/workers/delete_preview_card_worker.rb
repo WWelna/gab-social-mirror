@@ -3,7 +3,7 @@
 class DeletePreviewCardWorker
   include Sidekiq::Worker
 
-  sidekiq_options unique: :until_executed
+  sidekiq_options lock: :until_executed
 
   def perform(preview_card_id)
     return if preview_card_id.nil?

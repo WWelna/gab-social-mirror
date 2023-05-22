@@ -13,10 +13,6 @@ import { joinGroup } from './groups'
 import { useEmoji } from './emojis'
 import resizeImage from '../utils/resize_image'
 import { importFetchedAccounts } from './importer'
-import {
-  updateTimelineQueue,
-  updateTimeline,
-} from './timelines'
 // import { showAlert, showAlertForError } from './alerts'
 import { defineMessages } from 'react-intl'
 import { openModal, closeModal } from './modal'
@@ -44,6 +40,7 @@ export const COMPOSE_REPLY_CANCEL    = 'COMPOSE_REPLY_CANCEL'
 export const COMPOSE_MENTION         = 'COMPOSE_MENTION'
 export const COMPOSE_RESET           = 'COMPOSE_RESET'
 export const COMPOSE_GROUP_SET       = 'COMPOSE_GROUP_SET'
+export const COMPOSE_REPLY_SET       = 'COMPOSE_REPLY_SET'
 
 export const COMPOSE_UPLOAD_REQUEST  = 'COMPOSE_UPLOAD_REQUEST'
 export const COMPOSE_UPLOAD_SUCCESS  = 'COMPOSE_UPLOAD_SUCCESS'
@@ -114,7 +111,7 @@ const insertIntoTagHistory = (recognizedTags, text) => (dispatch, getState) => {
   const state = getState()
   const oldHistory = state.getIn(['compose', 'tagHistory'])
   const me = state.getIn(['meta', 'me'])
-  const names = recognizedTags.map(tag => text.match(new RegExp(`#${tag.name}`, 'i'))[0].slice(1))
+  const names = recognizedTags.map(item => item.name)
   const intersectedOldHistory = oldHistory.filter(name => names.findIndex(newName => newName.toLowerCase() === name.toLowerCase()) === -1)
 
   names.push(...intersectedOldHistory.toJS())
@@ -129,7 +126,6 @@ const insertIntoTagHistory = (recognizedTags, text) => (dispatch, getState) => {
  * 
  */
 export const changeCompose = (text, markdown, replyId, isStandalone, caretPosition) => (dispatch, getState) => {
-  const reduxReplyToId = getState().getIn(['compose', 'in_reply_to'])
   const existingText = getState().getIn(['compose', 'text']).trim()
   const isModalOpen = getState().getIn(['modal', 'modalType']) === MODAL_COMPOSE || isStandalone
 
@@ -141,75 +137,23 @@ export const changeCompose = (text, markdown, replyId, isStandalone, caretPositi
     })
   }
 
-  if (!!replyId && replyId !== reduxReplyToId && !isModalOpen) {
+  if (!!replyId && !isModalOpen) {
     if (existingText.length === 0 && text.trim().length > 0) {
       dispatch({
         type: COMPOSE_REPLY,
         status,
         text: text,
       })
-    } else if (existingText.length > 0 && text.trim().length > 0) {
-      dispatch(openModal('CONFIRM', {
-        message: <FormattedMessage id='confirmations.reply.message' defaultMessage='Replying now will overwrite the message you are currently composing. Are you sure you want to proceed?' />,
-        confirm: <FormattedMessage id='confirmations.reply.confirm' defaultMessage='Reply' />,
-        onConfirm: () => {
-          dispatch({
-            type: COMPOSE_REPLY,
-            status,
-          })
-          dispatch({
-            type: COMPOSE_CHANGE,
-            text: text,
-            markdown: markdown,
-            caretPosition: caretPosition,
-          })
-        }
-      }))
-    }/* else {
-      dispatch({
-        type: COMPOSE_REPLY_CANCEL,
-      })
-    }*/
-  } else if (!replyId && !!reduxReplyToId && !isModalOpen) {
-    if (existingText.length === 0 && text.trim().length > 0) {
-      dispatch({
-        type: COMPOSE_REPLY_CANCEL,
-      })
-      dispatch({
-        type: COMPOSE_CHANGE,
-        text: text,
-        markdown: markdown,
-        caretPosition: caretPosition,
-      })
-    } else if (existingText.length > 0 && text.trim().length > 0) {
-      // ⚠️ This was triggering at awkward times. This logic should be looked at before enabling it.
-      /*dispatch(openModal('CONFIRM', {
-        message: <FormattedMessage id='confirmations.new_compose.message' defaultMessage='Composing now will overwrite the reply you are currently writing. Are you sure you want to proceed?' />,
-        confirm: <FormattedMessage id='confirmations.new_compose.confirm' defaultMessage='Yes' />,
-        onConfirm: () => {
-          dispatch({
-            type: COMPOSE_REPLY_CANCEL,
-          })*/
-          dispatch({
-            type: COMPOSE_CHANGE,
-            text: text,
-            markdown: markdown,
-            caretPosition: caretPosition,
-          })
-        /*},
-      }))*/
-    } else {
-      //
     }
-  } else {
-    dispatch({
-      type: COMPOSE_CHANGE,
-      text: text,
-      markdown: markdown,
-      caretPosition: caretPosition,
-    })
   }
-}
+  dispatch({
+    type: COMPOSE_CHANGE,
+    text: text,
+    markdown: markdown,
+    caretPosition: caretPosition,
+  })
+ }
+
 
 /**
  * 
@@ -307,22 +251,8 @@ export const handleComposeSubmit = (dispatch, getState, response, text) => {
   dispatch(submitComposeSuccess(response.data))
 
   // If is group, reset composer to be in group
-  if (response.data.group) {
+  if (response.data.group && window.location.href.indexOf('/groups/') > -1) {
     dispatch(changeComposeGroupId(response.data.group.id))
-  }
-
-  // To make the app more responsive, immediately push the status into the timeline
-  // : todo : push into comment, reload parent status, etc.
-  const insertIfOnline = (timelineId) => {
-    const timeline = getState().getIn(['timelines', timelineId])
-
-    if (timeline && timeline.get('items').size > 0 && timeline.getIn(['items', 0]) !== null && timeline.get('online')) {
-      dispatch(updateTimeline(timelineId, { ...response.data }))
-    }
-  }
-
-  if (response.data.visibility === 'public') {
-    insertIfOnline('home')
   }
 }
 
@@ -390,13 +320,10 @@ export const submitCompose = (options = {}) => (dispatch, getState) => {
     visibility: getState().getIn(['compose', 'privacy']),
     poll: getState().getIn(['compose', 'poll'], null),
     group_id: groupId || null,
-  }, {
-    headers: {
-      'Idempotency-Key': getState().getIn(['compose', 'idempotencyKey']),
-    },
   }).then((response) => {
     handleComposeSubmit(dispatch, getState, response, originalText)
   }).catch((error) => {
+    console.log(error)
     dispatch(submitComposeFail(error))
   })
 }
@@ -776,6 +703,15 @@ export const changeComposeGroupId = (groupId) => ({
   type: COMPOSE_GROUP_SET,
   groupId,
 })
+
+/**
+ * 
+ */
+ export const changeComposeReplyToId = (replyToId) => ({
+  type: COMPOSE_REPLY_SET,
+  replyToId,
+})
+
 
 /**
  * 

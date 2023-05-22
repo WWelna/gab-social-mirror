@@ -20,7 +20,7 @@ class Shortcut < ApplicationRecord
 
   belongs_to :account
 
-  PER_ACCOUNT_LIMIT = 50
+  PER_ACCOUNT_LIMIT = 100
 
   validates_each :account_id, on: :create do |record, _attr, value|
     record.errors.add(:base, I18n.t('shortcuts.errors.limit')) if Shortcut.where(account_id: value).count >= PER_ACCOUNT_LIMIT

@@ -5,7 +5,16 @@ import moment from 'moment-mini'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { withRouter } from 'react-router-dom'
-import { makeGetChatConversation } from '../../../selectors'
+import {
+  isBlockingId,
+  isBlockedById,
+  isMutingId,
+} from '../../../utils/local_storage_blocks_mutes'
+import { me } from '../../../initial_state'
+import {
+  makeGetChatConversation,
+  makeGetChatMessage,
+} from '../../../selectors'
 import { setChatConversationSelected } from '../../../actions/chats'
 import { CX } from '../../../constants'
 import Icon from '../../../components/icon'
@@ -54,11 +63,14 @@ class ChatConversationsListItem extends ImmutablePureComponent {
   }
 
   render() {
-    const { selected, chatConversation } = this.props
+    const {
+      selected,
+      chatConversation,
+      maxTextLength,
+    } = this.props
     const { chatMessageIsExpired } = this.state
 
     if (!chatConversation) return <div />
-
 
     const containerClasses = CX({
       d: 1,
@@ -96,13 +108,35 @@ class ChatConversationsListItem extends ImmutablePureComponent {
     const avatarSize = 46
     const otherAccounts = chatConversation.get('other_accounts')
     const lastMessage = chatConversation.get('last_chat_message', null)
+
+    const lastChatMessageFromAccountId = !!lastMessage ? lastMessage.get('from_account_id') : null
+    const isBlockingLastChatMessageAccount = !!lastChatMessageFromAccountId && isBlockingId(lastChatMessageFromAccountId)
+    const isBlockedByLastChatMessageAccount = !!lastChatMessageFromAccountId && isBlockedById(lastChatMessageFromAccountId)
+    const isMutingLastChatMessageAccount = !!lastChatMessageFromAccountId && isMutingId(lastChatMessageFromAccountId)
+    const isFilteredLastChatMessage = !!lastMessage && lastChatMessageFromAccountId !== me && lastMessage.get('filtered')
+
     const lastMessageSentAt = chatConversation.get('last_chat_message_sent_at', null)
     let lastMessageText = !!lastMessage ? lastMessage.get('text', '') : ''
-    lastMessageText = lastMessageText.length >= 28 ? `${lastMessageText.substring(0, 28).trim()}...` : lastMessageText
+    lastMessageText = lastMessageText.length >= maxTextLength ? `${lastMessageText.substring(0, maxTextLength).trim()}...` : lastMessageText
+    let alteredLastMessageText = false
     if (!lastMessageText && !!lastMessageSentAt || chatMessageIsExpired) {
-      // delete or expired
-      lastMessageText = 'Message deleted.'
+      // deleted or expired
+      lastMessageText = 'Message deleted'
+      alteredLastMessageText = true
+    } else if (isBlockedByLastChatMessageAccount) {
+      lastMessageText = 'Blocked by messenger. Chat message unavailable.'
+      alteredLastMessageText = true
+    } else if (isBlockingLastChatMessageAccount) {
+      lastMessageText = 'Blocking messenger. Chat message unavailable.'
+      alteredLastMessageText = true
+    } else if (isMutingLastChatMessageAccount) {
+      lastMessageText = 'Muting messenger. Chat message unavailable.'
+      alteredLastMessageText = true
+    } else if (isFilteredLastChatMessage) {
+      lastMessageText = 'Filtered chat message content. Chat message unavailable.'
+      alteredLastMessageText = true
     }
+
     const content = { __html: lastMessageText }
     const date = !!lastMessage ? lastMessage.get('created_at') : chatConversation.get('created_at')
     const isUnread = chatConversation.get('is_unread')
@@ -112,7 +146,8 @@ class ChatConversationsListItem extends ImmutablePureComponent {
       py5: 1,
       dangerousContent: 1,
       textAlignLeft: 1,
-      cSecondary: chatMessageIsExpired,
+      cSecondary: alteredLastMessageText,
+      italic: alteredLastMessageText,
     })
 
     return (
@@ -173,6 +208,11 @@ ChatConversationsListItem.propTypes = {
   onSetChatConversationSelected: PropTypes.func.isRequired,
   selected: PropTypes.bool.isRequired,
   source: PropTypes.string.isRequired,
+  maxTextLength: PropTypes.number,
+}
+
+ChatConversationsListItem.defaultProps = {
+  maxTextLength: 28,
 }
 
 export default withRouter(connect(mapStateToProps, mapDispatchToProps)(ChatConversationsListItem))

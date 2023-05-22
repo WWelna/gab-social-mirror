@@ -116,7 +116,6 @@ class Formatter
     return '' if raw_content.blank?
 
     linkable_accounts = status.active_mentions.map(&:account)
-    linkable_accounts << status.account
 
     html = raw_content
     html = format_markdown(html) if options[:use_markdown]
@@ -471,19 +470,19 @@ class Formatter
   end
 
   def hashtag_html(tagName)
-    "<a data-focusable=\"true\" role=\"link\" href=\"/tags/#{encode(tagName)}\" class=\"mention hashtag\" rel=\"tag\">##{encode(tagName)}</a>"
+    "<a data-focusable=\"true\" role=\"link\" href=\"/tags/#{encode(tagName)}\" class=\"hashtag\" rel=\"tag\">##{encode(tagName)}</a>"
   end
 
   def cashtag_html(tagName)
-    "<a data-focusable=\"true\" role=\"link\" href=\"/tags/#{encode(tagName)}\" class=\"mention hashtag cashtag\" rel=\"tag\">$#{encode(tagName)}</a>"
+    "<a data-focusable=\"true\" role=\"link\" href=\"/tags/#{encode(tagName)}\" class=\"cashtag\" rel=\"tag\">$#{encode(tagName)}</a>"
   end
 
   def mention_html(account)
-    "<a data-focusable=\"true\" role=\"link\" href=\"#{encode(TagManager.instance.url_for(account))}\" class=\"u-url mention\">@#{encode(account.acct)}</a>"
+    "<a data-focusable=\"true\" role=\"link\" href=\"#{encode(TagManager.instance.url_for(account))}\" class=\"mention\">@#{encode(account.acct)}</a>"
   end
 
   def g_tag_html(tag)
-    "<a data-focusable=\"true\" role=\"link\" href=\"/g/#{tag}\" class=\"u-url mention\">g/#{tag}</a>"
+    "<a data-focusable=\"true\" role=\"link\" href=\"/g/#{tag}\" class=\"gtag\">g/#{tag}</a>"
   end
 
 end

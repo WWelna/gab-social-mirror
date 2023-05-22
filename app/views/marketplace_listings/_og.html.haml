@@ -1,0 +1,16 @@
+- description = marketplace_listing_description(marketplace_listing)
+
+%meta{ name: 'description', content: description }/
+
+= opengraph 'og:url', url
+= opengraph 'og:type', 'article'
+= opengraph 'og:site_name', site_title
+= opengraph 'og:title', "#{marketplace_listing.title} on Gab Marketplace"
+= opengraph 'og:description', description
+
+- if marketplace_listing.media_attachments && marketplace_listing.media_attachments.count > 0
+  - media = marketplace_listing.media_attachments.first
+  = opengraph 'og:image', full_asset_url(media.file.url(:original))
+  = opengraph 'og:image:type', 'image/png'
+  = opengraph 'og:image:width', '120'
+  = opengraph 'og:image:height', '120'

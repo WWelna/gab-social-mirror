@@ -1,30 +1,29 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { Map as ImmutableMap, List as ImmutableList, is } from 'immutable'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import { createSelector } from 'reselect'
-import debounce from 'lodash.debounce'
-import { me } from '../initial_state'
-import { getPromotions } from '../selectors'
+import { List as ImmutableList } from 'immutable'
+import { FormattedMessage } from 'react-intl'
+import throttle from 'lodash.throttle'
+import { loggedIn, loggedOut, isPro, proWantsAds } from '../initial_state'
 import {
   TIMELINE_INJECTION_FEATURED_GROUPS,
   TIMELINE_INJECTION_GROUP_CATEGORIES,
   TIMELINE_INJECTION_USER_SUGGESTIONS,
-  TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS,
+  TIMELINES_MAX_QUEUE_ITEMS,
 } from '../constants'
 import {
-  dequeueTimeline,
-  scrollTopTimeline,
-  forceDequeueTimeline,
-} from '../actions/timelines'
+  timelineFetchPaged,
+  timelineFetchPins,
+  timelineDequeue,
+  timelineUnloaded,
+} from '../store/timelines'
 import {
   SignUpPanel,
   GabAdStatus,
 } from '../features/ui/util/async_components'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
-import { showTimelineInjection } from '../actions/timeline_injections'
 import { fetchStatus, fetchContext } from '../actions/statuses'
 import StatusContainer from '../containers/status_container'
 import StatusPlaceholder from './placeholder/status_placeholder'
@@ -34,22 +33,70 @@ import Text from './text'
 import TimelineQueueButtonHeader from './timeline_queue_button_header'
 import TimelineInjectionBase from './timeline_injections/timeline_injection_base'
 import TimelineInjectionRoot from './timeline_injections/timeline_injection_root'
-import PullToRefresher from './pull_to_refresher'
+
+const defaultEmptyMessage = (
+  <FormattedMessage
+    id='timelines.empty'
+    defaultMessage='There are no gabs to display.'
+  />
+)
+
+/**
+ * ⚠️ These constants are sometimes {} maybe due to loading modules. It's
+ * wrapped in a function hoping we can get the string values after load.
+ * @returns {array}
+ */
+const getEmptySuggestions = () =>
+  [
+    <TimelineInjectionRoot
+      key='empty-injection-0'
+      type={TIMELINE_INJECTION_USER_SUGGESTIONS}
+    />,
+    <TimelineInjectionRoot
+      key='empty-injection-1'
+      type={TIMELINE_INJECTION_FEATURED_GROUPS}
+    />,
+    <TimelineInjectionRoot
+      key='empty-injection-2'
+      type={TIMELINE_INJECTION_USER_SUGGESTIONS}
+      props={{ suggestionType:'verified' }}
+    />,
+    <TimelineInjectionRoot
+      key='empty-injection-3'
+      type={TIMELINE_INJECTION_GROUP_CATEGORIES}
+    />,
+  ]
 
 class StatusList extends ImmutablePureComponent {
 
   state = {
+    loadedFirstTime: false,
     isRefreshing: false,
     fetchedContext: false,
   }
 
   componentDidMount() {
-    this.handleDequeueTimeline()
-    this.fetchPromotedStatus()
+    const { isFetched, statusIds, queuedItems } = this.props
+
+    // condition met when a user hits the back button 
+    if (statusIds && statusIds.size > 0) {
+      // bail out to avoid user complaints about losing their scrollY position after navigating back 
+      // (e.g., gab.com/groups -> scroll down and click comment -> scroll down -> navigate back)
+      return
+    }
+
+    // when loading a timeline already in memory we can show what is available
+    // and start queueing new items and prevent scroll jump.
+    const queueResults = isFetched &&
+      statusIds &&
+      statusIds.size > 0 &&
+      this.shouldQueue
+
+    this.loadPins()
+    this.load({ queueResults })
 
     // : hack :
     // if index is 0 or 1 and is comment, preload context
-    const { statusIds } = this.props;
     if (statusIds && !this.state.fetchedContext) {
       const firstStatusId = statusIds.get(0)
       const secondStatusId = statusIds.get(1)
@@ -60,37 +107,103 @@ class StatusList extends ImmutablePureComponent {
     }
   }
 
-  fetchPromotedStatus() {
-    const {
-      onFetchStatus,
-      promotedStatuses,
-      timelineId,
-      statusIds,
-      promotions,
-    } = this.props
-  
-    if (Array.isArray(promotions)) {
-      promotions.forEach((promotion) => {
-        
-        if (promotion.timeline_id === timelineId &&
-            statusIds.count() >= promotion.position &&
-            !promotedStatuses[promotion.status_id]) {
-          onFetchStatus(promotion.status_id)
-        }
+  componentWillUnmount() {
+    this.unscheduleQueue()
+    this.props.onTimelineUnloaded()
+  }
 
-      })
+  componentDidUpdate(prevProps) {
+    const {  isLoading, isFetched } = this.props
+    const needsLoad = prevProps.isFetched && !isFetched && !isLoading
+    const timelineChange = typeof prevProps.timelineId === 'string' &&
+      typeof this.props.timelineId === 'string' &&
+      prevProps.timelineId !== this.props.timelineId
+    if (needsLoad || timelineChange) {
+      this.load()
     }
   }
-   
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.isRefreshing) {
-      this.setState({ isRefreshing: false })
-      this.props.onForceDequeueTimeline(this.props.timelineId)
-    }
 
-    if (prevProps.statusIds.count() < this.props.statusIds.count()) {
-      this.fetchPromotedStatus()
+  loadPins = () => {
+    const { showPins, endpoint, pinsEndpoint } = this.props
+    if (showPins) {
+      const pinOpts = { endpoint, pinsEndpoint }
+      this.props.onTimelineFetchPins(pinOpts)
     }
+  }
+
+  load = throttle((opts = {}) => {
+    const maxId = typeof opts === 'number' ? opts : undefined
+    if (typeof this.props.onLoadMore === 'function') {
+      // loading is handled by the parent
+      this.props.onLoadMore(maxId)
+      return
+    }
+    const {
+      isComments,
+      maxPages,
+      endpoint,
+      pinsEndpoint,
+      sorts,
+      topSorts,
+      createParams,
+      limit,
+    } = this.props
+
+    const { queueResults } = opts
+    const expandOpts = {
+      isComments,
+      maxPages,
+      endpoint,
+      pinsEndpoint,
+      sorts,
+      topSorts,
+      createParams,
+      queueResults,
+      limit,
+    }
+    this.props.onTimelineFetchPaged(expandOpts)
+    this.rescheduleQueue()
+  }, 300, { leading: true })
+
+  refresh = () => {
+    const { queuedItems } = this.props
+    if (queuedItems.size > 0) {
+      return this.props.onTimelineDequeue()
+    }
+    if (this.shouldQueue) {
+      return this.loadQueue({ dequeue: true })
+    }
+    this.load()
+  }
+
+  unscheduleQueue = () => {
+    if (this.queueTimer !== undefined) {
+      clearInterval(this.queueTimer)
+      this.queueTimer = undefined
+    }
+  }
+
+  getSortByKey = key => (this.props.sorts || []).find(item => item.key === key)
+
+  get shouldQueue() {
+    const { queue, queuedItems, hasPrev, sortByValue } = this.props
+    const sort = this.getSortByKey(sortByValue)
+    return queue &&
+      hasPrev &&
+      (sort === undefined || sort.queue) &&
+      queuedItems.size < TIMELINES_MAX_QUEUE_ITEMS
+  }
+
+  loadQueue = opts => {
+    if (this.shouldQueue) {
+      const dequeueResults = opts && opts.dequeue
+      this.load({ queueResults: true, dequeueResults })
+    }
+  }
+
+  rescheduleQueue = () => {
+    this.unscheduleQueue()
+    this.queueTimer = setInterval(this.loadQueue, 30000) // 30sec
   }
 
   fetchContextsForInitialStatuses = (statusIds) => {
@@ -101,252 +214,205 @@ class StatusList extends ImmutablePureComponent {
     this.setState({ fetchedContext: true })
   }
 
-  getFeaturedStatusCount = () => {
-    if (!!this.props.groupPinnedStatusIds) {
-      return this.props.groupPinnedStatusIds.size
-    }
-
-    return this.props.featuredStatusIds ? this.props.featuredStatusIds.size : 0
-  }
-
-  getCurrentStatusIndex = (id, featured) => {
+  getStatusIndex = (id, featured) => {
+    const { pins, statusIds } = this.props
     if (featured) {
-      if (!!this.props.groupPinnedStatusIds) {
-        return this.props.groupPinnedStatusIds.indexOf(id)  
-      }
-      return this.props.featuredStatusIds.indexOf(id)
+      return pins.indexOf(id)
     }
-
-    return this.props.statusIds.indexOf(id) + this.getFeaturedStatusCount()
+    return statusIds.indexOf(id) + this.props.pins.size
   }
 
   handleMoveUp = (id, featured) => {
-    const elementIndex = this.getCurrentStatusIndex(id, featured) - 1
+    const elementIndex = this.getStatusIndex(id, featured) - 1
     this._selectChild(elementIndex, true)
   }
 
   handleMoveDown = (id, featured) => {
-    const elementIndex = this.getCurrentStatusIndex(id, featured) + 1
+    const elementIndex = this.getStatusIndex(id, featured) + 1
     this._selectChild(elementIndex, false)
   }
 
-  handleLoadOlder = debounce(() => {
-    this.props.onLoadMore(this.props.statusIds.size > 0 ? this.props.statusIds.last() : undefined)
-  }, 300, { leading: true })
-
-  handleOnReload = debounce(() => {
-    this.props.onLoadMore()
-    this.setState({ isRefreshing: true })
-  }, 300, { trailing: true })
-
   _selectChild(index, align_top) {
     const container = this.node.node
-    const element = container.querySelector(`article:nth-of-type(${index + 1}) .focusable`)
+    const element = container
+      .querySelector(`article:nth-of-type(${index + 1}) .focusable`)
 
-    if (element) {
-      if (align_top && container.scrollTop > element.offsetTop) {
-        element.scrollIntoView(true)
-      } else if (!align_top && container.scrollTop + container.clientHeight < element.offsetTop + element.offsetHeight) {
-        element.scrollIntoView(false)
-      }
-      element.focus()
+    if (!element) {
+      return
     }
+
+    const top = container.scrollTop + container.clientHeight
+    const bottom = element.offsetTop + element.offsetHeight
+
+    if (align_top && container.scrollTop > element.offsetTop) {
+      element.scrollIntoView(true)
+    } else if (!align_top && top < bottom) {
+      element.scrollIntoView(false)
+    }
+    element.focus()
   }
 
-  handleDequeueTimeline = () => {
-    const { onDequeueTimeline, timelineId } = this.props
-    if (!onDequeueTimeline || !timelineId) return
-
-    onDequeueTimeline(timelineId)
-  }
-
-  setRef = c => {
-    this.node = c
-  }
+  setRef = c =>  this.node = c
 
   render() {
     const {
-      statusIds,
-      featuredStatusIds,
-      groupPinnedStatusIds,
-      onLoadMore,
+      pins = ImmutableList(),
+      statusIds = ImmutableList(),
+      queuedItems = ImmutableList(),
       timelineId,
-      totalQueuedItemsCount,
       isLoading,
-      isPartial,
-      promotedStatuses,
+      isFetched,
       scrollKey,
-      hasMore,
+      hasNext,
       emptyMessage,
-      onScrollToTop,
-      onScroll,
-      promotions,
+      promotions = [],
       isComments,
+      showPromoted,
+      showInjections,
+      showEmptyInjections,
+      showAds,
+      paginationLoggedIn,
+      page,
+      maxPages,
     } = this.props
+
     const { isRefreshing } = this.state
 
-    if (isPartial || (isLoading && statusIds.size === 0)) {
-      return (
-        <React.Fragment>
-          <StatusPlaceholder />
-          <StatusPlaceholder />
-          <StatusPlaceholder />
-        </React.Fragment>
-      )
-    }
-
     let scrollableContent = []
-    let emptyContent = []
-    const canShowEmptyContent = scrollableContent.length === 0 && statusIds.size === 0 && scrollKey === 'home_timeline'
-    
-    if (isLoading || statusIds.size > 0) {
-      for (let i = 0; i < statusIds.count(); i++) {
-        const statusId = statusIds.get(i)
-        if (!statusId) {
-          scrollableContent.push(
-            <div
-              key={'gap:' + statusIds.get(i + 1)}
-              disabled={isLoading}
-              onClick={onLoadMore}
-            />
-          )
-        } else {
-          if (Array.isArray(promotions)) {
-            const promotion = promotions.find((promotion) => (promotion.position === i && promotion.timeline_id === timelineId))
-            if (promotion) {
-              scrollableContent.push(
-                <StatusContainer
-                  key={`promotion-${i}-${promotion.status_id}`}
-                  id={promotion.status_id}
-                  onMoveUp={this.handleMoveUp}
-                  onMoveDown={this.handleMoveDown}
-                  contextType={timelineId}
-                  commentsLimited
-                  isPromoted
-                />
-              )
-            }
-          }
-
-          // timeline injection
-          if (i % 7 === 0 && i !== 0 && scrollKey === 'home_timeline') {
-            scrollableContent.push(
-              <TimelineInjectionBase index={i} key={`timeline-injection-${i}`} />
-            )
-          }
-
-          // gab ad status injections
-          if (
-            i % 9 === 0 && // randomize it
-            i !== 0 && // dont put an ad in top slot
-            TIMELINE_SCROLL_KEYS_EXCLUDED_FROM_ADS.indexOf(scrollKey) === -1 && // dont put ads in certain timelines
-            !isComments // dont put ads on profile > comments timeline since it renders comment components, not status components
-          ) {
-            scrollableContent.push(
-              <WrappedBundle
-                component={GabAdStatus}
-                key={`gab-ad-status-timeline-injection-${i}`}
-              />
-            )
-          }
-
-          if (isComments) {
-            scrollableContent.push(
-              <Comment
-                isDetached
-                key={`comment-${statusId}-${i}`}
-                id={statusId}
-                ancestorAccountId={1}
-              />
-            )
-          } else {
-            scrollableContent.push(
-              <StatusContainer
-                key={`${statusId}-${i}`}
-                id={statusId}
-                onMoveUp={this.handleMoveUp}
-                onMoveDown={this.handleMoveDown}
-                contextType={timelineId}
-                commentsLimited
-              />
-            )
-          }
-        }
-        
-      }
-    }
-
-    if (scrollableContent && featuredStatusIds) {
-      scrollableContent = featuredStatusIds.map((statusId) => (
-        <StatusContainer
-          key={`f-${statusId}`}
+      .concat(pins.toJS().map((statusId, index) =>
+        (<StatusContainer
+          key={`pin-${statusId}-${index}`}
           id={statusId}
           isFeatured
           onMoveUp={this.handleMoveUp}
           onMoveDown={this.handleMoveDown}
           contextType={timelineId}
+          scrollKey={scrollKey}
           commentsLimited
-        />
-      )).concat(scrollableContent)
+        />)))
+      .concat(statusIds.toJS()
+        // care is taken to deduplicate on the redux side but due to asynchrony
+        // they can still contain the same ids. this will remove them.
+        .filter(statusId => pins.indexOf(statusId) === -1)
+        .map((statusId, index) => (
+          isComments ?
+            <Comment
+              isDetached
+              key={`comment-${statusId}-${index}`}
+              id={statusId}
+              ancestorAccountId={1}
+            /> :
+            <StatusContainer
+              key={`status-${statusId}-${index}`}
+              id={statusId}
+              onMoveUp={this.handleMoveUp}
+              onMoveDown={this.handleMoveDown}
+              scrollKey={scrollKey}
+              contextType={timelineId}
+              commentsLimited
+            />
+        )))
+
+    const hasStatuses = scrollableContent.length> 0
+
+    if (showPromoted && Array.isArray(promotions) && hasStatuses) {
+      //
+      // intersperse promoted statuses
+      //
+      scrollableContent = scrollableContent.reduce(function(acm, item, index) {
+        const promotion = promotions.find(promotion =>
+          promotion.position === index && promotion.timeline_id === timelineId
+        )
+        if (promotion) {
+          acm.push(promotion)
+        }
+        acm.push(item)
+        return acm
+      }, [])
     }
 
-    if (scrollableContent && groupPinnedStatusIds) {
-      scrollableContent = groupPinnedStatusIds.map((statusId) => (
-        <StatusContainer
-          key={`f-${statusId}`}
-          id={statusId}
-          isPinnedInGroup
-          onMoveUp={this.handleMoveUp}
-          onMoveDown={this.handleMoveDown}
-          contextType={timelineId}
-          commentsLimited
-        />
-      )).concat(scrollableContent)
+    if (showInjections && hasStatuses) {
+      //
+      // intersperse timeline injections, suggestions, who to follow
+      //
+      scrollableContent = scrollableContent.reduce(function(acm, item, index) {
+        if (index !== 0 && index % 7 === 0) {
+          acm.push(
+            <TimelineInjectionBase
+              key={`timeline-injection-${index}`}
+              index={index}
+            />
+          )
+        }
+        acm.push(item)
+        return acm
+      }, [])
     }
 
-    if (canShowEmptyContent && !!me) {
-      emptyContent = [
-        <TimelineInjectionRoot type={TIMELINE_INJECTION_USER_SUGGESTIONS} key='empty-injection-0' />,
-        <TimelineInjectionRoot type={TIMELINE_INJECTION_FEATURED_GROUPS} key='empty-injection-1' />,
-        <TimelineInjectionRoot type={TIMELINE_INJECTION_USER_SUGGESTIONS} props={{suggestionType:'verified'}} key='empty-injection-2' />,
-        <TimelineInjectionRoot type={TIMELINE_INJECTION_GROUP_CATEGORIES} key='empty-injection-3' />,
-      ]
+    if (showAds && (!isPro || proWantsAds) && !isComments && hasStatuses) {
+      //
+      // intersperse ads
+      //
+      scrollableContent = scrollableContent.reduce(function(acm, item, index) {
+        if (index !== 0 && index % 7 === 0) {
+          acm.push(
+            <WrappedBundle
+              key={`gab-ad-status-timeline-injection-${index}`}
+              component={GabAdStatus}
+              componentParams={{ pageKey: timelineId, position: index }}
+            />
+          )
+        }
+        acm.push(item)
+        return acm
+      }, [])
     }
+
+    const sizesZero = statusIds.size === 0 &&
+      queuedItems.size === 0 &&
+      pins.size === 0
+    const busy = isLoading || !isFetched || isRefreshing
+    const paginationAllowed = paginationLoggedIn ? loggedIn : true
+
+    // client-side enforced max pages
+    const atMaxPage = typeof maxPages === 'number' &&
+      typeof page === 'number' &&
+      page >= maxPages
+
+    const hasMore = typeof page === 'number' &&
+      paginationAllowed &&
+      hasNext &&
+      !atMaxPage
 
     return (
-      <React.Fragment>
+      <div className={_s.posRel}>
         <TimelineQueueButtonHeader
-          onClick={this.handleDequeueTimeline}
-          count={totalQueuedItemsCount}
+          onClick={this.props.onTimelineDequeue}
+          count={queuedItems.size}
           itemType='gab'
-        />
-        <PullToRefresher
-          onRefresh={this.handleOnReload}
-          hasMore={hasMore}
-        />
+          top='calc(-1em)'
+        />        
         <ScrollableList
           scrollRef={this.setRef}
-          isLoading={isLoading || isRefreshing}
-          showLoading={isRefreshing || (isLoading && statusIds.size === 0)}
-          onLoadMore={onLoadMore && this.handleLoadOlder}
+          isLoading={busy}
+          showLoading={busy && sizesZero}
+          onLoadMore={this.load}
           placeholderComponent={StatusPlaceholder}
-          placeholderCount={1}
-          scrollKey={scrollKey}
+          placeholderCount={3}
+          scrollKey={scrollKey || timelineId}
           hasMore={hasMore}
-          emptyMessage={emptyMessage}
-          onScrollToTop={onScrollToTop}
-          onScroll={onScroll}
+          emptyMessage={emptyMessage || defaultEmptyMessage}
         >
           {scrollableContent}
         </ScrollableList>
         {
-          canShowEmptyContent &&
+          (showEmptyInjections && loggedIn) &&
           <div className={[_s.d, _s.mt15, _s.w100PC].join(' ')}>
-            {emptyContent}
+            {getEmptySuggestions()}
           </div>
         }
         {
-          !me &&
+          loggedOut &&
           <div className={[_s.d, _s.w100PC, _s.mt5, _s.aiCenter].join(' ')}>
             <Text className={_s.py15} color='tertiary'>• • •</Text>
             <div className={[_s.d, _s.w100PC].join(' ')}>
@@ -354,112 +420,99 @@ class StatusList extends ImmutablePureComponent {
             </div>
           </div>
         }
-      </React.Fragment>
+      </div>
     )
   }
 
 }
 
-const makeGetStatusIds = () => createSelector([
-  (state, { type, id }) => state.getIn(['settings', type], ImmutableMap()),
-  (state, { type, id }) => state.getIn(['timelines', id, 'items'], ImmutableList()),
-  (state) => state.get('statuses'),
-], (columnSettings, statusIds, statuses) => {
-  return statusIds.filter(id => {
-    if (id === null) return true
-
-    const statusForId = statuses.get(id)
-    let showStatus = true
-
-    if (columnSettings.getIn(['shows', 'reblog']) === false) {
-      showStatus = showStatus && statusForId.get('reblog') === null
-    }
-
-    if (columnSettings.getIn(['shows', 'reply']) === false) {
-      showStatus = showStatus && (statusForId.get('in_reply_to_id') === null || statusForId.get('in_reply_to_account_id') === me)
-    }
-
-    return showStatus
-  })
-})
-
-const mapStateToProps = (state, { timelineId, isComments }) => {
-  if (!timelineId) return {}
-
-  const getStatusIds = makeGetStatusIds()
-  const promotions = isComments ? null : getPromotions()(state)
-
-  const statusIds = getStatusIds(state, {
-    type: timelineId.substring(0, 5) === 'group' ? 'group' : timelineId,
-    id: timelineId
-  })
-
-  const promotedStatuses = Array.isArray(promotions) ?
-    promotions.map((promotion) => {
-      const s = {}
-      s[promotion.status_id] = state.getIn(['statuses', promotion.status_id])
-      return s
-    }) : []
-
-
+const mapStateToProps = (state, { timelineId }) => {
+  const timeline = state.getIn(['timelines', timelineId])
+  if (timeline === undefined) {
+    // it hasn't called `load` yet
+    return { isLoading: true }
+  }
   return {
-    statusIds,
-    promotions,
-    promotedStatuses,
-    isLoading: state.getIn(['timelines', timelineId, 'isLoading'], true),
-    isPartial: state.getIn(['timelines', timelineId, 'isPartial'], false),
-    hasMore: state.getIn(['timelines', timelineId, 'hasMore']),
-    totalQueuedItemsCount: state.getIn(['timelines', timelineId, 'totalQueuedItemsCount']),
+    statusIds: timeline.get('items'),
+    queuedItems: timeline.get('queuedItems'),
+    pins: timeline.get('pins'),
+    isLoading: timeline.get('isLoading'),
+    isFetched: timeline.get('isFetched'),
+    hasNext: timeline.get('hasNext'),
+    hasPrev: timeline.get('hasPrev'),
+    sortByValue: timeline.get('sortByValue'),
+    sortByTopValue: timeline.get('sortByTopValue'),
+    page: timeline.get('page'),
+    promotions: state.get('promotions'),
   }
 }
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onForceDequeueTimeline(timelineId) {
-    dispatch(forceDequeueTimeline(timelineId))
+const mapDispatchToProps = (dispatch, { timelineId }) => ({
+  onTimelineFetchPaged(opts) {
+    dispatch(timelineFetchPaged(timelineId, opts))
   },
-  onDequeueTimeline(timelineId) {
-    dispatch(dequeueTimeline(timelineId, ownProps.onLoadMore))
+  onTimelineFetchPins(opts) {
+    dispatch(timelineFetchPins(timelineId, opts))
   },
-  onScrollToTop: debounce(() => {
-    dispatch(scrollTopTimeline(ownProps.timelineId, true))
-  }, 100),
-  onScroll: debounce(() => {
-    dispatch(scrollTopTimeline(ownProps.timelineId, false))
-  }, 100),
+  onTimelineDequeue() {
+    dispatch(timelineDequeue(timelineId))
+  },
   onFetchContext(statusId) {
     dispatch(fetchContext(statusId, true))
   },
   onFetchStatus(statusId) {
     dispatch(fetchStatus(statusId))
   },
+  onTimelineUnloaded() {
+    dispatch(timelineUnloaded(timelineId))
+  },
 })
 
 StatusList.propTypes = {
-  scrollKey: PropTypes.string.isRequired,
-  statusIds: ImmutablePropTypes.list.isRequired,
-  featuredStatusIds: ImmutablePropTypes.list,
-  groupPinnedStatusIds: ImmutablePropTypes.list,
+  timelineId: PropTypes.string.isRequired,
+  scrollKey: PropTypes.string,
   onLoadMore: PropTypes.func,
-  isLoading: PropTypes.bool,
-  isPartial: PropTypes.bool,
   isComments: PropTypes.bool,
-  hasMore: PropTypes.bool,
   emptyMessage: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.node,
   ]),
-  timelineId: PropTypes.string,
-  queuedItemSize: PropTypes.number,
-  onDequeueTimeline: PropTypes.func.isRequired,
-  onScrollToTop: PropTypes.func.isRequired,
-  onScroll: PropTypes.func.isRequired,
-  onFetchContext: PropTypes.func.isRequired,
-  onFetchStatus: PropTypes.func.isRequired,
-  promotedStatuses: PropTypes.array,
-}
-
-StatusList.defaultProps = {
-  statusIds: ImmutableList(),
+  errorMessage: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.node,
+  ]),
+  showPins: PropTypes.bool,
+  showPromoted: PropTypes.bool,
+  showAds: PropTypes.bool,
+  showInjections: PropTypes.bool,
+  showEmptyInjections: PropTypes.bool,
+  queue: PropTypes.bool,
+  maxPages: PropTypes.number,
+  endpoint: PropTypes.string,
+  pinsEndpoint: PropTypes.string,
+  paginationLoggedIn: PropTypes.bool,
+  limit: PropTypes.number,
+  // from redux state
+  statusIds: ImmutablePropTypes.list,
+  queuedItems: ImmutablePropTypes.list,
+  pins: ImmutablePropTypes.list,
+  isLoading: PropTypes.bool,
+  isFetched: PropTypes.bool,
+  sortByValue: PropTypes.string,
+  sortByTopValue: PropTypes.string,
+  hasNext: PropTypes.bool,
+  hasPrev: PropTypes.bool,
+  promotions: PropTypes.array,
+  sorts: PropTypes.array,
+  topSorts: PropTypes.array,
+  createParams: PropTypes.func,
+  page: PropTypes.number,
+  // dispatch
+  onTimelineFetchPaged: PropTypes.func,
+  onTimelinePins: PropTypes.func,
+  onTimelineDequeue: PropTypes.func,
+  onFetchContext: PropTypes.func,
+  onFetchStatus: PropTypes.func,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(StatusList)

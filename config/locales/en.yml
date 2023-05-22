@@ -662,6 +662,7 @@ en:
       notifications: Notifications
       public: Public timelines
       thread: Conversations
+      chats: Chat messages
     edit:
       title: Edit filter
     errors:
@@ -1178,3 +1179,108 @@ en:
       status: Status
       download_invoice: Invoice
       explanation_html: Here you can see your PRO status and browse previous invoices.
+  marketplace_listing_conditions:
+    new:
+      title: New
+    renewed:
+      title: Renewed
+    used_like_new:
+      title: Used - Like new
+    used_very_good:
+      title: Used - Very good
+    used_good:
+      title: Used - Good
+    used_acceptable:
+      title: Used - Acceptable
+  marketplace_listing_statuses:
+    pending_admin_review: 
+      title: Pending Review
+      description: user submitted something for review by admin
+    pending_user_changes:
+      title: Pending Changes
+      description: admin sent back things for user to change
+    rejected:
+      title: Rejected
+      description: admin nuked this entire listing. user is only able to archive listing from here
+    approved:
+      title: Approved
+      description: approved by admin and ready for user to turn to "running"
+    running:
+      title: Running
+      description: running and visible to world. can mark as "sold", or edit it, or change turn off by going back to "approved".
+    expired:
+      title: Expired
+      description: listing has spent its MAX_MARKETPLACE_LISTING_RUNTIME_DAYS running from first time it started running, can be marked as sold or archive from here
+    sold:
+      title: Sold
+      description: marked as sold by user, able to open again if not past MAX_MARKETPLACE_LISTING_RUNTIME_DAYS for total running period
+    archived:
+      title: Archived
+      description: archived/deleted and not able to open again. only able to do this if listing is expired/rejected/sold not able to change status anymore
+  marketplace_listing_rejection_reasons:
+    firearms:
+      title: "Firearms"
+      description: "Gab Marketplace cannot accept listings for the sale or purchase of firearms."
+    prostitution_sex_work:
+      title: "Prostitution & Sex Work"
+      description: "Offers, solicitation, or facilitation of illegal prostitution and/or sex trafficking is strictly prohibited."
+    pornography:
+      title: "Pornography"
+      description: "Pornography and services related to pornography are strictly prohibited."
+    drugs_prescriptions:
+      title: "Drugs and Prescriptions"
+      description: "The sale and purchase of drugs and medication is strictly prohibited."
+    recalled_hazardous_items:
+      title: "Recalled or Hazardous Items"
+      description: "Recalled items, hazardous materials, body parts and fluids, unsanitized bedding/clothing and similar items are prohibited for sale and purchase on Gab Marketplace."
+    controlled_substances:
+      title: "Controlled Substances"
+      description: "Alcohol, tobacco, unpackaged or adulterated food, and all cosmetics are prohibited from sale on Gab Marketplace."
+    animals:
+      title: "Animals"
+      description: "Pet sales, animal parts, stud services, and smiliar are phohibited from sale on Gab Marketplace."
+    endangered_species_regulated_items:
+      title: "Endangered Species / Regulated Items"
+      description: "Endangered, imperiled and/or protected species and any parts thereof (like ivory) are prohibited from sale on Gab Marketplace."
+    bait_switch_misleading:
+      title: "Bait & Switch; Misleading"
+      description: "Misleading, deceptive, or fraudulent content; bait and switch; and keyword spam are prohibited on Gab Marketplace."
+    hostility_violence:
+      title: "Hostility and Violence"
+      description: "Obscene, defamatory, threatening, or malicious postings are prohibited on Gab Marketplace."
+    doxxing:
+      title: "Doxxing"
+      description: "The posting of anyone’s personal, identifying, confidential or proprietary information is prohibited on Gab Marketplace."
+    welfare_social_benefits_abuse:
+      title: "Welfare/Social Benefits Abuse"
+      description: "The sale of food stamps, WIC vouchers, SNAP or WIC goods, and government assistance is prohibited on Gab Marketplace."
+    stolen_property:
+      title: "Stolen Property"
+      description: "The sale and purchase of stolen property, property with serial number removed/altered, burglary tools, and related items are prohibited on Gab Marketplace."
+    government_federal_identication:
+      title: "Government or Federal Identication"
+      description: "ID cards, licenses, police insignia, government documents, birth certificates, and similar are prohibited for sale on Gab Marketplace."
+    illegal_military_items:
+      title: "Illegal Military Items"
+      description: "Military items not demilitarized in accord with Defense Department policy are prohibited on Gab Marketplace."
+    counterfeit_piracy:
+      title: "Counterfeit/Piracy"
+      description: "Counterfeit, replica, or pirated items; and tickets or gift cards that restrict transfer are prohibited on Gab Marketplace."
+    gambling_lottery:
+      title: "Gambling/Lottery"
+      description: "Lottery or raffle tickets, sweepstakes entries, slot machines, and other gambling items are prohibited on Gab Marketplace."
+    spammy_behavior:
+      title: "Spammy Behavior"
+      description: "Spam, miscategorized, overposted, cross-posted, and other abusive content is prohibited on Gab Marketplace."
+    clickbait_information_harvesting:
+      title: "Clickbait / Information Harvesting"
+      description: "Postings and email used primarily to drive traffic to a website are prohibited on Gab Marketplace."
+    ad_unsolicited_off_site_items:
+      title: "Advertisement for Unsolicited Off-Site Items"
+      description: "Postings and email offering, promoting, or linking to unsolicited products or services are prohibited on Gab Marketplace."
+    pyramid_schemes:
+      title: "Pyramid Schemes"
+      description: "Affiliate marketing; network and multi-level marketing; and pyramid schemes are prohibited on Gab Marketplace."
+    illegal_item:
+      title: "Illegal item"
+      description: "Any good, service, or content that violates US law is prohibited on Gab Marketplace."

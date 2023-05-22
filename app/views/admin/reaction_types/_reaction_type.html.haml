@@ -1,0 +1,8 @@
+%tr
+  %td= reaction_type.image.nil? ? nil : reaction_type_img_tag(reaction_type, 'emojione')
+  %td= reaction_type.name
+  %td= reaction_type.slug
+  %td= reaction_type.index.to_s
+  %td= reaction_type.is_active? ? 'Y' : 'N'
+  %td
+    = table_link_to 'pencil', 'Edit', admin_reaction_type_path(reaction_type)

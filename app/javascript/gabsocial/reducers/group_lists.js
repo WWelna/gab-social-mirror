@@ -30,8 +30,6 @@ import {
 import slugify from '../utils/slugify'
 
 const initialState = ImmutableMap({
-  sortByValue: GROUP_TIMELINE_SORTING_TYPE_NEWEST,
-  sortByTopValue: '',
   passwordCheck: ImmutableMap(),
   new: ImmutableMap({
     isFetched: false,

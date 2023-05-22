@@ -98,6 +98,9 @@ en:
         setting_default_language: Posting language
         setting_default_privacy: Post privacy
         setting_default_sensitive: Always mark media as sensitive
+        setting_show_videos: Show Gab TV panel
+        setting_show_suggested_users: Show suggested users panel
+        setting_show_groups: Show groups panel
         setting_delete_modal: Show confirmation dialog before deleting a gab
         setting_display_media: Media display
         setting_display_media_default: Default
@@ -110,6 +113,7 @@ en:
         setting_reduce_motion: Reduce motion in animations
         setting_group_in_home_feed: Show posts from your groups
         setting_show_pro_life: Show "PRO Life" in your GabPRO badge instead of "PRO"
+        setting_remote_rss_feed: Publish new items from your RSS feed to Gab (Pro/Verified/Donor/Investor Only)
         setting_show_application: Disclose application used to send gabs
         setting_system_font_ui: Use system's default font
         setting_theme: Site theme

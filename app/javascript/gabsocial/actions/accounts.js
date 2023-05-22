@@ -7,6 +7,12 @@ import {
   importErrorWhileFetchingAccountByUsername,
 } from './importer'
 import { me } from '../initial_state'
+import {
+  appendIsBlockingId,
+  removeIsBlockingId,
+  appendIsMutingId,
+  removeIsMutingId,
+} from '../utils/local_storage_blocks_mutes'
 import { fetchBlocks } from '../actions/blocks'
 import { fetchMutes } from '../actions/mutes'
 
@@ -232,6 +238,8 @@ export const blockAccount = (id) => (dispatch, getState) => {
   if (!me) return
 
   dispatch(blockAccountRequest(id))
+  
+  appendIsBlockingId(id)
 
   api(getState).post(`/api/v1/accounts/${id}/block`).then((response) => {
     // : todo : remove gay stuff like passing entire status below:
@@ -269,6 +277,8 @@ export const unblockAccount = (id) => (dispatch, getState) => {
 
   dispatch(unblockAccountRequest(id))
 
+  removeIsBlockingId(id)
+
   api(getState).post(`/api/v1/accounts/${id}/unblock`).then((response) => {
     dispatch(unblockAccountSuccess(response.data))
     dispatch(fetchBlocks())
@@ -301,6 +311,8 @@ export const muteAccount = (id, notifications) => (dispatch, getState) => {
   if (!me) return
 
   dispatch(muteAccountRequest(id))
+
+  appendIsMutingId(id)
 
   api(getState).post(`/api/v1/accounts/${id}/mute`, { notifications }).then((response) => {
     // Pass in entire statuses map so we can use it to filter stuff in different parts of the reducers
@@ -336,6 +348,8 @@ export const unmuteAccount = (id) => (dispatch, getState) => {
   if (!me) return
 
   dispatch(unmuteAccountRequest(id))
+
+  removeIsMutingId(id)
 
   api(getState).post(`/api/v1/accounts/${id}/unmute`).then((response) => {
     dispatch(unmuteAccountSuccess(response.data))

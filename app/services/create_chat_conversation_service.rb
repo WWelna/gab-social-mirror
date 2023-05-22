@@ -76,14 +76,17 @@ class CreateChatConversationService < BaseService
   
 
   def create_single_chat!
-    # create a participant (of the conversation) for myself with other accounts included
-    my_chat = create_my_conversation(@other_accounts.map { |account| account.id.to_s })
-
     if @other_accounts.length == 1 && @other_accounts[0].id == @current_account.id
-      # dont create two conversations if you are chatting with yourself
+      # create a participant (of the conversation) for myself with other accounts included
+      my_chat = create_my_conversation(@other_accounts.map { |account| account.id.to_s })
     elsif @other_accounts.length == 1 && @other_accounts[0].id != @current_account.id
       fop = @other_accounts.first
+
       validate_relationships!(fop)
+
+      # create a participant (of the conversation) for myself with other accounts included
+      my_chat = create_my_conversation(@other_accounts.map { |account| account.id.to_s })
+
       # create other participants convo automatically
       ChatConversationAccount.create!(
         account: fop,

@@ -36,6 +36,8 @@ class Api::V1::CommentsController < Api::BaseController
       limit = DEFAULT_COMMENTS_LIMIT
     end
 
+    params[:sort_by] = COMMENT_SORTING_TYPE_TOP if current_user.nil? && params[:sort_by].nil?
+
     c = Status.unscoped
     c = c.where(in_reply_to_id: @status.id)
 

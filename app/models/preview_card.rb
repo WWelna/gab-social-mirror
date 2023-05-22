@@ -22,6 +22,7 @@
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  embed_url          :string           default(""), not null
+#  image_fingerprint  :string
 #
 
 class PreviewCard < ApplicationRecord
@@ -34,7 +35,7 @@ class PreviewCard < ApplicationRecord
 
   has_and_belongs_to_many :statuses
 
-  has_attached_file :image, styles: ->(f) { image_styles(f) }, convert_options: { all: '-quality 80 -strip' }
+  has_attached_file :image, styles: ->(f) { image_styles(f) }, convert_options: { all: '-quality 96 -strip' }
 
   include Attachmentable
 
@@ -44,9 +45,14 @@ class PreviewCard < ApplicationRecord
   remotable_attachment :image, LIMIT
 
   before_save :extract_dimensions, if: :link?
+  before_save :image_not_blocked, if: :link?
 
   def missing_image?
     width.present? && height.present? && image_file_name.blank?
+  end
+
+  def blocked_image?
+    image_fingerprint.present? && ImageBlock.where(md5: image_fingerprint).exists?
   end
 
   def save_with_optional_image!
@@ -59,9 +65,9 @@ class PreviewCard < ApplicationRecord
   class << self
     SEARCH_FIELDS = %i[title description url].freeze
 
-    def search_for(term, offset = 0)
+    def search_for(term, offset = 0, limit = 25)
       SEARCH_FIELDS.inject(none) { |r, f| r.or(matching(f, :contains, term)) }.
-        order(updated_at: :desc).limit(25).offset(offset)
+        order(updated_at: :desc).limit(limit).offset(offset)
     end
 
     private
@@ -69,7 +75,7 @@ class PreviewCard < ApplicationRecord
     def image_styles(f)
       styles = {
         original: {
-          geometry: '400x400>',
+          geometry: '1280x1280>',
           file_geometry_parser: FastGeometryParser,
           convert_options: '-coalesce -strip',
         },
@@ -93,5 +99,14 @@ class PreviewCard < ApplicationRecord
 
     self.width  = width
     self.height = height
+  end
+
+  def image_not_blocked
+    return if image_file_name.blank? || image.queued_for_write[:original].nil?
+    image_fingerprint = Digest::MD5.file(image.queued_for_write[:original].path).hexdigest
+    if blocked_image?
+      raise GabSocial::NotPermittedError, 'Media could not be attached.'
+    end
+
   end
 end

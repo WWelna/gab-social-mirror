@@ -69,5 +69,11 @@ module AccountAssociations
 
     # Billing
     has_many :transactions, class_name: 'Transaction', dependent: :destroy, inverse_of: :account
+
+    # Marketplace Listings
+    has_many :marketplace_listings, inverse_of: :account, dependent: :destroy
+    has_many :marketplace_listing_saves, inverse_of: :account, dependent: :destroy
+    has_many :saved_marketplace_listings, -> { reorder('marketplace_listing_saves.created_at DESC') }, through: :marketplace_listing_saves, class_name: 'MarketplaceListing', source: :marketplace_listing
+
   end
 end

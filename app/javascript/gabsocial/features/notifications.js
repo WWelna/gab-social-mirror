@@ -9,9 +9,9 @@ import debounce from 'lodash.debounce'
 import throttle from 'lodash.throttle'
 import {
   expandNotifications,
-  scrollTopNotifications,
   dequeueNotifications,
   forceDequeueNotifications,
+  markReadNotifications,
 } from '../actions/notifications'
 import {
   TIMELINE_INJECTION_FEATURED_GROUPS,
@@ -34,14 +34,15 @@ class Notifications extends ImmutablePureComponent {
 
   componentWillUnmount() {
     this.handleLoadOlder.cancel()
-    this.handleScrollToTop.cancel()
-    this.handleScroll.cancel()
-    this.props.onScrollTopNotifications(false)
   }
 
   componentDidMount() {
-    this.handleDequeueNotifications()
-    this.props.onScrollTopNotifications(true)
+    this.props.onDequeueNotifications()
+    if (this.props.expandOnMount) {
+      // for example on Deck notifications are not automatically loaded
+      // for pages in ui/ui.js that component is loading them
+      this.props.onExpandNotifications()
+    }
   }
 
   componentDidUpdate (prevProps, prevState) {
@@ -70,16 +71,11 @@ class Notifications extends ImmutablePureComponent {
     this.props.onExpandNotifications({ maxId: last && last.get('id') })
   }, 300, { leading: true })
 
-  handleScrollToTop = debounce(() => {
-    this.props.onScrollTopNotifications(true)
-  }, 100)
-
-  handleScroll = debounce(() => {
-    this.props.onScrollTopNotifications(false)
-  }, 100)
-
-  handleDequeueNotifications = () => {
-    this.props.onDequeueNotifications()
+  refresh = () => {
+    if (this.props.totalQueuedNotificationsCount > 0) {
+      return this.props.onDequeueNotifications()
+    }
+    return this.handleReload()
   }
 
   render() {
@@ -146,7 +142,7 @@ class Notifications extends ImmutablePureComponent {
     return (
       <React.Fragment>
         <TimelineQueueButtonHeader
-          onClick={this.handleDequeueNotifications}
+          onClick={this.props.onDequeueNotifications}
           count={totalQueuedNotificationsCount}
           itemType='notification'
         />
@@ -191,13 +187,11 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   onDequeueNotifications() {
     dispatch(dequeueNotifications())
+    dispatch(markReadNotifications())  
   },
   onExpandNotifications(options) {
     if (!options) dispatch(forceDequeueNotifications())
     dispatch(expandNotifications(options))
-  },
-  onScrollTopNotifications(top) {
-    dispatch(scrollTopNotifications(top))
   },
 })
 
@@ -207,10 +201,10 @@ Notifications.propTypes = {
   notifications: ImmutablePropTypes.list.isRequired,
   onDequeueNotifications: PropTypes.func.isRequired,
   onExpandNotifications: PropTypes.func.isRequired,
-  onScrollTopNotifications: PropTypes.func.isRequired,
   sortedNotifications: ImmutablePropTypes.list.isRequired,
   totalQueuedNotificationsCount: PropTypes.number,
   selectedFilter: PropTypes.string.isRequired,
+  expandOnMount: PropTypes.bool,
 }
 
 export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Notifications))

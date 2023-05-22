@@ -18,9 +18,31 @@ const getMessageFromError = (data) => {
 }
 
 const makeMessageFromData = (data) => {
+  // this is based on the redux message type
+  const typeMessage = `${data.type}`.split('_').join(' ').toLowerCase()
+
+  if (data.error) {
+    const status = get(data, 'error.response.status')
+    const statusText = get(data, 'error.response.statusText')
+    const contentType = get(data, 'error.response.headers.content-type')
+    if (
+      typeof status === 'number' &&
+      status >= 400 &&
+      typeof statusText === 'string' &&
+      statusText.length > 0 &&
+      contentType === 'text/html'
+    ) {
+      // It is an HTML error message which we cannot display.
+      return `${typeMessage}: ${status} ${statusText}`;
+    }
+  }
+
+  // fallback to json error message
   const error = getMessageFromError(data)
   if (!!error) return error
-  return `${data.type}`.split('_').join(' ').toLowerCase()
+
+  // unknown message, use redux message type
+  return typeMessage
 }
 
 const initialState = ImmutableList([])

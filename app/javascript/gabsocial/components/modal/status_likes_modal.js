@@ -22,7 +22,7 @@ class StatusLikesModal extends ImmutablePureComponent {
 
     return (
       <ModalLayout
-        title={intl.formatMessage(messages.title)}
+        title='Reactions'
         width={460}
         onClose={onClose}
         noPadding

@@ -4,57 +4,39 @@ import { connect } from 'react-redux'
 import { openPopover } from '../actions/popover'
 import {
   POPOVER_HOME_TIMELINE_SORT_OPTIONS,
-	HOME_TIMELINE_SORTING_TYPE_NEWEST,
-  HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS,
-  HOME_TIMELINE_SORTING_TYPE_TOP,
+  homeSorts,
 } from '../constants'
 import SortBlock from '../components/sort_block'
 
-class HomeSortBlock extends React.PureComponent {
+const timelineId = 'home'
 
-  handleOnClickValue = (btn) => {
-    this.props.onOpenSortingOptions(btn)
-  }
-
-  render() {
-    const { sortByValue } = this.props
-
-    let sortValueTitle = ''
-    
-    switch (sortByValue) {
-			case HOME_TIMELINE_SORTING_TYPE_NO_REPOSTS:
-				sortValueTitle = 'Newest, no reposts'
-				break
-      case HOME_TIMELINE_SORTING_TYPE_TOP:
-        sortValueTitle = 'Top posts from 24 hours'
-				break
-      case HOME_TIMELINE_SORTING_TYPE_NEWEST:
-      default:
-			  sortValueTitle = 'Newest'
-				break
-		}
-    
-    return <SortBlock value={sortValueTitle} onClickValue={this.handleOnClickValue} />
-  }
-
+function HomeSortBlock({ sortByValue, onOpenSortingOptions }) {
+  const sort = homeSorts.find(item => item.key === sortByValue)
+  const sortValueTitle = sort && sort.title
+  return (
+    <SortBlock
+      value={sortValueTitle}
+      onClickValue={onOpenSortingOptions}
+    />
+  )
 }
 
 const mapStateToProps = (state) => ({
-	sortByValue: state.getIn(['timelines', 'home', 'sortByValue']),
+  sortByValue: state.getIn(['timelines', timelineId, 'sortByValue']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
-	onOpenSortingOptions(targetRef) {
-		dispatch(openPopover(POPOVER_HOME_TIMELINE_SORT_OPTIONS, {
-			targetRef,
-			position: 'bottom',
-		}))
-	},
+  onOpenSortingOptions(targetRef) {
+    dispatch(openPopover(POPOVER_HOME_TIMELINE_SORT_OPTIONS, {
+      targetRef,
+      timelineId,
+    }))
+  },
 })
 
 HomeSortBlock.propTypes = {
-	sortByValue: PropTypes.string,
-	onOpenSortingOptions: PropTypes.func,
+  sortByValue: PropTypes.string,
+  onOpenSortingOptions: PropTypes.func,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(HomeSortBlock)

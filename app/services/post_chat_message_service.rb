@@ -8,6 +8,7 @@ class PostChatMessageService < BaseService
     # : todo : might contain media or other non-text message
     @text = options[:text] || ''
     @chat_conversation_account = options[:chat_conversation_account]
+    @marketplace_listing = options[:marketplace_listing]
 
     # strip tags, ensure conversation exists
     preprocess_attributes!
@@ -19,6 +20,7 @@ class PostChatMessageService < BaseService
     create_chat!
     postprocess_chat!
     update_conversation
+    upate_marketplace_listing_conversation
 
     @chat
   end
@@ -104,6 +106,26 @@ class PostChatMessageService < BaseService
       last_chat_message_id: @chat.id,
       last_chat_message_sent_at: @chat.created_at,
     )
+  end
+
+  def upate_marketplace_listing_conversation
+    return if @marketplace_listing.nil?
+
+    existing_marketplace_listing_convo = MarketplaceListingChatConversation.where(
+      marketplace_listing_id: @marketplace_listing.id,
+      chat_conversation_id: @chat_conversation_account.chat_conversation.id,
+    ).count
+
+    # return if already have conversation with this listing
+    return if existing_marketplace_listing_convo > 0
+
+    MarketplaceListingChatConversation.create(
+      marketplace_listing_id: @marketplace_listing.id,
+      chat_conversation_id: @chat_conversation_account.chat_conversation.id,
+      chat_message_id: @chat.id,
+    )
+  rescue ArgumentError
+    raise ActiveRecord::RecordInvalid
   end
 
   def message_expiration

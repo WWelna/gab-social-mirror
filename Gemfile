@@ -21,8 +21,7 @@ gem 'aws-sdk-s3', '~> 1.41', require: false
 gem 'fog-core', '<= 2.1.0'
 gem 'fog-openstack', '~> 0.3', require: false
 
-# Using a git branch until this gets merged. https://github.com/kreeti/kt-paperclip/pull/54
-gem 'kt-paperclip', git: 'https://github.com/freespeech4ever/kt-paperclip', branch: 'use-marcel'
+gem 'kt-paperclip'
 
 # Using a git copy, so that we can require kt-paperclip instead of paperclip. This gem is abandoned.
 gem 'paperclip-av-transcoder', git: 'https://github.com/freespeech4ever/paperclip-av-transcoder'
@@ -36,8 +35,7 @@ gem 'bootsnap', '~> 1.4', require: false
 gem 'browser'
 gem 'charlock_holmes', '~> 0.7.6'
 gem 'iso-639'
-gem 'chewy', '~> 5.0'
-gem 'cld3', '~> 3.2.4'
+gem 'cld3', '~> 3.2'
 git 'https://github.com/freespeech4ever/devise.git', branch: 'gab2' do
   gem 'devise'
 end
@@ -81,10 +79,10 @@ gem 'rails-settings-cached', '~> 0.6'
 gem 'redis', '~> 4.2', require: ['redis', 'redis/connection/hiredis']
 gem 'mario-redis-lock', '~> 1.2', require: 'redis_lock'
 gem 'rqrcode', '~> 0.10'
-gem 'sanitize', '~> 5.0'
+gem 'sanitize', '~> 6.0'
 gem 'sidekiq', '~> 6.0'
 gem 'sidekiq-scheduler', '~> 3.0'
-gem 'sidekiq-unique-jobs', '~> 6.0'
+gem 'sidekiq-unique-jobs', '~> 7.0'
 gem 'sidekiq-bulk', '~>0.2.0'
 gem 'simple-navigation', '~> 4.0'
 gem 'simple_form', '~> 5.1'
@@ -161,6 +159,12 @@ end
 
 gem 'concurrent-ruby', require: false
 
-gem "elastic-apm", "~> 4.5"
 gem 'similar_text', '~> 0.0.4'
 gem 'lockbox'
+gem 'sunspot_rails'
+
+gem "sentry-ruby", "~> 5.2"
+gem "sentry-rails", "~> 5.2"
+gem "sentry-sidekiq", "~> 5.2"
+
+gem 'feedjira'

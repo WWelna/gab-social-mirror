@@ -35,14 +35,15 @@ class SidebarSectionItem extends React.PureComponent {
       onClick,
       href,
       buttonRef,
-      location
+      location,
+      shortcutComponent,
     } = this.props
     const { hovering } = this.state
 
     const iconSize = '16px'
     const currentPathname = location.pathname
     const shouldShowActive = hovering || active || currentPathname === to || currentPathname === href
-    const isHighlighted = ['/notifications', '/messages'].indexOf(to) > -1
+    const isHighlighted = ['/notifications', '/messages'].indexOf(to) > -1 || title === 'Notifications'
 
     const containerClasses = CX({
       d: 1,
@@ -106,6 +107,10 @@ class SidebarSectionItem extends React.PureComponent {
             />
           }
           
+          {
+            !!shortcutComponent && shortcutComponent
+          }
+
           <div className={[_s.d, _s.flexNormal, _s.px10, _s.textOverflowEllipsis, _s.overflowWrapBreakWord, _s.flexRow, _s.w100PC].join(' ')}>
             <ResponsiveClassesComponent
               classNames={[_s.d, _s.fw400, _s.fs15PX, _s.text, _s.textOverflowEllipsis, _s.cPrimary].join(' ')}

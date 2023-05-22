@@ -3,7 +3,7 @@
 class ExpiringStatusWorker
   include Sidekiq::Worker
 
-  sidekiq_options unique: :until_executed
+  sidekiq_options lock: :until_executed
 
   def perform(status_id)
     status = Status.find(status_id)

@@ -15,12 +15,9 @@ class PollButton extends React.PureComponent {
     const {
       intl,
       active,
-      unavailable,
       disabled,
       small,
     } = this.props
-
-    if (unavailable) return null
 
     return (
       <ComposeExtraButton
@@ -44,7 +41,6 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  unavailable: state.getIn(['compose', 'is_uploading']) || (state.getIn(['compose', 'media_attachments']).size > 0),
   active: state.getIn(['compose', 'poll']) !== null,
 })
 
@@ -62,7 +58,6 @@ const mapDispatchToProps = (dispatch) => ({
 
 PollButton.propTypes = {
   disabled: PropTypes.bool,
-  unavailable: PropTypes.bool,
   active: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
   intl: PropTypes.object.isRequired,

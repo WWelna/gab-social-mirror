@@ -2,7 +2,8 @@
 
 class AccountRelationshipsPresenter
   attr_reader :following, :followed_by, :blocking,
-              :blocked_by, :muting, :requested
+              :blocked_by, :muting, :requested,
+              :chat_blocking
 
   def initialize(account_ids, current_account_id, **options)
     @account_ids        = account_ids.map { |a| a.is_a?(Account) ? a.id : a }
@@ -12,7 +13,7 @@ class AccountRelationshipsPresenter
     @followed_by     = cached[:followed_by].merge(Account.followed_by_map(@uncached_account_ids, @current_account_id))
     @blocking        = cached[:blocking].merge(Account.blocking_map(@uncached_account_ids, @current_account_id))
     @blocked_by      = cached[:blocked_by].merge(Account.blocked_by_map(@uncached_account_ids, @current_account_id))
-    # @chat_blocking   = cached[:chat_blocking].merge(Account.chat_blocking_map(@uncached_account_ids, @current_account_id))
+    @chat_blocking   = cached[:chat_blocking].merge(Account.chat_blocking_map(@uncached_account_ids, @current_account_id))
     # @chat_blocked_by = cached[:chat_blocked_by].merge(Account.chat_blocked_by_map(@uncached_account_ids, @current_account_id))
     @muting          = cached[:muting].merge(Account.muting_map(@uncached_account_ids, @current_account_id))
     @requested       = cached[:requested].merge(Account.requested_map(@uncached_account_ids, @current_account_id))
@@ -23,7 +24,7 @@ class AccountRelationshipsPresenter
     @followed_by.merge!(options[:followed_by_map] || {})
     @blocking.merge!(options[:blocking_map] || {})
     @blocked_by.merge!(options[:blocked_by_map] || {})
-    # @chat_blocking.merge!(options[:chat_blocking_map] || {})
+    @chat_blocking.merge!(options[:chat_blocking_map] || {})
     # @chat_blocked_by.merge!(options[:chat_blocked_by_map] || {})
     @muting.merge!(options[:muting_map] || {})
     @requested.merge!(options[:requested_map] || {})
@@ -39,7 +40,7 @@ class AccountRelationshipsPresenter
       followed_by: {},
       blocking: {},
       blocked_by: {},
-      # chat_blocking: {},
+      chat_blocking: {},
       # chat_blocked_by: {},
       muting: {},
       requested: {},
@@ -67,7 +68,7 @@ class AccountRelationshipsPresenter
         followed_by:     { account_id => followed_by[account_id] },
         blocking:        { account_id => blocking[account_id] },
         blocked_by:      { account_id => blocked_by[account_id] },
-        # chat_blocking:   { account_id => chat_blocking[account_id] },
+        chat_blocking:   { account_id => chat_blocking[account_id] },
         # chat_blocked_by: { account_id => chat_blocked_by[account_id] },
         muting:          { account_id => muting[account_id] },
         requested:       { account_id => requested[account_id] },

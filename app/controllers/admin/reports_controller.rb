@@ -27,6 +27,15 @@ module Admin
       else
         []
       end
+
+      @image_block_form = Form::ImageBlockBatch.new
+      @blockable_images = MediaAttachment.where(status: @report.statuses).pluck(:file_fingerprint)
+      @blocked_images = if @blockable_images.present?
+        ImageBlock.pluck(:md5)
+      else
+        []
+      end
+      
     end
 
     def assign_to_self

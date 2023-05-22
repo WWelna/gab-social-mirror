@@ -48,15 +48,13 @@ class StatusMedia extends ImmutablePureComponent {
 
     if (!status) return null
 
-    let media = null
+    let media = []
 
-    if (status.get('poll')) {
-      media = <Poll pollId={status.get('poll')} />
-    } else if (status.get('media_attachments').size > 0) {
+    if (status.get('media_attachments').size > 0) {
       if (status.getIn(['media_attachments', 0, 'type']) === 'video') {
         const video = status.getIn(['media_attachments', 0])
 
-        media = (
+        media.push(
           <Bundle fetchComponent={Video} loading={this.renderLoadingMedia}>
             {Component => (
               <Component
@@ -82,7 +80,7 @@ class StatusMedia extends ImmutablePureComponent {
           </Bundle>
         )
       } else {
-        media = (
+        media.push(
           <Bundle fetchComponent={MediaGallery} loading={this.renderLoadingMedia}>
             {Component => (
               <Component
@@ -100,17 +98,23 @@ class StatusMedia extends ImmutablePureComponent {
           </Bundle>
         )
       }
-    } else if (status.get('spoiler_text').length === 0 && status.get('card')) {
-      media = (
-        <StatusCard
-          card={status.get('card')}
-          onOpenMedia={onOpenMedia}
-          cacheWidth={cacheWidth}
-          defaultWidth={defaultWidth}
-          isVertical={isComment || isChild}
-          isReduced={isStatusCard || isComposeModalOpen}
-        />
-      )
+    } else {
+      if (status.get('spoiler_text').length === 0 && status.get('card')) {
+        media.push(
+          <StatusCard
+            card={status.get('card')}
+            onOpenMedia={onOpenMedia}
+            cacheWidth={cacheWidth}
+            defaultWidth={defaultWidth}
+            isVertical={isComment || isChild}
+            isReduced={isStatusCard || isComposeModalOpen}
+          />
+        )
+      }
+    }
+    
+    if (status.get('poll')) {
+      media.push(<Poll pollId={status.get('poll')} />)
     }
 
     return media

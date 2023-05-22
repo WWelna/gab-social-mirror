@@ -58,7 +58,7 @@ module Attachmentable
 
       next if attachment.blank? || !/image.*/.match?(attachment.content_type) || attachment.queued_for_write[:original].blank?
 
-      if ENV['CHECK_NSFW_SERVICE'] && attachment.content_type.start_with?('image/')
+      if ENV['CHECK_NSFW_SERVICE'] && attachment.content_type.start_with?('image/') && account.created_at > 1.month.ago
         begin
           log = Logger.new(ENV['CHECK_NSFW_LOG'] || STDOUT)
           url = URI.parse("#{ENV['CHECK_NSFW_SERVICE']}/image#{attachment.queued_for_write[:original].path}")
@@ -66,16 +66,10 @@ module Attachmentable
           res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }        
           score = Float(res.body)
           log.info "NSFW score: #{score} for user https://gab.com/admin/accounts/#{account.id}"
-          threshold = if account.vpdi?
-            0.97
-           elsif account.created_at > 1.month.ago
-            0.9
-          else
-            0.95
-          end           
+          threshold = 0.9
           bad = score >= threshold
           if bad
-            raise GabSocial::ValidationError, 'This image appears to contain degenerate sexual content which is not allowed on Gab, please contact support@gab.com if you feel this is in error.'
+            raise GabSocial::ValidationError, 'This image appears to contain NSFW content which is not allowed on Gab, please contact support@gab.com if you feel this is in error.'
           end
         rescue => e
           raise if e.is_a?(GabSocial::ValidationError)

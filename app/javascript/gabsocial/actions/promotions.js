@@ -1,20 +1,22 @@
 import api from '../api'
 import { me } from '../initial_state'
+import { fetchStatus } from './statuses'
 
 export const PROMOTIONS_FETCH_REQUEST = 'PROMOTIONS_FETCH_REQUEST'
 export const PROMOTIONS_FETCH_SUCCESS = 'PROMOTIONS_FETCH_SUCCESS'
 export const PROMOTIONS_FETCH_FAIL = 'PROMOTIONS_FETCH_FAIL'
 
 /**
- * 
+ *
  */
 export const fetchPromotions = () => (dispatch, getState) => {
   if (!me) return
 
   dispatch(fetchPromotionsRequest())
 
-  api(getState).get('/api/v1/promotions').then((response) => {
-    dispatch(fetchPromotionsSuccess(response.data))        
+  api(getState).get('/api/v1/promotions').then(({ data: statuses }) => {
+    dispatch(fetchPromotionsSuccess(statuses))
+    statuses.forEach(item => dispatch(fetchStatus(item.status_id)))
   }).catch((error) => {
     dispatch(fetchPromotionsFail(error))
   })
@@ -29,7 +31,7 @@ const fetchPromotionsSuccess = (items) => ({
   items,
 })
 
-const fetchPromotionsFail = (error, listType) => ({
+const fetchPromotionsFail = (error) => ({
   type: PROMOTIONS_FETCH_FAIL,
   error,
 })

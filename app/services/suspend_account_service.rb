@@ -20,6 +20,7 @@ class SuspendAccountService < BaseService
     favourites
     follow_requests
     list_accounts
+    marketplace_listings
     media_attachments
     mute_relationships
     muted_by_relationships

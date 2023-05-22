@@ -1,27 +1,29 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
 import { is } from 'immutable'
-import { decode } from 'blurhash'
 import videojs from 'video.js'
 import { isPanoramic, isPortrait, minimumAspectRatio, maximumAspectRatio } from '../utils/media_aspect_ratio'
 import { displayMedia } from '../initial_state'
+import { CX } from '../constants'
 import Button from './button'
-import Icon from './icon'
 import SensitiveMediaItem from './sensitive_media_item'
-import Text from './text'
 
 import '!style-loader!css-loader!video.js/dist/video-js.min.css'
 
-const videoJsOptions = {
-  autoplay: false,
+const getVideoJSOptions = ({
+  autoplay = undefined,
+  muted = undefined,
+  sources = [{}],
+}) => ({
+  autoplay,
+  muted,
+  sources,
   playbackRates: [0.5, 1, 1.5, 2],
   controls: true,
-  sources: [{}],
-}
+})
 
 class Video extends ImmutablePureComponent {
 
@@ -48,6 +50,14 @@ class Video extends ImmutablePureComponent {
     }
   }
 
+  handleClickIfMuted() {
+    if (this.videoPlayer && typeof this.props.muted !== 'undefined' && this.props.muted) {
+      if(this.videoPlayer.muted()) {
+        this.videoPlayer.muted(false); 
+      }
+    }
+  }
+
   setPlayerRef = (n) => {
     this.player = n
 
@@ -66,18 +76,28 @@ class Video extends ImmutablePureComponent {
 
   setupVideo = () => {
     if (!this.video) return null
-
-    videoJsOptions.sources = [
-      {
-        src: this.props.src,
-        type: this.props.fileContentType,
-      },
-      {
-        src: this.props.sourceMp4,
-        type: 'video/mp4',
-      },
-    ]
-    this.videoPlayer = videojs(this.video, videoJsOptions)
+    const {
+      autoplay,
+      fileContentType,
+      muted,
+      sourceMp4,
+      src,
+    } = this.props
+    
+    this.videoPlayer = videojs(this.video, getVideoJSOptions({
+      autoplay: typeof autoplay !== 'undefined' ? true : undefined,
+      muted: typeof muted !== 'undefined' ? true : undefined,
+      sources: [
+        {
+          src,
+          type: fileContentType,
+        },
+        {
+          src: sourceMp4,
+          type: 'video/mp4',
+        },
+      ],
+    }))
   }
 
   handleClickRoot = (e) => e.stopPropagation()
@@ -101,6 +121,7 @@ class Video extends ImmutablePureComponent {
       detailed,
       sensitive,
       aspectRatio,
+      className,
     } = this.props
 
     const {
@@ -138,12 +159,24 @@ class Video extends ImmutablePureComponent {
     }
 
     if (!revealed && sensitive) {
-      return <SensitiveMediaItem onClick={this.toggleReveal} />
+      return (
+        <SensitiveMediaItem
+          onClick={this.toggleReveal}
+          message='The author of this gab has added a warning to this video.'
+          btnTitle='View'
+        />
+      )
     }
+
+    const containerStyles = CX(className, {
+      d: 1,
+      mt10: 1,
+      outlineNone: 1,
+    })
 
     return (
       <div
-        className={[_s.d, _s.mt10, _s.outlineNone].join(' ')}
+        className={containerStyles}
         style={playerStyle}
         ref={this.setPlayerRef}
         onMouseEnter={this.handleMouseEnter}
@@ -164,6 +197,7 @@ class Video extends ImmutablePureComponent {
             title={alt}
             width={width}
             height={height}
+            onClick={this.handleClickIfMuted.bind(this)}
           />
         </div>
 
@@ -204,9 +238,12 @@ Video.propTypes = {
   onToggleVisibility: PropTypes.func,
   intl: PropTypes.object.isRequired,
   blurhash: PropTypes.string,
+  classes: PropTypes.array,
   aspectRatio: PropTypes.number,
   meta: ImmutablePropTypes.map,
   fileContentType: PropTypes.string,
+  autoplay: PropTypes.string,
+  muted: PropTypes.string
 }
 
 export default injectIntl(Video)

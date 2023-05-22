@@ -1,6 +1,9 @@
 import api, { getLinks } from '../api'
 import debounce from 'lodash.debounce'
-import { importFetchedAccounts } from './importer'
+import {
+  importFetchedAccounts,
+  importFetchedChatMessages,
+} from './importer'
 import { closeModal } from './modal'
 import { setChatConversationSelected } from './chats'
 import { me } from '../initial_state'
@@ -95,10 +98,10 @@ export const fetchChatConversations = () => (dispatch, getState) => {
   api(getState).get('/api/v1/chat_conversations/approved_conversations').then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    // const conversationsChatMessages = response.data.map((c) => c.last_chat_message)
+    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
-    // dispatch(importFetchedChatMessages(conversationsChatMessages))
+    dispatch(importFetchedChatMessages(conversationsChatMessages))
     dispatch(fetchChatConversationsSuccess(response.data, next ? next.uri : null))
   }).catch((error) => {
     dispatch(fetchChatConversationsFail(error))
@@ -167,10 +170,10 @@ export const expandChatConversations = () => (dispatch, getState) => {
   api(getState).get(url).then(response => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    // const conversationsChatMessages = response.data.map((c) => c.last_chat_message)
+    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
-    // dispatch(importFetchedChatMessages(conversationsChatMessages))
+    dispatch(importFetchedChatMessages(conversationsChatMessages))
     dispatch(expandChatConversationsSuccess(response.data, next ? next.uri : null))
   }).catch((error) => dispatch(expandChatConversationsFail(error)))
 }
@@ -202,10 +205,10 @@ export const fetchChatConversationRequested = () => (dispatch, getState) => {
   api(getState).get('/api/v1/chat_conversations/requested_conversations').then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    // const conversationsChatMessages = response.data.map((c) => c.last_chat_message)
+    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
-    // dispatch(importFetchedChatMessages(conversationsChatMessages))
+    dispatch(importFetchedChatMessages(conversationsChatMessages))
     dispatch(fetchChatConversationRequestedSuccess(response.data, next ? next.uri : null))
   }).catch((error) => {
     dispatch(fetchChatConversationRequestedFail(error))
@@ -244,10 +247,10 @@ export const expandChatConversationRequested = () => (dispatch, getState) => {
   api(getState).get(url).then(response => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    // const conversationsChatMessages = response.data.map((c) => c.last_chat_message)
+    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
-    // dispatch(importFetchedChatMessages(conversationsChatMessages))
+    dispatch(importFetchedChatMessages(conversationsChatMessages))
     dispatch(expandChatConversationRequestedSuccess(response.data, next ? next.uri : null))
   }).catch(error => {
     dispatch(expandChatConversationRequestedFail(error))
@@ -281,10 +284,10 @@ export const fetchChatConversationMuted = () => (dispatch, getState) => {
   api(getState).get('/api/v1/chat_conversations/muted_conversations').then((response) => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    // const conversationsChatMessages = response.data.map((c) => c.last_chat_message)
+    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
-    // dispatch(importFetchedChatMessages(conversationsChatMessages))
+    dispatch(importFetchedChatMessages(conversationsChatMessages))
     dispatch(fetchChatConversationMutedSuccess(response.data, next ? next.uri : null))
   }).catch((error) => {
     dispatch(fetchChatConversationMutedFail(error))
@@ -323,10 +326,10 @@ export const expandChatConversationMuted = () => (dispatch, getState) => {
   api(getState).get(url).then(response => {
     const next = getLinks(response).refs.find(link => link.rel === 'next')
     const conversationsAccounts = [].concat.apply([], response.data.map((c) => c.other_accounts))
-    // const conversationsChatMessages = response.data.map((c) => c.last_chat_message)
+    const conversationsChatMessages = response.data.map((c) => c.last_chat_message).filter(c => !!c)
 
     dispatch(importFetchedAccounts(conversationsAccounts))
-    // dispatch(importFetchedChatMessages(conversationsChatMessages))
+    dispatch(importFetchedChatMessages(conversationsChatMessages))
     dispatch(expandChatConversationMutedSuccess(response.data, next ? next.uri : null))
   }).catch(error => dispatch(expandChatConversationMutedFail(error)))
 }
@@ -351,7 +354,7 @@ export const expandChatConversationMutedFail = (error) => ({
  * @description Create a chat conversation with given accountId. May fail because of blocks.
  * @param {String} accountId
  */
-export const createChatConversation = (accountId, routerHistory) => (dispatch, getState) => {
+export const createChatConversation = (accountId, routerHistory, done) => (dispatch, getState) => {
   if (!me || !accountId) return
 
   dispatch(createChatConversationRequest())
@@ -361,6 +364,7 @@ export const createChatConversation = (accountId, routerHistory) => (dispatch, g
     dispatch(closeModal())
     dispatch(setChatConversationSelected(response.data.chat_conversation_id))
     if (routerHistory) routerHistory.push(`/messages/${response.data.chat_conversation_id}`)
+    if (done) done(response.data.chat_conversation_id)
   }).catch((error) => {
     dispatch(createChatConversationFail(error))
   })
@@ -387,7 +391,6 @@ export const createChatConversationFail = (error) => ({
  * @param {String} chatConversationId
  */
 export const deleteChatConversation = (chatConversationId) => (dispatch, getState) => {
-  // : todo :
   if (!me || !chatConversationId) return
 
   dispatch(deleteChatConversationRequest(conversationId))

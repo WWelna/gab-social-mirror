@@ -87,7 +87,7 @@ class GroupOptionsPopover extends ImmutablePureComponent {
     listItems.push({})
     listItems.push({
       hideArrow: true,
-      icon: 'star',
+      icon: isShortcut ? 'star' : 'star-outline',
       title: intl.formatMessage(isShortcut ? messages.remove_from_shortcuts : messages.add_to_shortcuts),
       onClick: this.handleOnToggleShortcut,
     })

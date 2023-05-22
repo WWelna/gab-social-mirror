@@ -6,10 +6,10 @@ import ExploreLayout from '../layouts/explore_layout'
 class ExplorePage extends React.PureComponent {
 
   render() {
-    const { children, title } = this.props
+    const { children, title, showVideos, showSuggestedUsers, showGroups } = this.props
 
     return (
-      <ExploreLayout title={title}>
+      <ExploreLayout title={title} showVideos={showVideos} showSuggestedUsers={showSuggestedUsers} showGroups={showGroups}>
         <PageTitle path={title} />
         {children}
       </ExploreLayout>

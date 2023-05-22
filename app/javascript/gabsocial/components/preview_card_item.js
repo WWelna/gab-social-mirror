@@ -61,17 +61,23 @@ class PreviewCardItem extends ImmutablePureComponent {
       boxShadowBlock: 1,
       bgPrimary: 1,
       overflowHidden: 1,
-      radiusSmall: 1,
+      radiusSmall: !isBordered,
       borderColorSecondary: isBordered,
       borderTop1PX: isBordered,
       bgSubtle_onHover: !isUnlinked,
+    })
+
+    const wrapperClasses = CX({
+      d: 1,
+      mb10: !isBordered,
+      noUnderline: 1,
     })
 
     return (
       <Wrapper
         noClasses
         to={`/links/${id}`}
-        className={[_s.d, _s.mb10, _s.noUnderline].join(' ')}
+        className={wrapperClasses}
       >
         <div className={innerContainerClasses}>
           {

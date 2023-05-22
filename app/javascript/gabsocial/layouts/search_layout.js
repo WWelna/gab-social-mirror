@@ -1,86 +1,160 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { defineMessages, injectIntl } from 'react-intl'
-import { me } from '../initial_state'
+import { withRouter } from 'react-router-dom'
 import {
   BREAKPOINT_EXTRA_SMALL,
-  CX,
+  SEARCH_TAB_ACCOUNT,
+  SEARCH_TAB_STATUS,
+  SEARCH_TAB_GROUP,
+  SEARCH_TAB_LINK,
+  SEARCH_TAB_LIST,
+  SEARCH_TAB_HASHTAG,
 } from '../constants'
-import { clearSearch, toggleFocused } from '../actions/search'
+import {
+  submitSearch,
+  setSearchTab,
+  clearSearch,
+  toggleFocused,
+} from '../actions/search'
 import Layout from '../layouts/layout'
 import PageTitle from '../features/ui/util/page_title'
-import DefaultNavigationBar from '../components/navigation_bar/default_navigation_bar'
 import FooterBar from '../components/footer_bar'
 import SearchNavigationBar from '../components/navigation_bar/search_navigation_bar_xs'
-import LoggedOutNavigationBar from '../components/navigation_bar/logged_out_navigation_bar'
-import Responsive from '../features/ui/util/responsive_component'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
-import Search from '../components/search'
-import Pills from '../components/pills'
+import { me } from '../initial_state'
 import {
   LinkFooter,
   TrendsBreakingPanel,
   SearchFilterPanel,
   SignUpPanel,
   ExploreTimeline,
-  HashtagTimeline,
   SidebarXS,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class SearchLayout extends React.Component {
-  state = { currentExploreTabIndex: 0 }
+  
+  componentDidMount() {
+    const tab = this.getTabByPathname(this.props.location.pathname)
+    this.props.onSetSearchTab(tab)
+  }
+
+  getTabByPathname = (pathname) => {
+    let tab = ''
+    switch (pathname) {
+    case '/search/people':
+      tab = SEARCH_TAB_ACCOUNT
+      break;
+    case '/search/groups':
+      tab = SEARCH_TAB_GROUP
+      break;
+    case '/search/statuses':
+      tab = SEARCH_TAB_STATUS
+      break;
+    case '/search/links':
+      tab = SEARCH_TAB_LINK
+      break;
+    case '/search/feeds':
+      tab = SEARCH_TAB_LIST
+      break;
+    case '/search/hashtags':
+      tab = SEARCH_TAB_HASHTAG
+      break;
+    default:
+      break;
+    }
+    return tab
+  }
+
+  handleOnSetSearchTab = (tab) => {
+    const {
+      value,
+      onSubmitSearch,
+      onSetSearchTab,
+      resultsBlock,
+      submitted,
+    } = this.props
+    
+    onSetSearchTab(tab)
+
+    if (value) {
+      // : todo :
+      // dont submit every tab change if already has submitted results with existing value
+      // const resultsByTab = resultsBlock.get(tab)
+      // console.log("resultsBlock, resultsByTab:", resultsBlock)
+      // if (!resultsByTab.get('isFetched') && !submitted) {
+        onSubmitSearch()
+      // }
+    }
+  }
+
   render() {
-    const { intl, children, value, focused } = this.props
-    const { currentExploreTabIndex } = this.state
+    const {
+      children,
+      value,
+      focused,
+      isXS,
+    } = this.props
     const qs = value.length > 0 ? `?q=${escape(value)}` : ''
-    const title = intl.formatMessage(messages.search)
+    const title = 'Search'
     const qos = !!value ? value : ''
-    const loggedIn = typeof me === 'string' && me.length > 0
-    const loggedOut = !loggedIn
     const { pathname } = window.location
-    const exploring = pathname === '/search' && value.length === 0
+    const exploring = pathname === '/search' && value.length === 0 && !focused && isXS
     const searching = value.length > 0
 
     const searchTabs = [
-      {
+      !!me && {
         title: 'Explore',
         to: '/search',
-        active: exploring
+        isHidden: !isXS,
+        active: exploring,
       },
       {
-        title: intl.formatMessage(messages.top),
-        to: '/search'
+        title: 'People',
+        to: isXS ? '/search/people' : '/search',
+        onClick: () => this.handleOnSetSearchTab(SEARCH_TAB_ACCOUNT),
       },
       {
-        title: intl.formatMessage(messages.people),
-        to: '/search/people'
+        title: 'Groups',
+        to: '/search/groups',
+        onClick: () => this.handleOnSetSearchTab(SEARCH_TAB_GROUP),
       },
-      {
-        title: intl.formatMessage(messages.groups),
-        to: '/search/groups'
+      !!me && {
+        title: 'Statuses',
+        to: '/search/statuses',
+        onClick: () => this.handleOnSetSearchTab(SEARCH_TAB_STATUS),
       },
-      {
-        title: intl.formatMessage(messages.statuses),
-        to: '/search/statuses'
+      !!me && {
+        title: 'Links',
+        to: '/search/links',
+        onClick: () => this.handleOnSetSearchTab(SEARCH_TAB_LINK),
       },
-      {
-        title: intl.formatMessage(messages.hashtags),
-        to: '/search/hashtags'
+      !!me && {
+        title: 'Feeds',
+        to: '/search/feeds',
+        onClick: () => this.handleOnSetSearchTab(SEARCH_TAB_LIST),
+      },
+      { // go to page with marketplace listing search with query. then it automatically searches
+        title: 'Marketplace',
+        to: `/marketplace/listings${value.length > 0 ? `?query=${this.props.value}` : ''}`,
+      },
+      !!me && {
+        title: 'Hashtags',
+        to: '/search/hashtags',
+        onClick: () => this.handleOnSetSearchTab(SEARCH_TAB_HASHTAG),
       }
-    ].map(function(item, index) {
-      if (index === 0) {
-        return item // ignore explore
+    ].filter(Boolean).map((item, index) => {
+      if (['Explore', 'Marketplace'].indexOf(item.title) > -1) {
+        return item
       }
       item.active = !exploring && pathname === item.to
       item.to += qs
       return item
     })
 
-    return (
-      <React.Fragment>
-        <Responsive max={BREAKPOINT_EXTRA_SMALL}>
+    if (isXS) {
+      return (
+        <React.Fragment>
           <WrappedBundle component={SidebarXS} />
           <SearchNavigationBar
             isSearchFocused={focused}
@@ -88,75 +162,67 @@ class SearchLayout extends React.Component {
             cancel={this.props.cancel}
           />
           <main role='main' className={[_s.d, _s.w100PC, _s.z1].join(' ')}>
-            {searching && children}
+            {(searching || !me) && children}
             {
-              exploring &&
+              (exploring && !!me) &&
               <div className={[_s.d, _s.pt10, _s.w100PC].join(' ')}>
-                <WrappedBundle
-                  component={ExploreTimeline}
-                  componentParams={{}}
-                />
+                <WrappedBundle component={ExploreTimeline} />
               </div>
             }
           </main>
           <FooterBar />
-        </Responsive>
-        <Responsive min={BREAKPOINT_EXTRA_SMALL}>
-          <Layout
-            noComposeButton
-            title={title}
-            showBackBtn
-            tabs={searchTabs}
-            page={`search.${qos}`}
-            layout={[
-              SignUpPanel,
-              SearchFilterPanel,
-              GabAdPanel,
-              TrendsBreakingPanel,
-              LinkFooter,
-            ]}
-          >
-            <PageTitle path={title} />
-            {children}
-          </Layout>
-        </Responsive>
-      </React.Fragment>
+        </React.Fragment>
+      )
+    }
+
+    return (
+      <Layout
+        noComposeButton
+        title={title}
+        showBackBtn
+        tabs={searchTabs}
+        page={`search.${qos}`}
+        layout={[
+          SignUpPanel,
+          SearchFilterPanel,
+          TrendsBreakingPanel,
+          LinkFooter,
+        ]}
+      >
+        <PageTitle path={title} />
+        {children}
+      </Layout>
     )
   }
 
 }
 
-
-const messages = defineMessages({
-  search: { id: 'search', defaultMessage: 'Search' },
-  top: { id: 'top', defaultMessage: 'Top' },
-  people: { id: 'people', defaultMessage: 'People' },
-  groups: { id: 'groups', defaultMessage: 'Groups' },
-  statuses: { id: 'statuses', defaultMessage: 'Statuses' },
-  hashtags: { id: 'hashtags', defaultMessage: 'Hashtags' },
-  links: { id: 'links', defaultMessage: 'Links' },
-})
-
 const mapStateToProps = (state) => ({
   value: state.getIn(['search', 'value']),
+  submitted: state.getIn(['search', 'submitted']),
   focused: state.getIn(['search', 'focused']),
+  resultsBlock: state.getIn(['search', 'results']),
   isXS: state.getIn(['settings', 'window_dimensions', 'width']) <= BREAKPOINT_EXTRA_SMALL,
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  cancel(){
+  onSetSearchTab(tab) {
+    dispatch(setSearchTab(tab))
+  },
+  onSubmitSearch() {
+    dispatch(submitSearch())
+  },
+  cancel() {
     dispatch(clearSearch())
     dispatch(toggleFocused(false))
   }
 })
 
-
 SearchLayout.propTypes = {
-  intl: PropTypes.object.isRequired,
   children: PropTypes.node.isRequired,
   value: PropTypes.string,
   isXS: PropTypes.bool.isRequired,
   focused: PropTypes.bool.isRequired
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(SearchLayout))
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(SearchLayout))

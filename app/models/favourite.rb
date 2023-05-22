@@ -3,17 +3,16 @@
 #
 # Table name: favourites
 #
-#  id         :bigint(8)        not null, primary key
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#  account_id :bigint(8)        not null
-#  status_id  :bigint(8)        not null
+#  id          :bigint(8)        not null, primary key
+#  created_at  :datetime         not null
+#  updated_at  :datetime         not null
+#  account_id  :bigint(8)        not null
+#  status_id   :bigint(8)        not null
+#  reaction_id :bigint(8)
 #
 
 class Favourite < ApplicationRecord
   include Paginable
-
-  update_index('statuses#status', :status) if Chewy.enabled?
 
   belongs_to :account, inverse_of: :favourites
   belongs_to :status,  inverse_of: :favourites
@@ -21,6 +20,9 @@ class Favourite < ApplicationRecord
   has_one :notification, as: :activity, dependent: :destroy
   validates :status_id, uniqueness: { scope: :account_id }
   validates_with FavouriteLimitValidator, on: :create
+
+  # : hack : first reaction_id must be 'LIKE'!
+  scope :likes, -> { where(reaction_id: [nil, 1]) }
 
   before_validation do
     self.status = status.reblog if status&.reblog?

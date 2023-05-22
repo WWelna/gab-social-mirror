@@ -96,7 +96,7 @@ class User < ApplicationRecord
   scope :inactive, -> { where(arel_table[:current_sign_in_at].lt(ACTIVE_DURATION.ago)) }
   scope :active, -> { confirmed.where(arel_table[:current_sign_in_at].gteq(ACTIVE_DURATION.ago)).joins(:account).where.not(accounts: { suspended_at: nil }) }
   scope :matches_email, ->(value) { matching(:email, :contains, value) }
-  scope :emailable, -> { confirmed.enabled.joins(:account).merge(Account.searchable) }
+  scope :emailable, -> { confirmed.enabled.joins(:account).merge(Account.old_searchable) }
 
   before_validation :sanitize_languages
   before_create :set_approved
@@ -109,9 +109,10 @@ class User < ApplicationRecord
 
   has_many :session_activations, dependent: :destroy
 
-  delegate :auto_play_gif, :default_sensitive, :unfollow_modal, :boost_modal, :delete_modal,
+  delegate :auto_play_gif, :default_sensitive, :unfollow_modal, :boost_modal, :delete_modal, 
+           :show_videos, :show_suggested_users, :show_groups,
            :noindex, :display_media, :hide_network, :pro_wants_ads,
-           :expand_spoilers, :default_language, :aggregate_reblogs, :show_pro_life,
+           :expand_spoilers, :default_language, :aggregate_reblogs, :show_pro_life, :remote_rss_feed,
            :group_in_home_feed, to: :settings, prefix: :setting, allow_nil: false
 
   attr_writer :external
@@ -120,6 +121,10 @@ class User < ApplicationRecord
     self[:unique_email] = EmailAddress::Address.new(email_address).canonical
     self[:email] = email_address
     super
+  end
+
+  def cache_key
+    "user/#{username}-#{cache_version}"
   end
 
   def confirmed?

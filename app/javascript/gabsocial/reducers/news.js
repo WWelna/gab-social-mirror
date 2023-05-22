@@ -77,7 +77,7 @@ const normalizeGabTVEpisode = (item) => {
     videoUrl: `https://tv.gab.com/channel/${item.channel.slug}/view/${item.slug}`,
     title: item.title,
     views: shortNumberFormat(item.stats.playCount),
-    thumbnail: `https://tv.gab.com/image/${item.image}`,
+    thumbnail: `${item.image}`,
     created: item.created,
     channelName: item.channel.name,
     channelAvatar: item.publisher.picture_url,

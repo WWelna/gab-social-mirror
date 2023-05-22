@@ -61,12 +61,6 @@ deploy.config:
   before_live:
     web.web:
       - bundle exec rake db:migrate:setup
-      - |-
-          if [[ "${ES_ENABLED}" != "false" ]]
-          then
-            bundle exec rake chewy:deploy
-          fi
-
 
 web.web:
   start:

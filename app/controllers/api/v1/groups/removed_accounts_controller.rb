@@ -20,17 +20,27 @@ class Api::V1::Groups::RemovedAccountsController < Api::BaseController
   def create
     authorize @group, :create_removed_account?
 
-    @account = Account.find(params[:account_id])
-    @group.removed_accounts << @account
-    GroupAccount.where(group: @group, account: @account).destroy_all
+    begin
+      @account = Account.find(params[:account_id])
+      @group.removed_accounts << @account
+      GroupAccount.where(group: @group, account: @account).destroy_all
+    rescue => e
+      Rails.logger.error "Exception in removed_accounts_controller#create. #{e.class}: #{e.message}"
+      # Succeed anyway
+    end
     render_empty_success
   end
 
   def destroy
     authorize @group, :destroy_removed_account?
 
-    @account = @group.removed_accounts.find(params[:account_id])
-    GroupRemovedAccount.where(group: @group, account: @account).destroy_all
+    begin
+      @account = @group.removed_accounts.find(params[:account_id])
+      GroupRemovedAccount.where(group: @group, account: @account).destroy_all
+    rescue => e
+      Rails.logger.error "Exception in removed_accounts_controller#destroy. #{e.class}: #{e.message}"
+      # Succeed anyway
+    end
     render_empty_success
   end
 

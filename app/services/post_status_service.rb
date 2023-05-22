@@ -22,7 +22,6 @@ class PostStatusService < BaseService
   # @option [Hash] :poll Optional poll to attach
   # @option [Enumerable] :media_ids Optional array of media IDs to attach
   # @option [Doorkeeper::Application] :application
-  # @option [String] :idempotency Optional idempotency key
   # @option [String] :group Optional group id
   # @return [Status]
   def call(account, options = {})
@@ -35,8 +34,6 @@ class PostStatusService < BaseService
     @status_hash = Digest::MD5.new << @text unless @text.blank?
 
     set_group
-
-    return idempotency_duplicate if idempotency_given? && idempotency_duplicate?
 
     validate_blocked!(@in_reply_to)
     validate_user_confirmation!
@@ -54,10 +51,7 @@ class PostStatusService < BaseService
       process_status!
       postprocess_status!
       bump_potential_friendship!
-    end
-
-    redis.with do |conn|
-      conn.setex(idempotency_key, 3_600, @status.id) if idempotency_given?
+      potentially_reset_parent_cache
     end
 
     @status
@@ -132,6 +126,7 @@ class PostStatusService < BaseService
 
     process_hashtags_service.call(@status)
     process_mentions_service.call(@status)
+    process_links_service.call(@status)
     if @status.quote
       process_quote_service.call(@status)
     end
@@ -161,6 +156,14 @@ class PostStatusService < BaseService
     PollExpirationNotifyWorker.perform_at(@status.poll.expires_at, @status.poll.id) if @status.poll
   end
 
+  def potentially_reset_parent_cache
+    if !@status.quote_of_id.nil?
+      Rails.cache.delete("statuses/#{@status.quote_of_id}")
+    elsif !@status.in_reply_to_id.nil?
+      Rails.cache.delete("statuses/#{@status.in_reply_to_id}")
+    end
+  end
+
   def validate_group!
     # If there's no group, there's nothing to validate
     return if @group.blank?
@@ -184,13 +187,21 @@ class PostStatusService < BaseService
     reply_account = reply_status.account
     return validate_blocked!(reply_status.thread) unless reply_account.blocking?(@account)
 
-    raise GabSocial::NotPermittedError, "Cannot reply. @#{reply_account.username} has you blocked."
+    raise GabSocial::NotPermittedError, "Cannot reply. @#{reply_account.username} has you blocked and you are trying to post undearneath one of their posts."
   end
 
   def validate_media!
     return if @options[:media_ids].blank? || !@options[:media_ids].is_a?(Enumerable)
 
-    raise GabSocial::ValidationError, I18n.t('media_attachments.validations.too_many') if @options[:media_ids].size > 4 || @options[:poll].present?
+    raise GabSocial::ValidationError, I18n.t('media_attachments.validations.too_many') if @options[:media_ids].size > 4
+
+    # Check Image Blocks for each media fingerprint md5
+    @options[:media_ids].each do |media_id|
+      media = MediaAttachment.find(media_id)
+      if media.image? && ImageBlock.where(md5: media.file_fingerprint).exists?
+        raise GabSocial::ValidationError, 'Media could not be attached.'
+      end
+    end
 
     @media = @account.media_attachments.where(status_id: nil).where(id: @options[:media_ids].take(4).map(&:to_i))
 
@@ -252,32 +263,13 @@ class PostStatusService < BaseService
     ProcessHashtagsService.new
   end
 
+  def process_links_service
+    ProcessLinksService.new
+  end
+
   def scheduled?
     return false unless @account.is_pro
     @scheduled_at.present?
-  end
-
-  def idempotency_key
-    "idempotency:status:#{@account.id}:#{@options[:idempotency]}"
-  end
-
-  def idempotency_given?
-    @options[:idempotency].present?
-  end
-
-  def idempotency_duplicate
-    if scheduled?
-      @account.schedule_statuses.find(@idempotency_duplicate)
-    else
-      @account.statuses.find(@idempotency_duplicate)
-    end
-  end
-
-  def idempotency_duplicate?
-    redis.with do |conn|
-      @idempotency_duplicate = conn.get(idempotency_key)
-    end
-    @idempotency_duplicate
   end
 
   def scheduled_in_the_past?
@@ -329,7 +321,6 @@ class PostStatusService < BaseService
       options_hash[:application_id] = options_hash.delete(:application)&.id
       options_hash[:quote_of_id]    = options_hash.delete(:quote)&.id
       options_hash[:scheduled_at]   = nil
-      options_hash[:idempotency]    = nil
     end
   end
 end

@@ -1,3 +1,4 @@
+import { parse, format } from 'url'
 import React from 'react'
 import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes';
@@ -5,9 +6,10 @@ import ImmutablePureComponent from 'react-immutable-pure-component';
 import { is } from 'immutable';
 import { defineMessages, injectIntl } from 'react-intl';
 import { decode } from 'blurhash';
+import get from 'lodash.get'
 import { autoPlayGif, displayMedia } from '../initial_state'
-import { CX } from '../constants'
-import { isIOS } from '../utils/is_mobile';
+import { CX, BREAKPOINT_EXTRA_SMALL } from '../constants'
+import { isIOS, getWindowDimension } from '../utils/is_mobile';
 import { isPanoramic, isPortrait, isNonConformingRatio, minimumAspectRatio, maximumAspectRatio } from '../utils/media_aspect_ratio';
 import Button from './button'
 import SensitiveMediaItem from './sensitive_media_item'
@@ -135,22 +137,27 @@ class Item extends ImmutablePureComponent {
         </div>
       )
     } else if (attachment.get('type') === 'image') {
-      const previewUrl = attachment.get('preview_url');
-      const previewWidth = attachment.getIn(['meta', 'small', 'width']);
-
+      let previewUrl = attachment.get('preview_url');
       const originalUrl = attachment.get('url');
-      const originalWidth = attachment.getIn(['meta', 'original', 'width']);
-
-      const hasSize = typeof originalWidth === 'number' && typeof previewWidth === 'number';
-
-      const srcSet = hasSize ? `${originalUrl} ${originalWidth}w, ${previewUrl} ${previewWidth}w` : null;
-      const sizes = hasSize && (displayWidth > 0) ? `${displayWidth * (width / 100)}px` : null;
-
+      if (
+        !!originalUrl &&
+        (
+          process.env.NODE_ENV === 'production' ||
+          [true, "true", 1, "1"].includes(process.env.CF_RESIZE)
+        )
+      ) {
+        const parts = parse(originalUrl)
+        const isMobile = getWindowDimension().width <= BREAKPOINT_EXTRA_SMALL
+        const previewWidth = (isMobile ? 420 : 700) * window.devicePixelRatio
+        const resizePart = `/cdn-cgi/image/width=${previewWidth},quality=100,fit=scale-down`
+        parts.pathname = `${resizePart}${parts.pathname}`
+        previewUrl = format(parts)
+      }
       const focusX = attachment.getIn(['meta', 'focus', 'x']) || 0;
       const focusY = attachment.getIn(['meta', 'focus', 'y']) || 0;
       const x = ((focusX / 2) + .5) * 100;
       const y = ((focusY / -2) + .5) * 100;
-
+      
       thumbnail = (
         <a
           className={[_s.d, _s.overflowHidden, _s.h100PC, _s.w100PC, _s.cursorPointer].join(' ')}
@@ -162,8 +169,6 @@ class Item extends ImmutablePureComponent {
           <img
             loading='lazy'
             src={previewUrl}
-            srcSet={srcSet}
-            sizes={sizes}
             className={[_s.h100PC, _s.w100PC, _s.objectFitCover].join(' ')}
             alt={attachment.get('description')}
             title={attachment.get('description')}
@@ -531,7 +536,11 @@ class MediaGallery extends React.PureComponent {
 
         {
           !visible && sensitive &&
-          <SensitiveMediaItem onClick={this.handleOpen} />
+          <SensitiveMediaItem
+            onClick={this.handleOpen}
+            message='The author of this gab has added a warning to this media.'
+            btnTitle='View'
+          />
         }
 
         {

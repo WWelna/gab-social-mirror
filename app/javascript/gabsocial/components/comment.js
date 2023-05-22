@@ -11,24 +11,37 @@ import {
   repost,
   unrepost,
 } from '../actions/interactions'
-import { fetchComments } from '../actions/statuses'
+import {
+  fetchComments,
+  showStatusAnyways,
+} from '../actions/statuses'
 import { replyCompose } from '../actions/compose'
 import { openModal } from '../actions/modal'
-import { openPopover } from '../actions/popover'
+import {
+  openPopover,
+  cancelPopover,
+  closePopover,
+} from '../actions/popover'
 import { makeGetStatus } from '../selectors'
 import {
   CX,
   MODAL_BOOST,
+  POPOVER_STATUS_REACTIONS_COUNT,
 } from '../constants'
-import { me, boostModal } from '../initial_state'
+import { canShowComment } from '../utils/can_show'
+import { me, boostModal, allReactions } from '../initial_state'
 import Avatar from './avatar'
 import Button from './button'
+import Dummy from './dummy'
 import CommentHeader from './comment_header'
 import StatusContent from './status_content'
 import StatusMedia from './status_media'
 import { defaultMediaVisibility } from './status'
 import Text from './text'
 import CommentSubReplyLoadMoreButton from './comment_sub_reply_load_more_button'
+import SensitiveMediaItem from './sensitive_media_item'
+import ReactionsPopoverInitiator from './reactions_popover_initiator'
+import ReactionsDisplayBlock from './reactions_display_block'
 
 class Comment extends ImmutablePureComponent {
 
@@ -53,13 +66,17 @@ class Comment extends ImmutablePureComponent {
   handleOnRepost = () => {
     this.props.onRepost(this.props.status)
   }
+  
+  handleOnRepost = () => {
+    this.props.onRepost(this.props.status)
+  }
 
   handleOnOpenStatusOptions = () => {
     this.props.onOpenStatusOptions(this.moreNode, this.props.status)
   }
 
-  handleToggleMediaVisibility = () => {
-    this.setState({ showMedia: !this.state.showMedia })
+  handleOnShowStatusAnyways = () => {
+    this.props.onShowStatusAnyways(this.props.status.get('id'))
   }
 
   handleOnThreadMouseEnter = (event) => {
@@ -89,13 +106,21 @@ class Comment extends ImmutablePureComponent {
     this.props.onFetchComments(status.get('id'))
   }
 
+  handleOnOpenLikes = () => {
+    this.props.onOpenLikes(this.props.status, this.floatingReactionsRef)
+  }
+
   setMoreNode = (c) => {
     this.moreNode = c
   }
 
+  setFloatingReactionsRef = (c) => {
+    this.floatingReactionsRef = c
+  }
+
   setContainerNode = (c) => {
     this.containerNode = c
-  }
+  } 
 
   render() {
     const {
@@ -110,8 +135,10 @@ class Comment extends ImmutablePureComponent {
 
     if (!status) return null
 
+    const commenterAccountId = status.getIn(['account', 'id'])
+
     //If account is spam and not mine, hide
-    if (status.getIn(['account', 'is_spam']) && status.getIn(['account', 'id']) !== me) {
+    if (status.getIn(['account', 'is_spam']) && commenterAccountId !== me) {
       return null
     }
 
@@ -119,32 +146,10 @@ class Comment extends ImmutablePureComponent {
     const loadedReplyCount = !!commentLoadedDescendants ? commentLoadedDescendants.size : 0
     const unloadedReplyCount = replyCount - loadedReplyCount
     const repliesLoaded = unloadedReplyCount === 0
+    const reactionsMap = status.get('reactions_counts')
 
-    //If blocked or muted, hide
-    const blocks = !!me ? localStorage.getItem('blocks') : ''
-    const mutes = !!me ? localStorage.getItem('mutes') : ''
-    const blockedby = !!me ? localStorage.getItem('blockedby') : ''
-    if (
-        !!me && (
-          (blockedby && blockedby.split(',').includes(status.getIn(['account', 'id'])))
-          ||
-          (blocks && blocks.split(',').includes(status.getIn(['account', 'id'])))
-          ||
-          (mutes && mutes.split(',').includes(status.getIn(['account', 'id'])))
-        )
-    ) {
-      return null
-    }
-
-    if (isHidden) {
-      return (
-        <div tabIndex='0' ref={this.setContainerNode}>
-          {status.getIn(['account', 'display_name']) || status.getIn(['account', 'username'])}
-          {status.get('content')}
-        </div>
-      )
-    }
-
+    const csd = canShowComment(status)
+    
     const style = {
       paddingLeft: `${indent * 38}px`,
     }
@@ -169,6 +174,11 @@ class Comment extends ImmutablePureComponent {
       highlightedComment: isHighlighted,
     })
 
+    const AvatarComponent = (!csd.label && !csd.nulled) ? NavLink : Dummy
+    const reaction = status.get('reaction')
+    const likeBtnTitle = !!reaction ?
+    reaction.get('name_past').charAt(0).toUpperCase() + reaction.get('name_past').slice(1) :
+    !!status.get('favourited') && !!me ? 'Liked' : 'Like'
 
     return (
       <div
@@ -199,63 +209,113 @@ class Comment extends ImmutablePureComponent {
         <div className={[_s.d, _s.mb5].join(' ')} style={style}>
 
           <div className={[_s.d, _s.flexRow].join(' ')}>
-            <NavLink
-              to={`/${status.getIn(['account', 'acct'])}`}
-              title={status.getIn(['account', 'acct'])}
+            <AvatarComponent
+              to={!csd.label && !csd.nulled ? `/${status.getIn(['account', 'acct'])}` : undefined}
+              title={!csd.label && !csd.nulled ? status.getIn(['account', 'acct']) : undefined}
               className={[_s.d, _s.mr10, _s.pt5].join(' ')}
             >
-              <Avatar account={status.get('account')} size={30} />
-            </NavLink>
+              { !csd.label && !csd.nulled && <Avatar account={status.get('account')} size={30} /> }
+              { !!csd.label &&
+                <div style={{ height: '30px', width: '30px' }} className={[_s.d, _s.circle, _s.bgSecondary].join(' ')} />
+              }
+            </AvatarComponent>
 
-            <div className={[_s.d, _s.flexShrink1, _s.maxW100PC42PX].join(' ')}>
-              <div className={contentClasses}>
-                <CommentHeader
-                  ancestorAccountId={ancestorAccountId}
-                  status={status}
-                  onOpenRevisions={this.props.onOpenStatusRevisionsPopover}
-                  onOpenLikes={this.props.onOpenLikes}
-                  onOpenReposts={this.props.onOpenReposts}
-                  onOpenQuotes={this.props.onOpenQuotes}
-                />
-                <StatusContent
-                  status={status}
-                  onClick={this.handleClick}
-                  isComment
-                  collapsable
-                />
-                <div className={[_s.d, _s.mt5].join(' ')}>
-                  <StatusMedia
-                    isComment
-                    status={status}
-                    onOpenMedia={this.props.onOpenMedia}
-                    cacheWidth={this.props.cacheMediaWidth}
-                    defaultWidth={this.props.cachedMediaWidth}
-                    visible={this.state.showMedia}
-                    onToggleVisibility={this.handleToggleMediaVisibility}
-                    width={this.props.cachedMediaWidth}
-                  />
+            <div className={[_s.d, _s.flexShrink1, _s.maxW100PC42PX, _s.minW252PX].join(' ')}>
+              {
+                csd.nulled &&
+                <div className={contentClasses}>
+                  <div className={[_s.d, _s.px5, _s.mt10, _s.mb5].join(' ')}>
+                    <Text color='tertiary'>{csd.label}</Text>
+                  </div>
                 </div>
-              </div>
+              }
+              {
+                (!!csd.label && !csd.nulled) &&
+                <SensitiveMediaItem
+                  noPadding
+                  onClick={this.handleOnShowStatusAnyways}
+                  message={csd.label}
+                  btnTitle='View'
+                />
+              }
+              {
+                (!csd.label && !csd.nulled) &&
+                <div className={contentClasses}>
+                  <CommentHeader
+                    ancestorAccountId={ancestorAccountId}
+                    status={status}
+                    onOpenRevisions={this.props.onOpenStatusRevisionsPopover}
+                    onOpenLikes={this.props.onOpenLikes}
+                    onOpenReposts={this.props.onOpenReposts}
+                    onOpenQuotes={this.props.onOpenQuotes}
+                  />
+                  <StatusContent
+                    status={status}
+                    onClick={this.handleClick}
+                    isComment
+                    collapsable
+                  />
+                  <div className={[_s.d, _s.mt5].join(' ')}>
+                    <StatusMedia
+                      isComment
+                      status={status}
+                      onOpenMedia={this.props.onOpenMedia}
+                      cacheWidth={this.props.cacheMediaWidth}
+                      defaultWidth={this.props.cachedMediaWidth}
+                      visible={this.state.showMedia}
+                      onToggleVisibility={this.handleToggleMediaVisibility}
+                      width={this.props.cachedMediaWidth}
+                    />
+                  </div>
+                </div>
+              }
 
               <div className={[_s.d, _s.flexRow, _s.mt5].join(' ')}>
-                <CommentButton
-                  title={status.get('favourited') && !!me ? 'Unlike' : 'Like'}
+                <ReactionsPopoverInitiator
+                  statusId={status.get('id')}
                   onClick={this.handleOnFavorite}
-                />
+                >
+                  <CommentButton
+                    title={likeBtnTitle}
+                    isDisabled={!!csd.label && !status.get('favourited')}
+                  />
+                </ReactionsPopoverInitiator>
                 <CommentButton
                   title={'Reply'}
                   onClick={this.handleOnReply}
+                  isDisabled={!!csd.label}
                 />
                 <CommentButton
                   title={status.get('reblogged') && !!me ? 'Unrepost' : 'Repost'}
                   onClick={this.handleOnRepost}
+                  isDisabled={!!csd.label && !status.get('reblogged')}
                 />
                 <div ref={this.setMoreNode}>
                   <CommentButton
                     title='···'
                     onClick={this.handleOnOpenStatusOptions}
+                    isDisabled={!!csd.label}
                   />
                 </div>
+                {
+                  status.get('favourites_count') > 0 &&
+                  <div
+                    ref={this.setFloatingReactionsRef}
+                    className={[_s.d, _s.circle, _s.bgPrimary, _s.aiCenter, _s.jcCenter, _s.h20PX, _s.boxShadowBlock, _s.posAbs, _s.right0, _s.topNeg25PX, _s.px5, _s.mrNeg5PX].join(' ')}
+                  >
+                    <ReactionsDisplayBlock
+                      showIcons
+                      showText
+                      isBasicText
+                      totalCount={status.get('favourites_count')}
+                      reactions={reactionsMap}
+                      onClick={this.handleOnOpenLikes}
+                      iconSize='14px'
+                      textSize='extraSmall'
+                      textColor='tertiary'
+                    />
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -279,7 +339,7 @@ class Comment extends ImmutablePureComponent {
 class CommentButton extends React.PureComponent {
 
   render() {
-    const { onClick, title } = this.props
+    const { onClick, title, isDisabled } = this.props
 
     return (
       <Button
@@ -289,8 +349,9 @@ class CommentButton extends React.PureComponent {
         color='tertiary'
         className={[_s.px5, _s.bgSubtle_onHover, _s.py2, _s.mr5].join(' ')}
         onClick={onClick}
+        isDisabled={isDisabled}
       >
-        <Text size='extraSmall' color='inherit' weight='bold'>
+        <Text size='extraSmall' color='inherit' weight='bold' className={_s.capitalize}>
           {title}
         </Text>
       </Button>
@@ -302,6 +363,7 @@ class CommentButton extends React.PureComponent {
 CommentButton.propTypes = {
   onClick: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
+  isDisabled: PropTypes.bool.isRequired,
 }
 
 const makeMapStateToProps = (state, props) => ({
@@ -329,11 +391,16 @@ const mapDispatchToProps = (dispatch) => ({
   onFavorite(status) {
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
 
+    const statusId = status.get('id')
+
     if (status.get('favourited')) {
-      dispatch(unfavorite(status))
+      dispatch(unfavorite(statusId))
     } else {
-      dispatch(favorite(status))
+      dispatch(favorite(statusId))
     }
+
+    dispatch(cancelPopover())
+    dispatch(closePopover())
   },
   onRepost(status) {
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
@@ -360,8 +427,18 @@ const mapDispatchToProps = (dispatch) => ({
       position: 'top',
     }))
   },
-  onOpenLikes(status) {
-    dispatch(openModal('STATUS_LIKES', { status }))
+  onOpenLikes(status, targetRef) {
+    if (!status) return
+
+    const isMyStatus = status.getIn(['account', 'id']) === me
+    if (!isMyStatus || !me) {
+      dispatch(openPopover(POPOVER_STATUS_REACTIONS_COUNT, {
+        targetRef,
+        statusId: status.get('id'),
+      }))
+    } else {
+      dispatch(openModal('STATUS_LIKES', { status }))
+    }
   },
   onOpenReposts(status) {
     dispatch(openModal('STATUS_REPOSTS', { status }))
@@ -379,6 +456,9 @@ const mapDispatchToProps = (dispatch) => ({
   },
   onFetchComments(statusId) {
     dispatch(fetchComments(statusId, true))
+  },
+  onShowStatusAnyways(statusId) {
+    dispatch(showStatusAnyways(statusId))
   },
 })
 
@@ -399,6 +479,7 @@ Comment.propTypes = {
   onOpenQuotes: PropTypes.func.isRequired,
   onOpenStatusRevisionsPopover: PropTypes.func.isRequired,
   onOpenMedia: PropTypes.func.isRequired,
+  onShowStatusAnyways: PropTypes.func.isRequired,
 }
 
 export default withRouter(connect(makeMapStateToProps, mapDispatchToProps)(Comment))

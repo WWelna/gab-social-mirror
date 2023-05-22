@@ -6,9 +6,13 @@ import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
 import { me } from '../initial_state'
 import { openSidebar } from '../actions/sidebar'
+import { routerReset } from '../actions/router'
 import { CX } from '../constants'
 import Button from './button'
 import Avatar from './avatar'
+
+const isHome = p => p === '/' || p === '/home'
+const isNotifications = p => p.startsWith('/notifications')
 
 class FooterBar extends ImmutablePureComponent {
 
@@ -20,50 +24,121 @@ class FooterBar extends ImmutablePureComponent {
     const {
       account,
       notificationCount,
-      homeItemsQueueCount,
+      queuedItems,
+      routerEntries,
+      location,
+      history
     } = this.props
 
-    const currentPathname = this.props.location.pathname
+    const currentPathname = location.pathname
+
+    let home = {
+      to: !me ? '/' : '/home',
+      icon: 'home',
+      title: 'Home',
+      active: !me ? currentPathname === '/' : currentPathname === '/home',
+    }
+
+    let notifications = {
+      to: '/notifications',
+      icon: 'notifications',
+      title: 'Notifications',
+      isHidden: !me,
+      active: isNotifications(currentPathname),
+    }
+
+    let groups = {
+      to: '/groups',
+      icon: 'group',
+      title: 'Groups',
+      active: currentPathname.startsWith('/groups'),
+    }
+
+    let backTimes = 0
+
+    // find home in previous routes counting back how many times it is
+    let homeFound = routerEntries.slice(1).some(function({ pathname }) {
+      backTimes += 1
+      return isHome(pathname)
+    })
+
+    if (me && isHome(currentPathname) === true) {
+      delete home.to
+      home.onClick = () => {
+        window.scrollTo(0,0)
+      }
+    } else if (
+      isHome(currentPathname) === false &&
+      homeFound &&
+      backTimes > 0 &&
+      history.length >= backTimes
+    ) {
+      /*
+      We've determined that there is an opportunity to go back to home and
+      preserve the scroll Y position.
+      */
+      delete home.to
+      home.onClick = () => {
+        history.go(-backTimes)
+        this.props.onRouterReset()
+      }
+    }
+
+    if (me && isNotifications(currentPathname) === true) {
+      delete notifications.to
+      notifications.onClick = () => {
+        window.scrollTo(0,0)
+      }
+    }
+
+    if (me && currentPathname.startsWith('/groups') === true) {
+      delete groups.to
+      groups.onClick = () => {
+        window.scrollTo(0,0)
+      }
+    }
+         
+    
+    const loggedIn = me !== undefined && me !== null && me !== ''
+    const loggedOut = !loggedIn
 
     const buttons = [
-      {
-        to: !me ? '/' : '/home',
-        icon: 'home',
-        title: 'Home',
-        active: !me ? currentPathname === '/' : currentPathname === '/home',
-      },
-      {
-        to: '/notifications',
-        icon: 'notifications',
-        title: 'Notifications',
-        isHidden: !me,
-        active: currentPathname.indexOf('/notifications') > -1,
-      },
-      {
-        to: '/groups',
-        icon: 'group',
-        title: 'Groups',
-        active: currentPathname.indexOf('/groups') > -1,
-      },
-      {
+      home,
+      notifications,
+      groups,
+      loggedIn && {
         to: '/explore',
         icon: 'explore',
         title: 'Explore',
-        active: currentPathname.indexOf('/explore') > -1,
+        active: currentPathname.startsWith('/explore'),
       },
-      {
+      loggedOut && {
         to: '/news',
         icon: 'news',
         title: 'News',
-        active: currentPathname.indexOf('/news') > -1,
+        active: currentPathname.startsWith('/news'),
+      },
+      loggedOut && {
+        to: '/feeds',
+        icon: 'list',
+        title: 'Feeds',
+        active: currentPathname.startsWith('/feed'),
+      },
+      {
+        to: '/marketplace',
+        icon: 'shop',
+        title: 'Marketplace',
+        active: currentPathname.startsWith('/marketplace'),
       },
       {
         title: 'Menu',
         isHidden: !me,
         active: !!account ? currentPathname === `/${account.get('username')}` : false,
         onClick: this.handleOnOpenSidebar,
-      },
-    ]
+      }
+    ].filter(Boolean)
+
+    const homeItemsQueueCount = queuedItems && queuedItems.size
 
     return (
       <div className={[_s.d, _s.z4, _s.minH58PX, _s.w100PC].join(' ')}>
@@ -147,19 +222,23 @@ const mapDispatchToProps = (dispatch) => ({
   onOpenSidebar() {
     dispatch(openSidebar())
   },
+  onRouterReset(){
+    dispatch(routerReset())
+  }
 })
 
 const mapStateToProps = (state) => ({
   account: !!me ? state.getIn(['accounts', me]) : undefined,
   notificationCount: !!me ? state.getIn(['notifications', 'unread']) : 0,
-  homeItemsQueueCount: !!me ? state.getIn(['timelines', 'home', 'totalQueuedItemsCount']) : 0,
+  queuedItems: !!me ? state.getIn(['timelines', 'home', 'queuedItems']): null,
+  routerEntries: state.getIn(['router', 'entries'], [])
 })
 
 FooterBar.propTypes = {
   account: ImmutablePropTypes.map,
   onOpenSidebar: PropTypes.func.isRequired,
   notificationCount: PropTypes.number.isRequired,
-  homeItemsQueueCount: PropTypes.number.isRequired,
+  queuedItems: ImmutablePropTypes.list,
 }
 
 export default withRouter(connect(mapStateToProps, mapDispatchToProps)(FooterBar))

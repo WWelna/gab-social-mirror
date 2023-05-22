@@ -45,17 +45,19 @@ class Api::V1::Timelines::ListController < Api::BaseController
   def list_statuses
     statuses = Status.where(
       account: @accounts, reply: false
-    ).
-    since(10.days.ago).
-    paginate_by_id(
+    ).since(10.days.ago)
+
+    if current_account.nil?
+      statuses = statuses.with_public_visibility
+    end
+
+    statuses = statuses.paginate_by_id(
       limit_param(DEFAULT_STATUSES_LIMIT),
       params_slice(:max_id, :since_id, :min_id)
     )
 
     if !current_account.nil?
       statuses = statuses.reject { |status| FeedManager.instance.filter?(:home, status, current_account.id) }
-    else
-      statuses = statuses.with_public_visibility
     end
     statuses
   end

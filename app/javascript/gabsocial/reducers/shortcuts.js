@@ -7,6 +7,7 @@ import {
 } from '../actions/shortcuts'
 import { importFetchedAccount } from '../actions/importer'
 import { importGroup } from '../actions/groups'
+import { importList } from '../actions/lists'
 import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable'
 
 const initialState = ImmutableMap({
@@ -24,7 +25,7 @@ const normalizeShortcut = (shortcut) => {
       shortcut_type: 'account',
       shortcut_id: shortcut.shortcut_id,
       title: shortcut.shortcut.acct,
-      image: shortcut.shortcut.avatar_static,
+      image: shortcut.shortcut.avatar_static_small,
       to: `/${shortcut.shortcut.acct}`,
     }
   } else if (shortcut.shortcut_type === 'group') {
@@ -36,6 +37,16 @@ const normalizeShortcut = (shortcut) => {
       title: shortcut.shortcut.title,
       image: shortcut.shortcut.cover_image_url,
       to: `/groups/${shortcut.shortcut.id}`,
+    }
+  } else if (shortcut.shortcut_type === 'list') {
+    importList(shortcut.shortcut)
+    return {
+      id: shortcut.id,
+      shortcut_type: 'list',
+      shortcut_id: shortcut.shortcut_id,
+      title: shortcut.shortcut.title,
+      icon: 'list',
+      to: `/feeds/${shortcut.shortcut.id}`,
     }
   }
 }

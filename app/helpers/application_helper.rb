@@ -61,6 +61,10 @@ module ApplicationHelper
     image_tag(custom_emoji.image.url, class: 'emojione', alt: ":#{custom_emoji.shortcode}:")
   end
 
+  def reaction_type_img_tag(reaction_type, className = '')
+    image_tag(reaction_type.image.url, class: className, alt: ":#{reaction_type.name}:")
+  end
+
   def opengraph(property, content)
     tag(:meta, content: content, property: property)
   end

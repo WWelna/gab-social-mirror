@@ -44,8 +44,6 @@ class AlbumCreate extends React.PureComponent {
 
     const isDisabled = !titleValue
 
-    console.log("HELLO")
-
     return (
       <Form>
         <Input

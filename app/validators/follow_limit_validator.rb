@@ -4,8 +4,8 @@ class FollowLimitValidator < ActiveModel::Validator
   LIMIT = ENV.fetch('MAX_FOLLOWS_THRESHOLD', 10_000).to_i
   RATIO = ENV.fetch('MAX_FOLLOWS_RATIO', 1.1).to_f
   
-  MAX_FOLLOWS_DAILY_LIMIT = 200
-  MAX_FOLLOWS_HOURLY_LIMIT = 20
+  MAX_FOLLOWS_DAILY_LIMIT = 500
+  MAX_FOLLOWS_HOURLY_LIMIT = 100
 
   def validate(follow)
     return if follow.account.nil? || !follow.account.local?

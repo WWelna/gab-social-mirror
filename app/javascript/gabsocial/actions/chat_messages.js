@@ -16,12 +16,14 @@ export const CHAT_MESSAGES_PURGE_FAIL    = 'CHAT_MESSAGES_PURGE_FAIL'
 
 export const CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT = 'CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT'
 
+export const CHAT_MESSAGE_SHOW_ANYWAYS   = 'CHAT_MESSAGE_SHOW_ANYWAYS'
+
 /**
  * Send a chat message with given text to given chatConversationId
  * @param {String} text
  * @param {String} chatConversationId
  */
-export const sendChatMessage = (text = '', chatConversationId) => (dispatch, getState) => {
+export const sendChatMessage = (text = '', chatConversationId, marketplaceListingId) => (dispatch, getState) => {
   // must have current user and id
   if (!me || !chatConversationId) return
   // cannot send message if no text
@@ -32,10 +34,7 @@ export const sendChatMessage = (text = '', chatConversationId) => (dispatch, get
   api(getState).post('/api/v1/chat_messages', {
     text,
     chat_conversation_id: chatConversationId,
-  }, {
-    headers: {
-      'Idempotency-Key': getState().getIn(['chat_compose`', 'idempotencyKey']),
-    },
+    marketplace_listing_id: marketplaceListingId,
   }).then((response) => {
     dispatch(importFetchedChatMessages([response.data]))
     dispatch(sendChatMessageSuccess(response.data))
@@ -70,11 +69,7 @@ export const deleteChatMessage = (chatMessageId) => (dispatch, getState) => {
 
   dispatch(deleteChatMessageRequest(chatMessageId))
 
-  api(getState).delete(`/api/v1/chat_messages/${chatMessageId}`, {}, {
-    headers: {
-      'Idempotency-Key': getState().getIn(['chat_compose', 'idempotencyKey']),
-    },
-  }).then((response) => {
+  api(getState).delete(`/api/v1/chat_messages/${chatMessageId}`, {}).then((response) => {
     dispatch(deleteChatMessageSuccess(response.data))
   }).catch((error) => {
     dispatch(deleteChatMessageFail(error))
@@ -141,17 +136,18 @@ export const manageIncomingChatMessage = (chatMessage) => (dispatch, getState) =
   // immediately insert into conversation
   dispatch(sendChatMessageSuccess(chatMessage))
 
-  // Check if conversation is online and approved, if not increase total/convo unread count
   const selectedId = getState().getIn(['chats', 'selectedChatConversationId'], null)
   const incomingId = chatMessage.chat_conversation_id
   if (selectedId === incomingId) return
 
-  // check if is approved
-  const chatConversation = getState().getIn(['chat_conversations', selectedId], null)
-  if (!chatConversation) return
+  dispatch({ type: CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT })
 
-  if (!chatConversation.get('is_hidden') && chatConversation.get('is_approved')) {
-    // increment
-    dispatch({ type: CHAT_CONVERSATION_APPROVED_UNREAD_COUNT_INCREMENT })
-  }
 }
+
+/**
+ * 
+ */
+ export const showChatMessageAnyways = (chatMessageId) => ({
+  type: CHAT_MESSAGE_SHOW_ANYWAYS,
+  chatMessageId,
+})

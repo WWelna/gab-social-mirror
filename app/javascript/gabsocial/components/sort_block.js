@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, injectIntl } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import Button from '../components/button'
 import DotTextSeperator from '../components/dot_text_seperator'
 import Icon from '../components/icon'
@@ -8,33 +8,18 @@ import Text from '../components/text'
 
 class SortBlock extends React.PureComponent {
 
-  handleOnClickValue = () => {
-    this.props.onClickValue(this.valueBtn)
-  }
-
-  handleOnClickSubValue = () => {
-    this.props.onClickSubValue(this.subValueBtn)
-  }
-
-  setValueBtnRef = (c) => {
-    this.valueBtn = c
-  }
-
-  setSubValueBtnRef = (c) => {
-    this.subValueBtn = c
-  }
+  handleOnClickValue = () => this.props.onClickValue(this.valueBtn)
+  handleOnClickSubValue = () => this.props.onClickSubValue(this.subValueBtn)
+  setValueBtnRef = e => this.valueBtn = e
+  setSubValueBtnRef = e => this.subValueBtn = e
 
   render() {
-    const {
-      intl,
-      value,
-      subValue,
-    } = this.props
+    const { value, subValue } = this.props
 
     return (
       <div className={[_s.d, _s.px15, _s.py5, _s.mb5, _s.flexRow].join(' ')}>
         <Text color='secondary' size='small'>
-          {intl.formatMessage(messages.sortBy)}
+          <FormattedMessage id='comment_sort.title' defaultMessage='Sort by' />
         </Text>
         <Button
           isText
@@ -78,16 +63,11 @@ class SortBlock extends React.PureComponent {
 
 }
 
-const messages = defineMessages({
-  sortBy: { id: 'comment_sort.title', defaultMessage: 'Sort by' },
-})
-
 SortBlock.propTypes = {
-  intl: PropTypes.object.isRequired,
-  value: PropTypes.string.isRequired,
-  subValue: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.node, PropTypes.string]),
+  subValue: PropTypes.oneOfType([PropTypes.node, PropTypes.string]),
   onClickValue: PropTypes.func.isRequired,
   onClickSubValue: PropTypes.func,
 }
 
-export default injectIntl(SortBlock)
+export default SortBlock

@@ -13,7 +13,6 @@ import { me } from '../initial_state'
 import { saveShownOnboarding } from '../actions/settings'
 import { fetchGroupsByTab } from '../actions/groups'
 import { saveUserProfileInformation } from '../actions/user'
-import { makeGetAccount } from '../selectors'
 import Button from '../components/button'
 import Divider from '../components/divider'
 import FileInput from '../components/file_input'
@@ -26,6 +25,8 @@ import Text from '../components/text'
 import Pagination from '../components/pagination'
 import ComposeFormContainer from './compose/containers/compose_form_container'
 import Responsive from './ui/util/responsive_component'
+import { DisplayOptions } from '../components/modal/display_options_modal'
+import EditProfileModal from '../components/modal/edit_profile_modal'
 
 const SlideWelcome = () => (
   <div className={[_s.d, _s.w100PC, _s.h100PC].join(' ')}>
@@ -47,42 +48,12 @@ const SlideWelcome = () => (
 
   </div>
 )
+SlideWelcome.title = 'Welcome to Gab!'
 
 class SlidePhotos extends ImmutablePureComponent {
-
-  state = {
-    displayNameValue: this.props.account.get('display_name'),
-  }
-
-  handleCoverPhotoChange = (e) => {
-    try {
-      this.props.onSave({ header: e.target.files[0] })
-    } catch (error) {
-      // 
-    }
-  }
-
-  handleProfilePhotoChange = (e) => {
-    try {
-      this.props.onSave({ avatar: e.target.files[0] })
-    } catch (error) {
-      // 
-    }
-  }
-
-  handleDisplayNameChange = (value) => {
-    this.setState({ displayNameValue: value })
-  }
-
-  handleDisplayNameBlur = () => {
-    this.props.onSave({
-      displayName: this.state.displayNameValue,
-    })
-  }
+  static title = 'Complete your profile'
 
   render() {
-    const { displayNameValue } = this.state
-
     return (
       <div className={[_s.d, _s.w100PC].join(' ')}>
         <div className={[_s.d, _s.px15, _s.py15, _s.aiCenter].join(' ')}>
@@ -91,36 +62,7 @@ class SlidePhotos extends ImmutablePureComponent {
             <Text size='large' align='center'>Set your cover photo, profile photo and enter your display name so people can find you.</Text>
           </div>
 
-          <div className={[_s.d, _s.mt15, _s.w100PC, _s.aiCenter].join(' ')}>
-            <div className={[_s.d, _s.border1PX, _s.borderColorSecondary, _s.overflowHidden, _s.radiusSmall, _s.bgPrimary].join(' ')}>
-              <FileInput
-                width='300px'
-                height='140px'
-                id='cover-photo'
-                onChange={this.handleCoverPhotoChange}
-              />
-              <div className={[_s.d, _s.mtNeg32PX, _s.aiCenter, _s.jcCenter].join(' ')}>
-                <FileInput
-                  width='124px'
-                  height='124px'
-                  id='profile-photo'
-                  className={[_s.circle, _s.border6PX, _s.borderColorWhite, _s.bgPrimary].join(' ')}
-                  onChange={this.handleProfilePhotoChange}
-                />
-              </div>
-              <div className={[_s.d, _s.py5, _s.px15, _s.mt5, _s.mb15].join(' ')}>
-                <Input
-                  id='display-name'
-                  title='Display name'
-                  placeholder='Add your name...'
-                  maxLength={30}
-                  value={displayNameValue}
-                  onChange={this.handleDisplayNameChange}
-                  onBlur={this.handleDisplayNameBlur}
-                />
-              </div>
-            </div>
-          </div>
+          <EditProfileModal embedded />
 
         </div>
       </div>
@@ -129,11 +71,8 @@ class SlidePhotos extends ImmutablePureComponent {
 
 }
 
-SlidePhotos.propTypes = {
-  account: ImmutablePropTypes.map.isRequired,
-}
-
 class SlideGroups extends ImmutablePureComponent {
+  static title = 'Find your people'
 
   render() {
     const { groupIds } = this.props
@@ -170,6 +109,7 @@ SlideGroups.propTypes = {
 }
 
 class SlideFirstPost extends React.PureComponent {
+  static title = 'Start a conversation'
 
   render() {
     const { submitted } = this.props
@@ -213,12 +153,25 @@ class SlideFirstPost extends React.PureComponent {
       </div>
     )
   }
-
 }
+
 
 SlideFirstPost.propTypes = {
   submitted: PropTypes.bool.isRequired,
   onNext: PropTypes.func.isRequired,
+}
+
+class SlideDisplayOptions extends React.PureComponent {
+  static title = 'Display options'
+  render() {
+    return (
+      <div className={[_s.d, _s.w100PC].join(' ')}>
+        <div className={[_s.d, _s.py15, _s.px15].join(' ')}>
+          <DisplayOptions showOptions={false} showDone={false}/>
+        </div>
+      </div>
+    )
+  }
 }
 
 class Introduction extends ImmutablePureComponent {
@@ -229,7 +182,7 @@ class Introduction extends ImmutablePureComponent {
   }
 
   componentDidMount() {
-    window.addEventListener('keyup', this.handleKeyUp)
+    // window.addEventListener('keyup', this.handleKeyUp)
     this.props.onFetchFeaturedGroups()
     this.props.onSaveShownOnboarding()
   }
@@ -241,31 +194,37 @@ class Introduction extends ImmutablePureComponent {
   }
 
   componentWillUnmount() {
-    window.addEventListener('keyup', this.handleKeyUp)
+    // window.addEventListener('keyup', this.handleKeyUp)
   }
 
   handleDot = (i) => {
     this.setState({ currentIndex: i })
   }
 
+  beforeSlideChanged = index => {
+    if (index === 1) {
+      // command <EditProfileModal> to save
+      window.dispatchEvent(new CustomEvent('profile-save'))
+    }
+  }
+
   handlePrev = () => {
-    this.setState(({ currentIndex }) => ({
-      currentIndex: Math.max(0, currentIndex - 1),
-    }))
+    let { currentIndex } = this.state
+    this.beforeSlideChanged(currentIndex)
+    currentIndex = Math.max(0, currentIndex - 1)
+    this.setState({ currentIndex })
   }
 
   handleNext = () => {
-    const newIndex = Math.min(this.state.currentIndex + 1, 3)
-    this.setState({
-      currentIndex: newIndex,
-    })
+    let { currentIndex } = this.state
+    this.beforeSlideChanged(currentIndex)
+    currentIndex = Math.min(currentIndex + 1, 4)
+    this.setState({ currentIndex })
   }
 
-  handleSwipe = (index) => {
-    this.setState({ currentIndex: index })
-  }
+  handleSwipe = currentIndex =>  this.setState({ currentIndex })
 
-  handleKeyUp = ({ key }) => {
+  /* handleKeyUp = ({ key }) => {
     switch (key) {
       case 'ArrowLeft':
         this.handlePrev()
@@ -274,38 +233,27 @@ class Introduction extends ImmutablePureComponent {
         this.handleNext()
         break
     }
-  }
-
-  handleOnSaveUserProfileInformation = (data) => {
-    this.props.onSaveUserProfileInformation(data)
-  }
+  } */
 
   render() {
-    const { account, groupIds } = this.props
+    const { groupIds } = this.props
     const { currentIndex, submittedFirstPost } = this.state
 
-    const pages = [
+    const slides = [
       <SlideWelcome />,
-      <SlidePhotos
-        account={account}
-        onSave={this.handleOnSaveUserProfileInformation}
-      />,
+      <SlidePhotos />,
+      <SlideDisplayOptions/>,
       <SlideGroups groupIds={groupIds} />,
       <SlideFirstPost
         submitted={submittedFirstPost}
         onNext={this.handleNext}
-      />,
+      />
     ]
-
-    const titles = [
-      `Welcome to Gab!`,
-      'Complete your profile',
-      'Find your people',
-      'Start a conversation',
-    ]
-    const title = titles[currentIndex]
-
-    const nextTitle = currentIndex === 3 ? 'Finish' : 'Next'
+    
+    const lastSlideIndex = slides.length - 1
+    const slide = slides[currentIndex]
+    const { title } = slide.type
+    const nextTitle = currentIndex === lastSlideIndex ? 'Finish' : 'Next'
 
     return (
       <div className={[_s.d, _s.w100PC, _s.maxH80VH].join(' ')}>
@@ -322,14 +270,14 @@ class Introduction extends ImmutablePureComponent {
           </Responsive>
           <div className={[_s.mlAuto].join(' ')}>
             <Button
-              href={currentIndex === 3 ? '/home' : undefined}
+              href={currentIndex === lastSlideIndex ? '/home' : undefined}
               onClick={this.handleNext}
               className={[_s.px10, _s.aiCenter, _s.flexRow].join(' ')}
-              icon={currentIndex !== 3 ? 'arrow-right' : undefined}
-              iconSize={currentIndex !== 3 ? '18px' : undefined}
+              icon={currentIndex !== lastSlideIndex ? 'arrow-right' : undefined}
+              iconSize={currentIndex !== lastSlideIndex ? '18px' : undefined}
             >
               {
-                currentIndex === 3 &&
+                currentIndex === lastSlideIndex &&
                 <React.Fragment>
                   <Responsive min={BREAKPOINT_EXTRA_SMALL}>
                     <Text color='white' className={_s.px5}>{nextTitle}</Text>
@@ -348,15 +296,11 @@ class Introduction extends ImmutablePureComponent {
           index={currentIndex}
           onChangeIndex={this.handleSwipe}
           className={[_s.d, _s.flexNormal, _s.calcH80VH106PX].join(' ')}
-          containerStyle={{
-            width: '100%',
-          }}
-          slideStyle={{
-            // height: '100%',
-          }}
+          containerStyle={{ width: '100%' }}
+          disabled={this.props.swipeDisabled}
         >
           {
-            pages.map((page, i) => (
+            slides.map((page, i) => (
               <div key={i} className={[_s.d, _s.calcH80VH106PX].join(' ')}>
                 {page}
               </div>
@@ -373,7 +317,7 @@ class Introduction extends ImmutablePureComponent {
                 onClick={this.handlePrev}
                 icon='arrow-left'
                 backgroundColor='none'
-                color='secondary'
+                color='primary'
                 iconSize='20px'
               />
             }
@@ -381,7 +325,7 @@ class Introduction extends ImmutablePureComponent {
             
           <div className={[_s.d, _s.h100PC, _s.flexGrow1, _s.aiCenter, _s.jcCenter].join(' ')}>
             <Pagination
-              count={pages.length}
+              count={slides.length}
               activeIndex={currentIndex}
               onClick={this.handleDot}
               color='brand'
@@ -390,13 +334,13 @@ class Introduction extends ImmutablePureComponent {
           
           <Button
             isText
-            href={currentIndex === 3 ? '/home' : undefined}
+            href={currentIndex === lastSlideIndex ? '/home' : undefined}
             className={[_s.d, _s.w50PX, _s.h100PC, _s.jcCenter, _s.pr0, _s.pl0, _s.mlAuto, _s.opacity05].join(' ')}
             onClick={this.handleNext}
             backgroundColor='none'
-            color='secondary'
+            color='brand'
           >
-            <Text color='inherit' align='right'>{nextTitle}</Text>
+            <Text align='right' color='brand' weight='bold'>{nextTitle}</Text>
           </Button>
         </div>
       </div>
@@ -406,10 +350,10 @@ class Introduction extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state) => ({
-  account: makeGetAccount()(state, me),
   groupIds: state.getIn(['group_lists', 'featured', 'items']),
   shownOnboarding: state.getIn(['settings', 'shownOnboarding'], false),
   isSubmitting: state.getIn(['compose', 'is_submitting']),
+  swipeDisabled: state.getIn(['swipe', 'paused'])
 })
 
 const mapDispatchToProps = (dispatch) => ({
@@ -421,7 +365,6 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 Introduction.propTypes = {
-  account: ImmutablePropTypes.map.isRequired,
   groupIds: ImmutablePropTypes.list,
   isSubmitting: PropTypes.bool.isRequired,
   shownOnboarding: PropTypes.bool.isRequired,

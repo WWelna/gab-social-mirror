@@ -7,9 +7,10 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import debounce from 'lodash.debounce'
 import {
   fetchBookmarkCollections,
-  fetchBookmarkedStatuses,
-  expandBookmarkedStatuses,
+  // fetchBookmarkedStatuses,
+  // expandBookmarkedStatuses,
 } from '../actions/bookmarks'
+import { timelineFetchPaged } from '../store/timelines'
 import { openModal } from '../actions/modal'
 import { me, meUsername } from '../initial_state'
 import {
@@ -23,24 +24,27 @@ import Text from '../components/text'
 
 class BookmarkedStatuses extends ImmutablePureComponent {
 
-  componentDidMount() {
-    const { dispatch, bookmarkCollectionsFetched, bookmarkCollectionId } = this.props
-    if (!bookmarkCollectionsFetched || bookmarkCollectionId === 'saved') {
-      dispatch(fetchBookmarkCollections())
+  load = opts => {
+    const { bookmarkCollectionId } = this.props
+    if (!bookmarkCollectionId) {
+      return
     }
-    dispatch(fetchBookmarkedStatuses(bookmarkCollectionId))
+    const timelineId = `bookmarks:${bookmarkCollectionId}`
+    const endpoint = `/api/v1/bookmark_collections/${bookmarkCollectionId}/bookmarks`
+    const expandOpts = Object.assign({ endpoint }, opts)
+    this.props.dispatch(timelineFetchPaged(timelineId, expandOpts))
+  }
+
+  componentDidMount() {
+    this.load()
   }
 
   componentDidUpdate(prevProps) {
-    const { dispatch, bookmarkCollectionsFetched, bookmarkCollectionId } = this.props
-    // if (prevProps.bookmarkCollectionId === this.props.bookmarkCollectionId || !bookmarkCollectionsFetched) {
-    //   dispatch(fetchBookmarkCollections())
-    // }
-    // if (prevProps.bookmarkCollectionId === this.props.bookmarkCollectionId) {
-    //   dispatch(fetchBookmarkedStatuses(this.props.bookmarkCollectionId))
-    // }
+    if (prevProps.bookmarkCollectionId !== this.props.bookmarkCollectionId) {
+      this.load()
+    }
   }
-  
+
   handleOnOpenEdit = () => {
     const { bookmarkCollectionId, dispatch } = this.props
     dispatch(openModal(MODAL_BOOKMARK_COLLECTION_EDIT, {
@@ -49,8 +53,7 @@ class BookmarkedStatuses extends ImmutablePureComponent {
   }
 
   handleLoadMore = debounce(() => {
-    const { bookmarkCollectionId, dispatch } = this.props
-    dispatch(expandBookmarkedStatuses(bookmarkCollectionId))
+    this.load()
   }, 300, { leading: true })
 
   render() {
@@ -65,11 +68,13 @@ class BookmarkedStatuses extends ImmutablePureComponent {
       bookmarkCollectionTitle,
     } = this.props
 
+    const timelineId = `bookmarks:${bookmarkCollectionId}`
+
     if (
-      !isMyAccount || 
+      !isMyAccount ||
       (bookmarkCollectionId !== 'saved' && !isMyBookmark) ||
       (bookmarkCollectionId !== 'saved' && !bookmarkCollection)
-      ) {
+    ) {
       return <ColumnIndicator type='missing' />
     }
 
@@ -103,8 +108,9 @@ class BookmarkedStatuses extends ImmutablePureComponent {
         </Block>
         <div className={[_s.d, _s.w100PC, _s.mt10].join(' ')}>
           <StatusList
+            timelineId={timelineId}
+            scrollKey={timelineId}
             statusIds={statusIds}
-            scrollKey='bookmarked_statuses'
             hasMore={hasMore}
             isLoading={isLoading}
             onLoadMore={this.handleLoadMore}
@@ -118,6 +124,7 @@ class BookmarkedStatuses extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state, { params: { username, bookmarkCollectionId } }) => {
+  const timelineId = `bookmarks:${bookmarkCollectionId}`
   const bookmarkCollections = state.getIn(['bookmark_collections', 'items'])
   const bookmarkCollection = bookmarkCollections.find((b) => b.get('id') === bookmarkCollectionId)
   const bookmarkCollectionTitle = bookmarkCollectionId === 'saved' ? 'Saved' : !!bookmarkCollection ? bookmarkCollection.get('title') : null
@@ -128,9 +135,9 @@ const mapStateToProps = (state, { params: { username, bookmarkCollectionId } }) 
     bookmarkCollectionTitle,
     isMyBookmark: !!bookmarkCollection ? bookmarkCollection.get('account_id') == me : false,
     isMyAccount: (username.toLowerCase() === meUsername.toLowerCase()),
-    statusIds: state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'items']),
-    isLoading: state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'isLoading'], true),
-    hasMore: !!state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'next']),
+    statusIds: state.getIn(['timelines', timelineId, 'items']),
+    isLoading: state.getIn(['timelines', timelineId, 'isLoading']),
+    hasMore: state.getIn(['timelines', timelineId, 'hasNext']),
     bookmarkCollectionsFetched: state.getIn(['bookmark_collections', 'isFetched'], false),
   }
 }

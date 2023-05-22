@@ -42,6 +42,10 @@ class Poll < ApplicationRecord
 
   after_commit :reset_parent_cache, on: :update
 
+  def cache_key
+    "poll:#{id}-#{cache_version}"
+  end
+
   def loaded_options
     options.map.with_index { |title, key| Option.new(self, key.to_s, title, show_totals_now? ? cached_tallies[key] : nil) }
   end

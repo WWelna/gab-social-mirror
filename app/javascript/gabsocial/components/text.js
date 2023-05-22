@@ -51,6 +51,7 @@ const ALIGNMENTS = {
  * @param {string} [props.size='normal'] size of the text
  * @param {string} [props.tagName='span'] tagName of the text element
  * @param {string} [props.weight='normal'] weight of the text
+ * @param {string} [props.fullWeight='bold'] when toggling between two weights, supply the bigger weight to prevent the width of the element from changing slightly
  */
 class Text extends React.PureComponent {
 
@@ -66,6 +67,8 @@ class Text extends React.PureComponent {
       htmlFor,
       isBadge,
       hasUnderline,
+      title,
+      fullWeight,
     } = this.props
 
     // Style the component according to props
@@ -85,7 +88,7 @@ class Text extends React.PureComponent {
       cWhite: color === COLORS.white,
       cError: color === COLORS.error,
       inherit: color === COLORS.inherit,
-      
+
       fs24PX: size === SIZES.extraExtraLarge,
       fs19PX: size === SIZES.extraLarge,
       fs16PX: size === SIZES.large,
@@ -99,6 +102,11 @@ class Text extends React.PureComponent {
       fw600: weight === WEIGHTS.bold,
       fw800: weight === WEIGHTS.extraBold,
 
+      fullW400: fullWeight === WEIGHTS.normal,
+      fullW500: fullWeight === WEIGHTS.medium,
+      fullW600: fullWeight === WEIGHTS.bold,
+      fullW800: fullWeight === WEIGHTS.extraBold,
+
       textAlignLeft: align === ALIGNMENTS.left,
       textAlignRight: align === ALIGNMENTS.right,
       textAlignCenter: align === ALIGNMENTS.center,
@@ -109,8 +117,10 @@ class Text extends React.PureComponent {
     return React.createElement(
       tagName,
       {
+        title,
         htmlFor,
         className: classes,
+        'data-text': (typeof children === 'string' ? children : undefined),
       },
       children,
     )
@@ -128,7 +138,9 @@ Text.propTypes = {
   htmlFor: PropTypes.string,
   size: PropTypes.oneOf(Object.keys(SIZES)),
   tagName: PropTypes.string,
+  title: PropTypes.string,
   weight: PropTypes.oneOf(Object.keys(WEIGHTS)),
+  fullWeight: PropTypes.oneOf(Object.keys(WEIGHTS)),
 }
 
 Text.defaultProps = {

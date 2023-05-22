@@ -6,7 +6,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { Map as ImmutableMap } from 'immutable'
 import { createSelector } from 'reselect'
-import detectPassiveEvents from 'detect-passive-events'
+import { supportsPassiveEvents } from 'detect-it'
 import { changeSetting } from '../../actions/settings'
 import { useEmoji } from '../../actions/emojis'
 import { closePopover } from '../../actions/popover'
@@ -39,7 +39,7 @@ const assetHost = process.env.CDN_HOST || ''
 let EmojiPicker, Emoji // load asynchronously
 
 const backgroundImageFn = () => `${assetHost}/emoji/sheet_32.png`
-const listenerOptions = detectPassiveEvents.hasSupport ? { passive: true } : false
+const listenerOptions = supportsPassiveEvents ? { passive: true } : false
 
 const perLine = 8
 const lines = 2
@@ -178,7 +178,7 @@ class EmojiPickerMenu extends ImmutablePureComponent {
         perLine={8}
         emojiSize={29}
         sheetSize={32}
-        set='twitter'
+        native={true}
         color='#30CE7D'
         emoji=''
         autoFocus

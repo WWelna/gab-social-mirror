@@ -81,8 +81,8 @@ module GabSocial
       Redis.current.with do |conn|
         keys = conn.keys('feed:*')
 
-        conn.pipelined do
-          keys.each { |key| conn.del(key) }
+        conn.pipelined do |pipeline|
+          keys.each { |key| pipeline.del(key) }
         end
       end
       say('OK', :green)

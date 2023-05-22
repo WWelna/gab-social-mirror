@@ -9,7 +9,6 @@ import {
   ProgressPanel,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class CommunityPage extends React.PureComponent {
@@ -25,7 +24,6 @@ class CommunityPage extends React.PureComponent {
         page='community'
         layout={[
           ProgressPanel,
-          GabAdPanel,
           TrendsBreakingPanel,
           UserSuggestionsPanel,
           GroupsPanel,

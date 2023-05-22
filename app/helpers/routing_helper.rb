@@ -13,9 +13,18 @@ module RoutingHelper
   end
 
   def full_asset_url(source, **options)
+    cloudflare_options = options.delete(:cloudflare_options)
     source = ActionController::Base.helpers.asset_url(source, options) unless use_storage?
+    uri = URI.join(root_url, source)
 
-    URI.join(root_url, source).to_s
+    if cloudflare_options.present? && Rails.env.production?
+      # https://developers.cloudflare.com/images/image-resizing/url-format
+      directive = cloudflare_options.map { |k,v| "#{k}=#{v}" }.join(',')
+      resize = "/cdn-cgi/image/#{directive}"
+      uri.path = "#{resize}#{uri.path}"
+    end
+
+    return(uri.to_s)
   end
 
   def full_pack_url(source, **options)

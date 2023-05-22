@@ -1,6 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { withRouter } from 'react-router-dom'
+import queryString from 'query-string'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { getOrderedLists } from '../selectors'
@@ -11,32 +13,76 @@ import {
   MODAL_LIST_CREATE,
   POPOVER_LISTS_SORT_OPTIONS,
   BREAKPOINT_EXTRA_SMALL,
+  LIST_TYPE_OWN,
+  LIST_TYPE_MEMBER_OF,
+  LIST_TYPE_SUBSCRIBED_TO,
+  LIST_TYPE_FEATURED,
 } from '../constants'
 import { me } from '../initial_state'
 import List from '../components/list'
 import Text from '../components/text'
 import Block from '../components/block'
-import TabBar from '../components/tab_bar'
+import Heading from '../components/heading'
 import Button from '../components/button'
 import Icon from '../components/icon'
+import BlockHeading from '../components/block_heading'
 import ResponsiveComponent from './ui/util/responsive_component'
 
 class ListsDirectory extends ImmutablePureComponent {
 
   state = {
-    activeList: 'own',
+    activeList: null,
+    title: 'Featured Feeds'
   }
 
   componentDidMount() {
-    this.props.onFetchLists()
+    this.checkCurrentUrlTab()
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.location.key !== this.props.location.key &&
+        prevProps.location.pathname === '/feeds' &&
+        this.props.location.pathname === '/feeds'
+      ) {
+      this.checkCurrentUrlTab()
+    }
   }
 
   handleOnOpenListCreateModal = () => {
     this.props.onOpenListCreateModal()
   }
 
+  checkCurrentUrlTab = () => {
+    // null/no tab is "featured" aka main landing page of /feeds
+    let tab = null
+    try {
+      const search = this.props.location.search
+      const qp = queryString.parse(search)
+      tab = qp.tab
+      if (!tab) tab = LIST_TYPE_FEATURED
+    } catch (error) {
+      //
+    }
+    if (this.state.currentTab !== tab) {
+      this.setState({ currentTab: tab })
+      this.handleOnChangeTab(tab)
+    }
+  }
+
   handleOnChangeTab(tab) {
-    this.setState({ activeList: tab })
+    let title = this.state.title
+    if (tab === LIST_TYPE_OWN) title = 'My Feeds'
+    else if (tab === LIST_TYPE_MEMBER_OF) title = 'Member of'
+    else if (tab === LIST_TYPE_SUBSCRIBED_TO) title = 'Subscribed To'
+    else {
+      title = 'Featured Feeds'
+      tab = LIST_TYPE_FEATURED
+    }
+    this.setState({
+      activeList: tab,
+      title,
+    })
+    this.props.onFetchLists(tab)
   }
 
   handleOnSort(activeList) {
@@ -52,11 +98,14 @@ class ListsDirectory extends ImmutablePureComponent {
       ownLists,
       memberOfLists,
       subscribedToLists,
-      isError,
-      isFetched,
-      isLoading,
+      featuredLists,
+      listsListsBlock,
     } = this.props 
-    const { activeList } = this.state
+    const { activeList, title } = this.state
+
+    const isFetched = listsListsBlock.getIn([activeList, 'isFetched'], false)
+    const isLoading = listsListsBlock.getIn([activeList, 'isLoading'], false)
+    const isError = listsListsBlock.getIn([activeList, 'isError'], false)
 
     const emptyMessage = (
       <div className={[_s.d, _s.w100PC, _s.aiCenter, _s.py15, _s.px15, _s.jcCenter].join(' ')}>
@@ -72,8 +121,11 @@ class ListsDirectory extends ImmutablePureComponent {
       </div>
     )
     
-    const lists = activeList === 'own' ? ownLists : activeList === 'member_of' ? memberOfLists : subscribedToLists
-
+    const lists =
+      activeList === LIST_TYPE_OWN ? ownLists :
+      activeList === LIST_TYPE_MEMBER_OF ? memberOfLists :
+      activeList === LIST_TYPE_SUBSCRIBED_TO ? subscribedToLists : featuredLists
+    
     const listItems = lists.map((list) => {
       const owner = list.get('account')
       let subtitle = `Created by ${owner.get('id') === me ? 'you' : `@${owner.get('username')}`}`
@@ -101,30 +153,13 @@ class ListsDirectory extends ImmutablePureComponent {
 
     return (
       <Block>
-        <div className={[_s.d, _s.maxH56PX, _s.flexRow, _s.bgPrimary, _s.z3, _s.borderBottom1PX, _s.borderColorSecondary, _s.w100PC].join(' ')}>
-          <div className={[_s.d, _s.flex1].join(' ')}>
-            <TabBar
-              isLarge
-              tabs={[
-                {
-                  title: 'My Feeds',
-                  onClick: () => this.handleOnChangeTab('own'),
-                  active: activeList === 'own',
-                },
-                {
-                  title: 'Subscribed to',
-                  onClick: () => this.handleOnChangeTab('subscribed_to'),
-                  active: activeList === 'subscribed_to',
-                },
-                {
-                  title: 'Member of',
-                  onClick: () => this.handleOnChangeTab('member_of'),
-                  active: activeList === 'member_of',
-                },
-              ]}
-            />
-          </div>
-          <ResponsiveComponent min={BREAKPOINT_EXTRA_SMALL}>
+        <ResponsiveComponent min={BREAKPOINT_EXTRA_SMALL}>
+          <div className={[_s.d, _s.minH53PX, _s.flexRow, _s.bgPrimary, _s.z3, _s.borderBottom1PX, _s.borderColorSecondary, _s.w100PC].join(' ')}>
+            <div className={[_s.d, _s.flex1, _s.px15,, _s.jcCenter, _s.h100PC, _s.minH53PX].join(' ')}>
+              <Heading size='h2'>
+                {title}
+              </Heading>
+            </div>
             <div
               className={[_s.d, _s.mlAuto, _s.borderLeft1PX, _s.borderColorSecondary, _s.aiCenter, _s.jcCenter].join(' ')}
               ref={this.setSortNode}
@@ -141,11 +176,11 @@ class ListsDirectory extends ImmutablePureComponent {
                 </Text>
               </Button>
             </div>
-          </ResponsiveComponent>
-        </div>
+          </div>
+        </ResponsiveComponent>
         <List
           scrollKey='lists'
-          showLoading={lists.size === 0 && !isFetched}
+          showLoading={(lists.size === 0 && !isFetched) || isLoading}
           items={listItems}
         />
         {
@@ -158,7 +193,7 @@ class ListsDirectory extends ImmutablePureComponent {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  onFetchLists: () => dispatch(fetchLists()),
+  onFetchLists: (tab) => dispatch(fetchLists(tab)),
   onOpenListCreateModal: () => dispatch(openModal(MODAL_LIST_CREATE)),
   onOpenListsSortPopover(targetRef, tab) {
     dispatch(openPopover(POPOVER_LISTS_SORT_OPTIONS, {
@@ -170,18 +205,16 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 const mapStateToProps = (state) => ({
-  ownLists: getOrderedLists(state, 'own'),
-  memberOfLists: getOrderedLists(state, 'member_of'),
-  subscribedToLists: getOrderedLists(state, 'subscribed_to'),
-  isLoading: state.getIn(['lists', 'isLoading']),
-  isError: state.getIn(['lists', 'isError']),
-  isFetched: state.getIn(['lists', 'isFetched']),
+  listsListsBlock: state.getIn(['lists_lists']),
+  ownLists: getOrderedLists(state, LIST_TYPE_OWN),
+  memberOfLists: getOrderedLists(state, LIST_TYPE_MEMBER_OF),
+  subscribedToLists: getOrderedLists(state, LIST_TYPE_SUBSCRIBED_TO),
+  featuredLists: getOrderedLists(state, LIST_TYPE_FEATURED),
 })
 
 ListsDirectory.propTypes = {
-  lists: ImmutablePropTypes.list,
   onFetchLists: PropTypes.func.isRequired,
   onOpenListCreateModal: PropTypes.func.isRequired,
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ListsDirectory)
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(ListsDirectory))

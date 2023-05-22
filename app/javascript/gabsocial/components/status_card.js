@@ -1,3 +1,4 @@
+import { parse, format } from 'url'
 import React from 'react'
 import PropTypes from 'prop-types'
 import Immutable from 'immutable'
@@ -118,7 +119,20 @@ class StatusCard extends ImmutablePureComponent {
     if (card === null) return null
 
     const maxDescription = 160
-    const cardImg = card.get('image')
+    let cardImg = card.get('image')
+    if (
+      card.get('width') > 800 && !!cardImg &&
+      (
+        process.env.NODE_ENV === 'production' ||
+        [true, "true", 1, "1"].includes(process.env.CF_RESIZE)
+      )
+    ) {
+      const parts = parse(cardImg)
+      const previewWidth = card.get('type') === 'video' ? 720 : 410
+      const resizePart = `/cdn-cgi/image/width=${previewWidth},quality=100`
+      parts.pathname = `${resizePart}${parts.pathname}`
+      cardImg = format(parts)
+    }
     const provider = card.get('provider_name').length === 0 ? decodeIDNA(getHostname(card.get('url'))) : card.get('provider_name')
     const interactive = card.get('type') !== 'link'
     const isOnLinkFeed = `${window.location.pathname}`.indexOf('/links/') > -1

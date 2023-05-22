@@ -1,12 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { me } from '../initial_state'
-import { getPromotions } from '../selectors'
+import { loggedIn } from '../initial_state'
 import Bundle from '../features/ui/util/bundle'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import {
-  StatusPromotionPanel
+  StatusPromotionPanel,
 } from '../features/ui/util/async_components'
 
 class SidebarPanelGroup extends React.PureComponent {
@@ -18,7 +17,7 @@ class SidebarPanelGroup extends React.PureComponent {
       promotions,
     } = this.props
 
-    if (Array.isArray(promotions) && Array.isArray(layout) && !!me) {
+    if (Array.isArray(promotions) && Array.isArray(layout) && loggedIn) {
       const sidebarPromotionPageId = `${page}.sidebar`
       const promotion = promotions.find((promotion) => promotion.timeline_id === sidebarPromotionPageId)
 
@@ -64,13 +63,13 @@ class SidebarPanelGroup extends React.PureComponent {
 }
 
 const mapStateToProps = (state) => ({
-  promotions: getPromotions()(state)
+  promotions: state.get('promotions'),
 })
 
 SidebarPanelGroup.propTypes = {
   layout: PropTypes.array.isRequired,
   page: PropTypes.string.isRequired,
-  promotion: PropTypes.object,
+  promotions: PropTypes.array,
 }
 
 export default connect(mapStateToProps)(SidebarPanelGroup)

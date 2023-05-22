@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { defineMessages, injectIntl } from 'react-intl'
+import { me } from '../../initial_state'
 import {
   fetchRelatedSuggestions,
   fetchPopularSuggestions,
@@ -48,13 +49,18 @@ class UserSuggestionsInjection extends ImmutablePureComponent {
         isXS={isXS}
       >
           {
-            suggestions.map((accountId) => (
-              <Account
-                isCard
-                key={`user_suggestion_injection_${accountId}`}
-                id={accountId}
-              />
-            ))
+            suggestions.map((accountId) => {
+              // dont show myself as a suggestion
+              if (accountId === me) return null
+
+              return (
+                <Account
+                  isCard
+                  key={`user_suggestion_injection_${accountId}`}
+                  id={accountId}
+                />
+              )
+            })
           }
       </TimelineInjectionLayout>
     )

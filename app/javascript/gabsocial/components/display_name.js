@@ -34,7 +34,7 @@ class DisplayName extends ImmutablePureComponent {
       targetRef,
       position: 'top-start',
       accountId: this.props.account.get('id'),
-      timeout: 1250
+      timeout: 1500
     })
   }
 
@@ -108,9 +108,11 @@ class DisplayName extends ImmutablePureComponent {
       !!isSmall ? 14 : 15
 
     let relationshipLabel
+    let isMuting = false
     if (me && account) {
       const accountId = account.get('id')
       const isFollowedBy = (me !==  accountId && account.getIn(['relationship', 'followed_by']))
+      isMuting = account.getIn(['relationship', 'muting'])
 
       if (isFollowedBy) {
         relationshipLabel = 'Follows you'
@@ -137,10 +139,14 @@ class DisplayName extends ImmutablePureComponent {
                 account.get('locked') &&
                 <Icon id='lock-filled' size={`${iconSize - 3}px`} className={[_s.cPrimary, _s.ml5].join(' ')} />
               }
+              {
+                isMuting &&
+                <Icon id='audio-mute' size={`${iconSize - 3}px`} className={[_s.cPrimary, _s.ml7].join(' ')} />
+              }
             </bdi>
             {
               account.get('is_verified') &&
-              <Icon id='verified' size={`${iconSize}px`} className={[_s.ml5, _s.d].join(' ')} />
+              <Icon id='verified-account' size={`${iconSize}px`} className={[_s.ml5, _s.d].join(' ')} />
             }
           </span>
         }

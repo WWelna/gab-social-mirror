@@ -16,7 +16,7 @@ export default class TermsOfService extends React.PureComponent {
             <Heading>GAB AI INC</Heading>
             <br />
             <Heading>Website Terms of Service</Heading>
-            <Heading size='h4'>Last Updated: 10 April 2020</Heading>
+            <Heading size='h4'>Last Updated: 3 May 2020</Heading>
             <br />
             <Heading size='h2'>Acceptance of the Terms of Service</Heading>
             <br />
@@ -336,7 +336,6 @@ export default class TermsOfService extends React.PureComponent {
               </li>
             </ul>
 
-            <Text tagName='p' className={_s.mt15} size='medium'>If your access to the Website is terminated or suspended in relation to a User Contribution authored by you that you believe constitutes protected political or religious speech, and you are able to demonstrate that the User Contribution in question was protected by the First Amendment by obtaining a declaratory judgment from a court of competent jurisdiction, the company will consider permitting you to re-join the site.</Text>
             <Text tagName='p' className={_s.mt15} size='medium'>It is the policy of the Company to not provide any user data to any person unless compelled by a court order issued by a U.S. court, except in cases of life-threatening emergency. The Company reserves the right to change or deviate from this policy at any time, in its sole and absolute discretion, with or without notice to you. Without limiting the foregoing, we have the right to cooperate fully with any law enforcement authorities or civil and criminal court orders requesting or directing us to disclose the identity or other information of anyone posting any materials on or through the Website. YOU WAIVE AND HOLD HARMLESS THE COMPANY AND ITS AFFILIATES, LICENSEES, AND SERVICE PROVIDERS FROM ANY CLAIMS RESULTING FROM ANY ACTION TAKEN BY ANY OF THE FOREGOING PARTIES DURING, OR TAKEN AS A CONSEQUENCE OF, INVESTIGATIONS BY EITHER SUCH PARTIES OR LAW ENFORCEMENT AUTHORITIES.</Text>
             <Text tagName='p' className={_s.mt15} size='medium'>We do not review material before it is posted on the Website and cannot ensure prompt removal of unlawful material after it has been posted. Accordingly, we assume no liability for any action or inaction regarding transmissions, communications, or content provided by any user or third party. We have no liability or responsibility to anyone for performance or nonperformance of the activities described in this section.</Text>
 

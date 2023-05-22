@@ -1,0 +1,28 @@
+%tr
+  %td
+    - if marketplace_listing.media_attachments && marketplace_listing.media_attachments.count > 0
+      = image_tag full_asset_url(marketplace_listing.media_attachments.first.file.url(:small)), alt: '', height: '78px', width: 'auto', :style => "height:78px,width:78px;border-radius:8px;border:1px solid #444;"
+    - else
+      %span{:style => "height:78px;width:78px;display:flex;align-items:center;justify-content:center;color:#444;background-color:#111;font-size:12px;"} No images
+  %td
+    %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+      %span{:style => "color:#999"} Created:
+      %time= marketplace_listing.created_at.strftime("%m-%d-%Y %I:%M")
+    %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+      %span{:style => "color:#999"} Time spent Running:
+      %span{:style => "color:#fff;font-weight:600;"}= marketplace_listing.runtime_seconds_readable
+    %span{:style => "display:block;font-size:15px;"}
+      = render 'marketplace_listing_status_tag', status: marketplace_listing.status
+  %td
+    %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+      %span{:style => "color:#999"} Title:
+      %span{:style => "color:#fff;"}= marketplace_listing.title
+    %span{:style => "display:block;padding-bottom:4px;font-size:15px;"}
+      %span{:style => "color:#999"} Price:
+      %span{:style => "color:#fff;"}= number_to_currency(marketplace_listing.price)
+    %span{:style => "display:block;font-size:15px;"}
+      %span{:style => "color:#999"} Account:
+      %span{:style => "color:#fff;font-weight:500"}= admin_account_inline_link_to(marketplace_listing.account)
+
+  %td
+    = table_link_to 'pencil', 'Edit', admin_marketplace_listing_path(marketplace_listing)

@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
+import { me } from '../../initial_state'
 import {
   fetchRelatedSuggestions,
   fetchPopularSuggestions,
@@ -34,13 +35,13 @@ class UserSuggestionsPanel extends ImmutablePureComponent {
 
   componentDidUpdate(prevProps, prevState) {
     if (!prevState.fetched && this.state.fetched) {
-      // this.handleFetch()
+      this.handleFetch()
     }
   }
 
   componentDidMount() {
     if (!this.props.isLazy) {
-      // this.handleFetch()
+      this.handleFetch()
     }
   }
 
@@ -60,7 +61,6 @@ class UserSuggestionsPanel extends ImmutablePureComponent {
       suggestionType,
     } = this.props
 
-    return null
     if (suggestions.isEmpty()) return null
 
     const Child = isLoading ? AccountPlaceholder : Account
@@ -77,14 +77,19 @@ class UserSuggestionsPanel extends ImmutablePureComponent {
       >
         <div className={_s.d}>
           {
-            arr.map((accountId) => (
-              <Child
-                compact
-                key={accountId}
-                id={accountId}
-                isSmall={isLoading ? true : undefined}
-              />
-            ))
+            arr.map((accountId) => {
+              // dont show myself as a suggestion
+              if (accountId === me) return null
+
+              return (
+                <Child
+                  compact
+                  key={`suggestion-${accountId}`}
+                  id={accountId}
+                  isSmall={isLoading ? true : undefined}
+                />
+              )
+            })
           }
         </div>
       </PanelLayout>

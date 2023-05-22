@@ -41,7 +41,7 @@ class StatusContent extends ImmutablePureComponent {
       accountId,
       targetRef: e.target,
       position: 'top-start',
-      timeout: 1250
+      timeout: 1500
     })
   }
 
@@ -58,13 +58,30 @@ class StatusContent extends ImmutablePureComponent {
 
     for (let i = 0; i < links.length; ++i) {
       const link = links[i]
-      if (link.classList.contains('linked')) {
+      const mention = this.props.status.get('mentions')
+        .find(item => link.href === `${item.get('url')}`)
+      const hasDataMention = mention !== undefined
+      const isLinked = link.classList.contains('linked')
+      const isMention = link.classList.contains('mention')
+      const isHashtag = link.classList.contains('hashtag')
+      if (isLinked && hasDataMention) {
         continue
       }
+      // remove unlinked users after they click "untag me"
+      if (!hasDataMention && !isHashtag && isLinked && isMention) {
+        // unlink, remove attrs
+        link.removeAttribute('href')
+        link.removeAttribute('rel')
+        link.removeAttribute('title')
+        link.classList.remove('linked')
+        link.classList.remove('mention')
+        link.classList.add(_s.unlinked)
+        link.classList.remove(_s.cursorPointer)
+        continue;
+      } 
+
       link.classList.add('linked')
       link.classList.add(_s.text, _s.cBrand, _s.cursorPointer, _s.inherit)
-
-      const mention = this.props.status.get('mentions').find(item => link.href === `${item.get('url')}`)
 
       if (mention) {
         link.addEventListener('click', this.onMentionClick.bind(this, mention), false)

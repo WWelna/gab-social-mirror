@@ -20,6 +20,9 @@
 #  scheduled_status_id       :bigint(8)
 #  blurhash                  :string
 #  media_attachment_album_id :bigint(8)
+#  processing                :integer
+#  marketplace_listing_id    :bigint(8)
+#  file_fingerprint          :string
 #
 
 class MediaAttachment < ApplicationRecord
@@ -31,7 +34,7 @@ class MediaAttachment < ApplicationRecord
   VIDEO_FILE_EXTENSIONS = ['.webm', '.mp4', '.m4v', '.mov'].freeze
 
   IMAGE_MIME_TYPES             = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].freeze
-  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime', 'video/ogg'].freeze
+  VIDEO_MIME_TYPES             = ['video/webm', 'video/mp4', 'video/quicktime', 'video/ogg', 'video/3gpp'].freeze
   VIDEO_CONVERTIBLE_MIME_TYPES = ['video/webm', 'video/quicktime'].freeze
 
   BLURHASH_OPTIONS = {
@@ -97,30 +100,29 @@ class MediaAttachment < ApplicationRecord
     },
   }.freeze
 
-  IMAGE_LIMIT = Proc.new { |account| account.is_pro ? 100.megabytes : 20.megabytes }
-  VIDEO_LIMIT = Proc.new { |account| account.is_pro ? 2.gigabytes : 250.megabytes}
+  SIZE_LIMIT = 250.megabytes
 
   belongs_to :account,          inverse_of: :media_attachments, optional: true
   belongs_to :status,           inverse_of: :media_attachments, optional: true
   belongs_to :scheduled_status, inverse_of: :media_attachments, optional: true
+  belongs_to :marketplace_listing, inverse_of: :media_attachments, optional: true
 
   has_attached_file :file,
                     styles: ->(f) { file_styles f },
                     processors: ->(f) { file_processors f },
-                    convert_options: { all: '-quality 90 -strip +set modify-date +set create-date' }
+                    convert_options: { all: '-quality 96 -strip +set modify-date +set create-date' }
 
   validates_attachment_content_type :file, content_type: IMAGE_MIME_TYPES + VIDEO_MIME_TYPES
-  validates_attachment_size :file, less_than: IMAGE_LIMIT, unless: :video_or_gifv?
-  validates_attachment_size :file, less_than: VIDEO_LIMIT, if: :video_or_gifv?
-  remotable_attachment :file, VIDEO_LIMIT
+  validates_attachment_size :file, less_than: SIZE_LIMIT
+  remotable_attachment :file, SIZE_LIMIT
 
   include Attachmentable
 
   validates :account, presence: true
   validates :description, length: { maximum: 420 }, if: :local?
 
-  scope :attached,   -> { where.not(status_id: nil).or(where.not(scheduled_status_id: nil)) }
-  scope :unattached, -> { where(status_id: nil, scheduled_status_id: nil) }
+  scope :attached,   -> { where.not(status_id: nil).or(where.not(scheduled_status_id: nil)).or(where.not(marketplace_listing_id: nil)) }
+  scope :unattached, -> { where(status_id: nil, scheduled_status_id: nil, marketplace_listing_id: nil) }
   scope :local,      -> { where(remote_url: '') }
   scope :remote,     -> { where.not(remote_url: '') }
 

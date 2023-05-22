@@ -31,10 +31,9 @@ class FeedManager
   end
 
   def push_to_home(account, status)
-    true
-    # return false unless add_to_feed(:home, account.id, status, account.user&.aggregates_reblogs?)
-    # trim(:home, account.id)
-    # PushUpdateWorker.perform_async(account.id, status.id, "timeline:#{account.id}") if push_update_required?("timeline:#{account.id}")
+    Redis.current.with do |conn|      
+      conn.publish("timeline:#{account.id}", Oj.dump(event: 'status', payload: status))
+    end
     true
   end
 
@@ -117,12 +116,9 @@ class FeedManager
   end
 
   def filter_from_chat_messages?(chat_message, receiver_id)
-    return false if receiver_id == chat_message.from_account_id
-    return true  if phrase_filtered_from_chat_message?(chat_message, receiver_id, :thread)
-
+    # all filtering, muting, (normal account 1:1) blocking done client side
+    # clat blocks actually hide the content
     check_for_blocks = [chat_message.from_account_id]
-
-    return true if blocks_or_mutes?(receiver_id, check_for_blocks, :home)
     return true if chat_blocks?(receiver_id, check_for_blocks)
 
     false

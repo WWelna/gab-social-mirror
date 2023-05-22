@@ -17,8 +17,8 @@ const AvatarGroup = ({ accounts, avatarCount, size, maxVisible, showText }) => {
   const textSize =
     size < 50 ? 'small' : size >= 50 && size < 80 ? 'normal' : 'large'
 
+  // eslint-disable-next-line array-element-newline
   return (
-    // eslint-disable-next-line array-element-newline
     <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
       {accounts.slice(0, maxVisible).map((account, i) => {
         const containerClasses = CX({

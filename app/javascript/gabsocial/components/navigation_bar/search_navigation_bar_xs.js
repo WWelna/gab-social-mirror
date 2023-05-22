@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { me } from '../../initial_state'
 import Heading from '../heading'
 import Search from '../search'
 import Pills from '../pills'
@@ -15,7 +16,7 @@ class SearchNavigationBar extends React.PureComponent {
           <div className={[_s.d, _s.bgNavigation, _s.saveAreaInsetPT, _s.saveAreaInsetPL, _s.saveAreaInsetPR, _s.w100PC].join(' ')}>
             <div className={[_s.d, _s.h53PX, _s.flexRow, _s.w100PC, _s.px10, _s.aiCenter, _s.jcCenter].join(' ')}>
               {
-                !isSearchFocused &&
+                (!isSearchFocused && !!me) &&
                 <Button
                   noClasses
                   color='primary'
@@ -31,7 +32,7 @@ class SearchNavigationBar extends React.PureComponent {
                 <Search isInNav />
               </div>
               {
-                isSearchFocused &&
+                (isSearchFocused && !!me) &&
                 <Button
                   isText
                   backgroundColor='none'

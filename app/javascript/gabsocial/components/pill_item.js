@@ -18,7 +18,10 @@ class PillItem extends React.PureComponent {
       onClick,
       location,
       isActive,
+      isHidden,
     } = this.props
+
+    if (isHidden) return null
 
     // Combine state, props, location to make absolutely
     // sure of active status.
@@ -30,7 +33,7 @@ class PillItem extends React.PureComponent {
       text: 1,
       aiCenter: 1,
       jcCenter: 1,
-      py5: 1,
+      py7: 1,
       outlineNone: 1,
       cursorPointer: 1,
       circle: 1,
@@ -52,10 +55,12 @@ class PillItem extends React.PureComponent {
     })
 
     const textOptions = {
-      size: 'small',
+      size: 'normal',
       color: active ? 'white' : 'secondary',
       weight: active ? 'bold' : 'medium',
       className: _s.px10,
+      align: 'center',
+      fullWeight: 'bold',
     }
 
     return (
@@ -66,12 +71,12 @@ class PillItem extends React.PureComponent {
         noClasses
       >
         <span className={textParentClasses}>
-          { !!prependImage && <Image src={prependImage} width='24px' height='24px' className={_s.circle} /> }
+          { !!prependImage && <Image src={prependImage} width='26px' height='26px' className={[_s.circle, _s.ml10].join(' ')} /> }
           { !!prependIcon && <Icon id={prependIcon} size='10px' /> }
           <Text {...textOptions}>
             {title}
           </Text>
-          { !!appendIcon && <Icon id={appendIcon} size='10px' className={[_s.circle, _s.mr5].join(' ')} /> }
+          { !!appendIcon && <Icon id={appendIcon} size='10px' className={[_s.circle, _s.pt2, _s.ml5, _s.mr10, _s.cSecondary].join(' ')} /> }
         </span>
       </Button>
     )
@@ -86,6 +91,7 @@ PillItem.propTypes = {
   onClick: PropTypes.func,
   title: PropTypes.string,
   to: PropTypes.string,
+  isHidden: PropTypes.bool,
 }
 
 export default withRouter(PillItem)

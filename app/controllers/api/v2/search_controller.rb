@@ -14,7 +14,7 @@ class Api::V2::SearchController <  Api::BaseController
 
   def search_results
     SearchService.new.call(
-      params[:q],
+      params[:q].gsub(/[^a-zA-Z0-9#_.]/, ' '),
       current_account,
       limit_param(RESULTS_LIMIT),
       search_params.merge(resolve: truthy_param?(:resolve), onlyVerified: truthy_param?(:onlyVerified))

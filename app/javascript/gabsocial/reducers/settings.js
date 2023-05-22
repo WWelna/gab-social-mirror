@@ -13,7 +13,7 @@ import {
   DECK_CHANGE_COLUMN_AT_INDEX,
 } from '../actions/deck'
 import {
-  COMMENT_SORTING_TYPE_OLDEST,
+  COMMENT_SORTING_TYPE_TOP,
   TIMELINE_INJECTION_WEIGHT_DEFAULT,
   TIMELINE_INJECTION_FEATURED_GROUPS,
   TIMELINE_INJECTION_GROUP_CATEGORIES,
@@ -37,7 +37,14 @@ const initialState = ImmutableMap({
     width: 0,
     height: 0,
   }),
-  commentSorting: COMMENT_SORTING_TYPE_OLDEST,
+  home: ImmutableMap({
+    shows: ImmutableMap({
+      videos: true,
+      suggestedUsers: true,
+      groups: true,
+    })
+  }),
+  commentSorting: COMMENT_SORTING_TYPE_TOP,
   gabDeckOrder: ImmutableList([]),
 
   // every dismiss reduces by half or set to zero for pwa, shop, pro

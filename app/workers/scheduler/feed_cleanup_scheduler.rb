@@ -4,7 +4,7 @@ class Scheduler::FeedCleanupScheduler
   include Sidekiq::Worker
   include Redisable
 
-  sidekiq_options unique: :until_executed, retry: 0
+  sidekiq_options retry: 0
 
   def perform
     clean_home_feeds!
@@ -25,24 +25,24 @@ class Scheduler::FeedCleanupScheduler
     reblogged_id_sets = {}
 
     redis.with do |conn|
-      conn.pipelined do
+      conn.pipelined do |pipeline|
         ids.each do |feed_id|
-          conn.del(feed_manager.key(type, feed_id))
+          pipeline.del(feed_manager.key(type, feed_id))
           reblog_key = feed_manager.key(type, feed_id, 'reblogs')
           # We collect a future for this: we don't block while getting
           # it, but we can iterate over it later.
-          reblogged_id_sets[feed_id] = conn.zrange(reblog_key, 0, -1)
-          conn.del(reblog_key)
+          reblogged_id_sets[feed_id] = pipeline.zrange(reblog_key, 0, -1)
+          pipeline.del(reblog_key)
         end
       end
 
       # Remove all of the reblog tracking keys we just removed the
       # references to.
-      conn.pipelined do
+      conn.pipelined do |pipeline|
         reblogged_id_sets.each do |feed_id, future|
           future.value.each do |reblogged_id|
             reblog_set_key = feed_manager.key(type, feed_id, "reblogs:#{reblogged_id}")
-            conn.del(reblog_set_key)
+            pipeline.del(reblog_set_key)
           end
         end
       end

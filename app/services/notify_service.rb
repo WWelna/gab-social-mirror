@@ -9,6 +9,7 @@ class NotifyService < BaseService
     return if recipient.user.nil? || blocked?
 
     create_notification!
+    @recipient&.increment_count!(:unread_count)
     push_notification! if @notification.browserable?
     send_email! if email_enabled?
   rescue ActiveRecord::RecordInvalid
@@ -81,6 +82,7 @@ class NotifyService < BaseService
     blocked ||= hellbanned?                                      # Hellban
     blocked ||= optional_non_follower?                           # Options
     blocked ||= optional_non_following?                          # Options
+    blocked ||= conversation_muted?
     blocked ||= send("blocked_#{@notification.type}?")           # Type-dependent filters
     blocked
   end
@@ -113,5 +115,13 @@ class NotifyService < BaseService
 
   def email_enabled?
     @recipient.user.settings.notification_emails[@notification.type.to_s]
+  end
+
+  def conversation_muted?
+    if @notification.target_status
+      @recipient.muting_conversation?(@notification.target_status.conversation)
+    else
+      false
+    end
   end
 end

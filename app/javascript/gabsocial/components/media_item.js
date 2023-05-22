@@ -5,6 +5,7 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import { NavLink } from 'react-router-dom'
 import { decode } from 'blurhash'
 import { autoPlayGif, displayMedia } from '../initial_state'
+import { canShowMediaItem } from '../utils/can_show'
 import { toHHMMSS } from '../utils/time'
 import { CX } from '../constants'
 import Icon from './icon'
@@ -88,10 +89,14 @@ class MediaItem extends ImmutablePureComponent {
     if (!attachment || !account) return null
     
     const status = attachment.get('status')
+
+    const csd = canShowMediaItem(attachment, account)
+    if (!csd.canShow) return null
+
     const title = status.get('spoiler_text') || attachment.get('description')
 
     const attachmentType = attachment.get('type')
-    const aspectRatio = attachment.getIn(['meta', 'aspect'])
+    const aspectRatio = attachment.getIn(['meta', (isSmall ? 'small' : 'original'), 'aspect'])
 
     const isVideo = attachmentType === 'video'
     let badge = null
@@ -112,7 +117,7 @@ class MediaItem extends ImmutablePureComponent {
       px5: 1,
       flex1: !isSmallRatio && !isSquare,
       minW198PX: !isVideo && !isSmallRatio && !isSquare,
-      minW232PX: isVideo && !isSmallRatio && !isSquare,
+      minW282PX: isVideo && !isSmallRatio && !isSquare,
       minW120PX: isSmallRatio,
       minW162PX: isSquare && !isSmall,
       w33PC: isSmall,
@@ -130,14 +135,14 @@ class MediaItem extends ImmutablePureComponent {
         <NavLink
           className={[_s.d, _s.noUnderline, _s.outlineNone, _s.bgTransparent, _s.flexGrow1].join(' ')}
           to={statusUrl}
-          title={title}
+          title={!!csd.label ? csd.label : title}
         >
           <div className={[_s.d, _s.mt5, _s.mb10, _s.flexGrow1].join(' ')}>
             <div className={paddedContainerClasses}>
               <div className={[_s.d, _s.posAbs, _s.top0, _s.right0, _s.left0, _s.bottom0].join(' ')}>
                 <div className={[_s.d, _s.h100PC, _s.aiCenter, _s.jcCenter, _s.radiusSmall, _s.overflowHidden].join(' ')}>
                   {
-                    (!loaded || !visible) &&
+                    (!loaded || !visible || !!csd.label) &&
                     <canvas
                       height='100%'
                       width='100%'
@@ -145,12 +150,11 @@ class MediaItem extends ImmutablePureComponent {
                       className={[_s.d, _s.w100PC, _s.h100PC, _s.z2].join(' ')}
                     />
                   }
-      
                   {
-                    visible &&
+                    (visible && !csd.label) &&
                     <Image
                       height='100%'
-                      width=''
+                      width='100%'
                       src={attachment.get('preview_url')}
                       alt={attachment.get('description')}
                       title={attachment.get('description')}
@@ -158,12 +162,11 @@ class MediaItem extends ImmutablePureComponent {
                       className={_s.z1}
                     />
                   }
-
                   {
-                    (!visible || !!badge) &&
+                    (!visible || !!badge || !!csd.label) &&
                     <div className={[_s.d, _s.aiCenter, _s.jcCenter, _s.h100PC, _s.w100PC, _s.z3, _s.posAbs].join(' ')}>
                       {
-                        !visible &&
+                        (!visible || !!csd.label) &&
                         <Icon
                           id='hidden'
                           size='22px'
@@ -180,7 +183,6 @@ class MediaItem extends ImmutablePureComponent {
                       }
                     </div>
                   }
-              
                 </div>
               </div>
             </div>
@@ -188,49 +190,11 @@ class MediaItem extends ImmutablePureComponent {
         </NavLink>
       </div>
     )
-
-    // return (
-    //   <div className={[_s.d, _s.pt25PC].join(' ')}>
-    //     <div className={containerClasses}>
-    //       <NavLink
-    //         to={statusUrl}
-    //         title={title}
-    //         className={linkClasses}
-    //       >
-    //         {
-    //           (!loaded || !visible) &&
-    //           <canvas
-    //             height='100%'
-    //             width='100%'
-    //             ref={this.setCanvasRef}
-    //             className={[_s.d, _s.w100PC, _s.h100PC, _s.z2].join(' ')}
-    //           />
-    //         }
-
-    //         {
-    //           visible &&
-    //           <Image
-    //             height='100%'
-    //             width=''
-    //             src={attachment.get('preview_url')}
-    //             alt={attachment.get('description')}
-    //             title={attachment.get('description')}
-    //             onLoad={this.handleImageLoad}
-    //             className={_s.z1}
-    //           />
-    //         }
-
-   
-    //       </NavLink>
-    //     </div>
-    //   </div>
-    // )
   }
 
 }
 
 MediaItem.propTypes = {
-  isDummy: PropTypes.bool.isRequired,
   account: ImmutablePropTypes.map.isRequired,
   attachment: ImmutablePropTypes.map.isRequired,
   isSmall: PropTypes.bool,

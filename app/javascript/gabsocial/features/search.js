@@ -3,19 +3,34 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import { withRouter } from 'react-router-dom'
+import debounce from 'lodash.debounce'
 import { me } from '../initial_state'
+import { expandSearch } from '../actions/search'
+import {
+  SEARCH_TAB_ACCOUNT,
+  SEARCH_TAB_STATUS,
+  SEARCH_TAB_GROUP,
+  SEARCH_TAB_LINK,
+  SEARCH_TAB_LIST,
+  SEARCH_TAB_HASHTAG,
+} from '../constants'
 import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_component'
+import AccountPlaceholder from '../components/placeholder/account_placeholder'
+import StatusPlaceholder from '../components/placeholder/status_placeholder'
+import GroupListItemPlaceholder from '../components/placeholder/group_list_item_placeholder'
+import ListItemPlaceholder from '../components/placeholder/list_item_placeholder'
+import TrendsItemPlaceholder from '../components/placeholder/trends_item_placeholder'
 import GroupListItem from '../components/group_list_item'
 import Text from '../components/text'
 import Account from '../components/account'
-import PanelLayout from '../components/panel/panel_layout'
 import ColumnIndicator from '../components/column_indicator'
 import StatusContainer from '../containers/status_container'
 import Block from '../components/block'
 import PreviewCardItem from '../components/preview_card_item'
 import List from '../components/list'
-import Icon from '../components/icon'
+import ListListItem from '../components/list_list_item'
+import ScrollableList from '../components/scrollable_list'
+import Dummy from '../components/dummy'
 
 class Search extends ImmutablePureComponent {
 
@@ -23,44 +38,51 @@ class Search extends ImmutablePureComponent {
     isSmallScreen: (window.innerWidth <= 895),
   }
 
+  _getTab = () => {
+    let { tab } = this.props
+    // default... also set in actions/search
+    if (!tab) tab = SEARCH_TAB_ACCOUNT
+    return tab
+  }
+
+  handleLoadMore = debounce(() => {
+    this.props.dispatch(expandSearch(this._getTab()))
+  }, 300, { leading: true })
+
   render() {
     const {
       isError,
       isLoading,
-      location,
       results,
       submitted,
     } = this.props
     const { isSmallScreen } = this.state
-    const loggedIn = typeof me === 'string' && me.length > 0
-    const loggedOut = !loggedIn
 
-    if (isLoading) {
-      return <ColumnIndicator type='loading' />
-    }
+    const tab = this._getTab()
+    
+    const isTop = false
+    const theLimit = 4
+    const tabBlock = !!tab ? results.get(tab) : null
+    const resultsByTab = !!tabBlock ? tabBlock.get('items') : null
+    const resultsSize = resultsByTab ? resultsByTab.size : 0
+    const noResults = resultsSize === 0
+    const size = isTop ? Math.min(resultsSize, theLimit) : resultsSize
+    const isMax = size === resultsSize
+    let LoadingPlaceholder = AccountPlaceholder
+    let Wrapper = Block
 
-    if (isError) {
+    if ((isError || noResults) && !isLoading) {
+      const message =
+        isError ? 'Error fetching search results.' :
+        noResults ? 'No search results.' : ''
       return (
         <ResponsiveClassesComponent classNamesXS={[_s.px10, _s.pt15].join(' ')}>
           <Block>
-            <ColumnIndicator type='error' message='Error fetching search results.' />
+            <ColumnIndicator type='missing' message={message} />
           </Block>
         </ResponsiveClassesComponent>
       )
     }
-
-    if (loggedOut) {
-      return (
-        <ResponsiveClassesComponent classNamesXS={[_s.px10, _s.pt15].join(' ')}>
-          <Block>
-            <div className={[_s.d, _s.py15, _s.px15].join(' ')}>
-              <Text><Icon id='warning'/> Search is available for registered users.</Text>
-            </div>
-          </Block>
-        </ResponsiveClassesComponent>
-      )
-    }
-
 
     if ((results.isEmpty() && isSmallScreen) || (!submitted && results.isEmpty())) {
       return (
@@ -74,186 +96,81 @@ class Search extends ImmutablePureComponent {
       )
     }
 
-    const pathname = location.pathname || ''
-    const showPeople = pathname === '/search/people'
-    const showGroups = pathname === '/search/groups'
-    const showStatuses = pathname === '/search/statuses'
-    const showLinks = pathname === '/search/links'
-    const showHashtags = pathname === '/search/hashtags'
-    const isTop = !showPeople && !showGroups && !showStatuses && !showLinks && !showHashtags
-    const theLimit = 4
-
-    let accounts, statuses, groups, links, hashtags
-
-    if (results.get('accounts') && results.get('accounts').size > 0 && (isTop || showPeople)) {
-      const size = isTop ? Math.min(results.get('accounts').size, theLimit) : results.get('accounts').size;
-      const isMax = size === results.get('accounts').size
-      accounts = (
-        <PanelLayout
-          title='People'
-          headerButtonTo={isMax ? undefined : '/search/people'}
-          headerButtonTitle={isMax ? undefined : 'See more'}
-          footerButtonTo={isMax ? undefined : '/search/people'}
-          footerButtonTitle={isMax ? undefined : 'See more'}
-          noPadding
-        >
-          <div className={[_s.d, _s.pb10, _s.px15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
-            <Text color='tertiary' size='small'>
-              Showing {size} of {results.get('accounts').size} results
-            </Text>
-          </div>
-          {
-            results.get('accounts').slice(0, size).map(accountId => (
-              <Account
-                compact
-                withBio
-                key={accountId}
-                id={accountId}
-              />
-            ))
-          }
-        </PanelLayout>
-      )
-    }
-
-    if (results.get('groups') && results.get('groups').size > 0 && (isTop || showGroups)) {
-      const size = isTop ? Math.min(results.get('groups').size, theLimit) : results.get('groups').size;
-      const isMax = size === results.get('groups').size
-
-      groups = (
-        <PanelLayout
-          title='Groups'
-          headerButtonTo={isMax ? undefined : '/search/groups'}
-          headerButtonTitle={isMax ? undefined : 'See more'}
-          footerButtonTo={isMax ? undefined : '/search/groups'}
-          footerButtonTitle={isMax ? undefined : 'See more'}
-          noPadding
-        >
-          <div className={[_s.d, _s.pb10, _s.px15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
-            <Text color='tertiary' size='small'>
-              Showing {size} of {results.get('groups').size} results
-            </Text>
-          </div>
-          <div className={_s.d}>
-            {
-              results.get('groups').slice(0, size).map((group, i) => (
-                <GroupListItem
-                  key={`search-${group.get('name')}`}
-                  id={group.get('id')}
-                  isLast={size - 1 === i}
-                />
-              ))
-            }
-          </div>
-        </PanelLayout>
-      )
-    }
-    
-    if (results.get('statuses') && results.get('statuses').size > 0 && loggedIn && (isTop || showStatuses)) {
-      const size = isTop ? Math.min(results.get('statuses').size, theLimit) : results.get('statuses').size;
-      const isMax = size === results.get('statuses').size
-
-      statuses = (
-        <PanelLayout
-          title='Statuses'
-          headerButtonTo={isMax ? undefined : '/search/statuses'}
-          headerButtonTitle={isMax ? undefined : 'See more'}
-          footerButtonTo={isMax ? undefined : '/search/statuses'}
-          footerButtonTitle={isMax ? undefined : 'See more'}
-          noPadding
-        >
-          <div className={[_s.d, _s.pb10, _s.px15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
-            <Text color='tertiary' size='small'>
-              Showing {size} of {results.get('statuses').size} results
-            </Text>
-          </div>
-          {
-            results.get('statuses').slice(0, size).map((statusId) => (
-              <StatusContainer
-                key={`status-${statusId}`}
-                id={statusId}
-                contextType='search'
-                commentsLimited
-              />
-            ))
-          }
-        </PanelLayout>
-      )
-    }
-
-    if (results.get('links') && results.get('links').size > 0 && loggedIn && (isTop || showLinks)) {
-      const size = isTop ? Math.min(results.get('links').size, theLimit) : results.get('links').size;
-      const isMax = size === results.get('links').size
-
-      links = (
-        <PanelLayout
-          title='Links'
-          headerButtonTo={isMax ? undefined : '/search/links'}
-          headerButtonTitle={isMax ? undefined : 'See more'}
-          footerButtonTo={isMax ? undefined : '/search/links'}
-          footerButtonTitle={isMax ? undefined : 'See more'}
-          noPadding
-        >
-          <div className={[_s.d, _s.pb10, _s.px15, _s.mb15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
-            <Text color='tertiary' size='small'>
-              Showing {size} of {results.get('links').size} results
-            </Text>
-          </div>
-          <div className={[_s.d, _s.w100PC, _s.px10].join(' ')}>
-            {
-              results.get('links').slice(0, size).map((linkId) => <PreviewCardItem id={linkId} />)
-            }
-          </div>
-        </PanelLayout>
-      )
-    }
-
-    if (results.get('hashtags') && results.get('hashtags').size > 0 && loggedIn && (isTop || showHashtags)) {
-      const tagLimit = 10
-      const size = isTop ? Math.min(results.get('hashtags').size, tagLimit) : results.get('hashtags').size;
-
-      const hashtagListItems = results.get('hashtags').slice(0, size).map((tag) => {
+    let content = null
+    if (tab === SEARCH_TAB_ACCOUNT) {
+      content = resultsByTab.map((accountId) => (
+        <Account
+          compact
+          withBio
+          key={accountId}
+          id={accountId}
+        />
+      ))
+    } else if (tab === SEARCH_TAB_GROUP) {
+      LoadingPlaceholder = GroupListItemPlaceholder
+      content = resultsByTab.map((groupId, i) => (
+        <GroupListItem
+          withDescription
+          withVisibility
+          size='large'
+          key={groupId}
+          id={groupId}
+          isLast={size - 1 === i}
+        />
+      ))
+    } else if (tab === SEARCH_TAB_STATUS) {
+      LoadingPlaceholder = StatusPlaceholder
+      Wrapper = Dummy
+      content = resultsByTab.map((statusId) => (
+        <StatusContainer
+          key={`status-${statusId}`}
+          id={statusId}
+          contextType='search'
+          commentsLimited
+        />
+      ))
+    } else if (tab === SEARCH_TAB_LINK) {
+      LoadingPlaceholder = TrendsItemPlaceholder
+      content = resultsByTab.map((linkId) => (
+        <PreviewCardItem
+          key={linkId}
+          id={linkId}
+          isBordered
+        />
+      ))
+    } else if (tab === SEARCH_TAB_HASHTAG) {
+      const hashtagListItems = resultsByTab.map((tag) => {
         return {
           title: `#${tag.get('name')}`,
           to: `/tags/${tag.get('name')}`,
         }
       })
 
-      hashtags = (
-        <PanelLayout
-          title='Hashtags'
-          noPadding
-        >
-          <div className={[_s.d, _s.pb10, _s.px15, _s.mb15, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
-            <Text color='tertiary' size='small'>
-              Showing {size} of {results.get('hashtags').size} results
-            </Text>
-          </div>
-          <div className={[_s.d, _s.w100PC, _s.boxShadowNone].join(' ')}>
-            <List items={hashtagListItems} />
-          </div>
-        </PanelLayout>
-      )
-    }
-
-    if (!accounts && !statuses && !groups && !links && !hashtags) {
-      return (
-        <ResponsiveClassesComponent classNamesXS={[_s.px10, _s.pt15].join(' ')}>
-          <Block>
-            <ColumnIndicator type='missing' message='No search results.' />
-          </Block>
-        </ResponsiveClassesComponent>
-      )
+      return <List items={hashtagListItems} />
+    } else if (tab === SEARCH_TAB_LIST) {
+      LoadingPlaceholder = ListItemPlaceholder
+      content = resultsByTab.map((listId) => (
+        <ListListItem 
+          key={listId}
+          id={listId}
+        />
+      ))
     }
 
     return (
-      <div>
-        {accounts}
-        {groups}
-        {statuses}
-        {links}
-        {hashtags}
-      </div>
+      <Wrapper>
+        <ScrollableList
+          scrollKey={`search-${tab}`}
+          hasMore={!!tabBlock.get('next')}
+          isLoading={isLoading}
+          showLoading={isLoading && resultsSize === 0}
+          onLoadMore={this.handleLoadMore}
+          placeholderComponent={LoadingPlaceholder}
+          placeholderCount={4}
+        >
+          {content}
+        </ScrollableList>
+      </Wrapper>
     )
   }
 
@@ -264,6 +181,7 @@ const mapStateToProps = (state) => ({
   isLoading: state.getIn(['search', 'isLoading']),
   results: state.getIn(['search', 'results']),
   submitted: state.getIn(['search', 'submitted']),
+  tab: state.getIn(['search', 'tab']),
 })
 
 Search.propTypes = {
@@ -274,4 +192,4 @@ Search.propTypes = {
   submitted: PropTypes.bool.isRequired,
 }
 
-export default withRouter(connect(mapStateToProps)(Search))
+export default connect(mapStateToProps)(Search)

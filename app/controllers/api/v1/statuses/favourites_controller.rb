@@ -30,7 +30,7 @@ class Api::V1::Statuses::FavouritesController < Api::BaseController
   end
 
   def service_result
-    FavouriteService.new.call(current_user.account, requested_status)
+    FavouriteService.new.call(current_user.account, requested_status, params[:reaction_id])
   end
 
   def requested_status

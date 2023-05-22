@@ -6,7 +6,7 @@ import { connect } from 'react-redux'
 import { closePopover } from '../../actions/popover'
 import { getListOfGroups } from '../../selectors'
 import { fetchGroupsByTab } from '../../actions/groups'
-import { changeComposeGroupId } from '../../actions/compose'
+import { changeComposeGroupId, changeComposeReplyToId } from '../../actions/compose'
 import PopoverLayout from './popover_layout'
 import List from '../list'
 import Button from '../button'
@@ -124,11 +124,13 @@ class ComposePostDesinationPopover extends ImmutablePureComponent {
 
 const mapStateToProps = (state) => {
   const composeGroupId = state.getIn(['compose', 'group_id'])
+  const composeReplyToId = state.getIn(['compose', 'in_reply_to'])
 
   return {
     composeGroupId,
     composeGroup: state.getIn(['groups', composeGroupId]),
     groups: getListOfGroups(state, { type: 'member' }),
+    composeReplyToId,
   }
 }
 
@@ -141,6 +143,9 @@ const mapDispatchToProps = (dispatch) => ({
   },
   onChangeComposeGroupId(groupId) {
     dispatch(changeComposeGroupId(groupId))
+  },
+  onChangeComposeReplyToId(replyToId) {
+    dispatch(changeComposeReplyToId(replyToId))
   }
 })
 
@@ -149,6 +154,7 @@ ComposePostDesinationPopover.propTypes = {
   onClosePopover: PropTypes.func.isRequired,
   onFetchMemberGroups: PropTypes.func.isRequired,
   onChangeComposeGroupId: PropTypes.func.isRequired,
+  onChangeComposeReplyToId: PropTypes.func.isRequired,
   groups: ImmutablePropTypes.list,
   composeGroup: ImmutablePropTypes.map,
 }

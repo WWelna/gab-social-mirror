@@ -67,7 +67,9 @@ class PopoverLayout extends React.PureComponent {
 }
 
 const mapDispatchToProps = dispatch => ({
-  onCloseAlternate: () => closePopover()
+  onCloseAlternate: () => {
+    dispatch(closePopover())
+  },
 })
 
 PopoverLayout.propTypes = {

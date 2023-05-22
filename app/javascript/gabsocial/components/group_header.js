@@ -92,6 +92,7 @@ class GroupHeader extends ImmutablePureComponent {
     const coverSrc = !!group ? group.get('cover_image_url') : ''
     const coverSrcMissing = coverSrc.indexOf(PLACEHOLDER_MISSING_HEADER_SRC) > -1 || !coverSrc
     const title = !!group ? group.get('title') : undefined
+    const isVerified = !!group ? group.get('is_verified') : undefined
     const slug = !!group ? !!group.get('slug') ? `g/${group.get('slug')}` : undefined : undefined
     const isPrivate = !!group ? group.get('is_private') : false
     const isAdminOrMod = !!relationships ? (relationships.get('admin') || relationships.get('moderator')) : false
@@ -186,9 +187,12 @@ class GroupHeader extends ImmutablePureComponent {
                     <div className={[_s.d, _s.flexRow].join(' ')}>
                       <Icon id='group' size='28px' className={_s.cPrimary} />
                       <div className={[_s.d, _s.ml7, _s.flexNormal, _s.overflowHidden].join(' ')}>
-                        <Heading>
-                          {title}
-                        </Heading>
+                        <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
+                          <Heading>
+                            {title}
+                          </Heading>
+                          {isVerified && <Icon id='verified-group' size='22px' className={_s.ml7} />}
+                        </div>
                         {
                           !!slug &&
                           <Button

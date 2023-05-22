@@ -23,9 +23,14 @@ import {
   revealStatus,
   fetchComments,
   fetchContext,
+  showStatusAnyways,
 } from '../actions/statuses';
 import { openModal } from '../actions/modal';
-import { openPopover } from '../actions/popover';
+import {
+  openPopover,
+  cancelPopover,
+  closePopover,
+} from '../actions/popover'
 import {
   me,
   boostModal,
@@ -35,9 +40,11 @@ import {
   MODAL_CONFIRM,
   MODAL_STATUS,
   MODAL_PRO_UPGRADE,
+  MODAL_UNAUTHORIZED,
   POPOVER_COMMENT_SORTING_OPTIONS,
   POPOVER_SHARE,
-  COMMENT_SORTING_TYPE_OLDEST,
+  POPOVER_STATUS_REACTIONS_COUNT,
+  POPOVER_STATUS_REACTIONS_SELECTOR,
   COMMENT_SORTING_TYPE_NEWEST,
   COMMENT_SORTING_TYPE_TOP,
 } from '../constants'
@@ -135,6 +142,7 @@ const makeMapStateToProps = () => {
     const statusId = props.id || (props.params && props.params.statusId)
     const username = props.params ? props.params.username : undefined
     const commentSortingType = state.getIn(['settings', 'commentSorting'])
+    const contextType = props.contextType
 
     const status = getStatus(state, {
       id: statusId,
@@ -173,7 +181,7 @@ const makeMapStateToProps = () => {
 
     //
 
-    if (status && status.get('replies_count') > 0 && !fetchedContext) {
+    if (status && (status.get('replies_count') > 0 || status.get('direct_replies_count') > 0) && !fetchedContext) {
       descendantsIds = getDescendants(state, status, null, commentSortingType)
     }
 
@@ -187,8 +195,12 @@ const makeMapStateToProps = () => {
       loadedDirectDescendantsCount: !!loadedDirectDescendants ? loadedDirectDescendants.size : 0,
       isComment,
       commentSortingType,
+      contextType,
       isComposeModalOpen: state.getIn(['modal', 'modalType']) === 'COMPOSE',
       isDeckConnected: state.getIn(['deck', 'connected'], false),
+      isReacting: state.getIn(['popover', 'popoverType']) === POPOVER_STATUS_REACTIONS_SELECTOR,
+      hoveringReactionId: state.getIn(['reactions', 'hovering_id']),
+      reactionPopoverOpenForStatusId: state.getIn(['reactions', 'reactionPopoverOpenForStatusId']),
     }
   }
 
@@ -197,7 +209,7 @@ const makeMapStateToProps = () => {
 
 const mapDispatchToProps = (dispatch) => ({
   onReply (status, history, showModal) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
     dispatch((_, getState) => {
       const state = getState();
@@ -214,23 +226,29 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onShowRevisions (status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
     dispatch(openModal('STATUS_REVISION', { status }));
   },
 
   onFavorite (status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
+
+    const statusId = status.get('id')
 
     if (status.get('favourited')) {
-      dispatch(unfavorite(status));
+      dispatch(unfavorite(statusId));
     } else {
-      dispatch(favorite(status));
+      dispatch(favorite(statusId));
     }
+
+    // cancel reaction popover
+    dispatch(cancelPopover())
+    dispatch(closePopover())
   },
 
   onMention (account, history) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
     dispatch(mentionCompose(account, history));
   },
@@ -244,7 +262,7 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onToggleHidden (status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
     if (status.get('hidden')) {
       dispatch(revealStatus(status.get('id')));
@@ -253,20 +271,28 @@ const mapDispatchToProps = (dispatch) => ({
     }
   },
 
-  onOpenLikes(status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+  onOpenLikes(status, targetRef) {
+    if (!status) return
 
-    dispatch(openModal('STATUS_LIKES', { status }))
+    const isMyStatus = status.getIn(['account', 'id']) === me
+    if (!isMyStatus || !me) {
+      dispatch(openPopover(POPOVER_STATUS_REACTIONS_COUNT, {
+        targetRef,
+        statusId: status.get('id'),
+      }))
+    } else {
+      dispatch(openModal('STATUS_LIKES', { status }))
+    }
   },
     
   onOpenReposts(status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
     dispatch(openModal('STATUS_REPOSTS', { status }))
   },
 
   onOpenQuotes(status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
 
     dispatch(openModal('STATUS_QUOTES', { status }))
   },
@@ -280,7 +306,7 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onQuote (status, history) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
     
     dispatch((_, getState) => {
       const state = getState()
@@ -297,7 +323,7 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onRepost (status) {
-    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+    if (!me) return dispatch(openModal(MODAL_UNAUTHORIZED))
     
     const alreadyReposted = status.get('reblogged')
 
@@ -359,6 +385,10 @@ const mapDispatchToProps = (dispatch) => ({
 
   onExpandComments(statusId) {
     dispatch(fetchComments(statusId))
+  },
+
+  onShowStatusAnyways(statusId) {
+    dispatch(showStatusAnyways(statusId))
   },
 
 });

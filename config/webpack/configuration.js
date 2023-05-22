@@ -31,6 +31,7 @@ module.exports = {
   env: {
     CDN_HOST: env.CDN_HOST,
     NODE_ENV: env.NODE_ENV,
+    CF_RESIZE: env.CF_RESIZE,
   },
   output,
 };

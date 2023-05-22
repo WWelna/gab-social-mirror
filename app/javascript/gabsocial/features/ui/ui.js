@@ -8,11 +8,9 @@ import { defineMessages, injectIntl } from 'react-intl'
 import { Switch, Redirect, withRouter } from 'react-router-dom'
 import debounce from 'lodash.debounce'
 import queryString from 'query-string'
+import moment from 'moment-mini'
+import { MIN_ACCOUNT_CREATED_AT_ONBOARDING } from '../../constants'
 import { uploadCompose, resetCompose } from '../../actions/compose'
-import {
-  setHomeTimelineSort,
-  expandHomeTimeline,
-} from '../../actions/timelines'
 import { expandNotifications, setFilter } from '../../actions/notifications'
 import { fetchUnreadWarningsCount } from '../../actions/warnings'
 import LoadingBar from '../../components/loading_bar'
@@ -24,7 +22,6 @@ import ToastsContainer from '../../containers/toasts_container'
 import PopoverRoot from '../../components/popover/popover_root'
 import UploadArea from '../../components/upload_area'
 import ProfilePage from '../../pages/profile_page'
-import CommunityPage from '../../pages/community_page'
 import HashtagPage from '../../pages/hashtag_page'
 import ShortcutsPage from '../../pages/shortcuts_page'
 import GroupPage from '../../pages/group_page'
@@ -46,21 +43,22 @@ import LinkPage from '../../pages/link_page'
 import MessagesPage from '../../pages/messages_page'
 import ComposePage from '../../pages/compose_page'
 import DeckPage from '../../pages/deck_page'
+import IntroductionPage from '../../pages/introduction_page'
+import MarketplaceListingCategoriesPage from '../../pages/marketplace_listing_categories_page'
+import MarketplaceListingsPage from '../../pages/marketplace_listings_page'
+import EmptyPage from '../../pages/empty_page'
 
 import {
   About,
-  AccountAlbums,
-  AccountAlbumGallery,
+  AccountMarketplaceListings,
   AccountPhotoGallery,
   AccountVideoGallery,
   AccountTimeline,
   AccountCommentsTimeline,
-  AlbumCreate,
   Assets,
   BlockedAccounts,
   BookmarkCollections,
   BookmarkCollectionCreate,
-  BookmarkCollectionEdit,
   BookmarkedStatuses,
   CaliforniaConsumerProtection,
   CaliforniaConsumerProtectionContact,
@@ -97,8 +95,14 @@ import {
   ListsDirectory,
   ListEdit,
   ListTimeline,
+  MarketplaceListingCategories,
+  MarketplaceListingCreate,
+  MarketplaceListingDetail,
+  MarketplaceListingSaves,
+  MarketplaceListingsDashboard,
+  MarketplaceListingsFrontPage,
+  MarketplaceListings,
   Messages,
-  MessagesSettings,
   MutedAccounts,
   News,
   NewsView,
@@ -116,8 +120,9 @@ import {
   TermsOfSale,
   TermsOfService,
   Warnings,
+  Introduction,
 } from './util/async_components'
-import { me, meUsername } from '../../initial_state'
+import { me, meUsername, isFirstSession, showVideos, showSuggestedUsers, showGroups } from '../../initial_state'
 
 // Dummy import, to make sure that <Status /> ends up in the application bundle.
 // Without this it ends up in ~8 very commonly used bundles.
@@ -132,9 +137,11 @@ const mapStateToProps = (state) => ({
   isComposing: state.getIn(['compose', 'is_composing']),
   hasComposingText: state.getIn(['compose', 'text']).trim().length !== 0,
   hasMediaAttachments: state.getIn(['compose', 'media_attachments']).size > 0,
+  accountCreatedAt: !!me ? state.getIn(['accounts', me, 'created_at']) : undefined,
+  shownOnboarding: state.getIn(['settings', 'shownOnboarding']),
 })
 
-const keyMap = {
+/* const keyMap = {
   help: '?',
   new: 'n',
   search: 's',
@@ -156,13 +163,13 @@ const keyMap = {
   goToBlocked: 'g b',
   goToMuted: 'g m',
   goToRequests: 'g r',
-}
+} */
 
 class SwitchingArea extends React.PureComponent {
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize, {
-      passive: true
+      passive: true,
     })
   }
 
@@ -195,7 +202,7 @@ class SwitchingArea extends React.PureComponent {
           <WrappedRoute path='/' exact publicRoute page={ExplorePage} component={ExploreTimeline} content={children} componentParams={{ title: 'Gab.com' }} />
         }
 
-        <WrappedRoute path='/home' exact page={HomePage} component={HomeTimeline} content={children} />
+        <WrappedRoute path='/home' exact page={HomePage} component={HomeTimeline} content={children} componentParams={{ showVideos, showSuggestedUsers, showGroups }} />
 
         <WrappedRoute path='/deck' exact page={DeckPage} component={Deck} content={children} />
 
@@ -209,23 +216,25 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/about/tos' publicRoute exact page={AboutPage} component={TermsOfService} content={children} componentParams={{ title: 'Terms of Service' }} />
         <WrappedRoute path='/about/ccpa' publicRoute exact page={AboutPage} component={CaliforniaConsumerProtection} content={children} componentParams={{ title: 'Terms of Service' }} />
         <WrappedRoute path='/about/ccpa/contact' publicRoute exact page={AboutPage} component={CaliforniaConsumerProtectionContact} content={children} componentParams={{ title: 'Terms of Service' }} />
+        <WrappedRoute path='/about/introduction' page={IntroductionPage} component={Introduction} content={children} />
 
-        <WrappedRoute path='/explore' publicRoute page={ExplorePage} component={ExploreTimeline} content={children} componentParams={{ title: 'Explore' }} />
-        <WrappedRoute path='/suggestions' exact page={BasicPage} component={Suggestions} content={children} componentParams={{ title: 'Suggestions' }} />
+
+        <WrappedRoute path='/explore' publicRoute page={ExplorePage} component={ExploreTimeline} content={children} componentParams={{ title: 'Explore', showVideos, showSuggestedUsers, showGroups }} />
+        <WrappedRoute path='/suggestions' exact page={BasicPage} component={Suggestions} content={children} componentParams={{ title: 'Suggestions', showSuggestedUsers }} />
         <WrappedRoute path='/compose' exact page={ComposePage} component={Compose} content={children} componentParams={{ title: 'Compose', page: 'compose' }} />
 
         <WrappedRoute path='/news' exact publicRoute page={NewsPage} component={News} content={children} componentParams={{ title: 'News' }} />
         <WrappedRoute path='/news/view/:trendsRSSId' page={NewsPage} component={NewsView} content={children} componentParams={{ title: 'News RSS Feed' }} />
 
         <WrappedRoute path='/messages' exact page={MessagesPage} component={Messages} content={children} componentParams={{ source: 'approved' }} />
-        <WrappedRoute path='/messages/new' exact page={BasicPage} component={ChatConversationCreate} content={children} componentParams={{ title: 'New Message' }} />
+        <WrappedRoute path='/messages/new' exact page={BasicPage} component={ChatConversationCreate} content={children} componentParams={{ title: 'New Message', showSuggestedUsers }} />
         {/*<WrappedRoute path='/messages/settings' exact page={MessagesPage} component={MessagesSettings} content={children} componentParams={{ isSettings: true }} />*/}
         <WrappedRoute path='/messages/requests' exact page={MessagesPage} component={ChatConversationRequests} content={children} componentParams={{ isSettings: true, source: 'requested' }} />
         <WrappedRoute path='/messages/blocks' exact page={MessagesPage} component={ChatConversationBlockedAccounts} content={children} componentParams={{ isSettings: true }} />
         <WrappedRoute path='/messages/muted_conversations' exact page={MessagesPage} component={ChatConversationMutes} content={children} componentParams={{ isSettings: true }} />
         <WrappedRoute path='/messages/:chatConversationId' exact page={MessagesPage} component={Messages} content={children} componentParams={{ source: 'approved' }} />
 
-        <WrappedRoute path='/timeline/pro' exact page={ProPage} component={ProTimeline} content={children} componentParams={{ title: 'Pro Feed' }} />
+        <WrappedRoute path='/timeline/pro' exact page={ProPage} component={ProTimeline} content={children} componentParams={{ title: 'Pro Feed', showVideos, showSuggestedUsers }} />
 
         <WrappedRoute path='/groups' publicRoute exact page={GroupsPage} component={GroupCollectionTimeline} content={children} componentParams={{ activeTab: 'timeline', collectionType: 'member' }} />
         { /* <WrappedRoute path='/groups/browse/new' exact page={GroupsPage} component={GroupsCollection} content={children} componentParams={{ activeTab: 'new' }} /> */ }
@@ -236,29 +245,29 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/groups/browse/categories/:sluggedCategory' exact page={GroupsPage} component={GroupCategory} content={children} componentParams={{ activeTab: 'categories' }} />
         <WrappedRoute path='/groups/browse/tags/:sluggedTag' exact page={GroupsPage} component={GroupTag} content={children} />
 
-        <WrappedRoute path='/groups/create' page={ModalPage} component={GroupCreate} content={children} componentParams={{ title: 'Create Group', page: 'create-group' }} />
+        <WrappedRoute path='/groups/create' page={ModalPage} component={GroupCreate} content={children} componentParams={{ title: 'Create Group', page: 'create-group', showSuggestedUsers }} />
         <WrappedRoute path='/groups/:id/members' page={GroupPage} component={GroupMembers} content={children} />
         <WrappedRoute path='/groups/:id/requests' page={GroupPage} component={GroupJoinRequests} content={children} />
         <WrappedRoute path='/groups/:id/removed-accounts' page={GroupPage} component={GroupRemovedAccounts} content={children} />
-        <WrappedRoute path='/groups/:id/edit' page={ModalPage} component={GroupCreate} content={children} componentParams={{ title: 'Edit Group', page: 'edit-group' }} />
+        <WrappedRoute path='/groups/:id/edit' page={ModalPage} component={GroupCreate} content={children} componentParams={{ title: 'Edit Group', page: 'edit-group', showSuggestedUsers }} />
         <WrappedRoute path='/groups/:id/about' publicRoute page={GroupPage} component={GroupAbout} content={children} />
         { /* <WrappedRoute path='/groups/:id/media' publicRoute page={GroupPage} component={GroupTimeline} content={children} componentParams={{ isTimeline: true, onlyMedia: true }} /> */ }
         <WrappedRoute path='/groups/:id' exact publicRoute page={GroupPage} component={GroupTimeline} content={children} componentParams={{ isTimeline: true }} />
 
-        <WrappedRoute path='/tags/:id' publicRoute page={HashtagPage} component={HashtagTimeline} content={children} componentParams={{ title: 'Hashtag' }} />
-        
+        <WrappedRoute path='/tags/:id' publicRoute page={HashtagPage} component={HashtagTimeline} content={children} componentParams={{ title: 'Hashtag', showSuggestedUsers }} />
+
         <WrappedRoute path='/links/:id' page={LinkPage} component={LinkTimeline} content={children} componentParams={{ title: 'Link Feed' }} />
 
-        <WrappedRoute path='/shortcuts' page={ShortcutsPage} component={Shortcuts} content={children} />
-        
-        <WrappedRoute path='/warnings' page={BasicPage} component={Warnings} content={children} componentParams={{ title: 'Warnings' }} />
+        <WrappedRoute path='/shortcuts' page={ShortcutsPage} component={Shortcuts} content={children} componentParams={{ showSuggestedUsers }} />
 
-        <WrappedRoute path='/feeds' exact page={ListsPage} component={ListsDirectory} content={children} />
-        <WrappedRoute path='/feeds/create' exact page={ModalPage} component={ListCreate} content={children} componentParams={{ title: 'Create Feed', page: 'create-feed' }} />
-        <WrappedRoute path='/feeds/:id/edit' exact page={ModalPage} component={ListEdit} content={children} componentParams={{ title: 'Edit Feed', page: 'edit-feed' }} />
-        <WrappedRoute path='/feeds/:id' publicRoute page={ListPage} component={ListTimeline} content={children} />
+        <WrappedRoute path='/warnings' page={BasicPage} component={Warnings} content={children} componentParams={{ title: 'Warnings', showSuggestedUsers }} />
 
-        <WrappedRoute path='/notifications' exact page={NotificationsPage} component={Notifications} content={children} />
+        <WrappedRoute path='/feeds' publicRoute exact page={ListsPage} component={ListsDirectory} content={children} componentParams={{ showVideos, showSuggestedUsers }} />
+        <WrappedRoute path='/feeds/create' exact page={ModalPage} component={ListCreate} content={children} componentParams={{ title: 'Create Feed', page: 'create-feed', showSuggestedUsers }} />
+        <WrappedRoute path='/feeds/:id/edit' exact page={ModalPage} component={ListEdit} content={children} componentParams={{ title: 'Edit Feed', page: 'edit-feed', showSuggestedUsers }} />
+        <WrappedRoute path='/feeds/:id' publicRoute page={ListPage} component={ListTimeline} content={children} componentParams={{ showVideos }} />
+
+        <WrappedRoute path='/notifications' exact page={NotificationsPage} component={Notifications} content={children} componentParams={{ showVideos, showSuggestedUsers }} />
         <Redirect from='/follow_requests' to='/notifications/follow_requests' exact />
         <WrappedRoute path='/notifications/follow_requests' exact page={NotificationsPage} component={FollowRequests} content={children} />
 
@@ -268,17 +277,30 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/search/statuses' exact publicRoute page={SearchPage} component={Search} content={children} />
         <WrappedRoute path='/search/links' exact page={SearchPage} component={Search} content={children} />
         <WrappedRoute path='/search/hashtags' exact page={SearchPage} component={Search} content={children} />
+        <WrappedRoute path='/search/marketplace' exact page={SearchPage} component={Search} content={children} />
+        <WrappedRoute path='/search/feeds' exact page={SearchPage} component={Search} content={children} />
+
+        <WrappedRoute path='/marketplace' exact publicRoute page={MarketplaceListingsPage} component={MarketplaceListingsFrontPage} content={children} componentParams={{ title: 'Marketplace', page: 'marketplace' }} />
+        <WrappedRoute path='/marketplace/categories' exact publicRoute page={MarketplaceListingCategoriesPage} component={MarketplaceListingCategories} content={children} componentParams={{ title: 'Marketplace', page: 'marketplace-categories', showSuggestedUsers }} />
+        <WrappedRoute path='/marketplace/listings' exact publicRoute page={MarketplaceListingsPage} component={MarketplaceListings} content={children} />
+        <WrappedRoute path='/marketplace/create' exact page={EmptyPage} component={MarketplaceListingCreate} content={children} componentParams={{ title: 'New Listing', page: 'marketplace-listing-create' }} />
+        <WrappedRoute path='/marketplace/dashboard' exact page={EmptyPage} component={MarketplaceListingsDashboard} content={children} componentParams={{ title: 'Your Listings' }} />
+        <WrappedRoute path='/marketplace/saved' exact page={ModalPage} component={MarketplaceListingSaves} content={children} componentParams={{ title: 'Marketplace Saves' }} />
+        <WrappedRoute path='/marketplace/item/:id/edit' page={EmptyPage} component={MarketplaceListingCreate} content={children} componentParams={{ title: 'Edit Marketplace Listing', page: 'marketplace-listing-edit' }} />
+        <WrappedRoute path='/marketplace/item/:id' publicRoute page={EmptyPage} component={MarketplaceListingDetail} content={children} componentParams={{ title: 'Listing', page: 'marketplace-listing-detail' }} />
 
         <WrappedRoute path='/settings/blocks' exact page={SettingsPage} component={BlockedAccounts} content={children} componentParams={{ title: 'Blocked Users' }} />
         <WrappedRoute path='/settings/mutes' exact page={SettingsPage} component={MutedAccounts} content={children} componentParams={{ title: 'Muted Users' }} />
-        
+
         <WrappedRoute path='/:username' publicRoute exact page={ProfilePage} component={AccountTimeline} content={children} />
 
         <WrappedRoute path='/:username/comments' page={ProfilePage} component={AccountCommentsTimeline} content={children} />
 
         <WrappedRoute path='/:username/followers' page={ProfilePage} component={Followers} content={children} />
         <WrappedRoute path='/:username/following' page={ProfilePage} component={Following} content={children} />
+        {/* <WrappedRoute path='/:username/marketplace_listings' page={ProfilePage} component={AccountMarketplaceListings} content={children} /> */}
 
+        <WrappedRoute path='/:username/listings' publicRoute exact page={ProfilePage} component={AccountMarketplaceListings} content={children} componentParams={{ noSidebar: true }} />
         <WrappedRoute path='/:username/photos' exact page={ProfilePage} component={AccountPhotoGallery} content={children} componentParams={{ noSidebar: true }} />
         { /* <WrappedRoute path='/:username/albums/:albumId' page={ProfilePage} component={AccountAlbumGallery} content={children} componentParams={{ noSidebar: true }} />  */ }
         <WrappedRoute path='/:username/videos' exact page={ProfilePage} component={AccountVideoGallery} content={children} componentParams={{ noSidebar: true }} />
@@ -288,29 +310,34 @@ class SwitchingArea extends React.PureComponent {
 
         <WrappedRoute path='/:username/likes' page={ProfilePage} component={LikedStatuses} content={children} />
         <WrappedRoute path='/:username/bookmarks' exact page={ProfilePage} component={BookmarkCollections} content={children} />
-        <WrappedRoute path='/:username/bookmarks/create' page={ModalPage} component={BookmarkCollectionCreate} content={children} componentParams={{ title: 'Create Bookmark Collection', page: 'create-bookmark-collection' }} />
+        <WrappedRoute path='/:username/bookmarks/create' page={ModalPage} component={BookmarkCollectionCreate} content={children} componentParams={{ title: 'Create Bookmark Collection', page: 'create-bookmark-collection', showSuggestedUsers }} />
         {/* <WrappedRoute path='/:username/bookmarks/:bookmarkCollectionId/edit' exact page={ModalPage} component={BookmarkCollectionEdit} content={children} componentParams={{ title: 'Edit Bookmark Collection', page: 'edit-bookmark-collection' }} /> */}
         <WrappedRoute path='/:username/bookmarks/:bookmarkCollectionId' page={ProfilePage} component={BookmarkedStatuses} content={children} />
-        
-        <WrappedRoute path='/:username/posts/:statusId' publicRoute exact page={BasicPage} component={StatusFeature} content={children} componentParams={{ title: 'Status', page: 'status' }} />
 
-        <WrappedRoute path='/:username/posts/:statusId/reposts' publicRoute page={ModalPage} component={StatusReposts} content={children} componentParams={{ title: 'Reposts' }} />
-        <WrappedRoute path='/:username/posts/:statusId/quotes' publicRoute page={ModalPage} component={StatusQuotes} content={children} componentParams={{ title: 'Quotes' }} />
-        <WrappedRoute path='/:username/posts/:statusId/likes' page={ModalPage} component={StatusLikes} content={children} componentParams={{ title: 'Likes' }} />
+        <WrappedRoute path='/:username/posts/:statusId' publicRoute exact page={BasicPage} component={StatusFeature} content={children} componentParams={{ title: 'Status', page: 'status', showSuggestedUsers }} />
+
+        <WrappedRoute path='/:username/posts/:statusId/reposts' publicRoute page={ModalPage} component={StatusReposts} content={children} componentParams={{ title: 'Reposts', showSuggestedUsers }} />
+        <WrappedRoute path='/:username/posts/:statusId/quotes' publicRoute page={ModalPage} component={StatusQuotes} content={children} componentParams={{ title: 'Quotes', showSuggestedUsers }} />
+        <WrappedRoute path='/:username/posts/:statusId/likes' page={ModalPage} component={StatusLikes} content={children} componentParams={{ title: 'Likes', showSuggestedUsers }} />
 
         <WrappedRoute page={ErrorPage} component={GenericNotFound} content={children} />
       </Switch>
     )
   }
+
 }
 
 SwitchingArea.propTypes = {
   children: PropTypes.node,
   location: PropTypes.object,
   onLayoutChange: PropTypes.func.isRequired,
+  showVideos: PropTypes.bool,
+  showSuggestedUsers: PropTypes.bool,
+  showGroups: PropTypes.bool,
 }
 
 class UI extends React.PureComponent {
+
   state = {
     fetchedHome: false,
     fetchedNotifications: false,
@@ -322,7 +349,7 @@ class UI extends React.PureComponent {
       intl,
       isComposing,
       hasComposingText,
-      hasMediaAttachments
+      hasMediaAttachments,
     } = this.props
 
     if (isComposing && (hasComposingText || hasMediaAttachments)) {
@@ -378,7 +405,7 @@ class UI extends React.PureComponent {
     e.preventDefault()
 
     this.setState({
-      draggingOver: false
+      draggingOver: false,
     })
     this.dragTargets = []
 
@@ -396,7 +423,7 @@ class UI extends React.PureComponent {
     if (this.dragTargets.length > 0) return
 
     this.setState({
-      draggingOver: false
+      draggingOver: false,
     })
   }
 
@@ -410,7 +437,7 @@ class UI extends React.PureComponent {
 
   closeUploadModal = () => {
     this.setState({
-      draggingOver: false
+      draggingOver: false,
     })
   }
 
@@ -444,10 +471,6 @@ class UI extends React.PureComponent {
     const pathname = this.props.location.pathname
 
     if (pathname === '/home') {
-      this.setState({ fetchedHome: true })
-      const savedHomeSortByValue = localStorage.getItem('homeSortByValue')
-      if (savedHomeSortByValue) this.props.dispatch(setHomeTimelineSort(savedHomeSortByValue))
-      this.props.dispatch(expandHomeTimeline({ sortByValue: savedHomeSortByValue }))
       this.props.dispatch(fetchUnreadWarningsCount())
     } else if (pathname.startsWith('/notifications')) {
       try {
@@ -467,6 +490,22 @@ class UI extends React.PureComponent {
       this.setState({ fetchedNotifications: true })
       this.props.dispatch(expandNotifications())
     }
+
+    const introductionPath = '/about/introduction'
+    if (
+      !!me &&
+      this.props.accountCreatedAt &&
+      pathname.startsWith(introductionPath) === false
+    ) {
+      //If first time opening app, and is new user, show onboarding
+      const accountCreatedAtValue = moment(this.props.accountCreatedAt).valueOf()
+      const onboard = isFirstSession &&
+        !this.props.shownOnboarding &&
+        accountCreatedAtValue > MIN_ACCOUNT_CREATED_AT_ONBOARDING
+      if (onboard) {
+        this.props.history.push(introductionPath)
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -484,7 +523,6 @@ class UI extends React.PureComponent {
 
       if (pathname === '/home' && !this.state.fetchedHome) {
         this.setState({ fetchedHome: true })
-        this.props.dispatch(expandHomeTimeline())
         this.props.dispatch(fetchUnreadWarningsCount())
       } else if (pathname.startsWith('/notifications') && !this.state.fetchedNotifications) {
         this.setState({ fetchedNotifications: true })
@@ -575,7 +613,7 @@ class UI extends React.PureComponent {
   }
 
   render() {
-    const { children, location } = this.props
+    const { children, location, showVideos, showSuggestedUsers, showGroups } = this.props
     const { draggingOver } = this.state
 
     // : todo :
@@ -604,7 +642,7 @@ class UI extends React.PureComponent {
           className={[_s.h2PX, _s.posFixed, _s.z6, _s.top53PX, _s.bgBrandLight, _s.saveAreaInsetMT].join(' ')}
         />
 
-        <SwitchingArea location={location} onLayoutChange={this.handleLayoutChange}>
+        <SwitchingArea location={location} onLayoutChange={this.handleLayoutChange} showVideos={showVideos} showSuggestedUsers={showSuggestedUsers} showGroups={showGroups}>
           {children}
         </SwitchingArea>
 
@@ -628,6 +666,12 @@ UI.propTypes = {
   hasMediaAttachments: PropTypes.bool,
   location: PropTypes.object,
   intl: PropTypes.object.isRequired,
+  history: PropTypes.object.isRequired,
+  accountCreatedAt: PropTypes.string,
+  shownOnboarding: PropTypes.bool,
+  showVideos: PropTypes.bool,
+  showSuggestedUsers: PropTypes.bool,
+  showGroups: PropTypes.bool,
 }
 
 export default injectIntl(withRouter(connect(mapStateToProps)(UI)))

@@ -1,0 +1,160 @@
+- content_for :page_title do
+  = "Marketplace Listing"
+
+- if @marketplace_listing.media_attachments && @marketplace_listing.media_attachments.count > 0
+  %div{:style=>"display:flex;flex-direction:row;flex-wrap:wrap;margin-bottom:10px;border:1px solid #444;padding:15px;"}
+    - @marketplace_listing.media_attachments.each do |media|
+      %div{:style=>"padding-right:5px;padding-bottom:5px;;height:200px;"}
+        = image_tag full_asset_url(media.file.url(:small)), alt: '', height: '200px', width: 'auto', :style => "height:200px,width:auto;border-radius:8px;border:1px solid #444;"
+  
+.table-wrapper
+  %table.table
+    %thead
+    %tbody
+      %tr
+        %td Id
+        %td= @marketplace_listing.id
+      %tr
+        %td Created At
+        %td= @marketplace_listing.created_at
+      %tr
+        %td Title
+        %td= @marketplace_listing.title
+      %tr
+        %td Description
+        %td= @marketplace_listing.description
+      %tr
+        %td Tags
+        %td= @marketplace_listing.tags
+      %tr
+        %td Location
+        %td= @marketplace_listing.location
+      %tr
+        %td Status
+        %td
+          = render 'marketplace_listing_status_tag', status: @marketplace_listing.status
+      %tr
+        %td Condition
+        %td= @marketplace_listing.condition
+      %tr
+        %td Price
+        %td= @marketplace_listing.price
+      %tr
+        %td Category
+        %td= @marketplace_listing_category.name
+      %tr
+        %td Shipping Required?
+        %td= @marketplace_listing.is_shipping_required ? 'Yes' : 'No'
+      %tr
+        %td Media
+        %td= @marketplace_listing.media_attachments.count
+      %tr
+        %td Account
+        %td= admin_account_link_to(@marketplace_listing.account)
+      
+      %tr
+      %tr
+
+      %tr
+        %td Time spent Running:
+        %td= @marketplace_listing.runtime_seconds_readable
+
+- if @marketplace_listing.status != 'approved'
+  %br
+  %hr
+  %br
+  
+  = simple_form_for @marketplace_listing, url: approve_admin_marketplace_listing_path(@marketplace_listing.id), method: :post do |f|
+    = render 'shared/error_messages', object: @marketplace_listing
+    .actions{:style => "display:block;width:320px;"}
+      = f.button :button, "Approve Marketplace Listing", type: :submit
+
+%br
+%hr
+%br
+
+%strong{:style => "display:block;font-weight:600;margin-bottom:15px;"} Request Revisions
+
+-# -# submit for revisions
+= simple_form_for @marketplace_listing, url: request_revisions_admin_marketplace_listing_path(@marketplace_listing.id), method: :post do |f|
+  = render 'shared/error_messages', object: @marketplace_listing
+  .fields-group
+    .input.string.optional
+      = text_field_tag :note, nil, class: 'string optional', placeholder: "Note *", required: true
+  .actions{:style => "display:block;width:320px;"}
+    = f.button :button, "Submit Request for Revisions", type: :submit, style: 'background-color: #a57215;'
+
+%br
+%hr
+%br
+
+%strong{:style => "display:block;font-weight:600;margin-bottom:15px;"} Change Marketplace Listing Status
+
+= form_with url: set_status_admin_marketplace_listing_path(@marketplace_listing.id), local: true, class: 'simple_form', method: :post do |f|
+  = render 'shared/error_messages', object: @marketplace_listing
+  .fields-group
+    .input.string.optional
+      = text_field_tag :note, nil, class: 'string optional', placeholder: "Note"
+    .input.string.optional
+      %span{:style => "display:block;margin-bottom:10px;color:#ddd;"} New Status
+      = f.select(:new_status, MarketplaceListing.statuses, {}, required: true, id: "new_status")
+    .input.string.optional
+      %span{:style => "display:block;margin-bottom:10px;color:#ddd;"} Default Rejection Reasons
+      = f.select(:status_reason, I18n.t('marketplace_listing_rejection_reasons').values.map { |hsh| [hsh[:title], hsh[:description]] }.sort_by { |a| a.first }, { include_blank: true }, id: "status_reason")
+  .actions{:style => "display:block;width:320px;"}
+    = f.button "Submit Status Change", type: :submit, style: 'background-color: #666;'
+
+%br
+%hr
+%br
+
+%strong{:style => "display:block;font-weight:600;margin-bottom:15px;"} Status Changes Log
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th Date
+        %th Old Status
+        %th New Status
+        %th Note
+        %th Reviewer
+    %tbody
+      - @marketplace_listing_status_changes.each do |change|
+        %tr
+          %td= change.created_at
+          %td= render 'marketplace_listing_status_tag', status: change.old_status
+          %td= render 'marketplace_listing_status_tag', status: change.new_status
+          %td= change.note
+          %td= change.reviewer_account_id # : todo : join/include to get the account here
+
+
+%br
+%hr
+%br
+
+.actions
+  = table_link_to 'times', 'Delete Marketplace Listing', admin_marketplace_listing_path(@marketplace_listing.id), method: :delete, data: { confirm: t('admin.accounts.are_you_sure') }
+
+
+%br
+%hr
+%br
+%br
+%hr
+%br
+
+%strong{:style => "display:block;font-weight:600;margin-bottom:15px;"} Default Rejection Reasons and Descriptions for note
+%br
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th Title
+        %th Description
+    %tbody
+      - I18n.t('marketplace_listing_rejection_reasons').values.map { |hsh| [hsh[:title], hsh[:description]] }.sort_by { |a| a.first }.each do |block|
+        %tr
+          %td{:style => "color:#bbb"}= block.first
+          %td{:style => "color:#bbb"}= block.last

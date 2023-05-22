@@ -25,9 +25,14 @@ class HomeFeed < Feed
         and s.reply is false
         and s.tombstoned_at IS NULL
         and (
-          exists(
-            select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id
-          )
+          case
+            WHEN s.reblog_of_id is null THEN exists(
+              select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id
+            )
+            WHEN s.reblog_of_id is not null THEN exists(
+              select ff.target_account_id from follows ff where ff.account_id = :id and ff.target_account_id = s.account_id and ff.show_reblogs is true
+            )
+          END
           or s.account_id = :id
         )
         and not exists(select mm.target_account_id from mutes mm where mm.account_id = :id and mm.target_account_id in (s.account_id, r.account_id))
@@ -110,11 +115,11 @@ class HomeFeed < Feed
     cte as
     (
       select
-        s.id, coalesce(ss.favourites_count,0) + coalesce(ss.reblogs_count,0) as score
+        s.id, (ss.favourites_count + ss.reblogs_count) as score
       from statuses s
       join status_stats ss on s.id = ss.status_id
       where
-        s.id > :hard_limit_id
+        ss.status_id > :hard_limit_id
         and s.reblog_of_id is null
         and s.reply is false
         and s.tombstoned_at IS NULL
@@ -159,7 +164,9 @@ class HomeFeed < Feed
   def get(limit = 20, max_id = nil, since_id = nil, min_id = nil, sort_by_value = nil, page = nil)
     sort_by_value ||= 'newest'
     query, duration = QUERY_OPTIONS[sort_by_value]
-    return(Status.none) unless query
+    if !query || (page && page.to_i > 250)
+      return(Status.none)
+    end
 
     opts = { id: @id, limit: limit, min_id: min_id, max_id: max_id }
     opts[:hard_limit_id] = GabSocial::Snowflake.id_at(duration.ago)

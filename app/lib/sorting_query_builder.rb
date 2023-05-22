@@ -9,6 +9,9 @@ class SortingQueryBuilder < BaseService
   TOP_ORDER = 'status_stats.favourites_count DESC, status_stats.reblogs_count DESC, status_stats.replies_count DESC'
 
   def call(sort_type, group = nil, page = 1, source = nil)
+    if page && page.to_i > 250
+      return Status.none
+    end
     set_atts(sort_type, group, page, source)
 
     build_base_relation!
@@ -86,6 +89,16 @@ private
       # no posts from groups in the explore feed
       @statuses = @statuses.where(group: nil)
 
+      @statuses = @statuses.where({
+        status_stats: {
+          replies_count: MIN_REPLIES..,
+          reblogs_count: MIN_REBLOGS..,
+          favourites_count: MIN_LIKES..,
+        }
+      })
+
+      @statuses = @statuses.joins(account: :account_stat).where(account: { account_stats: { following_count: -Float::INFINITY..20_000 } })
+
       # Require a minimum amout of text, to remove posts that are basically just screenshots
       # Excluding NULL and '' to potentially utilize an index and avoid a LENGTH calculation
       @statuses = @statuses.where('statuses.text is not null and statuses.text != ?', '')
@@ -99,16 +112,6 @@ private
       end
     elsif @group
       @statuses = @statuses.where(group: @group)
-    end
-
-    if @source != 'group_collection' && %w[recent newest].exclude?(@sort_type)
-      @statuses = @statuses.where({
-        status_stats: {
-          replies_count: MIN_REPLIES..,
-          reblogs_count: MIN_REBLOGS..,
-          favourites_count: MIN_LIKES..,
-        }
-      })
     end
   end
 

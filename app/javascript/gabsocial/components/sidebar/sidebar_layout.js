@@ -73,7 +73,7 @@ class SidebarLayout extends React.PureComponent {
                   </div>
                 }
                 {
-                  !!tabs &&
+                  (!!tabs && Array.isArray(tabs) && tabs.length > 0) &&
                   <div className={[_s.d, _s.mt10, _s.pb10, _s.borderBottom1PX, _s.borderColorSecondary].join(' ')}>
                     <Pills pills={tabs} />
                   </div>

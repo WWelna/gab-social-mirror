@@ -20,8 +20,6 @@ class SearchService < BaseService
 
       if @query.present?
         results[:accounts] = perform_accounts_search! if account_searchable?
-        results[:statuses] = perform_statuses_search! if full_text_searchable? && @account.vpdi?
-        # results[:links] = perform_links_search! if @account.vpdi?
         results[:groups] = perform_groups_search!
         results[:hashtags] = perform_hashtags_search! if hashtag_searchable? && @account.vpdi?
       end
@@ -62,39 +60,8 @@ class SearchService < BaseService
     )
   end
 
-  def perform_statuses_search!
-    definition = StatusesIndex.filter(term: { searchable_by: @account.id })
-                              .query(multi_match: { type: 'most_fields', query: @query, operator: 'and', fields: %w(text text.stemmed) })
-
-    if @options[:account_id].present?
-      definition = definition.filter(term: { account_id: @options[:account_id] })
-    end
-
-    if @options[:min_id].present? || @options[:max_id].present?
-      range      = {}
-      range[:gt] = @options[:min_id].to_i if @options[:min_id].present?
-      range[:lt] = @options[:max_id].to_i if @options[:max_id].present?
-      definition = definition.filter(range: { id: range })
-    end
-
-    results             = definition.limit(@limit).offset(@offset).objects.compact
-    account_ids         = results.map(&:account_id)
-    account_domains     = results.map(&:account_domain)
-    preloaded_relations = relations_map_for_account(@account, account_ids, account_domains)
-
-    results.reject { |status| StatusFilter.new(status, @account, preloaded_relations).filtered? }
-  rescue Faraday::ConnectionFailed
-    []
-  end
-
   def default_results
     { accounts: [], hashtags: [], statuses: [], links: [], groups: [] }
-  end
-
-  def full_text_searchable?
-    return false unless Chewy.enabled?
-
-    statuses_search? && !@account.nil? && !((@query.start_with?('#') || @query.include?('@')) && !@query.include?(' '))
   end
 
   def hashtag_searchable?

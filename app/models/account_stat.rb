@@ -11,6 +11,7 @@
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  last_status_at  :datetime
+#  unread_count    :integer          default(0)
 #
 
 class AccountStat < ApplicationRecord

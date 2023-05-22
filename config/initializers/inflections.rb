@@ -40,4 +40,5 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.acronym 'ActivityStreams'
   inflect.acronym 'JsonLd'
   inflect.acronym 'REST'
+  inflect.irregular 'marketplace_listing_save', 'marketplace_listing_saves'
 end

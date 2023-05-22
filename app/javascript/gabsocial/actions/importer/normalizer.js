@@ -1,6 +1,7 @@
 import escapeTextContentForBrowser from 'escape-html'
 import emojify from '../../components/emoji/emoji'
 import { unescapeHTML } from '../../utils/html'
+import normalizeReactionsCounts from '../../utils/reactions_counts_sort'
 import { expandSpoilers } from '../../initial_state'
 
 const domParser = new DOMParser()
@@ -64,6 +65,17 @@ export const normalizeStatus = (status, normalOldStatus) => {
 
   if (!!status.group || !!status.group_id) {
     normalStatus.group = status.group_id || status.group.id
+  }
+
+  if (status.reaction || status.reaction_id) {
+    normalStatus.reaction = status.reaction_id || status.reaction.id
+  }
+
+  try {
+    // sort max-min
+    normalStatus.reactions_counts = normalizeReactionsCounts(status.reactions_counts)
+  } catch (error) {
+    
   }
 
   // Only calculate these values when status first encountered

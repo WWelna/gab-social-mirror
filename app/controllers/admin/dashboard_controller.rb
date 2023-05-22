@@ -4,17 +4,17 @@ require 'sidekiq/api'
 module Admin
   class DashboardController < BaseController
     def index
-      @users_count           = User.count
+      @users_count           = "." #User.count
       @statuses_count        = "." #Status.count
-      @pro_accounts_count    = Account.where(is_pro: true).count
-      @donor_accounts_count  = Account.where(is_donor: true).count
+      @pro_accounts_count    = "." #Account.where(is_pro: true).count
+      @donor_accounts_count  = "." #Account.where(is_donor: true).count
       Redis.current.with do |conn|
         @registrations_week    = conn.get("activity:accounts:local:#{current_week}") || 0
         @logins_week           = conn.pfcount("activity:logins:#{current_week}")
         @interactions_week     = conn.get("activity:interactions:#{current_week}") || 0
       end
       @single_user_mode      = Rails.configuration.x.single_user_mode
-      @search_enabled        = Chewy.enabled?
+      @search_enabled        = true
       @version               = GabSocial::Version.to_s
       @database_version      = ActiveRecord::Base.connection.execute('SELECT VERSION()').first['version'].match(/\A(?:PostgreSQL |)([^\s]+).*\z/)[1]
       @redis_version         = redis_info['redis_version']

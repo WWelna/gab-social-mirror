@@ -5,36 +5,20 @@ import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { length } from 'stringz'
-import get from 'lodash.get'
 import { isMobile } from '../../../utils/is_mobile'
 import { countableText } from '../../ui/util/counter'
 import {
   CX,
   MAX_POST_CHARACTER_COUNT,
-  ALLOWED_AROUND_SHORT_CODE,
   BREAKPOINT_EXTRA_SMALL,
-  BREAKPOINT_MEDIUM,
+  BREAKPOINT_SMALL,
 } from '../../../constants'
 import AutosuggestTextbox from '../../../components/autosuggest_textbox'
 import Responsive from '../../ui/util/responsive_component'
-import ResponsiveClassesComponent from '../../ui/util/responsive_classes_component'
-import Avatar from '../../../components/avatar'
-import Button from '../../../components/button'
-import EmojiPickerButton from './emoji_picker_button'
-import PollButton from './poll_button'
 import PollForm from './poll_form'
-import SchedulePostButton from './schedule_post_button'
-import SpoilerButton from './spoiler_button'
-import ExpiresPostButton from './expires_post_button'
-import RichTextEditorButton from './rich_text_editor_button'
 import StatusContainer from '../../../containers/status_container'
-import StatusVisibilityButton from './status_visibility_button'
-import MoreButton from './more_button'
-import UploadButton from './media_upload_button'
 import UploadForm from './upload_form'
 import Input from '../../../components/input'
-import Text from '../../../components/text'
-import Icon from '../../../components/icon'
 import ComposeExtraButtonList from './compose_extra_button_list'
 import ComposeDestinationHeader from './compose_destination_header'
 import ComposeFormSubmitButton from './compose_form_submit_button'
@@ -52,6 +36,9 @@ class ComposeForm extends ImmutablePureComponent {
 
   state = {
     composeFocused: false,
+    quote_of_id: null,
+    in_reply_to: null,
+    group_id: null,
   }
 
   handleChange = (e, selectionStart) => {
@@ -141,9 +128,8 @@ class ComposeForm extends ImmutablePureComponent {
   componentDidMount() {
     document.addEventListener('click', this.handleClick, false)
 
-    const { groupId } = this.props
-    if (groupId) {
-      this.props.onChangeComposeGroupId(groupId)
+    if (this.props.groupId) {
+      this.props.onChangeComposeGroupId(this.props.groupId)
     }
   }
 
@@ -152,28 +138,12 @@ class ComposeForm extends ImmutablePureComponent {
   }
 
   componentDidUpdate(prevProps) {
-    // This statement does several things:
-    // - If we're beginning a reply, and,
-    //     - Replying to zero or one users, places the cursor at the end of the textbox.
-    //     - Replying to more than one user, selects any usernames past the first
-    //       this provides a convenient shortcut to drop everyone else from the conversation.
-    if (this.props.focusDate !== prevProps.focusDate) {
-      let selectionEnd, selectionStart
 
-      if (this.props.preselectDate !== prevProps.preselectDate) {
-        selectionEnd = this.props.text.length
-        selectionStart = this.props.text.search(/\s/) + 1
-      } else if (typeof this.props.caretPosition === 'number') {
-        selectionStart = this.props.caretPosition
-        selectionEnd = this.props.caretPosition
-      } else {
-        selectionEnd = this.props.text.length
-        selectionStart = selectionEnd
-      }
-
-      // this.autosuggestTextarea.textbox.setSelectionRange(selectionStart, selectionEnd)
-      // this.autosuggestTextarea.textbox.focus()
+    const { groupId } = this.props
+    if (prevProps.groupId !== groupId) {
+      this.props.onChangeComposeGroupId(groupId)
     }
+
   }
 
   setAutosuggestTextarea = (c) => {
@@ -209,7 +179,10 @@ class ComposeForm extends ImmutablePureComponent {
       hidePro,
       dontOpenModal,
       formLocation,
+      feature,
+      groupId,
     } = this.props
+
 
     const disabled = isSubmitting
     const text = [this.props.spoilerText, countableText(this.props.text)].join('')
@@ -244,49 +217,22 @@ class ComposeForm extends ImmutablePureComponent {
     )
 
     if (shouldCondense) {
-      return (
-        <div className={[_s.d, _s.w100PC].join(' ')}>
-          <div className={[_s.d, _s.flexRow, _s.w100PC, _s.aiCenter].join(' ')}>
-            <div className={[_s.d, _s.mr10].join(' ')}>
-              <Avatar account={account} size={30} noHover />
-            </div>
-            <div
-              className={[_s.d, _s.flexWrap, _s.overflowHidden, _s.flex1, _s.minH28PX, _s.py5, _s.aiEnd, _s.flexRow, _s.radiusSmall, _s.bgSubtle, _s.px5].join(' ')}
-              ref={this.setForm}
-              onClick={this.handleClick}
-            >
-              { textbox }
-              { isMatch && <ComposeFormSubmitButton type='comment' /> }
-            </div>
-          </div>
-
-          {
-            (isUploading || anyMedia) && isMatch &&
-            <div className={[_s.d, _s.w100PC, _s.pl35, _s.mt5].join(' ')}>
-              <UploadForm isModalOpen={isModalOpen} />
-            </div>
-          }
-        </div>
-      )
+      return null
     }
 
     const containerClasses = CX({
       d: 1,
-      pb10: 1,
       calcMaxH410PX: 1,
-      mb10: 1,
-      minH200PX: isModalOpen && isMatch,
+      minH150PX: isModalOpen && isMatch,
       overflowYScroll: 1,
       flex1: 1,
       boxShadowBlock: length(text) > 64,
-      borderTop1PX: 1,
       borderColorSecondary: 1,
     })
 
     const innerClasses = CX({
       d: 1,
       calcMaxH410PX: 1,
-      minH98PX: formLocation === 'timeline',
       minH200PX: ['standalone', 'modal'].indexOf(formLocation) > -1,
     })
 
@@ -294,7 +240,10 @@ class ComposeForm extends ImmutablePureComponent {
       <div className={[_s.d, _s.w100PC, _s.flexGrow1, _s.bgPrimary].join(' ')}>
         <div className={innerClasses}>
 
-          <ComposeDestinationHeader formLocation={formLocation} account={account} isModal={isModalOpen} />
+          {
+            !feature &&
+            <ComposeDestinationHeader formLocation={formLocation} account={account} isModal={isModalOpen} groupId={groupId}/>
+          }
 
           <div className={containerClasses} ref={this.setForm} onClick={this.handleClick}>
 
@@ -331,24 +280,16 @@ class ComposeForm extends ImmutablePureComponent {
             }
 
             {
-              !!reduxReplyToId && isModalOpen && isMatch &&
+              (!!reduxReplyToId || !!quoteOfId) && isModalOpen && isMatch &&
               <div className={[_s.d, _s.px15, _s.py10, _s.mt5].join(' ')}>
-                <StatusContainer contextType='compose' id={reduxReplyToId} isChild />
+                <StatusContainer contextType='compose' id={reduxReplyToId || quoteOfId} isChild />
               </div>
             }
             
-            {
-              !!quoteOfId && isModalOpen && isMatch &&
-              <div className={[_s.d, _s.px15, _s.py10, _s.mt5].join(' ')}>
-                <StatusContainer contextType='compose' id={quoteOfId} isChild />
-              </div>
-            }
           </div>
         </div>
         
-        <div className={[_s.d, _s.px10].join(' ')}>
-          <ComposeExtraButtonList formLocation={formLocation} isMatch={isMatch} hidePro={hidePro} edit={edit} isModal={isModalOpen} />
-        </div>
+        <ComposeExtraButtonList formLocation={formLocation} isMatch={isMatch} hidePro={hidePro} edit={edit} feature={feature} isModal={isModalOpen} />
 
         {
           (!disabledButton || isModalOpen) && isMatch &&
@@ -361,7 +302,7 @@ class ComposeForm extends ImmutablePureComponent {
           </div>
         }
 
-        <Responsive max={BREAKPOINT_EXTRA_SMALL}>
+        <Responsive max={BREAKPOINT_SMALL}>
           {
             formLocation === 'timeline' &&
             <NavLink to='/compose' className={[_s.d, _s.z4, _s.posAbs, _s.top0, _s.left0, _s.right0, _s.bottom0].join(' ')} />

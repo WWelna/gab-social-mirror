@@ -10,7 +10,6 @@ import {
   LinkFooter,
   TrendsBreakingPanel,
   UserSuggestionsPanel,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class ShortcutsPage extends React.PureComponent {
@@ -20,9 +19,17 @@ class ShortcutsPage extends React.PureComponent {
   }
 
   render() {
-    const { intl, children } = this.props
+    const { intl, children, showSuggestedUsers } = this.props
 
     const title = intl.formatMessage(messages.shortcuts)
+
+    let sidebarLayout = [TrendsBreakingPanel]
+
+    if(showSuggestedUsers) {
+      sidebarLayout.push(UserSuggestionsPanel)
+    }
+
+    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
@@ -35,12 +42,7 @@ class ShortcutsPage extends React.PureComponent {
             onClick: this.handleOnOpenEditShortcutsModal,
           },
         ]}
-        layout={[
-          GabAdPanel,
-          TrendsBreakingPanel,
-          UserSuggestionsPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
       >
         <PageTitle path={title} />
         {children}

@@ -18,7 +18,6 @@ import {
   NotificationFilterPanel,
   GabTVVideosPanel,
   UserSuggestionsPanel,
-  GabAdPanel,
 } from '../features/ui/util/async_components'
 
 class NotificationsPage extends React.PureComponent {
@@ -60,6 +59,8 @@ class NotificationsPage extends React.PureComponent {
       notificationCount,
       selectedFilter,
       isXS,
+      showVideos,
+      showSuggestedUsers,
     } = this.props
 
     let filters = NOTIFICATION_FILTERS
@@ -75,17 +76,23 @@ class NotificationsPage extends React.PureComponent {
 
     const title = intl.formatMessage(messages.notifications)
 
+    let sidebarLayout = [NotificationFilterPanel]
+
+    if(showVideos) {
+      sidebarLayout.push(GabTVVideosPanel)
+    }
+    
+    if(showSuggestedUsers) {
+      sidebarLayout.push(UserSuggestionsPanel)
+    }
+
+    sidebarLayout.push(LinkFooter)
+
     return (
       <DefaultLayout
         title={title}
         page='notifications'
-        layout={[
-          NotificationFilterPanel,
-          GabAdPanel,
-          GabTVVideosPanel,
-          UserSuggestionsPanel,
-          LinkFooter,
-        ]}
+        layout={sidebarLayout}
         tabs={tabs}
         actions={!isXS ? [
           {
@@ -111,11 +118,12 @@ class NotificationsPage extends React.PureComponent {
 const messages = defineMessages({
   notifications: { id: 'tabs_bar.notifications', defaultMessage: 'Notifications' },
   mention: { id: 'notifications.filter.mentions', defaultMessage: 'Mentions' },
-  favourite: { id: 'likes', defaultMessage: 'Likes' },
+  favourite: { id: 'reactions', defaultMessage: 'Reactions' },
   reblog: { id: 'reposts', defaultMessage: 'Reposts' },
   poll: { id: 'polls', defaultMessage: 'Poll' },
   follow: { id: 'notifications.filter.follows', defaultMessage: 'Follows' },
   follow_requests: { id: 'navigation_bar.follow_requests', defaultMessage: 'Follow requests' },
+  quote: { id: 'quotes', defaultMessage: 'Quotes' },
   all: { id: 'notifications.filter.all', defaultMessage: 'All' },
 })
 

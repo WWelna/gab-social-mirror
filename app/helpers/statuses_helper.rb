@@ -60,6 +60,10 @@ module StatusesHelper
     return "Subscribe to the #{list.title} feed curated by (@#{list.account.username}) on Gab."
   end
 
+  def marketplace_listing_description(marketplace_listing)
+    return marketplace_listing.description
+  end
+
   def media_summary(status)
     attachments = { image: 0, video: 0 }
 

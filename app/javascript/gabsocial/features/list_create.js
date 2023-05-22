@@ -98,7 +98,6 @@ const mapDispatchToProps = (dispatch, { isModal }) => ({
   onChangeVisibility: (e) => dispatch(changeListEditorVisibility(e.target.value)),
   onSubmit: (routerHistory) => {
     if (isModal) dispatch(closeModal(MODAL_LIST_CREATE))
-    console.log("routerHistory:", routerHistory)
     dispatch(submitListEditor(true, routerHistory))
   },
 })

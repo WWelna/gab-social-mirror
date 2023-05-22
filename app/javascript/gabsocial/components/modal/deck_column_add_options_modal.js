@@ -12,7 +12,10 @@ import {
   clearDeckAccountSuggestions,
 } from '../../actions/deck'
 import { fetchGroupsByTab } from '../../actions/groups'
-import { MODAL_DECK_COLUMN_ADD } from '../../constants'
+import {
+  MODAL_DECK_COLUMN_ADD,
+  LIST_TYPE_OWN,
+} from '../../constants'
 import Account from '../account'
 import Heading from '../heading'
 import Button from '../button'
@@ -72,7 +75,7 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
   }
 
   getContentForColumn = () => {
-    const { column, lists, groups, suggestionsIds } = this.props
+    const { column, lists, groups, suggestionsIds, ownList } = this.props
     const { hashtagValue, usernameValue } = this.state
 
     if (column === 'hashtag') {
@@ -93,12 +96,16 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
         onClick: () => this.handleAdd(`list.${list.get('id')}`),
         title: list.get('title'),
       }))
+
+      const showLoading = ownList.get('isLoading') &&
+        ownList.get('isFetched') === false &&
+        lists.size === 0
   
       return (
         <div className={[_s.d, _s.maxH340PX, _s.overflowYScroll].join(' ')}>
           <List
             scrollKey='lists-deck-add'
-            showLoading={lists.size === 0}
+            showLoading={showLoading}
             emptyMessage="You don't have any lists yet."
             items={listItems}
           />
@@ -164,7 +171,7 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
     const { hashtagValue } = this.state
 
     if (!column) return <div />
-    const title = `Select a ${column}`
+    const title = `Select a ${column === 'list' ? 'feed' : column}`
 
     const content = this.getContentForColumn()
 
@@ -208,14 +215,15 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state) => ({
-  lists: getOrderedLists(state, 'own'),
+  lists: getOrderedLists(state, LIST_TYPE_OWN),
   groups: getListOfGroups(state, { type: 'member' }),
   suggestionsIds: state.getIn(['deck', 'accountSuggestions']),
+  ownList: state.getIn(['lists_lists', LIST_TYPE_OWN]),
 })
 
 const mapDispatchToProps = (dispatch) => ({
   onFetchLists() {
-    dispatch(fetchLists())
+    dispatch(fetchLists(LIST_TYPE_OWN))
   },
   onFetchMemberGroups() {
     dispatch(fetchGroupsByTab('member'))

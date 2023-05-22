@@ -12,6 +12,7 @@ class ExpireAccountProWorker
     @acct.update(is_pro: false)
 
     deliver_email
+    expire_marketplace_listings
   end
 
   private
@@ -20,4 +21,11 @@ class ExpireAccountProWorker
     UserMailer.pro_expired(@acct.user).deliver_now!
     @acct.user.touch(:last_emailed_at)
   end
+
+  def expire_marketplace_listings
+    if @acct.has_running_marketplace_listings?
+      ChangeExpiredProAccountMarketplaceListingsWorker.perform_async(@acct.id)
+    end
+  end
+
 end

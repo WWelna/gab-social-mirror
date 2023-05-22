@@ -2,7 +2,8 @@
 
 class REST::RelationshipSerializer < ActiveModel::Serializer
   attributes :id, :following, :showing_reblogs, :followed_by, :blocking,
-             :blocked_by, :muting, :muting_notifications, :requested
+             :blocked_by, :muting, :muting_notifications, :requested,
+             :chat_blocking
 
   def id
     object.id.to_s
@@ -40,5 +41,9 @@ class REST::RelationshipSerializer < ActiveModel::Serializer
 
   def requested
     instance_options[:relationships].requested[object.id] ? true : false
+  end
+
+  def chat_blocking
+    instance_options[:relationships].chat_blocking[object.id] ? true : false
   end
 end

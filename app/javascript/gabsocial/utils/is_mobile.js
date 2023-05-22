@@ -1,6 +1,5 @@
 'use strict'
 
-import detectPassiveEvents from 'detect-passive-events'
 import {
   BREAKPOINT_EXTRA_LARGE,
   BREAKPOINT_LARGE,
@@ -41,21 +40,17 @@ export const getWindowDimension = () => {
 }
 
 const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-
-let userTouching = false
-const listenerOptions = detectPassiveEvents.hasSupport ? { passive: true } : false
-
-function touchListener() {
-  userTouching = true
-  window.removeEventListener('touchstart', touchListener, listenerOptions)
-}
-
-window.addEventListener('touchstart', touchListener, listenerOptions)
-
-export function isUserTouching() {
-  return userTouching
-}
+const isVersion15 = /Version\/15/.test(navigator.userAgent)
+const PWA = window.navigator && window.navigator.standalone
 
 export function isIOS() {
   return iOS
+}
+
+export function isIOS15() {
+  return iOS && isVersion15
+}
+
+export function isPWA() {
+  return PWA
 }

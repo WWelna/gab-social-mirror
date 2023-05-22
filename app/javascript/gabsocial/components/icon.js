@@ -3,7 +3,8 @@ import PropTypes from 'prop-types'
 import { CX } from '../constants'
 import Logo from './logo'
 import Loading from './loading'
-import VerifiedIcon from './verified_icon'
+import VerifiedAccountIcon from './verified_account_icon'
+import VerifiedGroupIcon from './verified_group_icon'
 
 class Icon extends React.PureComponent {
 
@@ -26,7 +27,8 @@ class Icon extends React.PureComponent {
       return <Logo className={className} />
     }
     else if (id === 'loading') return <Loading size={size} className={className} />
-    else if (id === 'verified') return <VerifiedIcon size={size} className={className} />
+    else if (id === 'verified-account') return <VerifiedAccountIcon size={size} className={className} />
+    else if (id === 'verified-group') return <VerifiedGroupIcon size={size} className={className} />
 
     const additionalClasses = {}
     additionalClasses.gfi = 1

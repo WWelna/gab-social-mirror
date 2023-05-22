@@ -22,6 +22,7 @@
 #  tags                     :string           default([]), is an Array
 #  password                 :string
 #  group_category_id        :integer
+#  is_verified              :boolean          default(FALSE), not null
 #
 
 class Group < ApplicationRecord
@@ -67,12 +68,12 @@ class Group < ApplicationRecord
   scope :alphabetical, -> { order(arel_table['title'].lower.asc) }
 
   class << self
-    def search_for(term, offset = 0)
+    def search_for(term, offset = 0, limit = 25)
       Group.matching(:title, :contains, term)
         .includes(:group_categories)
         .where(is_archived: false, is_visible: true)
         .order(member_count: :desc)
-        .limit(25)
+        .limit(limit)
         .offset(offset)
     end
 
@@ -83,6 +84,10 @@ class Group < ApplicationRecord
     def search_for_removed_accounts(group, term, limit)
       group.removed_accounts.matching(:username, :contains, term).limit(limit)
     end
+  end
+
+  def cache_key
+    "groups/#{id}-#{cache_version}"
   end
 
   def has_password?
@@ -114,13 +119,13 @@ class Group < ApplicationRecord
       reblog_key       = FeedManager.instance.key(:group, id, 'reblogs')
       reblogged_id_set = conn.zrange(reblog_key, 0, -1)
 
-      conn.pipelined do
-        conn.del(FeedManager.instance.key(:group, id))
-        conn.del(reblog_key)
+      conn.pipelined do |pipeline|
+        pipeline.del(FeedManager.instance.key(:group, id))
+        pipeline.del(reblog_key)
 
         reblogged_id_set.each do |reblogged_id|
           reblog_set_key = FeedManager.instance.key(:group, id, "reblogs:#{reblogged_id}")
-          conn.del(reblog_set_key)
+          pipeline.del(reblog_set_key)
         end
       end
     end

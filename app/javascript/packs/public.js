@@ -31,7 +31,7 @@ function main ( ) {
   const { getLocale } = require('../gabsocial/locales');
   const { messages } = getLocale();
   //(Rjc) 2019-05-24 defined but never used
-  // const React = require('react');
+  const React = require('react');
   const ReactDOM = require('react-dom');
   const createHistory = require('history').createBrowserHistory;
 

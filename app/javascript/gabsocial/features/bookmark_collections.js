@@ -43,8 +43,6 @@ class BookmarkCollections extends ImmutablePureComponent {
       return <ColumnIndicator type='error' message='Error fetching bookmark collections' />
     }
 
-    console.log("bookmarkCollections:", bookmarkCollections)
-
     let listItems = !!bookmarkCollections ? bookmarkCollections.map((b) => ({
       to: `/${meUsername}/bookmarks/${b.get('id')}`,
       title: b.get('title'),
@@ -55,8 +53,6 @@ class BookmarkCollections extends ImmutablePureComponent {
       title: 'Bookmarks',
       icon: 'lock',
     })
-
-    console.log("listItems:", listItems)
 
     return (
       <Block>

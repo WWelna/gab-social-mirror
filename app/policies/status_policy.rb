@@ -12,27 +12,28 @@ class StatusPolicy < ApplicationPolicy
   end
 
   def show?
+    return false if author.suspended?
     return true if owned? || staff?
 
     if private?
       if record.group_id
-        private_group_member?
+        return private_group_member?
       else
-        following_author?
+        return following_author?
       end
     elsif requires_mention?
-      mention_exists?
-    else
-      current_account.nil? || !author_blocking?
+      return mention_exists?
     end
+
+    true
   end
 
   def reblog?
-    !requires_mention? && (!private? || owned?) && show? && !blocking_author?
+    !requires_mention? && (!private? || owned?) && show? && !author_blocking?
   end
 
   def favourite?
-    show? && !blocking_author?
+    !author_blocking?
   end
 
   def destroy?

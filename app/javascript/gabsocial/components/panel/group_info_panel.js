@@ -65,7 +65,9 @@ class GroupInfoPanel extends ImmutablePureComponent {
             <React.Fragment>
               <Heading isCentered>
                 {group.get('title')}
+                {group.get('is_verified') && <Icon id='verified-group' size='20px' className={_s.ml7} /> }
               </Heading>
+                
               {
                 !!slug &&
                 <Text className={_s.mt5} size='small' color='secondary' align='center'>

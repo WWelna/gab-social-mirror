@@ -12,7 +12,7 @@
 class Tag < ApplicationRecord
   has_and_belongs_to_many :statuses
   has_and_belongs_to_many :accounts
-  has_and_belongs_to_many :sample_accounts, -> { searchable.discoverable.popular.limit(3) }, class_name: 'Account'
+  has_and_belongs_to_many :sample_accounts, -> { old_searchable.discoverable.popular.limit(3) }, class_name: 'Account'
 
   has_one :account_tag_stat, dependent: :destroy
 
@@ -69,10 +69,10 @@ class Tag < ApplicationRecord
   end
 
   class << self
-    def search_for(term, offset = 0)
+    def search_for(term, offset = 0, limit = 25)
       Tag.matching(:name, :starts_with, term)
          .order(:name)
-         .limit(25)
+         .limit(limit)
          .offset(offset)
     end
 

@@ -80,7 +80,7 @@ const mapDispatchToProps = (dispatch, { alt, src, expandOnClick }) => ({
 
 Image.propTypes = {
   alt: PropTypes.string,
-  isLazy: PropTypes.string,
+  isLazy: PropTypes.bool,
   className: PropTypes.string,
   width: PropTypes.oneOfType([
     PropTypes.string,

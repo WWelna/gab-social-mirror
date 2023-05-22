@@ -9,16 +9,27 @@ import SidebarLayout from './sidebar_layout'
 class LoggedOutSidebar extends React.PureComponent {
 
   render() {
-    const { intl, title } = this.props
+    const {
+      intl,
+      title,
+      showBackBtn,
+      tabs
+    } = this.props
 
     if (!!me) return null
    
     return (
-      <SidebarLayout title={title}>
+      <SidebarLayout
+        title={title}
+        showBackBtn={showBackBtn}
+        tabs={tabs}
+      >
         <SidebarSectionTitle>{intl.formatMessage(messages.menu)}</SidebarSectionTitle>
-        <SidebarSectionItem title='Home' icon='home' to='/home' />
+        <SidebarSectionItem title='Home' icon='home' to='/' />
         <SidebarSectionItem title='Search' icon='search-alt' to='/search' />
         <SidebarSectionItem title='Groups' icon='group' to='/groups' />
+        <SidebarSectionItem title='Feeds' icon='list' to='/feeds' />
+        <SidebarSectionItem title='Marketplace' icon='shop' to='/marketplace' />
         <SidebarSectionItem title='News' icon='news' to='/news' />
         <SidebarSectionItem title='About' icon='list' to='/about' />
         
@@ -41,6 +52,8 @@ const messages = defineMessages({
 LoggedOutSidebar.propTypes = {
   intl: PropTypes.object.isRequired,
   title: PropTypes.string,
+  showBackBtn: PropTypes.bool,
+  tabs: PropTypes.array,
 }
 
 export default injectIntl(LoggedOutSidebar)

@@ -89,7 +89,7 @@ class ProfileOptionsPopover extends React.PureComponent {
 
     menu.push({
       hideArrow: true,
-      icon: 'report',
+      icon: 'error',
       title: intl.formatMessage(messages.report, { name: account.get('username') }),
       onClick: this.handleReport
     })

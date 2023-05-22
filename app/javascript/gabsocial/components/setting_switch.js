@@ -24,7 +24,8 @@ class SettingSwitch extends ImmutablePureComponent {
       settings,
       settingPath,
       label,
-      description
+      description,
+      labelProps
     } = this.props
 
     const isArray = Array.isArray(settingPath)
@@ -39,6 +40,7 @@ class SettingSwitch extends ImmutablePureComponent {
         id={id}
         checked={checked}
         onChange={this.onChange}
+        labelProps={labelProps}
       />
     )
   }
@@ -55,6 +57,7 @@ SettingSwitch.propTypes = {
   description: PropTypes.string,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
+  labelProps: PropTypes.object,
 }
 
 export default SettingSwitch

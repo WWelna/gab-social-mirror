@@ -38,25 +38,21 @@ class NotificationFilterPanel extends ImmutablePureComponent {
         headerButtonAction={this.handleOnClickSettings}
         noPadding={!isPro}
       >
-        {
-          isPro &&
-          <SettingSwitch
-            prefix='notification'
-            settings={settings}
-            settingPath={'onlyVerified'}
-            onChange={onChange}
-            label={intl.formatMessage(messages.onlyVerified)}
-          />
-        }
+        <SettingSwitch
+          prefix='notification'
+          settings={settings}
+          settingPath={'onlyVerified'}
+          onChange={onChange}
+          label={intl.formatMessage(messages.onlyVerified)}
+        />
 
-        { /* : todo :
-          <SettingSwitch
+        <SettingSwitch
           prefix='notification'
           settings={settings}
           settingPath={'onlyFollowing'}
           onChange={onChange}
           label={intl.formatMessage(messages.onlyFollowing)}
-        /> */ }
+        />
       </PanelLayout>
     )
   }
@@ -65,7 +61,7 @@ class NotificationFilterPanel extends ImmutablePureComponent {
 const messages = defineMessages({
   title: { id: 'notification_filters', defaultMessage: 'Notification Filters' },
   onlyVerified: { id: 'notification_only_verified', defaultMessage: 'Only Verified Users' },
-  // onlyFollowing: { id: 'notification_only_following', defaultMessage: 'Only People I Follow' },
+  onlyFollowing: { id: 'notification_only_following', defaultMessage: 'Only People I Follow' },
 })
 
 const mapStateToProps = (state) => ({

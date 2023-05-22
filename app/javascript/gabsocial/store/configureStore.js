@@ -1,15 +1,29 @@
-import { createStore, applyMiddleware, compose } from 'redux';
-import thunk from 'redux-thunk';
-import appReducer from '../reducers';
-import loadingBarMiddleware from '../middleware/loading_bar';
-import errorsMiddleware from '../middleware/errors';
+import { createStore, applyMiddleware, compose } from 'redux'
+import thunk from 'redux-thunk'
+import appReducer from '../reducers'
+import loadingBarMiddleware from '../middleware/loading_bar'
+import errorsMiddleware from '../middleware/errors'
 import popoverMiddleware from '../middleware/popover'
+import { timelinesMiddleware } from './timelines'
+import staleMiddleware from './stale'
 
 export default function configureStore() {
-  return createStore(appReducer, compose(applyMiddleware(
+  // middleware are like functions that can react to messages
+  const middleware = applyMiddleware(
     popoverMiddleware,
-    thunk,
+    timelinesMiddleware,
+    staleMiddleware,
+    thunk, // thunk can allow actions to get state
     loadingBarMiddleware({ promiseTypeSuffixes: ['REQUEST', 'SUCCESS', 'FAIL'] }),
     errorsMiddleware(),
-  ), window.__REDUX_DEVTOOLS_EXTENSION__ ? window.__REDUX_DEVTOOLS_EXTENSION__() : f => f));
+  )
+
+  // optionally add redux-devtools-extension
+  // https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd
+  // https://github.com/zalmoxisus/redux-devtools-extension
+  const enhancers = typeof window.__REDUX_DEVTOOLS_EXTENSION__ === 'function' ?
+    compose(middleware, window.__REDUX_DEVTOOLS_EXTENSION__()) :
+    compose(middleware);
+
+  return createStore(appReducer, enhancers);
 };

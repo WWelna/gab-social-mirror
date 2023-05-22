@@ -22,7 +22,6 @@ const makeMapStateToProps = () => {
 
     if (isFollows) {
       let lastUpdated
-      let isUnread
 
       const list = props.notification.get('follow')
       let accounts = ImmutableList()
@@ -30,7 +29,6 @@ const makeMapStateToProps = () => {
         const account = getAccountFromState(state, item.get('account'))
         accounts = accounts.set(accounts.size, account)
         if (!lastUpdated) {
-          isUnread = parseInt(item.get('id')) > parseInt(lastReadId)
           lastUpdated = item.get('created_at')
         }
       })
@@ -39,15 +37,12 @@ const makeMapStateToProps = () => {
         type: 'follow',
         accounts: accounts,
         createdAt: lastUpdated,
-        isUnread: isUnread,
         statusId: undefined,
         isDeckConnected,
       }
-    } else if (isLikes || isReposts) {
-      const theType = isLikes ? 'like' : 'repost'
-      const list = props.notification.get(theType)
+    } else if (isReposts) {
+      const list = props.notification.get('repost')
       let lastUpdated = list.get('lastUpdated')
-      let isUnread = list.get('isUnread')
 
       let accounts = ImmutableList()
       const accountIdArr = list.get('accounts')
@@ -59,11 +54,54 @@ const makeMapStateToProps = () => {
       }
 
       return {
-        type: theType,
+        type: 'repost',
         accounts: accounts,
         createdAt: lastUpdated,
-        isUnread: isUnread,
         status: state.getIn(['statuses', list.get('status')], null),
+        isDeckConnected,
+      }
+      } else if (isReposts) {
+      const list = props.notification.get('repost')
+      let lastUpdated = list.get('lastUpdated')
+
+      let accounts = ImmutableList()
+      const accountIdArr = list.get('accounts')
+
+      for (let i = 0; i < accountIdArr.length; i++) {
+        const accountId = accountIdArr[i];
+        const account = getAccountFromState(state, accountId)
+        accounts = accounts.set(accounts.size, account)
+      }
+
+      return {
+        type: 'repost',
+        accounts: accounts,
+        createdAt: lastUpdated,
+        status: state.getIn(['statuses', list.get('status')], null),
+        isDeckConnected,
+      }
+    } else if (isLikes) {
+      const list = props.notification.get('like')
+      let reactionTypeId = list.get('reactionTypeId')
+      let lastUpdated = list.get('lastUpdated')
+
+      let accounts = ImmutableList()
+      const accountIdArr = list.get('accounts')
+
+      for (let i = 0; i < accountIdArr.length; i++) {
+        const accountId = accountIdArr[i];
+        const account = getAccountFromState(state, accountId)
+        accounts = accounts.set(accounts.size, account)
+      }
+
+      let noReactionOrBasicLike = !reactionTypeId || reactionTypeId === '0'
+
+      return {
+        type: noReactionOrBasicLike ? 'like' : 'reaction',
+        accounts: accounts,
+        createdAt: lastUpdated,
+        status: state.getIn(['statuses', list.get('status')], null),
+        reactionType: noReactionOrBasicLike ? null : state.getIn(['reactions', 'all', reactionTypeId], null),
         isDeckConnected,
       }
     } else if (!isGrouped) {
@@ -75,7 +113,6 @@ const makeMapStateToProps = () => {
         type: notification.get('type'),
         accounts: !!account ? ImmutableList([account]) : ImmutableList(),
         createdAt: notification.get('created_at'),
-        isUnread: lastReadId < notification.get('id'),
         status: state.getIn(['statuses', statusId], null),
         isDeckConnected,
       }
