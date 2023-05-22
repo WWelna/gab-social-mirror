@@ -54,7 +54,7 @@ class GroupsPage extends React.PureComponent {
       GabAdPanel,
     ]
     if (!!me) {
-      layout.push(<WrappedBundle component={GroupsPanel} componentParams={{ groupType: 'member' }} />)
+      layout.push(<WrappedBundle key='groups-page-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'member' }} />)
     }
     layout.push(LinkFooter)
 

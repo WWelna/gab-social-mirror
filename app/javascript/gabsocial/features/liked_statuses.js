@@ -12,7 +12,7 @@ import ColumnIndicator from '../components/column_indicator'
 
 class LikedStatuses extends ImmutablePureComponent {
 
-  componentWillMount() {
+  componentDidMount() {
     this.props.dispatch(fetchFavoritedStatuses())
   }
 

@@ -44,7 +44,7 @@ class SearchLayout extends React.PureComponent {
     ]
   }
 
-  componentWillMount() {
+  componentDidMount() {
     const { intl } = this.props
 
     this.searchTabs = [
@@ -76,9 +76,7 @@ class SearchLayout extends React.PureComponent {
       },
       */
     ]
-  }
-
-  componentDidMount() {
+    
     this._shouldSetTrendingHashtags()
   }
 

@@ -15,7 +15,7 @@ import Text from '../components/text'
 
 class BookmarkedStatuses extends ImmutablePureComponent {
 
-  componentWillMount() {
+  componentDidMount() {
     this.props.dispatch(fetchBookmarkedStatuses(this.props.bookmarkCollectionId))
   }
 
@@ -34,8 +34,6 @@ class BookmarkedStatuses extends ImmutablePureComponent {
     if (!isMyAccount) {
       return <ColumnIndicator type='missing' />
     }
-
-    console.log("statusIds:", statusIds)
 
     return (
       <div className={[_s.d, _s.w100PC].join(' ')}>

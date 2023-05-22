@@ -77,7 +77,7 @@ StatusActionBarItem.propTypes = {
   active: PropTypes.bool,
   disabled: PropTypes.bool,
   isCompact: PropTypes.bool,
-  buttonRef: PropTypes.oneOf([
+  buttonRef: PropTypes.oneOfType([
     PropTypes.func,
     PropTypes.node,
   ]),

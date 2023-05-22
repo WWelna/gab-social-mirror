@@ -46,6 +46,18 @@ class StatusList extends ImmutablePureComponent {
   componentDidMount() {
     this.handleDequeueTimeline()
     this.fetchPromotedStatus()
+
+    // : hack :
+    // if index is 0 or 1 and is comment, preload context
+    const { statusIds } = this.props;
+    if (statusIds && !this.state.fetchedContext) {
+      const firstStatusId = statusIds.get(0)
+      const secondStatusId = statusIds.get(1)
+      const arr = []
+      if (!!firstStatusId) arr.push(firstStatusId)
+      if (!!secondStatusId) arr.push(secondStatusId)
+      if (arr.length > 0) this.fetchContextsForInitialStatuses(arr)
+    }
   }
 
   fetchPromotedStatus() {
@@ -171,7 +183,7 @@ class StatusList extends ImmutablePureComponent {
       promotions,
       isComments,
     } = this.props
-    const { fetchedContext, isRefreshing } = this.state
+    const { isRefreshing } = this.state
 
     if (isPartial || (isLoading && statusIds.size === 0)) {
       return (
@@ -181,18 +193,6 @@ class StatusList extends ImmutablePureComponent {
           <StatusPlaceholder />
         </React.Fragment>
       )
-    }
-
-    // : hack :
-    // if index is 0 or 1 and is comment, preload context
-    if (statusIds && !fetchedContext) {
-      const firstStatusId = statusIds.get(0)
-      const secondStatusId = statusIds.get(1)
-      let arr = []
-
-      if (!!firstStatusId) arr.push(firstStatusId)
-      if (!!secondStatusId) arr.push(secondStatusId)
-      if (arr.length > 0) this.fetchContextsForInitialStatuses(arr)
     }
 
     let scrollableContent = []
@@ -207,7 +207,6 @@ class StatusList extends ImmutablePureComponent {
             <div
               key={'gap:' + statusIds.get(i + 1)}
               disabled={isLoading}
-              maxId={i > 0 ? statusIds.get(i - 1) : null}
               onClick={onLoadMore}
             />
           )
@@ -445,7 +444,10 @@ StatusList.propTypes = {
   isPartial: PropTypes.bool,
   isComments: PropTypes.bool,
   hasMore: PropTypes.bool,
-  emptyMessage: PropTypes.string,
+  emptyMessage: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.node,
+  ]),
   timelineId: PropTypes.string,
   queuedItemSize: PropTypes.number,
   onDequeueTimeline: PropTypes.func.isRequired,
@@ -453,7 +455,7 @@ StatusList.propTypes = {
   onScroll: PropTypes.func.isRequired,
   onFetchContext: PropTypes.func.isRequired,
   onFetchStatus: PropTypes.func.isRequired,
-  promotedStatuses: PropTypes.object,
+  promotedStatuses: PropTypes.array,
 }
 
 StatusList.defaultProps = {

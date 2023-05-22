@@ -92,8 +92,6 @@ GroupPage.propTypes = {
 	children: PropTypes.node.isRequired,
 	relationships: ImmutablePropTypes.map,
 	dispatch: PropTypes.func.isRequired,
-	sortByValue: PropTypes.string.isRequired,
-	sortByTopValue: PropTypes.string.isRequired,
 }
 
 export default injectIntl(connect(mapStateToProps)(GroupPage))

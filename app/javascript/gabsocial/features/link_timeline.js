@@ -16,15 +16,11 @@ import ResponsiveClassesComponent from './ui/util/responsive_classes_component'
 
 class LinkTimeline extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   componentDidMount() {
     this.handleConnect(this.props.params.id)
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.params.id !== this.props.params.id) {
       this.handleConnect(nextProps.params.id)
     }

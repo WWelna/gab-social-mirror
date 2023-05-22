@@ -14,10 +14,6 @@ import Text from '../../../components/text'
 
 class Upload extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   state = {
     hovering: false,
     focused: false,

@@ -3,6 +3,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { withRouter } from 'react-router-dom'
 import {
   fetchChatConversationAccountSuggestions,
   clearChatConversationAccountSuggestions,
@@ -18,10 +19,6 @@ import Button from '../components/button'
 import AccountPills from '../components/account_pills'
 
 class ChatConversationCreate extends ImmutablePureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
 
   state = {
     query: '',
@@ -76,7 +73,7 @@ class ChatConversationCreate extends ImmutablePureComponent {
       this.props.onCloseModal()
     }
 
-    this.props.onCreateChatConversation(selectedAccountIds, this.context.router.history)
+    this.props.onCreateChatConversation(selectedAccountIds, this.props.history)
     this.props.onClearChatConversationAccountSuggestions()
   }
 
@@ -172,4 +169,4 @@ ChatConversationCreate.propTypes = {
   suggestionsIds: ImmutablePropTypes.list,
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ChatConversationCreate)
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(ChatConversationCreate))

@@ -85,12 +85,12 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 GroupCategory.propTypes = {
-  groupIds: PropTypes.array,
+  groupIds: ImmutablePropTypes.list,
 	isFetched: PropTypes.bool,
   isLoading: PropTypes.bool,
   hasMore: PropTypes.bool,
   onFetchGroupsByCategory: PropTypes.func.isRequired,
-  sluggedCategory: PropTypes.string.isRequired,
+  params: PropTypes.object,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(GroupCategory)

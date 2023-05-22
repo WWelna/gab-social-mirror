@@ -128,7 +128,7 @@ StatusMedia.propTypes = {
   onToggleVisibility: PropTypes.func,
   visible: PropTypes.bool,
   defaultWidth: PropTypes.number,
-  cacheWidth: PropTypes.number,
+  cacheWidth: PropTypes.func,
   isComposeModalOpen: PropTypes.bool,
   isStatusCard: PropTypes.bool,
 }

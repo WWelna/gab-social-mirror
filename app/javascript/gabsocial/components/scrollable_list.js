@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import throttle from 'lodash.throttle'
 import { List as ImmutableList } from 'immutable'
-import IntersectionObserverArticle from './intersection_observer_article'
+import { withRouter } from 'react-router-dom'
 import IntersectionObserverWrapper from '../features/ui/util/intersection_observer_wrapper'
 import { MOUSE_IDLE_DELAY } from '../constants'
 import Block from './block'
@@ -10,10 +10,6 @@ import ColumnIndicator from './column_indicator'
 import LoadMore from './load_more'
 
 class ScrollableList extends React.PureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
 
   state = {
     cachedMediaWidth: 250, // Default media/card width using default Gab Social theme
@@ -217,36 +213,9 @@ class ScrollableList extends React.PureComponent {
       return (
         <div onMouseMove={this.handleMouseMove} ref={this.setRef}>
           <div role='feed'>
-            {
-              !!this.props.children &&
-              React.Children.map(this.props.children, (child, index) => (
-                <IntersectionObserverArticle
-                  key={child.key}
-                  id={child.key}
-                  index={index}
-                  listLength={childrenCount}
-                  intersectionObserverWrapper={this.intersectionObserverWrapper}
-                  saveHeightKey={`${this.context.router.route.location.key}:${scrollKey}`}
-                >
-                  {
-                    React.cloneElement(child, {
-                      cachedMediaWidth: this.state.cachedMediaWidth,
-                      cacheMediaWidth: this.cacheMediaWidth,
-                    })
-                  }
-                </IntersectionObserverArticle>
-              ))
-            }
-
-            {
-              (hasMore && onLoadMore && !isLoading) &&
-              <LoadMore onClick={this.handleLoadMore} />
-            }
-
-            {
-              isLoading && !!onScrollToTop &&
-              <ColumnIndicator type='loading' />
-            }
+            {children}
+            {(hasMore && onLoadMore && !isLoading) && <LoadMore onClick={this.handleLoadMore} />}
+            {isLoading && !!onScrollToTop && <ColumnIndicator type='loading' />}
           </div>
         </div>
       )
@@ -274,9 +243,9 @@ ScrollableList.propTypes = {
   children: PropTypes.node,
   onScrollToTop: PropTypes.func,
   onScroll: PropTypes.func,
-  placeholderComponent: PropTypes.node,
+  placeholderComponent: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   placeholderCount: PropTypes.number,
   disableInfiniteScroll: PropTypes.bool,
 }
 
-export default ScrollableList
+export default withRouter(ScrollableList)

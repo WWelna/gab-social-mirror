@@ -19,9 +19,17 @@ class ListsDirectory extends ImmutablePureComponent {
   }
 
   componentDidMount() {
-    this.props.onFetchLists()
-      .then(() => this.setState({ fetched: true }))
-      .catch(() => this.setState({ fetched: true }))
+    if (this.props.onFetchLists) {
+      this.props.onFetchLists()
+      this.setState({ fetched: true })      
+    }
+  }
+
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (nextProps.onFetchLists) {
+      nextProps.onFetchLists()
+      this.setState({ fetched: true })
+    }
   }
 
   handleOnOpenListCreateModal = () => {

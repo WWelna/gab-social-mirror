@@ -7,6 +7,11 @@
     - else
       \-
   %td
+    - if account.user_current_sign_in_ip
+      = account.user_current_sign_in_ip
+    - else
+      \-
+  %td
     %samp= number_with_delimiter account.statuses.count
   %td
     = render 'admin/accounts/account_flags_block', :account => account

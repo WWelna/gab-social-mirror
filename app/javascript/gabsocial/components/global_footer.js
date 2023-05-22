@@ -119,7 +119,7 @@ const GlobalFooter = () => (
           classNamesXS={[_s.d, _s.w1255PX, _s.aiCenter, _s.px15, _s.pt15, _s.pb50].join(' ')}
         >
 
-          <div classNames={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
+          <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
             <Text weight='bold'>
               © 2020
             </Text>

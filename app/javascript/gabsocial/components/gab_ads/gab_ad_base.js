@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
 import isObject from 'lodash.isobject'
 import axios from 'axios'
@@ -12,6 +13,7 @@ import {
   saveAdvertisementClickData,
   saveAdvertisementViewData,
   incrementViewCountForAdvertisement,
+  pagePosition,
 } from '../../actions/advertisements'
 import Button from '../button'
 
@@ -23,35 +25,89 @@ const REQUIRED_KEYS = [
   'url',
 ]
 
+// TODO configurable URL for gab grow such as dotenv and url-join
+const growBaseUrl = 'https://grow.gab.com/get/';
+
 class GabAdBase extends React.Component {
 
   state = {
     ad: null,
   }
 
-  componentWillMount() {
-    // if not status, return null
+  /**
+   * Getter which is true if pageKey and position props were provided.
+   * @returns {boolean}
+   */
+  get hasPagePosition() {
+    const { pageKey, position } = this.props
+    return typeof pageKey === 'string' && typeof position === 'number'
+  }
+
+  /**
+   * Getter creating a string key for caching.
+   * @returns {sring}
+   */
+  get pagePositionKey() {
+    const { pageKey, position } = this.props
+    return `${pageKey}-${position}`
+  }
+
+  /**
+   * Return a cached at at the page position, if any.
+   * @returns {object}
+   */
+  cachedAd() {
+    if (this.hasPagePosition === false) {
+      return
+    }
+    const { pageKey, position, pagePositionAdsCache } = this.props
+    const ad = pagePositionAdsCache.get(this.pagePositionKey)
+    if (ad !== undefined) {
+      // it was cached
+      return ad.toJS()
+    }
+  }
+
+  /**
+   * If we fetched a new ad then save it at the current position.
+   * @param {object} ad
+   */
+  savePosition(ad) {
+    if (this.hasPagePosition === false) {
+      return
+    }
+    const { pageKey, position } = this.props
+    this.props.savePagePosition({ pageKey, position, ad })
+  }
+
+  /**
+   * Fetch a new ad and save it at the page position.
+   */
+  loadFreshAd() {
     const { placement } = this.props
-    let baseurl = 'https://grow.gab.com/get/';
-    let finalurl;
+    let adUrl;
 
     if (placement == GAB_AD_PLACEMENTS.status) {
-      finalurl = `${baseurl}status`;
+      adUrl = `${growBaseUrl}status`;
     } else if (placement == GAB_AD_PLACEMENTS.panel) {
-      finalurl = `${baseurl}sidebar`;
+      adUrl = `${growBaseUrl}sidebar`;
     }
 
-    axios.get(finalurl).then((response) => {
-      if (!!response.data && isObject(response.data)) {
-        if (REQUIRED_KEYS.every(key => Object.keys(response.data).includes(key))) {
-          this.setState({ ad: response.data })
-        }
+    axios.get(adUrl).then(({ data: ad }) => {
+      if (REQUIRED_KEYS.every(key => Object.keys(ad).includes(key))) {
+        this.savePosition(ad)
+        this.setState({ ad })
       }
-    }).catch((error) => {
-      this.setState({ ad: null })
-      // console.log('error loading ad: ', error)
-    })
+    }).catch(() => this.setState({ ad: null }))
+  }
 
+  componentDidMount() {
+    const ad = this.cachedAd()
+    if (ad !== undefined) {
+      // cached
+      return this.setState({ ad })
+    }
+    this.loadFreshAd()
   }
 
   componentWillUnmount() {
@@ -122,6 +178,11 @@ class GabAdBase extends React.Component {
 
 }
 
+function mapStateToProps(state, props) {
+  const pagePositionAdsCache = state.getIn(['advertisements', 'pagePositionAdsCache'])
+  return { pagePositionAdsCache }
+}
+
 const mapDispatchToProps = (dispatch) => ({
   onSaveAdvertisementClickData(adId, placement) {
     dispatch(saveAdvertisementClickData(adId, placement))
@@ -132,6 +193,9 @@ const mapDispatchToProps = (dispatch) => ({
   onIncrementViewCountForAdvertisement(adId) {
     dispatch(incrementViewCountForAdvertisement(adId))
   },
+  savePagePosition({ pageKey, position, ad }) {
+    dispatch(pagePosition({ pageKey, position, ad }))
+  }
 })
 
 GabAdBase.propTypes = {
@@ -140,6 +204,9 @@ GabAdBase.propTypes = {
   onSaveAdvertisementClickData: PropTypes.func.isRequired,
   onSaveAdvertisementViewData: PropTypes.func.isRequired,
   onIncrementViewCountForAdvertisement: PropTypes.func.isRequired,
+  pageKey: PropTypes.string,
+  position: PropTypes.number,
+  pagePositionAdsCache: ImmutablePropTypes.map
 }
 
-export default connect(null, mapDispatchToProps)(GabAdBase)
+export default connect(mapStateToProps, mapDispatchToProps)(GabAdBase)

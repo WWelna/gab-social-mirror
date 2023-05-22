@@ -67,7 +67,7 @@ class GroupLayout extends ImmutablePureComponent {
                     <SidebarPanelGroup
                       page={`group.${groupId}`}
                       layout={[
-                        <WrappedBundle component={GroupInfoPanel} componentParams={{ group }} />,
+                        <WrappedBundle key='group-layout-group-info-panel' component={GroupInfoPanel} componentParams={{ group }} />,
                         GabAdPanel,
                         SignUpPanel,
                         GroupsPanel,

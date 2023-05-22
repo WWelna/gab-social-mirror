@@ -14,7 +14,7 @@ import ScrollableList from '../components/scrollable_list'
 
 class MutedAccounts extends ImmutablePureComponent {
 
-  componentWillMount() {
+  componentDidMount() {
     this.props.onFetchMutes()
   }
 

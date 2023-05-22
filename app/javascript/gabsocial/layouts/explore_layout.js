@@ -71,12 +71,12 @@ class ExploreLayout extends ImmutablePureComponent {
       GabAdPanel,
     ]
     if (!!me) {
-      layout.push(<WrappedBundle component={GroupsPanel} componentParams={{ groupType: 'featured' }} />)
-      layout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, suggestionType: 'verified' }} />)
+      layout.push(<WrappedBundle key='explore-layout-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'featured' }} />)
+      layout.push(<WrappedBundle key='explore-layout-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, suggestionType: 'verified' }} />)
     }
-    layout.push(<WrappedBundle component={GabTVVideosPanel} />)
-    layout.push(<WrappedBundle component={TrendingHashtagsPanel} />)
-    layout.push(<WrappedBundle component={LinkFooter} />)
+    layout.push(<WrappedBundle key='explore-layout-gabtv-videos-panel' component={GabTVVideosPanel} />)
+    layout.push(<WrappedBundle key='explore-layout-trending-hashtags-panel' component={TrendingHashtagsPanel} />)
+    layout.push(<WrappedBundle key='explore-layout-link-footer' component={LinkFooter} />)
 
     return (
       <Layout

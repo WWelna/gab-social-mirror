@@ -69,7 +69,7 @@ class DisplayOptionsModal extends ImmutablePureComponent {
                 Aa
               </span>
               <Slider
-                min='0'
+                min={0}
                 value={currentFontSizeIndex}
                 max={fontSizeNames.length - 1}
                 onInput={this.handleOnFontSizeChange}

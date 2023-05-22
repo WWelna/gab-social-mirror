@@ -12,7 +12,7 @@ import BlockHeading from '../components/block_heading'
 
 class AccountCommentsTimeline extends ImmutablePureComponent {
 
-  componentWillMount() {
+  componentDidMount() {
     const { accountId } = this.props
 
     if (accountId && accountId !== -1) {
@@ -20,7 +20,7 @@ class AccountCommentsTimeline extends ImmutablePureComponent {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.accountId && nextProps.accountId !== -1 && (nextProps.accountId !== this.props.accountId && nextProps.accountId)) {
       this.props.dispatch(expandAccountTimeline(nextProps.accountId, { commentsOnly: true }))
     }

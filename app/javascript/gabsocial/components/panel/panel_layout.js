@@ -101,8 +101,8 @@ class PanelLayout extends React.PureComponent {
 }
 
 PanelLayout.propTypes = {
-  title: PropTypes.string,
-  subtitle: PropTypes.string,
+  title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  subtitle: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   children: PropTypes.node,
   headerButtonTitle: PropTypes.string,
   headerButtonAction: PropTypes.func,

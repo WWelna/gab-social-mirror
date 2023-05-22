@@ -10,6 +10,7 @@ import {
   unblockAccount,
 } from '../actions/accounts'
 import { openModal } from '../actions/modal'
+import { closePopover } from '../actions/popover'
 import { me, unfollowModal } from '../initial_state'
 import { MODAL_EDIT_PROFILE } from '../constants'
 import Button from './button'
@@ -159,6 +160,7 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onOpenEditProfile() {
+    dispatch(closePopover())
     dispatch(openModal(MODAL_EDIT_PROFILE))
   },
 

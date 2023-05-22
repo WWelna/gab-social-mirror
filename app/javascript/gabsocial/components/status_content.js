@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { injectIntl, defineMessages } from 'react-intl'
+import { withRouter } from 'react-router-dom'
 import { isRtl } from '../utils/rtl'
 import { CX } from '../constants'
 import Button from './button'
@@ -12,10 +13,6 @@ import Text from './text'
 const MAX_HEIGHT = 200
 
 class StatusContent extends ImmutablePureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
 
   state = {
     hidden: true,
@@ -78,18 +75,18 @@ class StatusContent extends ImmutablePureComponent {
   }
 
   onMentionClick = (mention, e) => {
-    if (this.context.router && e.button === 0 && !(e.ctrlKey || e.metaKey)) {
+    if (e.button === 0 && !(e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      this.context.router.history.push(`/${mention.get('acct')}`)
+      this.props.history.push(`/${mention.get('acct')}`)
     }
   }
 
   onHashtagClick = (hashtag, e) => {
     hashtag = hashtag.replace(/^(#|\$)/, '').toLowerCase()
 
-    if (this.context.router && e.button === 0 && !(e.ctrlKey || e.metaKey)) {
+    if (e.button === 0 && !(e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      this.context.router.history.push(`/tags/${hashtag}`)
+      this.props.history.push(`/tags/${hashtag}`)
     }
   }
 
@@ -346,4 +343,4 @@ StatusContent.propTypes = {
   isComment: PropTypes.bool,
 }
 
-export default injectIntl(StatusContent)
+export default withRouter(injectIntl(StatusContent))

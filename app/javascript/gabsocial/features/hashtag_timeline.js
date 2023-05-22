@@ -17,7 +17,7 @@ class HashtagTimeline extends React.PureComponent {
     // dispatch(fetchHashtag(tagName))
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const { dispatch, params } = this.props
     const { id } = nextProps.params
 

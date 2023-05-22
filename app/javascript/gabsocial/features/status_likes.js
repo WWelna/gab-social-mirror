@@ -15,11 +15,11 @@ import AccountPlaceholder from '../components/placeholder/account_placeholder'
 
 class StatusLikes extends ImmutablePureComponent {
 
-  componentWillMount () {
+  componentDidMount () {
     this.props.dispatch(fetchLikes(this.props.statusId))
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.statusId !== this.props.statusId && nextProps.statusId) {
       this.props.dispatch(fetchLikes(nextProps.statusId))
     }

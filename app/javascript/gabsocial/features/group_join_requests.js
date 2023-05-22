@@ -21,17 +21,17 @@ import ScrollableList from '../components/scrollable_list'
 
 class GroupJoinRequests extends ImmutablePureComponent {
 
-	componentWillMount() {
+	componentDidMount() {
 		const { groupId } = this.props
 
 		this.props.onFetchJoinRequests(groupId)
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (nextProps.groupId !== this.props.groupId) {
-			this.props.onFetchJoinRequests(nextProps.groupId)
-		}
-	}
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (nextProps.groupId !== this.props.groupId) {
+      this.props.onFetchJoinRequests(nextProps.groupId)
+    }
+  }
 
 	handleLoadMore = debounce(() => {
 		this.props.onExpandJoinRequests(this.props.groupId)

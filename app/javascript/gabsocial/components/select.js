@@ -52,11 +52,14 @@ class Select extends ImmutablePureComponent {
 
 Select.propTypes = {
   onChange: PropTypes.func.isRequired,
-  options: PropTypes.oneOf([
-    ImmutablePropTypes.map,
-    PropTypes.object,
+  options: PropTypes.oneOfType([
+    ImmutablePropTypes.list,
+    PropTypes.array,
   ]).isRequired,
-  value: PropTypes.string,
+  value: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+  ])
 }
 
 export default Select

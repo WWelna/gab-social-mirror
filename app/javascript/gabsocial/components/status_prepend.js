@@ -172,7 +172,7 @@ StatusPrepend.propTypes = {
   isFeatured: PropTypes.bool,
   isPinnedInGroup: PropTypes.bool,
   isPromoted: PropTypes.bool,
-  onOpenProModal: PropTypes.func.isRequired,
+  onOpenProModal: PropTypes.func,
 }
 
 export default injectIntl(StatusPrepend)

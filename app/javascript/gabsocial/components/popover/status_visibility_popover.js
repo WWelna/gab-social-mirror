@@ -76,6 +76,7 @@ class StatusVisibilityDropdown extends React.PureComponent {
 
               return (
                 <div
+                  key={`status-visibility-item-${i}`}
                   role='button'
                   onClick={() => this.handleChange(option.value)}
                   className={containerClasses}

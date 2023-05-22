@@ -25,8 +25,32 @@ module Admin
     def show
       authorize :status, :index?
 
-      @statuses = @account.statuses.where(id: params[:id])
+      status_id = params[:id]
+      @statuses = @account.statuses.where(id: status_id)
       authorize @statuses.first, :show?
+
+      favQuery = <<-SQL
+      select
+        f.id as favourite_id,
+        f.created_at as favourite_created_at,
+        a.id as account_id,
+        a.username,
+        a.display_name,
+        u.id as user_id,
+        u.created_at as user_created_at,
+        u.current_sign_in_ip::text,
+        u.last_sign_in_ip::text
+      from
+        favourites f,
+        accounts a,
+        users u
+      where
+        f.status_id = ? and
+        a.id = f.account_id and
+        u.account_id = a.id
+      SQL
+
+      @favourites = Favourite.find_by_sql([favQuery, status_id])
 
       @form = Form::StatusBatch.new
     end

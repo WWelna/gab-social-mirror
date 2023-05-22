@@ -37,7 +37,9 @@ export const connectTimelineStream = (timelineId, path, pollingRefresh = null, a
           dispatch(deleteFromTimelines(data.payload))
           break
         case 'notification':
-          dispatch(updateNotificationsQueue(JSON.parse(data.payload), messages, locale, window.location.pathname))
+          const notification = JSON.parse(data.payload)
+          notification.messageSource = 'websocket'
+          dispatch(updateNotificationsQueue(notification, messages, locale, window.location.pathname))
           break
         case 'filters_changed':
           dispatch(fetchFilters())
@@ -61,7 +63,10 @@ export const connectStatusUpdateStream = () => {
       onReceive (data) {
         if (!data['event'] || !data['payload']) return
         if (data.event === 'update') {
-          handleComposeSubmit(dispatch, getState, {data: JSON.parse(data.payload)}, null)
+          // this simulates an axios response for the message
+          const response = {data: JSON.parse(data.payload)}
+          response.data.showToast = false
+          handleComposeSubmit(dispatch, getState, response, null)
         }
       },
     }

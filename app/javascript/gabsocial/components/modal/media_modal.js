@@ -15,10 +15,6 @@ export const previewState = 'previewMediaModal'
 
 class MediaModal extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   state = {
     index: null,
     navigationHidden: false,
@@ -86,7 +82,7 @@ class MediaModal extends ImmutablePureComponent {
   handleStatusClick = e => {
     if (e.button === 0 && !(e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      this.context.router.history.push(`/${this.props.status.getIn(['account', 'acct'])}/posts/${this.props.status.get('id')}`)
+      this.props.history.push(`/${this.props.status.getIn(['account', 'acct'])}/posts/${this.props.status.get('id')}`)
     }
   }
 

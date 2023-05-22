@@ -7,10 +7,6 @@ import StatusList from '../components/status_list'
 
 class ProTimeline extends React.PureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   componentDidMount () {
     const { dispatch } = this.props
 

@@ -5,8 +5,10 @@ import GabAdRoot from './gab_ad_root'
 import PanelLayout from '../panel/panel_layout'
 
 const GabAdPanel = () => {
+  return <div/>
+/*
   return (
-    <GabAdRoot placement={GAB_AD_PLACEMENTS.panel}>
+    <GabAdRoot key='gab-ad-panel' placement={GAB_AD_PLACEMENTS.panel}>
       <PanelLayout
         noPadding
         title='Sponsored'
@@ -19,6 +21,7 @@ const GabAdPanel = () => {
       </PanelLayout>
     </GabAdRoot>
   )
+*/
 }
 
 export default GabAdPanel

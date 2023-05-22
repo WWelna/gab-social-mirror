@@ -16,29 +16,31 @@ class LinkBlock < ApplicationRecord
 
   scope :alphabetical, -> { reorder(link: :asc) }
 
+  # Takes a block of text and returns all of the unique possibilities for a `link_blocks.link` value
+  def self.blockable_links(text)
+    return [] if text.blank?
+
+    text.
+      scan(FetchLinkCardService::URL_PATTERN).
+      map { |array| Addressable::URI.parse(array[0]).normalize }.
+      flat_map do |url|
+        [
+          TagManager.instance.normalize_link(url),
+          TagManager.instance.normalize_link_domain(url)
+        ]
+      end.
+      uniq
+  end
+
   def self.block?(text)
-    return false if text.nil?
-    return false if text.length < 8
+    return false if text.blank?
 
     return true if text.include? '.weebly.com'
     return true if text.include? '.brokenfuture.com'
     return true if text.include? 'gildapparels.xyz'
     return true if text.include? 'skatapparel.com'
 
-    urls = text.scan(FetchLinkCardService::URL_PATTERN).map {|array|
-      Addressable::URI.parse(array[0]).normalize
-    }
-    url = urls.first
-
-    return false if url.nil?
-
-    link_for_fetch = TagManager.instance.normalize_link(url)
-    link_for_fetch = link_for_fetch.chomp("/")
-
-    domain_for_fetch = TagManager.instance.normalize_link_domain(url)
-
-    matching(:link, :is, link_for_fetch).
-      or(matching(:link, :is, domain_for_fetch)).
-      exists?
+    links = blockable_links(text)
+    return links.present? && exists?(link: links)
   end
 end

@@ -20,6 +20,7 @@ import {
   TrendsFeedsPanel,
   TrendsHeadlinesPanel,
   TrendsRSSPanel,
+  GabAdStatus,
 } from './ui/util/async_components'
 
 class News extends React.PureComponent {
@@ -69,7 +70,8 @@ class News extends React.PureComponent {
           <div className={[_s.d, _s.pt15].join(' ')}>
             <div className={[_s.d, _s.w100PC].join(' ')}>
               <WrappedBundle component={TrendsHeadlinesPanel} />
-              <WrappedBundle component={TrendsBreakingPanel} componentParams={{ hideReadMore: 1 }} />
+              <WrappedBundle component={GabAdStatus} />
+              <WrappedBundle component={TrendsBreakingPanel} componentParams={{ hideReadMore: true }} />
               <WrappedBundle component={PopularLinksPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
               <WrappedBundle component={LatestFromGabPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
               <WrappedBundle component={GabNewsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
@@ -85,10 +87,11 @@ class News extends React.PureComponent {
         <div className={[_s.d, _s.flexRow, _s.w100PC, _s.overflowHidden].join(' ')}>
           <div className={[_s.d, _s.pr15, _s.w50PC].join(' ')}>
             <WrappedBundle component={TrendsHeadlinesPanel} />
-            <WrappedBundle component={TrendsBreakingPanel} componentParams={{ hideReadMore: 1 }} />
+            <WrappedBundle component={TrendsBreakingPanel} componentParams={{ hideReadMore: true }} />
             <WrappedBundle component={LatestFromGabPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />
           </div>
           <div className={[_s.d, _s.w50PC].join(' ')}>
+            <WrappedBundle component={GabAdStatus} />
             <WrappedBundle component={PopularLinksPanel} />
             <WrappedBundle component={TrendsFeedsPanel} />
             <WrappedBundle component={GabNewsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />

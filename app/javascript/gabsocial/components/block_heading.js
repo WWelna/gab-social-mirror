@@ -19,7 +19,10 @@ class BlockHeading extends React.PureComponent {
 }
 
 BlockHeading.propTypes = {
-  title: PropTypes.string.isRequired,
+  title: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.node,
+  ]).isRequired,
 }
 
 export default BlockHeading

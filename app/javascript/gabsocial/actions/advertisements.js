@@ -2,7 +2,7 @@ import api from '../api'
 
 //
 
-export const ADVERTISEMENT_DATA_BATCH_VIEWS = 'ADVERTISEMENT_DATA_BATCH_REQUEST'
+export const ADVERTISEMENT_DATA_BATCH_VIEWS = 'ADVERTISEMENT_DATA_BATCH_VIEWS'
 
 export const ADVERTISEMENT_DATA_SAVE_VIEWS_REQUEST = 'ADVERTISEMENT_DATA_SAVE_VIEWS_REQUEST'
 export const ADVERTISEMENT_DATA_SAVE_VIEWS_SUCCESS = 'ADVERTISEMENT_DATA_SAVE_VIEWS_SUCCESS'
@@ -11,6 +11,8 @@ export const ADVERTISEMENT_DATA_SAVE_VIEWS_FAIL = 'ADVERTISEMENT_DATA_SAVE_VIEWS
 export const ADVERTISEMENT_DATA_SAVE_CLICK_REQUEST = 'ADVERTISEMENT_DATA_SAVE_CLICK_REQUEST'
 export const ADVERTISEMENT_DATA_SAVE_CLICK_SUCCESS = 'ADVERTISEMENT_DATA_SAVE_CLICK_SUCCESS'
 export const ADVERTISEMENT_DATA_SAVE_CLICK_FAIL = 'ADVERTISEMENT_DATA_SAVE_CLICK_FAIL'
+
+export const ADVERTISEMENT_PAGE_POSITION = 'ADVERTISEMENT_PAGE_POSITION'
 
 /**
  * Save advertisement per CLICK
@@ -98,3 +100,18 @@ export const incrementViewCountForAdvertisement = (adId) => (dispatch) => {
         adId,
     })
 }
+
+/**
+ * Store which ad is at what position on a page thus preventing randomizing ads
+ * each render.
+ * @param {string} options.pageKey unique key per page
+ * @param {number} options.position such as index
+ * @param {object} options.ad
+ * @returns {object}
+ */
+export const pagePosition = ({ pageKey, position, ad }) => ({
+  type: ADVERTISEMENT_PAGE_POSITION,
+  pageKey,
+  position,
+  ad
+})

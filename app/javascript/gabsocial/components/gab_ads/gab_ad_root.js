@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import { me, proWantsAds } from '../../initial_state'
 
 const GabAdRoot = ({ children, isPro }) => {
+
   // if pro and doesnt want ads, dont show
   if (isPro && !proWantsAds) return null
 
@@ -15,7 +16,7 @@ const mapStateToProps = (state) => ({
 })
 
 GabAdRoot.propTypes = {
-  children: PropTypes.func.isRequired,
+  children: PropTypes.node.isRequired,
   isPro: PropTypes.bool,
 }
 

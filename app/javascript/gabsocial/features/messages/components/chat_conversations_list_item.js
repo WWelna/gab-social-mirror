@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import moment from 'moment-mini'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
+import { withRouter } from 'react-router-dom'
 import { makeGetChatConversation } from '../../../selectors'
 import { setChatConversationSelected } from '../../../actions/chats'
 import { CX } from '../../../constants'
@@ -18,10 +19,6 @@ class ChatConversationsListItem extends ImmutablePureComponent {
 
   state = {
     chatMessageIsExpired: false,
-  }
-
-  static contextTypes = {
-    router: PropTypes.object,
   }
 
   componentDidMount() {
@@ -53,7 +50,7 @@ class ChatConversationsListItem extends ImmutablePureComponent {
   handleOnClick = () => {
     const { chatConversationId } = this.props
     this.props.onSetChatConversationSelected(chatConversationId)
-    this.context.router.history.push(`/messages/${chatConversationId}`)
+    this.props.history.push(`/messages/${chatConversationId}`)
   }
 
   render() {
@@ -178,4 +175,4 @@ ChatConversationsListItem.propTypes = {
   source: PropTypes.string.isRequired,
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ChatConversationsListItem)
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(ChatConversationsListItem))

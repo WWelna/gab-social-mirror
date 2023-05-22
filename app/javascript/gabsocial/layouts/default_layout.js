@@ -38,7 +38,7 @@ class DefaultLayout extends React.PureComponent {
 DefaultLayout.propTypes = {
   actions: PropTypes.array,
   children: PropTypes.node.isRequired,
-  layout: PropTypes.object,
+  layout: PropTypes.array,
   noComposeButton: PropTypes.bool,
   noRightSidebar: PropTypes.bool,
   page: PropTypes.string,

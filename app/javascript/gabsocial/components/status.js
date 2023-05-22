@@ -4,6 +4,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { HotKeys } from 'react-hotkeys'
+import { withRouter } from 'react-router-dom'
 import {
   CX,
   COMMENT_SORTING_TYPE_NEWEST,
@@ -70,100 +71,9 @@ export const defaultMediaVisibility = (status) => {
 
 class Status extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   state = {
-    loadedComments: false,
     showMedia: defaultMediaVisibility(this.props.status),
     statusId: undefined,
-    height: undefined,
-  }
-
-  static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.isChild) return null
-    
-    if (!nextProps.isHidden && (nextProps.isIntersecting || !nextProps.commentsLimited) && !prevState.loadedComments) {
-      return {
-        loadedComments: true
-      }
-    }
-
-    if (nextProps.status && nextProps.status.get('id') !== prevState.statusId) {
-      return {
-        loadedComments: false, //reset
-        showMedia: defaultMediaVisibility(nextProps.status),
-        statusId: nextProps.status.get('id'),
-      }
-    }
-
-    return null
-  }
-
-  // Compensate height changes
-  componentDidUpdate(prevProps, prevState) {
-    // timeline lazy loading comments
-    if (!prevState.loadedComments && this.state.loadedComments && this.props.status && !this.props.isChild && this.props.contextType !== 'feature') {
-      const commentCount = this.props.status.get('replies_count')
-      if (this.props.isComment && !this.props.ancestorStatus) {
-        this.props.onFetchContext(this.props.status.get('id'))
-        this._measureHeight(prevState.height !== this.state.height)
-      } else {
-        if (commentCount > 0 && !this.props.commentsLimited) {
-          this._measureHeight(prevState.height !== this.state.height)
-          this.props.onFetchComments(this.props.status.get('id'))
-        }
-      }
-    }
-  }
-
-  handleMoveUp = (id) => {
-    const { status, ancestorsIds, descendantsIds } = this.props
-
-    if (id === status.get('id')) {
-      this._selectChild(ancestorsIds.size - 1, true)
-    } else {
-      let index = ancestorsIds.indexOf(id)
-
-      if (index === -1) {
-        index = descendantsIds.indexOf(id)
-        this._selectChild(ancestorsIds.size + index, true)
-      } else {
-        this._selectChild(index - 1, true)
-      }
-    }
-  }
-
-  handleMoveDown = id => {
-    const { status, ancestorsIds, descendantsIds } = this.props
-
-    if (id === status.get('id')) {
-      this._selectChild(ancestorsIds.size + 1, false)
-    } else {
-      let index = ancestorsIds.indexOf(id)
-
-      if (index === -1) {
-        index = descendantsIds.indexOf(id)
-        this._selectChild(ancestorsIds.size + index + 2, false)
-      } else {
-        this._selectChild(index + 1, false)
-      }
-    }
-  }
-
-  _selectChild(index, align_top) {
-    const container = this.node
-    const element = container.querySelectorAll('.focusable')[index]
-
-    if (element) {
-      if (align_top && container.scrollTop > element.offsetTop) {
-        element.scrollIntoView(true)
-      } else if (!align_top && container.scrollTop + container.clientHeight < element.offsetTop + element.offsetHeight) {
-        element.scrollIntoView(false)
-      }
-      element.focus()
-    }
   }
 
   handleToggleMediaVisibility = () => {
@@ -176,18 +86,14 @@ class Status extends ImmutablePureComponent {
       return
     }
 
-    if (!this.context.router) return
-
-    this.context.router.history.push(
+    this.props.history.push(
       `/${this._properStatus().getIn(['account', 'acct'])}/posts/${this._properStatus().get('id')}`
     )
   }
 
   handleExpandClick = e => {
     if (e.button === 0) {
-      if (!this.context.router) return
-
-      this.context.router.history.push(
+      this.props.history.push(
         `/${this._properStatus().getIn(['account', 'acct'])}/posts/${this._properStatus().get('id')}`
       )
     }
@@ -202,25 +108,21 @@ class Status extends ImmutablePureComponent {
     this.props.onToggleHidden(this._properStatus())
   }
 
-  renderLoadingMedia() {
-    return <div className={_s.backgroundColorPanel} style={{ height: '110px' }} />
-  }
-
   handleOpenVideo = (media, startTime) => {
     this.props.onOpenVideo(media, startTime)
   }
 
   handleHotkeyReply = (e) => {
     e.preventDefault()
-    this.props.onReply(this._properStatus(), this.context.router)
+    this.props.onReply(this._properStatus())
   }
 
   handleOnReply = (status) => {
-    this.props.onReply(status || this._properStatus(), this.context.router, true)
+    this.props.onReply(status || this._properStatus(), this.props.history, true)
   }
 
   handleOnQuote = (status) => {
-    this.props.onQuote(status || this._properStatus(), this.context.router)
+    this.props.onQuote(status || this._properStatus(), this.props.history)
   }
 
   handleHotkeyFavorite = () => {
@@ -233,17 +135,17 @@ class Status extends ImmutablePureComponent {
 
   handleHotkeyMention = e => {
     e.preventDefault()
-    this.props.onMention(this._properStatus().get('account'), this.context.router)
+    this.props.onMention(this._properStatus().get('account'))
   }
 
   handleHotkeyOpen = () => {
-    this.context.router.history.push(
+    this.props.history.push(
       `/${this._properStatus().getIn(['account', 'acct'])}/posts/${this._properStatus().get('id')}`
     )
   }
 
   handleHotkeyOpenProfile = () => {
-    this.context.router.history.push(`/${this._properStatus().getIn(['account', 'acct'])}`)
+    this.props.history.push(`/${this._properStatus().getIn(['account', 'acct'])}`)
   }
 
   handleHotkeyMoveUp = e => {
@@ -283,18 +185,6 @@ class Status extends ImmutablePureComponent {
     return status
   }
 
-  _measureHeight(heightJustChanged) {
-    try {
-      scheduleIdleTask(() => this.node && this.setState({ height: Math.ceil(this.node.scrollHeight) + 1 }))
-
-      if (heightJustChanged) {
-        this.props.onHeightChange()
-      }
-    } catch (error) {
-      //
-    }
-  }
-
   handleOnCommentSortOpen = (btn) => {
     const { status } = this.props
     if (!status) return
@@ -304,7 +194,6 @@ class Status extends ImmutablePureComponent {
 
   handleRef = (c) => {
     this.node = c
-    this._measureHeight()
   }
 
   render() {
@@ -329,7 +218,6 @@ class Status extends ImmutablePureComponent {
       loadedDirectDescendantsCount,
       next,
     } = this.props
-    // const { height } = this.state
 
     let { status } = this.props
 
@@ -512,7 +400,7 @@ class Status extends ImmutablePureComponent {
                     <div className={[_s.d, _s.mt10, _s.px10].join(' ')}>
                       {
                         !!status.get('quoted_status') &&
-                        <Status status={status.get('quoted_status')} isChild intl={intl} />
+                        <Status status={status.get('quoted_status')} isChild intl={intl} history={this.props.history} />
                       }
                       {
                         !status.get('quoted_status') &&
@@ -582,11 +470,10 @@ class Status extends ImmutablePureComponent {
                         <CommentList
                           totalDirectDescendants={status.get('direct_replies_count')}
                           ancestorAccountId={status.getIn(['account', 'id'])}
-                          commentsLimited={commentsLimited}
                           descendants={descendantsIds}
                           loadedDirectDescendantsCount={loadedDirectDescendantsCount}
                           onViewComments={this.handleOnExpandComments}
-                          next={next}
+                          ancestorStatusId={status.get('id')}
                         />
                       }
                     </React.Fragment>
@@ -625,7 +512,6 @@ Status.propTypes = {
   onOpenMedia: PropTypes.func,
   onOpenProModal: PropTypes.func,
   onOpenVideo: PropTypes.func,
-  onHeightChange: PropTypes.func,
   onToggleHidden: PropTypes.func,
   onShare: PropTypes.func,
   onMoveUp: PropTypes.func,
@@ -636,11 +522,11 @@ Status.propTypes = {
   cachedMediaWidth: PropTypes.number,
   contextType: PropTypes.string,
   commentsLimited: PropTypes.bool,
-  onOpenLikes: PropTypes.func.isRequired,
-  onOpenReposts: PropTypes.func.isRequired,
-  onCommentSortOpen: PropTypes.func.isRequired,
+  onOpenLikes: PropTypes.func,
+  onOpenReposts: PropTypes.func,
+  onCommentSortOpen: PropTypes.func,
   isComposeModalOpen: PropTypes.bool,
   commentSortingType: PropTypes.string,
 }
 
-export default injectIntl(Status)
+export default withRouter(injectIntl(Status))

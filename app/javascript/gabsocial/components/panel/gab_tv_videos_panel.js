@@ -48,6 +48,7 @@ class GabTVVideosPanel extends ImmutablePureComponent {
 
     return (
       <PanelLayout
+        key='gab-tv-videos-panel'
         noPadding
         title={intl.formatMessage(messages.title)}
         headerButtonTitle={intl.formatMessage(messages.viewMore)}
@@ -95,7 +96,7 @@ GabTVVideosPanel.propTypes = {
   isLazy: PropTypes.bool,
   isLoading: PropTypes.bool,
   isFetched: PropTypes.bool,
-  items: ImmutablePropTypes.list.isRequired,
+  items: ImmutablePropTypes.list,
 }
 
 export default injectIntl(connect(mapStateToProps)(GabTVVideosPanel))

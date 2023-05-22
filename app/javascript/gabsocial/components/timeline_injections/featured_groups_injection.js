@@ -11,7 +11,7 @@ class FeaturedGroupsInjection extends ImmutablePureComponent {
 
   componentDidMount() {
     if (!this.props.isFetched) {
-      this.props.onFetchGroupsByTap('featured')
+      this.props.onFetchGroupsByTab('featured')
     }
   }
   
@@ -58,7 +58,7 @@ const mapStateToProps = (state) => ({
 })
 
 const mapDispatchToProps = (dispatch) => ({
-	onFetchGroupsByTap: (tab) => dispatch(fetchGroupsByTab(tab)),
+	onFetchGroupsByTab: (tab) => dispatch(fetchGroupsByTab(tab)),
 })
 
 FeaturedGroupsInjection.propTypes = {

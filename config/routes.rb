@@ -116,6 +116,7 @@ Rails.application.routes.draw do
       end
 
       resources :reported_statuses, only: [:create]
+      resources :reported_links, only: [:create]
     end
 
     resources :report_notes, only: [:create, :destroy]

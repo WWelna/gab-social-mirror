@@ -41,10 +41,6 @@ import {
 
 class Deck extends React.PureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   componentDidMount () {
     this.props.dispatch(deckConnect())
     if (!this.props.isPro) this.handleOnOpenProUpgradeModal()

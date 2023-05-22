@@ -17,10 +17,6 @@ class Image extends React.PureComponent {
     this.setState({ error: true })
   }
 
-  handleOnClick = () => {
-    this.props.onOpenMediaModal()
-  }
-
   render() {
     const {
       alt,
@@ -31,7 +27,10 @@ class Image extends React.PureComponent {
       isLazy,
       imageRef,
       expandOnClick,
-      ...otherProps
+      width,
+      height,
+      onMouseEnter,
+      onMouseLeave,
     } = this.props
     const { error } = this.state
 
@@ -39,6 +38,7 @@ class Image extends React.PureComponent {
       d: 1,
       objectFitCover: !!src && fit === 'cover',
       bgSecondary: !src,
+      cursorPointer: expandOnClick
     })
 
     //If error and not our own image
@@ -54,24 +54,27 @@ class Image extends React.PureComponent {
       <img
         alt={alt}
         className={classes}
-        {...otherProps} // : todo : remove
         ref={imageRef}
         src={src}
         onError={this.handleOnError}
-        onClick={expandOnClick ? this.handleOnClick : undefined}
+        onClick={this.props.onOpenMediaModal}
         loading={isLazy ? 'lazy' : undefined}
+        width={width}
+        height={height}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onLoad={this.props.onLoad}
       />
     )
   }
 
 }
 
-const mapDispatchToProps = (dispatch, { alt, src }) => ({
+const mapDispatchToProps = (dispatch, { alt, src, expandOnClick }) => ({
   onOpenMediaModal() {
-    dispatch(openModal(MODAL_MEDIA, {
-      alt,
-      src,
-    }))
+    if (expandOnClick) {
+      dispatch(openModal(MODAL_MEDIA, { alt, src }))
+    }
   },
 });
 
@@ -93,6 +96,9 @@ Image.propTypes = {
   imageRef: PropTypes.func,
   expandOnClick: PropTypes.bool,
   onOpenMediaModal: PropTypes.func.isRequired,
+  onMouseEnter: PropTypes.func,
+  onMouseLeave: PropTypes.func,
+  onLoad: PropTypes.func,
 }
 
 Image.defaultProps = {

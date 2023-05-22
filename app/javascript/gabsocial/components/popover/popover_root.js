@@ -1,3 +1,8 @@
+import React from 'react'
+import PropTypes from 'prop-types'
+import { connect } from 'react-redux'
+import get from 'lodash.get'
+
 import {
   BREAKPOINT_EXTRA_SMALL,
   POPOVER_CHAT_CONVERSATION_EXPIRATION_OPTIONS,
@@ -50,10 +55,7 @@ import {
   VideoStatsPopover,
 } from '../../features/ui/util/async_components'
 
-import React from 'react'
-import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
-import { closePopover } from '../../actions/popover'
+import { closePopover, closePopoverDeferred } from '../../actions/popover'
 import Bundle from '../../features/ui/util/bundle'
 import ModalBase from '../modal/modal_base'
 import PopoverBase from './popover_base'
@@ -87,17 +89,6 @@ const POPOVER_COMPONENTS = {
 }
 
 class PopoverRoot extends React.PureComponent {
-
-  componentDidUpdate() {
-    const { type, width } = this.props
-
-    if (width <= BREAKPOINT_EXTRA_SMALL && !!type) {
-      document.body.classList.add(_s.overflowYHidden)
-    } else {
-      document.body.classList.remove(_s.overflowYHidden)
-    }
-  }
-
   renderLoading = () => {
     const { width } = this.props
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
@@ -110,10 +101,6 @@ class PopoverRoot extends React.PureComponent {
     const isXS = width <= BREAKPOINT_EXTRA_SMALL
 
     return <ErrorPopover isXS={isXS} onClose={this.props.onClose} />
-  }
-
-  setRef = () => {
-    // : todo : ?
   }
 
   render() {
@@ -132,7 +119,6 @@ class PopoverRoot extends React.PureComponent {
       <Wrapper
         onClose={onClose}
         visible={visible}
-        innerRef={this.setRef}
         {...props}
       >
         {
@@ -141,10 +127,9 @@ class PopoverRoot extends React.PureComponent {
             fetchComponent={POPOVER_COMPONENTS[type]}
             loading={this.renderLoading}
             error={this.renderError}
-            renderDelay={150}
           >
             {
-              (Component) => <Component innerRef={this.setRef} isXS={isXS} onClose={onClose} {...props} />
+              (Component) => <Component isXS={isXS} onClose={onClose} {...props} />
             }
           </Bundle>
         }
@@ -157,11 +142,18 @@ class PopoverRoot extends React.PureComponent {
 const mapStateToProps = (state) => ({
   type: state.getIn(['popover', 'popoverType']),
   props: state.getIn(['popover', 'popoverProps'], {}),
-  width: state.getIn(['settings', 'window_dimensions', 'width']),  
+  width: state.getIn(['settings', 'window_dimensions', 'width']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  onClose: (type) => dispatch(closePopover(type)),
+  onClose(type) {
+    const timeout = get(this, 'props.popoverProps.timeout')
+    if (timeout) {
+      // allows for a grace period between opening and closing for hover popovers
+      return dispatch(closePopoverDeferred())
+    }
+    dispatch(closePopover())
+  }
 })
 
 PopoverRoot.propTypes = {

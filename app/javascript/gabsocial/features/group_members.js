@@ -27,17 +27,17 @@ class GroupMembers extends ImmutablePureComponent {
 		query: '',
 	}
 
-	componentWillMount() {
+	componentDidMount() {
 		const { groupId } = this.props
 
 		this.props.onFetchMembers(groupId)
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (nextProps.groupId !== this.props.groupId) {
-			this.props.onFetchMembers(nextProps.groupId)
-		}
-	}
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (nextProps.groupId !== this.props.groupId) {
+      this.props.onFetchMembers(nextProps.groupId)
+    }
+  }
 
 	handleOpenGroupMemberOptions = (e, accountId) => {
 		const { relationships, groupId } = this.props

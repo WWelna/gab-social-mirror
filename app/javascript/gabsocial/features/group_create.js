@@ -5,6 +5,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
 import isObject from 'lodash.isobject'
+import { withRouter } from 'react-router-dom'
 import {
 	changeGroupTitle,
 	changeGroupPassword,
@@ -38,11 +39,6 @@ import Textarea from '../components/textarea'
 import FileInput from '../components/file_input'
 
 class GroupCreate extends ImmutablePureComponent {
-
-	static contextTypes = {
-		router: PropTypes.object
-	}
-
 	componentDidMount() {
 		const { groupId, group } = this.props
 
@@ -59,11 +55,11 @@ class GroupCreate extends ImmutablePureComponent {
 		}
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (this.props.group !== nextProps.group && !!nextProps.group) {
-			this.props.onSetGroup(nextProps.group)
-		}
-	}
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (this.props.group !== nextProps.group && !!nextProps.group) {
+      this.props.onSetGroup(nextProps.group)
+    }
+  }
 
 	handleCoverImageChange = (e) => {
 		try {
@@ -76,7 +72,7 @@ class GroupCreate extends ImmutablePureComponent {
 	handleSubmit = (e) => {
 		e.preventDefault()
 		if (this.props.onClose) this.props.onClose()
-		this.props.onSubmit(this.context.router.history)
+		this.props.onSubmit(this.props.history)
 	}
 
 	render() {
@@ -415,4 +411,4 @@ GroupCreate.propTypes = {
 	categories: ImmutablePropTypes.list.isRequired,
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(GroupCreate))
+export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(GroupCreate)))

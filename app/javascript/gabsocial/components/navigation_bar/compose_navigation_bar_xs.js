@@ -8,10 +8,6 @@ import Icon from '../icon'
 import ComposeFormSubmitButton from '../../features/compose/components/compose_form_submit_button'
 
 class ComposeNavigationBar extends React.PureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
   
   render() {
     const { isExternal, isXS } = this.props
@@ -71,7 +67,7 @@ class ComposeNavigationBar extends React.PureComponent {
             </div>
 
             <div className={[_s.d, _s.h53PX, _s.flexRow, _s.aiCenter, _s.jcEnd, _s.mr15, _s.w84PX].join(' ')}>
-              <ComposeFormSubmitButton type='navigation' router={this.context.router} />
+              <ComposeFormSubmitButton type='navigation' />
             </div>
 
           </div>
@@ -102,7 +98,7 @@ class ComposeNavigationBar extends React.PureComponent {
             </div>
 
             <div className={[_s.d, _s.h53PX, _s.flexRow, _s.mlAuto, _s.aiCenter, _s.jcCenter, _s.mr15].join(' ')}>
-              <ComposeFormSubmitButton type='navigation' router={this.context.router} />
+              <ComposeFormSubmitButton type='navigation' />
             </div>
 
           </div>

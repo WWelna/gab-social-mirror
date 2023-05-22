@@ -72,7 +72,7 @@ class UserPanel extends ImmutablePureComponent {
     })
 
     return (
-      <PanelLayout noPadding>
+      <PanelLayout key='user-panel' noPadding>
         <div
           className={headerContainerClasses}
           onMouseEnter={this.handleOnMouseEnter}

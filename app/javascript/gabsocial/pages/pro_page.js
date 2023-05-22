@@ -29,7 +29,7 @@ class ProPage extends React.PureComponent {
           ProgressPanel,
           GabAdPanel,
           GabTVVideosPanel,
-          <WrappedBundle component={UserSuggestionsPanel} componentParams={{ suggestionType: 'verified' }} />,
+          <WrappedBundle key='pro-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ suggestionType: 'verified' }} />,
           TrendingHashtagsPanel,
           LinkFooter,
         ]}

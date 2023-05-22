@@ -32,7 +32,10 @@ class Tooltip extends React.PureComponent {
 
 Tooltip.propTypes = {
   message: PropTypes.string.isRequired,
-  targetRef: PropTypes.node.isRequired,
+  targetRef: PropTypes.oneOfType([
+    PropTypes.node,
+    PropTypes.element,
+  ]).isRequired,
 }
 
 export default Tooltip

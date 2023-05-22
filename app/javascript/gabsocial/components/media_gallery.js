@@ -238,7 +238,7 @@ class MediaGallery extends React.PureComponent {
     width: this.props.defaultWidth,
   };
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!is(nextProps.media, this.props.media) && nextProps.visible === undefined) {
       this.setState({
         visible: displayMedia !== 'hide_all' && !nextProps.sensitive || displayMedia === 'show_all',

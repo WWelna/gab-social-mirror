@@ -9,36 +9,28 @@ export const previewState = 'previewVideoModal'
 
 class VideoModal extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   componentDidMount () {
-    if (this.context.router) {
-      const history = this.context.router.history
+    const { history } = this.props
 
-      history.push(history.location.pathname, previewState)
+    history.push(history.location.pathname, previewState)
 
-      this.unlistenHistory = history.listen(() => {
-        this.props.onClose()
-      })
-    }
+    this.unlistenHistory = history.listen(() => {
+      this.props.onClose()
+    })
   }
 
   componentWillUnmount () {
-    if (this.context.router) {
-      this.unlistenHistory()
+    this.unlistenHistory()
 
-      if (this.context.router.history.location.state === previewState) {
-        this.context.router.history.goBack()
-      }
+    if (this.props.history.location.state === previewState) {
+      this.props.history.goBack()
     }
   }
 
   handleStatusClick = e => {
     if (e.button === 0 && !(e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      this.context.router.history.push(`/${this.props.status.getIn(['account', 'acct'])}/posts/${this.props.status.get('id')}`)
+      this.props.history.push(`/${this.props.status.getIn(['account', 'acct'])}/posts/${this.props.status.get('id')}`)
     }
   }
 

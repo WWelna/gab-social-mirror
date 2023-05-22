@@ -16,7 +16,7 @@
       = text_field_tag :created_at_gte, params[:created_at_gte], class: 'string optional', placeholder: "Created >= (MM-DD-YYYY)"
     .input.string.optional
       = text_field_tag :created_at_lte, params[:created_at_lte], class: 'string optional', placeholder: "Created <= (MM-DD-YYYY)"
-    
+
     .actions
       %button= t('admin.accounts.search')
       = link_to t('admin.accounts.reset'), admin_chat_messages_path, class: 'button negative'
@@ -27,7 +27,7 @@
   .batch-table
     .batch-table__toolbar
       %label.batch-table__toolbar__select.batch-checkbox-all
-        = check_box_tag :batch_checkbox_all, nil, false
+        = check_box_tag :batch_checkbox_all, nil, false, data: { batch_checkbox_all: true }
       .batch-table__toolbar__actions
         = f.button safe_join([fa_icon('trash'), 'Delete']), name: :delete, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
     .batch-table__body

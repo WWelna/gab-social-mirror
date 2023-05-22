@@ -11,9 +11,22 @@ import {
 import StatusList from '../components/status_list'
 
 class HomeTimeline extends React.PureComponent {
+  constructor() {
+    super();
+    window.onpopstate = e => {
+      this.setState({ backButtonPressed: true })
+    }
+  }
 
   componentDidMount () {
-    this.props.onExpandHomeTimeline()
+    // add imperceptible delay to allow the component to detect whether 
+    // it was launched via a backbutton (in which case we optimize by not refetching data)
+    setTimeout(function () {
+      if (!this.state || !this.state.backButtonPressed) {
+        this.setState({ backButtonPressed: false })
+        this.props.onExpandHomeTimeline()
+      }
+    }.bind(this), 250)
   }
 
   componentDidUpdate (prevProps) {

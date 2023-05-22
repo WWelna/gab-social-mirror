@@ -172,6 +172,7 @@ ListItem.propTypes = {
   onClick: PropTypes.func,
   size: PropTypes.oneOf([
     'small',
+    'normal',
     'large',
   ]),
   hideArrow: PropTypes.bool,

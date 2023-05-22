@@ -17,7 +17,7 @@ import AccountPlaceholder from '../components/placeholder/account_placeholder'
 
 class Followers extends ImmutablePureComponent {
 
-  componentWillMount() {
+  componentDidMount() {
     const { accountId } = this.props
 
     if (accountId && accountId !== -1) {
@@ -25,7 +25,7 @@ class Followers extends ImmutablePureComponent {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!!nextProps.accountId && nextProps.accountId !== -1 && nextProps.accountId !== this.props.accountId) {
       this.props.dispatch(fetchFollowers(nextProps.accountId))
     }

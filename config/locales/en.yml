@@ -327,7 +327,12 @@ en:
         undo: Undo
       undo: Undo domain block
     link_blocks:
+      no_links_selected: No blacklisted links were changed as none were selected
       add_new: Add new
+      block: Blacklist
+      unblock: Unblacklist
+      blocked: Blacklisted
+      not_blocked: Not Blacklisted
       created_msg: Successfully added link to blacklist
       delete: Delete
       destroyed_msg: Successfully deleted link from blacklist

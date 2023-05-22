@@ -14,7 +14,7 @@ class Api::V1::MediaController < Api::BaseController
   end
 
   def update
-    @media = current_account.media_attachments.where(status_id: nil).find(params[:id])
+    @media = current_account.media_attachments.find_by(id: params[:id])
     @media.update!(media_params)
     render json: @media, serializer: REST::MediaAttachmentSerializer
   end

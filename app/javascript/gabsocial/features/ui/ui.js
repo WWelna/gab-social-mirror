@@ -12,11 +12,7 @@ import moment from 'moment-mini'
 import { uploadCompose, resetCompose } from '../../actions/compose'
 import { expandHomeTimeline } from '../../actions/timelines'
 import { fetchGroups } from '../../actions/groups'
-import {
-  initializeNotifications,
-  expandNotifications,
-  setFilter,
-} from '../../actions/notifications'
+import { expandNotifications, setFilter } from '../../actions/notifications'
 import LoadingBar from '../../components/loading_bar'
 import { fetchFilters } from '../../actions/filters'
 import { clearHeight } from '../../actions/height_cache'
@@ -310,11 +306,6 @@ SwitchingArea.propTypes = {
 }
 
 class UI extends React.PureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object.isRequired,
-  }
-
   state = {
     fetchedHome: false,
     fetchedNotifications: false,
@@ -420,13 +411,13 @@ class UI extends React.PureComponent {
 
   handleServiceWorkerPostMessage = ({ data }) => {
     if (data.type === 'navigate') {
-      this.context.router.history.push(data.path)
+      this.props.history.push(data.path)
     } else {
       console.warn('Unknown message type:', data.type)
     }
   }
 
-  componentWillMount() {
+  componentDidMount() {
     if (!me) return
 
     window.addEventListener('beforeunload', this.handleBeforeUnload, false)
@@ -445,14 +436,14 @@ class UI extends React.PureComponent {
       window.setTimeout(() => Notification.requestPermission(), 120 * 1000)
     }
 
-    const pathname = this.context.router.route.location.pathname
+    const pathname = this.props.location.pathname
 
     if (pathname === '/home') {
       this.setState({ fetchedHome: true })
       this.props.dispatch(expandHomeTimeline())
     } else if (pathname.startsWith('/notifications')) {
       try {
-        const search = this.context.router.route.location.search
+        const search = this.props.location.search
         const qp = queryString.parse(search)
         let view = `${qp.view}`.toLowerCase()
 
@@ -468,14 +459,6 @@ class UI extends React.PureComponent {
       this.setState({ fetchedNotifications: true })
       this.props.dispatch(expandNotifications())
     }
-
-    this.props.dispatch(initializeNotifications())
-  }
-
-  componentDidMount() {
-    // this.hotkeys.__mousetrap__.stopCallback = (e, element) => {
-    //   return ['TEXTAREA', 'SELECT', 'INPUT'].includes(element.tagName)
-    // }
   }
 
   componentWillUnmount() {
@@ -532,9 +515,9 @@ class UI extends React.PureComponent {
 
   handleHotkeyBack = () => {
     if (window.history && window.history.length === 1) {
-      this.context.router.history.push('/home') // homehack
+      this.props.history.push('/home') // homehack
     } else {
-      this.context.router.history.goBack()
+      this.props.history.goBack()
     }
   }
 
@@ -547,35 +530,35 @@ class UI extends React.PureComponent {
   }
 
   handleHotkeyGoToHome = () => {
-    this.context.router.history.push('/home')
+    this.props.history.push('/home')
   }
 
   handleHotkeyGoToNotifications = () => {
-    this.context.router.history.push('/notifications')
+    this.props.history.push('/notifications')
   }
 
   handleHotkeyGoToStart = () => {
-    this.context.router.history.push('/getting-started')
+    this.props.history.push('/getting-started')
   }
 
   handleHotkeyGoToFavorites = () => {
-    this.context.router.history.push(`/${meUsername}/favorites`)
+    this.props.history.push(`/${meUsername}/favorites`)
   }
 
   handleHotkeyGoToProfile = () => {
-    this.context.router.history.push(`/${meUsername}`)
+    this.props.history.push(`/${meUsername}`)
   }
 
   handleHotkeyGoToBlocked = () => {
-    this.context.router.history.push('/blocks')
+    this.props.history.push('/blocks')
   }
 
   handleHotkeyGoToMuted = () => {
-    this.context.router.history.push('/mutes')
+    this.props.history.push('/mutes')
   }
 
   handleHotkeyGoToRequests = () => {
-    this.context.router.history.push('/follow_requests')
+    this.props.history.push('/follow_requests')
   }
 
   handleOpenComposeModal = () => {

@@ -26,7 +26,7 @@ class SignUpLogInPanel extends React.PureComponent {
     })
 
     return (
-      <aside className={[_s.d, _s.mb15].join(' ')}>
+      <aside key='signup-login-panel' className={[_s.d, _s.mb15].join(' ')}>
         <div className={containerClasses}>
           <div className={[_s.d]}>
             <div className={[_s.d, _s.px15, _s.py10].join(' ')}>

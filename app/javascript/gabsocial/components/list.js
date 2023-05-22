@@ -63,6 +63,7 @@ List.propTypes = {
   emptyMessage: PropTypes.any,
   size: PropTypes.oneOf([
     'small',
+    'normal',
     'large'
   ]),
   onLoadMore: PropTypes.func,

@@ -5,6 +5,7 @@ import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { length } from 'stringz'
+import get from 'lodash.get'
 import { isMobile } from '../../../utils/is_mobile'
 import { countableText } from '../../ui/util/counter'
 import {
@@ -48,10 +49,6 @@ const messages = defineMessages({
 })
 
 class ComposeForm extends ImmutablePureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
 
   state = {
     composeFocused: false,
@@ -110,8 +107,12 @@ class ComposeForm extends ImmutablePureComponent {
       return
     }
 
+    if (this.props.onSubmit === undefined) {
+      return // for whatever reason it doesn't get any onSubmit
+    }
+
     this.props.onSubmit({
-      router: this.context.router,
+      history: this.props.history,
       isStandalone,
       autoJoinGroup,
     })
@@ -218,7 +219,7 @@ class ComposeForm extends ImmutablePureComponent {
     const textbox = (
       <AutosuggestTextbox
         ref={(isModalOpen && shouldCondense) ? null : this.setAutosuggestTextarea}
-        placeholder={intl.formatMessage((shouldCondense || !!reduxReplyToId) && isMatch ? messages.commentPlaceholder : messages.placeholder)}
+        placeholder={intl.formatMessage(replyToId ? messages.commentPlaceholder : messages.placeholder)}
         disabled={disabled}
         value={this.props.text}
         valueMarkdown={this.props.markdown}
@@ -236,6 +237,9 @@ class ComposeForm extends ImmutablePureComponent {
         isPro={isPro}
         isEdit={!!edit}
         id='main-composer'
+        onUpstreamChangesAccepted={this.props.onUpstreamChangesAccepted}
+        hasUpstreamChanges={this.props.hasUpstreamChanges}
+        caretPosition={this.props.caretPosition}
       />
     )
 
@@ -353,7 +357,6 @@ class ComposeForm extends ImmutablePureComponent {
               type='block'
               formLocation={formLocation}
               autoJoinGroup={autoJoinGroup}
-              router={this.context.router}
             />
           </div>
         }
@@ -389,7 +392,7 @@ ComposeForm.propTypes = {
   isChangingUpload: PropTypes.bool,
   isUploading: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
   onClearSuggestions: PropTypes.func.isRequired,
   onFetchSuggestions: PropTypes.func.isRequired,
   onSuggestionSelected: PropTypes.func.isRequired,
@@ -409,6 +412,8 @@ ComposeForm.propTypes = {
   hidePro: PropTypes.bool,
   autoJoinGroup: PropTypes.bool,
   formLocation: PropTypes.string,
+  onUpstreamChangesAccepted: PropTypes.func.isRequired,
+  hasUpstreamChanges: PropTypes.bool,
 }
 
 export default injectIntl(ComposeForm)

@@ -196,7 +196,7 @@ const makeMapStateToProps = () => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  onReply (status, router, showModal) {
+  onReply (status, history, showModal) {
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
 
     dispatch((_, getState) => {
@@ -205,10 +205,10 @@ const mapDispatchToProps = (dispatch) => ({
         dispatch(openModal('CONFIRM', {
           message: <FormattedMessage id='confirmations.reply.message' defaultMessage='Replying now will overwrite the message you are currently composing. Are you sure you want to proceed?' />,
           confirm: <FormattedMessage id='confirmations.reply.confirm' defaultMessage='Reply' />,
-          onConfirm: () => dispatch(replyCompose(status, router)),
+          onConfirm: () => dispatch(replyCompose(status, history)),
         }))
       } else {
-        dispatch(replyCompose(status, router, showModal));
+        dispatch(replyCompose(status, history, showModal));
       }
     })
   },
@@ -229,10 +229,10 @@ const mapDispatchToProps = (dispatch) => ({
     }
   },
 
-  onMention (account, router) {
+  onMention (account, history) {
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
 
-    dispatch(mentionCompose(account, router));
+    dispatch(mentionCompose(account, history));
   },
 
   onOpenMedia (media, index) {
@@ -273,7 +273,7 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(fetchContext(statusId))
   },
 
-  onQuote (status, router) {
+  onQuote (status, history) {
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
     
     dispatch((_, getState) => {
@@ -282,10 +282,10 @@ const mapDispatchToProps = (dispatch) => ({
         dispatch(openModal(MODAL_CONFIRM, {
           message: <FormattedMessage id='confirmations.quote.message' defaultMessage='Quoting now will overwrite the message you are currently composing. Are you sure you want to proceed?' />,
           confirm: <FormattedMessage id='confirmations.quote.confirm' defaultMessage='Quote' />,
-          onConfirm: () => dispatch(quoteCompose(status, router)),
+          onConfirm: () => dispatch(quoteCompose(status, history)),
         }))
       } else {
-        dispatch(quoteCompose(status, router))
+        dispatch(quoteCompose(status, history))
       }
     })
   },

@@ -82,7 +82,10 @@ class UserStat extends React.PureComponent {
 }
 
 UserStat.propTypes = {
-  title: PropTypes.string.isRequired,
+  title: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.node,
+  ]).isRequired,
   to: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([
     PropTypes.string,

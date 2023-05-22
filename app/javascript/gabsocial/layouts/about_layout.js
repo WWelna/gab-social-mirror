@@ -19,50 +19,8 @@ import {
 
 class AboutLayout extends React.PureComponent {
 
-  componentWillMount() {
-    this.menuItems = [
-      {
-        title: 'About',
-        to: '/about',
-      },
-      {
-        title: 'Assets',
-        to: '/about/assets',
-      },
-      {
-        title: 'DMCA',
-        to: '/about/dmca',
-      },
-      {
-        title: 'Investors',
-        to: '/about/investors',
-      },
-      {
-        title: 'Press',
-        to: '/about/press',
-      },
-      {
-        title: 'Privacy Policy',
-        to: '/about/privacy',
-      },
-      {
-        title: 'Terms of Sale',
-        to: '/about/sales',
-      },
-      {
-        title: 'Terms of Service',
-        to: '/about/tos',
-      },
-      {
-        title: 'California Consumer Protection',
-        to: '/about/ccpa',
-      },
-    ]
-  }
-
   render() {
     const { children, title } = this.props
-    const { menuItems } = this
 
     const mainBlockClasses = CX({
       d: 1,
@@ -93,7 +51,7 @@ class AboutLayout extends React.PureComponent {
         <div className={[_s.d, _s.flexRow, _s.w100PC].join(' ')}>
 
           <Responsive min={BREAKPOINT_EXTRA_SMALL}>
-            <WrappedBundle component={AboutSidebar} componentParams={{ title, items: menuItems }} />
+            <WrappedBundle component={AboutSidebar} componentParams={{ title }} />
           </Responsive>
 
           <ResponsiveClassesComponent
@@ -111,7 +69,7 @@ class AboutLayout extends React.PureComponent {
                 <div className={[_s.d, _s.w1015PX, _s.z1].join(' ')}>
 
                   <Responsive max={BREAKPOINT_EXTRA_SMALL}>
-                    <WrappedBundle component={AboutSidebar} componentParams={{ title, items: menuItems }} />
+                    <WrappedBundle component={AboutSidebar} componentParams={{ title }} />
                   </Responsive>
       
                   <div className={_s.d}>

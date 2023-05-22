@@ -155,7 +155,7 @@ const mapStateToProps = (state) => ({
   moreOpen: state.getIn(['popover', 'popoverType']) === 'SIDEBAR_MORE',
   notificationCount: state.getIn(['notifications', 'unread']),
   unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount']),
-  homeItemsQueueCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount']),
+  homeItemsQueueCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount'], 0),
   isPro: state.getIn(['accounts', me, 'is_pro']),
 })
 

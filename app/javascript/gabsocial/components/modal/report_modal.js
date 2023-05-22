@@ -40,7 +40,7 @@ class ReportModal extends ImmutablePureComponent {
     this.props.dispatch(expandAccountTimeline(this.props.account.get('id'), { withReplies: true }))
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.account !== nextProps.account && nextProps.account) {
       this.props.dispatch(expandAccountTimeline(nextProps.account.get('id'), { withReplies: true }))
     }

@@ -1,19 +1,16 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { withRouter } from 'react-router-dom'
 import { CX } from '../constants'
 import Button from './button'
 
 class BackButton extends React.PureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   historyBack = () => {
     if (window.history && window.history.length === 1 || this.props.toHome) {
-      this.context.router.history.push('/home')
+      this.props.history.push('/home')
     } else {
-      this.context.router.history.goBack()
+      this.props.history.goBack()
     }
   }
 
@@ -64,4 +61,4 @@ BackButton.propTypes = {
   toHome: PropTypes.bool,
 }
 
-export default BackButton
+export default withRouter(BackButton)

@@ -252,21 +252,9 @@ class Status < ApplicationRecord
 
   def replies_count
     return(0) unless persisted?
-    
-    @replies_count ||= Rails.cache.fetch("replies_count:#{id}", expires_in: 1.minutes) do    
-      Status.count_by_sql([<<-SQL.squish, id: id])
-        with recursive comment_counter AS(
-          select id
-          from statuses
-          where in_reply_to_id = :id
-        
-          union
-        
-          select s.id
-          from statuses s
-          join comment_counter c on s.in_reply_to_id = c.id
-        ) select count(*) from comment_counter;
-      SQL
+
+    @replies_count ||= Rails.cache.fetch("replies_count:#{id}", expires_in: 1.minutes) do
+      self.class.replies_count_map(id)[id] || 0
     end
   end
 
@@ -352,6 +340,30 @@ class Status < ApplicationRecord
 
     def reblogs_map(status_ids, account_id)
       select('reblog_of_id').where(reblog_of_id: status_ids).where(account_id: account_id).reorder(nil).each_with_object({}) { |s, h| h[s.reblog_of_id] = true }
+    end
+
+    def replies_count_map(status_ids)
+      return({}) unless status_ids.present?
+
+      sql = <<-SQL.squish
+        with recursive comment_counter AS (
+          select id, in_reply_to_id
+          from statuses
+          where in_reply_to_id IN (:ids)
+
+          union
+
+          select s.id, c.in_reply_to_id
+          from statuses s
+          join comment_counter c on s.in_reply_to_id = c.id
+        )
+
+        select in_reply_to_id, count(*)
+        from comment_counter
+        group by in_reply_to_id
+      SQL
+
+      return self.connection.query(sanitize_sql([sql, { ids: status_ids }])).to_h
     end
 
     def pins_map(status_ids, account_id)

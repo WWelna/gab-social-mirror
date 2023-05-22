@@ -14,11 +14,6 @@ import {
 import Button from './button'
 
 class Search extends React.PureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object.isRequired,
-  }
-
   state = {
     focused: false,
   }
@@ -57,7 +52,7 @@ class Search extends React.PureComponent {
       e.preventDefault()
 
       this.props.onSubmit()
-      this.context.router.history.push(`/search?q=${value}`)
+      this.props.history.push(`/search?q=${value}`)
 
     } else if (e.key === 'Escape') {
       this.textbox.blur()
@@ -70,7 +65,7 @@ class Search extends React.PureComponent {
 
   handleSubmit = () => {
     this.props.onSubmit()
-    this.context.router.history.push(`/search?q=${this.props.value}`)
+    this.props.history.push(`/search?q=${this.props.value}`)
 
   }
 

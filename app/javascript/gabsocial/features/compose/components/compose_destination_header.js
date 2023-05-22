@@ -66,7 +66,7 @@ class ComposeDestinationHeader extends ImmutablePureComponent {
     return (
       <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.bgPrimary, _s.w100PC, _s.h40PX, _s.pr15].join(' ')}>
         <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.pl15, _s.flexGrow1, _s.mrAuto, _s.h40PX].join(' ')}>
-          <Avatar account={account} size={28} />
+          <Avatar account={account} size={28} noHover={true} />
           {
             !isIntroduction &&
             <div className={[_s.ml15].join(' ')}>

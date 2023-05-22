@@ -3,15 +3,16 @@
 import { delegate } from 'rails-ujs';
 
 const batchCheckboxClassName = '.batch-checkbox input[type="checkbox"]';
+const checkAllSelector = '[data-batch-checkbox-all]'
 
-delegate(document, '#batch_checkbox_all', 'change', ({ target }) => {
-  [].forEach.call(document.querySelectorAll(batchCheckboxClassName), (content) => {
+delegate(document, checkAllSelector, 'change', ({ target }) => {
+  [].forEach.call(target.closest('form').querySelectorAll(batchCheckboxClassName), (content) => {
     content.checked = target.checked;
   });
 });
 
-delegate(document, batchCheckboxClassName, 'change', () => {
-  const checkAllElement = document.querySelector('#batch_checkbox_all');
+delegate(document, batchCheckboxClassName, 'change', ({ target }) => {
+  const checkAllElement = target.closest('form').querySelector(checkAllSelector)
 
   if (checkAllElement) {
     checkAllElement.checked = [].every.call(document.querySelectorAll(batchCheckboxClassName), (content) => content.checked);

@@ -25,7 +25,7 @@ class AccountVideoGallery extends ImmutablePureComponent {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.accountId && nextProps.accountId !== this.props.accountId) {
       this.props.dispatch(expandAccountMediaTimeline(nextProps.accountId, {
         mediaType: 'video',

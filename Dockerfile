@@ -1,14 +1,13 @@
-FROM ubuntu:18.04 as build-dep
+FROM --platform=linux/amd64 ubuntu:20.04 as build-dep
 
 # Use bash for the shell
 SHELL ["bash", "-c"]
 
 # Install Node
-ENV NODE_VER="10.15.3"
+ENV NODE_VER="14.18.1"
 RUN	echo "Etc/UTC" > /etc/localtime && \
 	apt update && \
-	apt -y dist-upgrade && \
-	apt -y install wget make gcc g++ python && \
+	apt -y install libc6 wget make gcc g++ python && \
 	cd ~ && \
 	wget https://nodejs.org/download/release/v$NODE_VER/node-v$NODE_VER.tar.gz && \
 	tar xf node-v$NODE_VER.tar.gz && \
@@ -18,7 +17,7 @@ RUN	echo "Etc/UTC" > /etc/localtime && \
 	make install
 
 # Install jemalloc
-ENV JE_VER="5.1.0"
+ENV JE_VER="5.2.1"
 RUN apt update && \
 	apt -y install autoconf && \
 	cd ~ && \
@@ -31,7 +30,7 @@ RUN apt update && \
 	make install_bin install_include install_lib
 
 # Install ruby
-ENV RUBY_VER="2.6.1"
+ENV RUBY_VER="2.6.5"
 ENV CPPFLAGS="-I/opt/jemalloc/include"
 ENV LDFLAGS="-L/opt/jemalloc/lib/"
 RUN apt update && \
@@ -66,7 +65,7 @@ RUN cd /opt/gabsocial && \
 	bundle install -j$(nproc) --deployment --without development test && \
 	yarn install --pure-lockfile
 
-FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:20.04
 
 # Copy over all the langs needed for runtime
 COPY --from=build-dep /opt/node /opt/node
@@ -91,8 +90,8 @@ RUN apt update && \
 # Install gabsocial runtime deps
 RUN apt -y --no-install-recommends install \
 	  libssl1.1 libpq5 imagemagick ffmpeg \
-	  libicu60 libprotobuf10 libidn11 libyaml-0-2 \
-	  file ca-certificates tzdata libreadline7 && \
+	  libicu66 libprotobuf17 libidn11 libyaml-0-2 \
+	  file ca-certificates tzdata libreadline8 && \
 	apt -y install gcc && \
 	ln -s /opt/gabsocial /gabsocial && \
 	gem install bundler && \

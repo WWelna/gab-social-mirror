@@ -10,10 +10,6 @@ import ModalLayout from './modal_layout'
 
 class BoostModal extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   componentDidMount() {
     this.button.focus()
   }

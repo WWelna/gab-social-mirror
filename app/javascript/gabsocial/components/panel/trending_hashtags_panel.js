@@ -53,6 +53,7 @@ class TrendingHashtagsPanel extends React.PureComponent {
 
     return (
       <PanelLayout
+        key='trending-hashtags-panel'
         noPadding
         title='Trending Hashtags'
       >

@@ -155,7 +155,7 @@ class EmojiPickerMenu extends ImmutablePureComponent {
       frequentlyUsedEmojis,
     } = this.props
 
-    if (loading) {
+    if (loading || EmojiPicker === undefined) {
       return (
         <div style={{ width: 340, height: 425 }}>
           <ColumnIndicator type='loading' />
@@ -214,7 +214,7 @@ class EmojiPickerPopover extends ImmutablePureComponent {
     loading: false,
   }
 
-  componentWillMount = () => {
+  componentDidMount = () => {
     if (!EmojiPicker) {
       this.setState({ loading: true })
 

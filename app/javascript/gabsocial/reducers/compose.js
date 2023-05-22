@@ -40,6 +40,7 @@ import {
   COMPOSE_RICH_TEXT_EDITOR_CONTROLS_VISIBILITY,
   COMPOSE_CLEAR,
   COMPOSE_GROUP_SET,
+  COMPOSE_UPSTREAM_CHANGES_ACCEPTED,
 } from '../actions/compose';
 import { TIMELINE_DELETE } from '../actions/timelines';
 import { STORE_HYDRATE } from '../actions/store';
@@ -83,6 +84,7 @@ const initialState = ImmutableMap({
   expires_at: null,
   rte_controls_visible: false,
   gif: null,
+  hasUpstreamChanges: false
 });
 
 const initialPoll = ImmutableMap({
@@ -121,6 +123,7 @@ function clearAll(state) {
     map.set('rte_controls_visible', false);
     map.set('gif', false);
     map.set('group_id', null);
+    map.set('hasUpstreamChanges', true);
   });
 };
 
@@ -163,6 +166,7 @@ const insertSuggestion = (state, position, token, completion, path) => {
       map.set('caretPosition', position + completion.length + 1);
     }
     map.set('idempotencyKey', uuid());
+    map.set('hasUpstreamChanges', true);
   });
 };
 
@@ -189,6 +193,7 @@ const insertEmoji = (state, emojiData) => {
     focusDate: new Date(),
     caretPosition: position + emoji.length + 1,
     idempotencyKey: uuid(),
+    hasUpstreamChanges: true
   });
 };
 
@@ -277,17 +282,20 @@ export default function compose(state = initialState, action) {
       map.set('quote_of_id', null);
       map.set('privacy', privacyPreference(action.status.get('visibility'), state.get('default_privacy')));
       map.set('focusDate', new Date());
-      map.set('caretPosition', null);
       map.set('preselectDate', new Date());
       map.set('idempotencyKey', uuid());
       map.set('spoiler', false);
       map.set('spoiler_text', '');
       map.set('rte_controls_visible', false);
+      let atMentions = statusToTextMentions(state, action.status)
       if (action.text) {
-        map.set('text', `${statusToTextMentions(state, action.status)}${action.text}`);
+        let text = action.text.includes(atMentions) ? action.text : `${atMentions}${action.text}`
+        map.set('text', text);
       } else {
-        map.set('text', statusToTextMentions(state, action.status));
+        map.set('text', atMentions);
       }
+      map.set('caretPosition', map.get('text').length);
+      map.set('hasUpstreamChanges', true);
     });
   case COMPOSE_QUOTE:
     return state.withMutations(map => {
@@ -301,7 +309,8 @@ export default function compose(state = initialState, action) {
       map.set('idempotencyKey', uuid());
       map.set('spoiler', false);
       map.set('spoiler_text', '');
-      map.set('rte_controls_visible', '');
+      map.set('rte_controls_visible', false);
+      map.set('hasUpstreamChanges', true);
     });
   case COMPOSE_REPLY_CANCEL:
   case COMPOSE_RESET:
@@ -319,6 +328,8 @@ export default function compose(state = initialState, action) {
       map.set('scheduled_at', null);
       map.set('expires_at', null);
       map.set('rte_controls_visible', false);
+      map.set('hasUpstreamChanges', true);
+      map.set('media_attachments', ImmutableList());
     });
   case COMPOSE_SUBMIT_REQUEST:
     return state.set('is_submitting', true);
@@ -391,6 +402,7 @@ export default function compose(state = initialState, action) {
       map.set('caretPosition', null);
       map.set('idempotencyKey', uuid());
       map.set('rte_controls_visible', hasMarkdown);
+      map.set('hasUpstreamChanges', true);
 
       if (action.status.get('spoiler_text').length > 0) {
         map.set('spoiler', true);
@@ -422,6 +434,8 @@ export default function compose(state = initialState, action) {
     });
   case COMPOSE_GROUP_SET:
     return state.set('group_id', action.groupId);
+  case COMPOSE_UPSTREAM_CHANGES_ACCEPTED:
+    return state.set('hasUpstreamChanges', false)
   default:
     return state;
   }

@@ -39,6 +39,14 @@ class REST::StatusSerializer < ActiveModel::Serializer
     end
   end
 
+  def replies_count
+    if instance_options && instance_options[:relationships]
+      instance_options[:relationships].replies_count_map[object.id] || 0
+    else
+      object.replies_count
+    end
+  end
+
   def in_reply_to_id
     object.in_reply_to_id&.to_s
   end

@@ -288,7 +288,7 @@ const mapStateToProps = (state, { group }) => {
 }
 
 GroupInfoPanel.propTypes = {
-  group: ImmutablePropTypes.map.isRequired,
+  group: ImmutablePropTypes.map,
   intl: PropTypes.object.isRequired,
   noPanel: PropTypes.bool,
   relationships: ImmutablePropTypes.map,

@@ -16,7 +16,6 @@ import { getFilters, regexFromFilters } from '../selectors'
 import { me } from '../initial_state'
 import { NOTIFICATION_FILTERS } from '../constants'
 
-export const NOTIFICATIONS_INITIALIZE = 'NOTIFICATIONS_INITIALIZE'
 export const NOTIFICATIONS_UPDATE = 'NOTIFICATIONS_UPDATE'
 export const NOTIFICATIONS_UPDATE_QUEUE = 'NOTIFICATIONS_UPDATE_QUEUE'
 export const NOTIFICATIONS_DEQUEUE = 'NOTIFICATIONS_DEQUEUE'
@@ -50,13 +49,6 @@ const excludeTypesFromFilter = filter => {
   const allTypes = ImmutableList(['follow', 'favourite', 'reblog', 'mention', 'poll'])
   return allTypes.filterNot(item => item === filter).toJS()
 }
-
-/**
- * 
- */
-export const initializeNotifications = () => ({
-  type: NOTIFICATIONS_INITIALIZE,
-})
 
 /**
  * 
@@ -110,6 +102,17 @@ export const updateNotificationsQueue = (notification, intlMessages, intlLocale,
   //   })
   // }
 
+  if (notification.messageSource === 'websocket') {
+    const state = getState()
+    const queuedNotifications = state.getIn(['notifications', 'queuedNotifications'], ImmutableList())
+    const listedNotifications = state.getIn(['notifications', 'items'], ImmutableList())
+    if (queuedNotifications.size === 0 && listedNotifications.size === 0) {
+      // a notification came from websockets but we don't have any other notifications
+      // check with HTTP for more
+      dispatch(expandNotifications())
+    }
+  }
+
   if (isOnNotificationsPage) {
     dispatch({
       type: NOTIFICATIONS_UPDATE_QUEUE,
@@ -120,6 +123,7 @@ export const updateNotificationsQueue = (notification, intlMessages, intlLocale,
   } else {
     dispatch(updateNotifications(notification, intlMessages, intlLocale))
   }
+
 }
 
 /**

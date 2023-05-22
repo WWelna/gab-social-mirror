@@ -86,7 +86,7 @@ class ConfirmationModal extends React.PureComponent {
 }
 
 ConfirmationModal.propTypes = {
-  title: PropTypes.any.isRequired,
+  title: PropTypes.any,
   message: PropTypes.any.isRequired,
   confirm: PropTypes.any.isRequired,
   onClose: PropTypes.func.isRequired,

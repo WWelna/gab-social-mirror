@@ -15,7 +15,7 @@ import { me } from '../initial_state'
 
 class AccountTimeline extends ImmutablePureComponent {
 
-  componentWillMount() {
+  componentDidMount() {
     const { accountId, commentsOnly, isDeckConnected } = this.props
 
     if (accountId && accountId !== -1) {
@@ -27,7 +27,7 @@ class AccountTimeline extends ImmutablePureComponent {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.accountId && nextProps.accountId !== -1 && (nextProps.accountId !== this.props.accountId && nextProps.accountId) || nextProps.commentsOnly !== this.props.commentsOnly) {
       if (!nextProps.commentsOnly && !nextProps.isDeckConnected) {
         this.props.dispatch(expandAccountFeaturedTimeline(nextProps.accountId))

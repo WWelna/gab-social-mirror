@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { NavLink } from 'react-router-dom'
+import { NavLink, withRouter } from 'react-router-dom'
 import { FormattedMessage } from 'react-intl'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
@@ -32,10 +32,6 @@ import CommentSubReplyLoadMoreButton from './comment_sub_reply_load_more_button'
 
 class Comment extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   state = {
     showMedia: defaultMediaVisibility(this.props.status),
     statusId: undefined,
@@ -47,7 +43,7 @@ class Comment extends ImmutablePureComponent {
   }
 
   handleOnReply = () => {
-    this.props.onReply(this.props.status, this.context.router)
+    this.props.onReply(this.props.status, this.props.history)
   }
 
   handleOnFavorite = () => {
@@ -99,16 +95,11 @@ class Comment extends ImmutablePureComponent {
 
   setContainerNode = (c) => {
     this.containerNode = c
-
-    if (this.props.isHighlighted && this.containerNode) {
-      this.containerNode.scrollIntoView({ behavior: 'smooth' });
-    }
   }
 
   render() {
     const {
       indent,
-      intl,
       status,
       isHidden,
       isHighlighted,
@@ -318,7 +309,7 @@ const makeMapStateToProps = (state, props) => ({
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  onReply(status, router) {
+  onReply(status, history) {
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
 
     dispatch((_, getState) => {
@@ -327,10 +318,10 @@ const mapDispatchToProps = (dispatch) => ({
         dispatch(openModal('CONFIRM', {
           message: <FormattedMessage id='confirmations.reply.message' defaultMessage='Replying now will overwrite the message you are currently composing. Are you sure you want to proceed?' />,
           confirm: <FormattedMessage id='confirmations.reply.confirm' defaultMessage='Reply' />,
-          onConfirm: () => dispatch(replyCompose(status, router)),
+          onConfirm: () => dispatch(replyCompose(status, history)),
         }))
       } else {
-        dispatch(replyCompose(status, router, true))
+        dispatch(replyCompose(status, history, true))
       }
     })
   },
@@ -389,7 +380,6 @@ const mapDispatchToProps = (dispatch) => ({
 
 Comment.propTypes = {
   indent: PropTypes.number,
-  intl: PropTypes.object.isRequired,
   ancestorAccountId: PropTypes.string.isRequired,
   status: ImmutablePropTypes.map.isRequired,
   isHidden: PropTypes.bool,
@@ -403,7 +393,7 @@ Comment.propTypes = {
   onOpenLikes: PropTypes.func.isRequired,
   onOpenReposts: PropTypes.func.isRequired,
   onOpenStatusRevisionsPopover: PropTypes.func.isRequired,
-  onOpenMedia: PropTypes.func.isRequired
+  onOpenMedia: PropTypes.func.isRequired,
 }
 
-export default connect(makeMapStateToProps, mapDispatchToProps)(Comment)
+export default withRouter(connect(makeMapStateToProps, mapDispatchToProps)(Comment))

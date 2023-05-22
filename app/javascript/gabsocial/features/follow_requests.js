@@ -14,7 +14,7 @@ import Text from '../components/text'
 
 class FollowRequests extends ImmutablePureComponent {
 
-  componentWillMount () {
+  componentDidMount () {
     this.props.onFetchFollowRequests()
   }
 

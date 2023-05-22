@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import ImmutablePropTypes from 'react-immutable-proptypes'
 import { connect } from 'react-redux'
 import { getToasts } from '../selectors'
 import { dismissToast } from '../actions/toasts'
@@ -30,7 +31,6 @@ class ToastsContainer extends React.PureComponent {
       saveAreaInsetMB: 1,
       displayNone: !hasNotifications
     })
-  
 
     return (
       <div className={containerClasses}>
@@ -61,7 +61,7 @@ const mapStateToProps = (state) => ({
 })
 
 ToastsContainer.propTypes = {
-  notifications: PropTypes.array,
+  notifications: ImmutablePropTypes.list.isRequired,
 }
 
 export default connect(mapStateToProps)(ToastsContainer)

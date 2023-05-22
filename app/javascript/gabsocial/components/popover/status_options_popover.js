@@ -4,6 +4,7 @@ import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { FormattedMessage, defineMessages, injectIntl } from 'react-intl'
+import { withRouter } from 'react-router-dom'
 import { me, isStaff, boostModal, deleteModal } from '../../initial_state'
 import { makeGetStatus } from '../../selectors'
 import {
@@ -53,10 +54,6 @@ import List from '../list'
 import Text from '../text'
 
 class StatusOptionsPopover extends ImmutablePureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
 
   state = {
     showingBookmarkCollections: false,
@@ -149,7 +146,7 @@ class StatusOptionsPopover extends ImmutablePureComponent {
   }
 
   handleQuoteClick = (e) => {
-    this.props.onQuote(this.props.status, this.context.router)
+    this.props.onQuote(this.props.status, this.props.history)
   }
 
   handleOnOpenSharePopover = () => {
@@ -439,7 +436,7 @@ const mapDispatchToProps = (dispatch) => ({
     }
   },
 
-  onQuote(status, router) {
+  onQuote(status, history) {
     dispatch(closePopover())
 
     dispatch((_, getState) => {
@@ -448,10 +445,10 @@ const mapDispatchToProps = (dispatch) => ({
         dispatch(openModal(MODAL_CONFIRM, {
           message: intl.formatMessage(messages.quoteMessage),
           confirm: intl.formatMessage(messages.quoteConfirm),
-          onConfirm: () => dispatch(quoteCompose(status, router)),
+          onConfirm: () => dispatch(quoteCompose(status, history)),
         }))
       } else {
-        dispatch(quoteCompose(status, router))
+        dispatch(quoteCompose(status, history))
       }
     })
   },
@@ -586,4 +583,4 @@ StatusOptionsPopover.propTypes = {
   isPro: PropTypes.bool,
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(StatusOptionsPopover))
+export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(StatusOptionsPopover)))

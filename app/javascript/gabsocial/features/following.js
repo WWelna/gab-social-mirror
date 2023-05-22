@@ -25,7 +25,7 @@ class Following extends ImmutablePureComponent {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!!nextProps.accountId && nextProps.accountId !== -1 && nextProps.accountId !== this.props.accountId) {
       this.props.dispatch(fetchFollowing(nextProps.accountId))
     }

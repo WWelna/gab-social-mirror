@@ -37,9 +37,9 @@ class GroupCollectionTimeline extends React.PureComponent {
 			sortByTopValue,
 		} = this.props
 
-		if (this.props.collectionType === 'featured' && sortByValue !== GROUP_TIMELINE_SORTING_TYPE_HOT) {
+		if (collectionType === 'featured' && sortByValue !== GROUP_TIMELINE_SORTING_TYPE_HOT) {
 			this.props.setFeaturedTop()
-		} else if (!!me && this.props.collectionType === 'member' && sortByValue !== GROUP_TIMELINE_SORTING_TYPE_NEWEST) {
+		} else if (!!me && collectionType === 'member' && sortByValue !== GROUP_TIMELINE_SORTING_TYPE_NEWEST) {
 			this.props.setMemberNewest()
 		} else {
 			const sortBy = getSortBy(sortByValue, sortByTopValue)
@@ -153,10 +153,9 @@ GroupCollectionTimeline.propTypes = {
 	setFeaturedTop: PropTypes.func.isRequired,
 	setMemberNewest: PropTypes.func.isRequired,
 	intl: PropTypes.object.isRequired,
-	collectionType: PropTypes.string.isRequired,
+	collectionType: PropTypes.string,
 	sortByValue: PropTypes.string.isRequired,
 	sortByTopValue: PropTypes.string,
-	hasStatuses: PropTypes.bool.isRequired,
 }
 
 export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(GroupCollectionTimeline))

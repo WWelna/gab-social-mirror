@@ -21,10 +21,6 @@ import { makeGetChatMessage } from '../../../selectors'
 
 class ChatMessageItem extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   state = {
     hovering: false,
     isNewDay: false,

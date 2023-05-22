@@ -393,6 +393,7 @@ class Account < ApplicationRecord
           AND accounts.suspended_at IS NULL
           AND accounts.moved_to_account_id IS NULL
           AND accounts.domain IS NULL
+          AND accounts.spam_flag != 1
           #{'AND accounts.is_verified' if options[:onlyVerified]}
         ORDER BY accounts.is_verified DESC
         LIMIT ? OFFSET ?
@@ -417,6 +418,7 @@ class Account < ApplicationRecord
           AND accounts.suspended_at IS NULL
           AND accounts.moved_to_account_id IS NULL
           AND accounts.domain IS NULL
+          and accounts.spam_flag != 1
           #{'AND accounts.is_verified' if options[:onlyVerified]}
         GROUP BY accounts.id
         ORDER BY accounts.is_verified DESC, fc DESC, rank DESC

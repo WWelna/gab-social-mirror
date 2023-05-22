@@ -45,7 +45,7 @@ class ModalBase extends React.PureComponent {
     window.addEventListener('popstate', (e) => this.handleOnClose(e, true), false);
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!!nextProps.children && !this.props.children) {
       this.activeElement = document.activeElement
 

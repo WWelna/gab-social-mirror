@@ -15,11 +15,11 @@ import AccountPlaceholder from '../components/placeholder/account_placeholder'
 
 class StatusReposts extends ImmutablePureComponent {
 
-  componentWillMount () {
+  componentDidMount () {
     this.props.dispatch(fetchReposts(this.props.statusId))
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.statusId !== this.props.statusId && nextProps.statusId) {
       this.props.dispatch(fetchReposts(nextProps.statusId))
     }

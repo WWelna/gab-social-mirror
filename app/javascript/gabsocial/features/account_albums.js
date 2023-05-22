@@ -27,7 +27,7 @@ class AccountAlbums extends ImmutablePureComponent {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.accountId && nextProps.accountId !== this.props.accountId) {
       this.props.onFetchAccountAlbums(nextProps.accountId)
     }

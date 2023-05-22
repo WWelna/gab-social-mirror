@@ -28,7 +28,7 @@ class ImageLoader extends React.PureComponent {
     this.loadImage(this.props);
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.src !== nextProps.src) {
       this.loadImage(nextProps);
     }

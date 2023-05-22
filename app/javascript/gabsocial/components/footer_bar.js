@@ -12,10 +12,6 @@ import Avatar from './avatar'
 
 class FooterBar extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   handleOnOpenSidebar = () => {
     this.props.onOpenSidebar()
   }
@@ -27,8 +23,7 @@ class FooterBar extends ImmutablePureComponent {
       homeItemsQueueCount,
     } = this.props
 
-    const noRouter = !this.context.router
-    const currentPathname = noRouter ? '' : this.context.router.route.location.pathname
+    const currentPathname = this.props.location.pathname
 
     const buttons = [
       {

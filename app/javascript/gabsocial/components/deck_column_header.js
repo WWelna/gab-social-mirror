@@ -71,7 +71,10 @@ class DeckColumnHeader extends React.PureComponent {
 }
 
 DeckColumnHeader.propTypes = {
-  title: PropTypes.string,
+  title: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.node,
+  ]),
   subtitle: PropTypes.string,
   icon: PropTypes.string,
   index: PropTypes.number,

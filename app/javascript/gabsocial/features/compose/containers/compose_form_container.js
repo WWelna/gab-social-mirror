@@ -12,6 +12,7 @@ import {
   uploadCompose,
   changeScheduledAt,
   changeComposeGroupId,
+  upstreamChangesAccepted,
 } from '../../../actions/compose'
 import { openModal } from '../../../actions/modal'
 import { MODAL_COMPOSE } from '../../../constants'
@@ -29,6 +30,7 @@ const mapStateToProps = (state, props) => {
   const reduxReplyToId = state.getIn(['compose', 'in_reply_to'])
   const isModalOpen = state.getIn(['modal', 'modalType']) === 'COMPOSE' || isStandalone
   let isMatch;
+  let hasPoll = false;
 
   if (!!reduxReplyToId && !!replyToId && replyToId === reduxReplyToId) {
     isMatch = true
@@ -66,9 +68,12 @@ const mapStateToProps = (state, props) => {
       quoteOfId: null,
       scheduledAt: null,
       account: state.getIn(['accounts', me]),
-      hasPoll: false,
+      hasPoll,
+      hasUpstreamChanges: false
     }
   }
+
+  hasPoll = state.getIn(['compose', 'poll']) !== null
   
   return {
     isMatch,
@@ -94,7 +99,8 @@ const mapStateToProps = (state, props) => {
     scheduledAt: state.getIn(['compose', 'scheduled_at']),
     account: state.getIn(['accounts', me]),
     isPro: state.getIn(['accounts', me, 'is_pro']),
-    hasPoll: state.getIn(['compose', 'poll']),
+    hasPoll,
+    hasUpstreamChanges: state.getIn(['compose', 'hasUpstreamChanges']),
   }
 }
 
@@ -135,6 +141,10 @@ const mapDispatchToProps = (dispatch, { formLocation }) => ({
 
   onChangeComposeGroupId(groupId) {
     dispatch(changeComposeGroupId(groupId))
+  },
+
+  onUpstreamChangesAccepted() {
+    dispatch(upstreamChangesAccepted())
   }
 })
 

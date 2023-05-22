@@ -19,7 +19,7 @@ class Api::V1::GroupRelationshipsController < Api::BaseController
   end
 
   def group_ids
-    the_take = current_user.staff? ? 100 : 25
+    the_take = 125
     params[:groupIds].map(&:to_i).take(the_take)
   end
 end

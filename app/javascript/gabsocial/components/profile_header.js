@@ -5,6 +5,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
 import Sticky from 'react-stickynode'
+import { withRouter } from 'react-router-dom'
 import {
   CX,
   POPOVER_PROFILE_OPTIONS,
@@ -35,12 +36,7 @@ import Responsive from '../features/ui/util/responsive_component';
 import ProfileHeaderXSPlaceholder from './placeholder/profile_header_xs_placeholder'
 
 class ProfileHeader extends ImmutablePureComponent {
-
-  static contextTypes = {
-		router: PropTypes.object
-  }
-  
-  state = {
+ state = {
     stickied: false,
   }
 
@@ -103,7 +99,7 @@ class ProfileHeader extends ImmutablePureComponent {
     
     if (!accountId) return
 
-    this.props.onCreateChatConversation(accountId, this.context.router.history)
+    this.props.onCreateChatConversation(accountId, this.props.history)
   }
 
   setOpenMoreNodeRef = (n) => {
@@ -503,4 +499,4 @@ ProfileHeader.propTypes = {
   isXS: PropTypes.bool,
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(ProfileHeader))
+export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(ProfileHeader)))

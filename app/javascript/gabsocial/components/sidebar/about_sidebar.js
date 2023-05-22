@@ -10,13 +10,51 @@ import Heading from '../heading'
 import BackButton from '../back_button'
 import ResponsiveClassesComponent from '../../features/ui/util/responsive_classes_component'
 
+const menuItems = [
+  {
+    title: 'About',
+    to: '/about',
+  },
+  {
+    title: 'Assets',
+    to: '/about/assets',
+  },
+  {
+    title: 'DMCA',
+    to: '/about/dmca',
+  },
+  {
+    title: 'Investors',
+    to: '/about/investors',
+  },
+  {
+    title: 'Press',
+    to: '/about/press',
+  },
+  {
+    title: 'Privacy Policy',
+    to: '/about/privacy',
+  },
+  {
+    title: 'Terms of Sale',
+    to: '/about/sales',
+  },
+  {
+    title: 'Terms of Service',
+    to: '/about/tos',
+  },
+  {
+    title: 'California Consumer Protection',
+    to: '/about/ccpa',
+  },
+]
+
 class AboutSidebar extends ImmutablePureComponent {
 
   render() {
     const {
       intl,
       title,
-      items,
     } = this.props
 
     return (
@@ -47,7 +85,7 @@ class AboutSidebar extends ImmutablePureComponent {
               <nav aria-label='Primary' role='navigation' className={[_s.d, _s.w100PC, _s.mb15].join(' ')}>
                 <SidebarSectionTitle>{intl.formatMessage(messages.menu)}</SidebarSectionTitle>
                 {
-                  items.map((menuItem, i) => (
+                  menuItems.map((menuItem, i) => (
                     <SidebarSectionItem {...menuItem} key={`about-sidebar-item-menu-${i}`} />
                   ))
                 }
@@ -73,7 +111,6 @@ AboutSidebar.propTypes = {
   intl: PropTypes.object.isRequired,
   account: ImmutablePropTypes.map,
   title: PropTypes.string,
-  items: PropTypes.array.isRequired,
 }
 
 export default injectIntl(AboutSidebar)

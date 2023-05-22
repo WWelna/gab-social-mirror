@@ -15,7 +15,7 @@ import GroupListItem from '../components/group_list_item'
 
 class GroupsCollection extends ImmutablePureComponent {
 
-	componentWillMount() {
+	componentDidMount() {
 		this.props.onFetchGroupsByTab(this.props.activeTab)
 	}
 
@@ -119,7 +119,7 @@ GroupsCollection.propTypes = {
 	intl: PropTypes.object.isRequired,
 	isFetched: PropTypes.bool.isRequired,
 	isLoading: PropTypes.bool.isRequired,
-	onFetchGroups: PropTypes.func.isRequired,
+	onFetchGroupsByTab: PropTypes.func.isRequired,
 	onOpenSortPopover: PropTypes.func.isRequired,
 }
 

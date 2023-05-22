@@ -21,10 +21,6 @@ import Dummy from './dummy'
 
 class Notification extends ImmutablePureComponent {
 
-  static contextTypes = {
-    router: PropTypes.object,
-  }
-
   render() {
     const {
       intl,

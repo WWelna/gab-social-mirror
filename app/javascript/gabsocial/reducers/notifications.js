@@ -1,5 +1,4 @@
 import {
-  NOTIFICATIONS_INITIALIZE,
   NOTIFICATIONS_UPDATE,
   NOTIFICATIONS_EXPAND_SUCCESS,
   NOTIFICATIONS_EXPAND_REQUEST,
@@ -29,12 +28,12 @@ const initialState = ImmutableMap({
   lastId: null,
   hasMore: true,
   top: false,
-  unread: 0,
+  unread: unreadCount || 0,
   isLoading: false,
   isError: false,
   queuedNotifications: ImmutableList(), //max = MAX_QUEUED_NOTIFICATIONS
   totalQueuedNotificationsCount: 0, //used for queuedItems overflow for MAX_QUEUED_NOTIFICATIONS+
-  lastReadId: -1,
+  lastReadId: lastReadNotificationId || -1,
   filter: ImmutableMap({
     active: 'all',
     onlyVerified: false,
@@ -262,11 +261,6 @@ const updateNotificationsQueue = (state, notification, intlMessages, intlLocale)
 
 export default function notifications(state = initialState, action) {
   switch(action.type) {
-  case NOTIFICATIONS_INITIALIZE:
-    return state.withMutations((mutable) => {
-      mutable.set('unread', unreadCount)
-      mutable.set('lastReadId', lastReadNotificationId)
-    })
   case NOTIFICATIONS_MARK_READ:
     return state.set('lastReadId', action.lastReadId);
   case NOTIFICATIONS_EXPAND_REQUEST:

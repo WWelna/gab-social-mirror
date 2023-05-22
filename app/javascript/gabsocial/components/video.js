@@ -30,17 +30,13 @@ class Video extends ImmutablePureComponent {
     revealed: this.props.visible !== undefined ? this.props.visible : (displayMedia !== 'hide_all' && !this.props.sensitive || displayMedia === 'show_all'),
   }
 
-  componentDidMount() {
-    //
-  }
-
   componentWillUnmount() {
     if (this.videoPlayer) {
       this.videoPlayer.dispose()
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!is(nextProps.visible, this.props.visible) && nextProps.visible !== undefined) {
       this.setState({ revealed: nextProps.visible })
     }

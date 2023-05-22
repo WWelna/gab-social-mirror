@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
-import { injectIntl, defineMessages } from 'react-intl'
+import { injectIntl, defineMessages, FormattedMessage } from 'react-intl'
 import {
   joinGroup,
   leaveGroup,
@@ -128,7 +128,13 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(joinGroup(groupId))
   },
   onLeaveGroup(groupId) {
-    dispatch(leaveGroup(groupId))
+    dispatch(openModal('CONFIRM', {
+      message: <FormattedMessage id='confirmations.group-leave.message' defaultMessage='Are you sure you want to leave the group?' />,
+      confirm: <FormattedMessage id='confirmations.group-leave.confirm' defaultMessage='Leave' />,
+      onConfirm: () => {
+        dispatch(leaveGroup(groupId))
+      }
+    }))
   },
   onOpenGroupPasswordModal(group) {
     dispatch(openModal(MODAL_GROUP_PASSWORD, {
@@ -145,8 +151,8 @@ GroupActionButton.propTypes = {
     'small',
     'normal',
   ]),
-  onJoin: PropTypes.func.isRequired,
-  onLeave: PropTypes.func.isRequired,
+  onJoinGroup: PropTypes.func.isRequired,
+  onLeaveGroup: PropTypes.func.isRequired,
   onOpenGroupPasswordModal: PropTypes.func.isRequired,
 }
 

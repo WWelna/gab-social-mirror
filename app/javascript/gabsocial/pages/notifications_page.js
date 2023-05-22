@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
+import { withRouter } from 'react-router-dom'
 import { setFilter } from '../actions/notifications'
 import { me } from '../initial_state'
 import { NOTIFICATION_FILTERS } from '../constants'
@@ -28,11 +29,11 @@ class NotificationsPage extends React.PureComponent {
     this.props.dispatch(setFilter('active', notificationType))
     
     if (notificationType === 'all') {
-      this.context.router.history.push('/notifications')
+      this.props.history.push('/notifications')
     } else if (notificationType === 'follow_requests') {
-      this.context.router.history.push(`/notifications/follow_requests`)
+      this.props.history.push(`/notifications/follow_requests`)
     } else {
-      this.context.router.history.push(`/notifications?view=${notificationType}`)
+      this.props.history.push(`/notifications?view=${notificationType}`)
     }
   }
 
@@ -101,10 +102,6 @@ const mapStateToProps = (state) => ({
   locked: !!state.getIn(['accounts', me, 'locked']),
 })
 
-NotificationsPage.contextTypes = {
-  router: PropTypes.object.isRequired,
-}
-
 NotificationsPage.propTypes = {
   children: PropTypes.node.isRequired,
   dispatch: PropTypes.func.isRequired,
@@ -114,4 +111,4 @@ NotificationsPage.propTypes = {
   selectedFilter: PropTypes.string.isRequired,
 }
 
-export default injectIntl(connect(mapStateToProps)(NotificationsPage))
+export default withRouter(injectIntl(connect(mapStateToProps)(NotificationsPage)))

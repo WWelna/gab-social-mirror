@@ -7,12 +7,14 @@ import Button from '../button'
 import Text from '../text'
 import Image from '../image'
 import DotTextSeperator from '../dot_text_seperator'
+import ResponsiveClassesComponent from '../../features/ui/util/responsive_classes_component'
 
-const GabAdComment = () => {
+const GabAdComment = (props = {}) => {
+  const { pageKey, position } = props
 
   return (
     <GabAdRoot>
-      <GabAdBase placement={GAB_AD_PLACEMENTS.status}>
+      <GabAdBase placement={GAB_AD_PLACEMENTS.status} pageKey={pageKey} position={position}>
         {(ad) => (
           <div className={[_s.d, _s.px15, _s.pt5].join(' ')} data-comment='gab-ad-comment'>
             <div className={[_s.d, _s.mb5].join(' ')}>
@@ -27,7 +29,10 @@ const GabAdComment = () => {
                   />
                 </div>
 
-                <div className={[_s.d, _s.flexShrink1, _s.maxW380PX].join(' ')}>
+                <ResponsiveClassesComponent
+                  classNames={[_s.d, _s.flexShrink1, _s.maxW380PX].join(' ')}
+                  classNamesXS={[_s.d, _s.flexShrink1, _s.maxW100PC42PX].join(' ')}
+                >
                   <div className={[_s.d, _s.px10, _s.pt5, _s.pb10, _s.radiusSmall, _s.bgSubtle].join(' ')}>
                     {/* GAB AD HEADER START */}
                     <div className={[_s.d, _s.aiStart, _s.py2, _s.maxW100PC, _s.flexGrow1].join(' ')}>
@@ -88,7 +93,7 @@ const GabAdComment = () => {
                             <Text size='large' color='secondary' className={_s.py5}>
                               {ad.base_url}
                             </Text>
-                            <div className={[_s.d, _s.flexRow, _s.w100PC, _s.mb10].join(' ')}>
+                            <div className={[_s.d, _s.flexRow, _s.w100PC, _s.mb10, _s.flexWrap].join(' ')}>
                               <div className={[_s.d, _s.flexNormal].join(' ')}>
                                 <Text size='large' color='primary' weight='bold' className={[_s.py5].join(' ')}>
                                   {ad.title}
@@ -113,7 +118,7 @@ const GabAdComment = () => {
                     </div>
                   </div>
 
-                </div>
+                </ResponsiveClassesComponent>
               </div>
             </div>
           </div>
@@ -121,6 +126,11 @@ const GabAdComment = () => {
       </GabAdBase>
     </GabAdRoot>
   )
+}
+
+GabAdComment.propTypes = {
+  pageKey: PropTypes.string,
+  position: PropTypes.number
 }
 
 export default GabAdComment

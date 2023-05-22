@@ -1,7 +1,9 @@
 import api from '../api'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
 import { CancelToken, isCancel } from 'axios'
 import throttle from 'lodash.throttle'
+import get from 'lodash.get'
 import moment from 'moment-mini'
 import { isMobile } from '../utils/is_mobile'
 import { search as emojiSearch } from '../components/emoji/emoji_mart_search_light'
@@ -86,6 +88,7 @@ export const COMPOSE_EXPIRES_AT_CHANGE = 'COMPOSE_EXPIRES_AT_CHANGE'
 export const COMPOSE_RICH_TEXT_EDITOR_CONTROLS_VISIBILITY = 'COMPOSE_RICH_TEXT_EDITOR_CONTROLS_VISIBILITY'
 
 export const COMPOSE_CLEAR = 'COMPOSE_CLEAR'
+export const COMPOSE_UPSTREAM_CHANGES_ACCEPTED = 'COMPOSE_UPSTREAM_CHANGES_ACCEPTED'
 
 const messages = defineMessages({
   uploadErrorLimit: { id: 'upload_error.limit', defaultMessage: 'File upload limit exceeded.' },
@@ -162,11 +165,11 @@ export const changeCompose = (text, markdown, replyId, isStandalone, caretPositi
           })
         }
       }))
-    } else {
+    }/* else {
       dispatch({
         type: COMPOSE_REPLY_CANCEL,
       })
-    }
+    }*/
   } else if (!replyId && !!reduxReplyToId && !isModalOpen) {
     if (existingText.length === 0 && text.trim().length > 0) {
       dispatch({
@@ -179,21 +182,22 @@ export const changeCompose = (text, markdown, replyId, isStandalone, caretPositi
         caretPosition: caretPosition,
       })
     } else if (existingText.length > 0 && text.trim().length > 0) {
-      dispatch(openModal('CONFIRM', {
+      // ⚠️ This was triggering at awkward times. This logic should be looked at before enabling it.
+      /*dispatch(openModal('CONFIRM', {
         message: <FormattedMessage id='confirmations.new_compose.message' defaultMessage='Composing now will overwrite the reply you are currently writing. Are you sure you want to proceed?' />,
         confirm: <FormattedMessage id='confirmations.new_compose.confirm' defaultMessage='Yes' />,
         onConfirm: () => {
           dispatch({
             type: COMPOSE_REPLY_CANCEL,
-          })
+          })*/
           dispatch({
             type: COMPOSE_CHANGE,
             text: text,
             markdown: markdown,
             caretPosition: caretPosition,
           })
-        },
-      }))    
+        /*},
+      }))*/
     } else {
       //
     }
@@ -210,14 +214,14 @@ export const changeCompose = (text, markdown, replyId, isStandalone, caretPositi
 /**
  * 
  */
-export const replyCompose = (status, router, showModal) => (dispatch) => {
+export const replyCompose = (status, history, showModal) => (dispatch) => {
   dispatch({
     type: COMPOSE_REPLY,
     status,
   })
 
   if (isMobile(window.innerWidth)) {
-    router.history.push('/compose')
+    history.push('/compose')
   } else {
     if (showModal) {
       dispatch(openModal(MODAL_COMPOSE))
@@ -228,14 +232,14 @@ export const replyCompose = (status, router, showModal) => (dispatch) => {
 /**
  * 
  */
-export const quoteCompose = (status, router) => (dispatch) => {
+export const quoteCompose = (status, history) => (dispatch) => {
   dispatch({
     type: COMPOSE_QUOTE,
     status,
   })
 
   if (isMobile(window.innerWidth)) {
-    router.history.push('/compose')
+    history.push('/compose')
   } else {
     dispatch(openModal(MODAL_COMPOSE))
   }
@@ -270,8 +274,21 @@ export const mentionCompose = (account) => (dispatch) => {
 /**
  * 
  */
-export const handleComposeSubmit = (dispatch, getState, response, status) => {
+export const handleComposeSubmit = (dispatch, getState, response, text) => {
   if (!dispatch || !getState) return
+
+  // This is a temporary work-around for clearing a just submitted comment status.
+  if (
+    typeof window.dispatchEvent === 'function' &&
+    typeof CustomEvent === 'function' &&
+    typeof text === 'string'
+  ) {
+    window.dispatchEvent(new CustomEvent('composer-clear', {
+      detail: { text }
+    }))
+  }
+
+  dispatch(closeModal())
 
   const isScheduledStatus = response.data.scheduled_at !== undefined
   if (isScheduledStatus) {
@@ -282,12 +299,12 @@ export const handleComposeSubmit = (dispatch, getState, response, status) => {
     //     statusText: 'Successfully scheduled status',
     //   }
     // }))
-    dispatch(submitComposeSuccess({ ...response.data }))
+    dispatch(submitComposeSuccess(response.data))
     return
   }
 
-  dispatch(insertIntoTagHistory(response.data.tags, status))
-  dispatch(submitComposeSuccess({ ...response.data }))
+  dispatch(insertIntoTagHistory(response.data.tags, text))
+  dispatch(submitComposeSuccess(response.data))
 
   // If is group, reset composer to be in group
   if (response.data.group) {
@@ -317,7 +334,9 @@ export const submitCompose = (options = {}) => (dispatch, getState) => {
 
   if (options.autoJoinGroup) dispatch(joinGroup(groupId))
 
-  let status = getState().getIn(['compose', 'text'], '')
+  let originalText = getState().getIn(['compose', 'text'], '')
+  // make a copy because other parts of the app need the unmodified text
+  let status = '' + originalText
   let markdown = getState().getIn(['compose', 'markdown'], '')
   
   const replacer = (match) => {
@@ -351,10 +370,9 @@ export const submitCompose = (options = {}) => (dispatch, getState) => {
 
 
   dispatch(submitComposeRequest())
-  dispatch(closeModal())
 
-  if (isMobile(window.innerWidth) && options.router && options.isStandalone) {
-    options.router.history.goBack()
+  if (isMobile(window.innerWidth) && options.history && options.isStandalone) {
+    options.history.goBack()
   }
 
   api(getState)[method](endpoint, {
@@ -377,7 +395,7 @@ export const submitCompose = (options = {}) => (dispatch, getState) => {
       'Idempotency-Key': getState().getIn(['compose', 'idempotencyKey']),
     },
   }).then((response) => {
-    handleComposeSubmit(dispatch, getState, response, status)
+    handleComposeSubmit(dispatch, getState, response, originalText)
   }).catch((error) => {
     dispatch(submitComposeFail(error))
   })
@@ -387,10 +405,10 @@ const submitComposeRequest = () => ({
   type: COMPOSE_SUBMIT_REQUEST,
 })
 
-const submitComposeSuccess = (status) => ({
+const submitComposeSuccess = (responseData) => ({
   type: COMPOSE_SUBMIT_SUCCESS,
-  showToast: true,
-  status,
+  showToast: get(responseData, 'showToast', true),
+  responseData,
 })
 
 const submitComposeFail = (error) => ({
@@ -766,3 +784,6 @@ export const changeRichTextEditorControlsVisibility = (open) => ({
   type: COMPOSE_RICH_TEXT_EDITOR_CONTROLS_VISIBILITY,
   open,
 })
+
+export const upstreamChangesAccepted = () =>
+  ({ type: COMPOSE_UPSTREAM_CHANGES_ACCEPTED })

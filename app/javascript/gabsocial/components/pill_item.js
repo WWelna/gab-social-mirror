@@ -8,31 +8,6 @@ import Image from './image'
 import Icon from './icon'
 
 class PillItem extends React.PureComponent {
-
-  state = {
-    isCurrent: false,
-  }
-
-  componentDidMount() {
-    this.checkIfCurrent()
-  }
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.location !== this.props.location) {
-      this.checkIfCurrent()
-    }
-  }
-
-  checkIfCurrent() {
-    // If user navigates to different page, ensure tab bar item
-    // with this.props.to that is on location is set to active.
-    const isCurrent = this.props.to === this.props.location.pathname && !this.props.location.search
-
-    if (this.state.isCurrent !== isCurrent) {
-      this.setState({ isCurrent })
-    }
-  }
-
   render() {
     const {
       prependIcon,
@@ -44,11 +19,10 @@ class PillItem extends React.PureComponent {
       location,
       isActive,
     } = this.props
-    const { isCurrent } = this.state
 
     // Combine state, props, location to make absolutely
     // sure of active status.
-    const active = isActive || (to === location.pathname && !location.search) || isCurrent
+    const active = isActive || (to === location.pathname && !location.search)
 
     const containerClasses = CX({
       d: 1,

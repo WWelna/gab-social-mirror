@@ -2,8 +2,7 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { connect } from 'react-redux'
-import { Provider } from 'react-redux'
+import { connect, Provider } from 'react-redux'
 import configureStore from '../store/configureStore'
 import { BrowserRouter, Route } from 'react-router-dom'
 import moment from 'moment-mini'
@@ -12,6 +11,7 @@ import { IntlProvider, addLocaleData } from 'react-intl'
 import { fetchCustomEmojis } from '../actions/custom_emojis'
 import { fetchPromotions } from '../actions/promotions'
 import { fetchChatConversationUnreadCount } from '../actions/chat_conversations'
+import { routerChange } from '../actions/router'
 import { hydrateStore } from '../actions/store'
 import { MIN_ACCOUNT_CREATED_AT_ONBOARDING } from '../constants'
 import {
@@ -91,6 +91,12 @@ class GabSocialMount extends React.PureComponent {
     this.props.dispatch(saveWindowDimensions())
   }
 
+  routerRef = r => {
+    if (r && r.history && r.history.listen) {
+      r.history.listen(details => store.dispatch(routerChange(details)))
+    }
+  }
+
   render () {
     const { shownOnboarding, shouldShow } = this.state
     
@@ -103,7 +109,7 @@ class GabSocialMount extends React.PureComponent {
     }
 
     return (
-      <BrowserRouter>
+      <BrowserRouter ref={this.routerRef}>
         <ScrollContext>
           <Route path='/' component={UI} />
         </ScrollContext>

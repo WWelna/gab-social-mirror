@@ -87,13 +87,45 @@
     %time.formatted{ datetime: @report.created_at.iso8601 }
 
 - unless @report.statuses.empty?
+  - if @blockable_links.present?
+    %hr.spacer/
+
+    %h2
+      = t('admin.link_blocks.title')
+
+    = form_for(@link_block_form, url: admin_report_reported_links_path(@report.id)) do |f|
+      .batch-table
+        .batch-table__toolbar
+          %label.batch-table__toolbar__select.batch-checkbox-all
+            = check_box_tag :batch_checkbox_all_links, nil, false, data: { batch_checkbox_all: true }
+          .batch-table__toolbar__actions
+            = f.button safe_join([fa_icon('eye-slash'), t('admin.link_blocks.block')]), name: :block, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
+            = f.button safe_join([fa_icon('eye'), t('admin.link_blocks.unblock')]), name: :unblock, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
+        .batch-table__body
+          - @blockable_links.each do |link|
+            .batch-table__row
+              %label.batch-table__row__select.batch-checkbox
+                = f.check_box :links, { multiple: true, include_hidden: false }, link
+              .batch-table__row__content
+                .status__content{ style: 'display: flex; justify-content: space-between;' }
+                  %span
+                    = link
+                  %span
+                    - if @blocked_links.include?(link)
+                      = t('admin.link_blocks.blocked')
+                    - else
+                      = t('admin.link_blocks.not_blocked')
+
   %hr.spacer/
+
+  %h2
+    = t('admin.statuses.title')
 
   = form_for(@form, url: admin_report_reported_statuses_path(@report.id)) do |f|
     .batch-table
       .batch-table__toolbar
         %label.batch-table__toolbar__select.batch-checkbox-all
-          = check_box_tag :batch_checkbox_all, nil, false
+          = check_box_tag :batch_checkbox_all_statuses, nil, false, data: { batch_checkbox_all: true }
         .batch-table__toolbar__actions
           = f.button safe_join([fa_icon('eye-slash'), t('admin.statuses.batch.nsfw_on')]), name: :nsfw_on, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
           = f.button safe_join([fa_icon('eye'), t('admin.statuses.batch.nsfw_off')]), name: :nsfw_off, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }

@@ -65,14 +65,14 @@ class LinkFooter extends React.PureComponent {
     ]
 
     return (
-      <div className={[_s.d, _s.mb15].join(' ')}>
+      <div key='link-footer' className={[_s.d, _s.mb15].join(' ')}>
         <nav aria-label='Footer' role='navigation' className={[_s.d, _s.flexWrap, _s.flexRow].join(' ')}>
           {
             linkFooterItems.map((linkFooterItem, i) => {
               if (linkFooterItem.requiresUser && !me) return null
 
               return (
-                <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.jcCenter].join(' ')}>
+                <div key={`link-footer-item-${i}`} className={[_s.d, _s.flexRow, _s.aiCenter, _s.jcCenter].join(' ')}>
                   <Button
                     isText
                     underlineOnHover

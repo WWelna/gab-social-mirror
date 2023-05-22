@@ -16,6 +16,17 @@ module Admin
       @report_note  = @report.notes.new
       @report_notes = (@report.notes.latest + @report.history + @report.target_account.targeted_account_warnings.latest.custom).sort_by(&:created_at)
       @form         = Form::StatusBatch.new
+
+      @link_block_form = Form::LinkBlockBatch.new
+      @blockable_links = @report.statuses.
+        flat_map { |s| LinkBlock.blockable_links(s.text) }.
+        uniq.
+        sort
+      @blocked_links = if @blockable_links.present?
+        LinkBlock.where(link: @blockable_links).pluck(:link)
+      else
+        []
+      end
     end
 
     def assign_to_self

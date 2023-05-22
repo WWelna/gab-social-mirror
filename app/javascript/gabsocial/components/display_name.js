@@ -9,60 +9,39 @@ import {
   CX,
   POPOVER_USER_INFO,
 } from '../constants'
-import { openPopover, closePopover } from '../actions/popover'
+import { openPopoverDeferred, cancelPopover } from '../actions/popover'
 import Icon from './icon'
 import Text from './text'
 
 class DisplayName extends ImmutablePureComponent {
 
-  mouseOverTimeout = null
+  openUserInfo(evt) {
+    // targetRef can be missing until the components set it
+    const targetRef = this.displayNameRef || evt.target
 
-  componentWillUnmount () {
-    document.removeEventListener('mousemove', this.handleMouseMove, true)
-    clearTimeout(this.mouseOverTimeout)
-  }
-
-  handleMouseEnter = () => {
-    if (this.mouseOverTimeout) return null
-    this.mouseOverTimeout = setTimeout(() => {
-      this.props.openUserInfoPopover({
-        targetRef: this.node,
-        position: 'top',
-        accountId: this.props.account.get('id'),
-      })
-      document.addEventListener('mousemove', this.handleMouseMove, true)
-    }, 1250)
-  }
-
-  handleMouseLeave = debounce((e) => {
-    this.attemptToHidePopover(e)
-  }, 250)
-
-  handleMouseMove = debounce((e) => {
-    this.attemptToHidePopover(e)
-  }, 100)
-
-  attemptToHidePopover = (e) => {
-    const lastTarget = e.toElement || e.relatedTarget
-    const isElement = (lastTarget instanceof Element || lastTarget instanceof HTMLDocument)
-    const userInfoPopoverEl = document.getElementById('user-info-popover')
-
-    if (this.mouseOverTimeout &&
-      (
-        !isElement && !userInfoPopoverEl ||
-        (userInfoPopoverEl && isElement && lastTarget && !userInfoPopoverEl.contains(lastTarget)) ||
-        (!userInfoPopoverEl && isElement && lastTarget &&  this.node && !this.node.contains(lastTarget))
-      )) {
-      document.removeEventListener('mousemove', this.handleMouseMove, true)
-      clearTimeout(this.mouseOverTimeout)
-      this.mouseOverTimeout = null
-      this.props.closeUserInfoPopover()
+    if (this.props.noHover) {
+      // The display name can be inside a popover and we don't want to open
+      // another popover or jump the existing popover to different coordinates.
+      return
     }
+
+    if (!targetRef) {
+      // it doesn't reliably get a ref
+      return
+    }
+
+    this.props.openUserInfoPopover({
+      targetRef,
+      position: 'top-start',
+      accountId: this.props.account.get('id'),
+      timeout: 1250
+    })
   }
 
-  setRef = (n) => {
-    this.node = n
-  }
+  handleMouseEnter = evt => this.openUserInfo(evt)
+  handleMouseMove = evt => this.openUserInfo(evt)
+  handleMouseLeave = () => this.props.onCancelPopover()
+  setDisplayNameRef = el => this.displayNameRef = el
 
   render() {
     const {
@@ -140,10 +119,11 @@ class DisplayName extends ImmutablePureComponent {
 
     return (
       <div
+        ref={this.setDisplayNameRef}
         className={containerClassName}
-        onMouseEnter={noHover ? undefined : this.handleMouseEnter}
-        onMouseLeave={noHover ? undefined : this.handleMouseLeave}
-        ref={this.setRef}
+        onMouseEnter={this.handleMouseEnter}
+        onMouseMove={this.handleMouseMove}
+        onMouseLeave={this.handleMouseLeave}
       >
         {
           !noDisplayName &&
@@ -191,17 +171,17 @@ class DisplayName extends ImmutablePureComponent {
 
 const mapDispatchToProps = (dispatch) => ({
   openUserInfoPopover(props) {
-    dispatch(openPopover(POPOVER_USER_INFO, props))
+    dispatch(openPopoverDeferred(POPOVER_USER_INFO, props))
   },
-  closeUserInfoPopover() {
-    dispatch(closePopover(POPOVER_USER_INFO))
+  onCancelPopover() {
+    dispatch(cancelPopover())
   }
 })
 
 DisplayName.propTypes = {
   account: ImmutablePropTypes.map,
   openUserInfoPopover: PropTypes.func.isRequired,
-  closeUserInfoPopover: PropTypes.func.isRequired,
+  onCancelPopover: PropTypes.func.isRequired,
   isLarge: PropTypes.bool,
   isMultiline: PropTypes.bool,
   isSmall: PropTypes.bool,

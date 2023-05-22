@@ -82,15 +82,15 @@ class HomePage extends React.PureComponent {
       UserPanel,
       ProgressPanel,
       GabAdPanel,
-      <WrappedBundle component={ProPanel} componentParams={{ isPro: isPro }} />,
-      <WrappedBundle component={GabTVVideosPanel} />,
-      <WrappedBundle component={ShopPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
+      <WrappedBundle key='home-page-pro-panel' component={ProPanel} componentParams={{ isPro: isPro }} />,
+      <WrappedBundle key='home-page-gabtv-videos-panel' component={GabTVVideosPanel} />,
+      <WrappedBundle key='home-page-shop-panel' component={ShopPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
     ]
 
-    sidebarLayout.push(<WrappedBundle component={ListsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-    sidebarLayout.push(<WrappedBundle component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-    sidebarLayout.push(<WrappedBundle component={GroupsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, groupType: 'member' }}  />)
-    sidebarLayout.push(<WrappedBundle component={TrendingHashtagsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
+    sidebarLayout.push(<WrappedBundle key='home-page-lists-panel' component={ListsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
+    sidebarLayout.push(<WrappedBundle key='home-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
+    sidebarLayout.push(<WrappedBundle key='home-page-groups-panel' component={GroupsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, groupType: 'member' }}  />)
+    sidebarLayout.push(<WrappedBundle key='home-page-trending-hashtags-panel' component={TrendingHashtagsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
 
     sidebarLayout.push(LinkFooter)
 
@@ -137,7 +137,7 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  totalQueuedItemsCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount']),
+  totalQueuedItemsCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount'], 0),
   unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount']),
   isPro: state.getIn(['accounts', me, 'is_pro']),
 })

@@ -116,10 +116,10 @@ class Toast extends React.PureComponent {
 }
 
 Toast.propTypes = {
-  date: PropTypes.string.isRequired,
+  date: PropTypes.string,
   image: PropTypes.string,
   isImageAccount: PropTypes.bool,
-  id: PropTypes.string.isRequired,
+  id: PropTypes.number.isRequired,
   message: PropTypes.string.isRequired,
   onDismiss: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,

@@ -25,17 +25,17 @@ class GroupRemovedAccounts extends ImmutablePureComponent {
 		query: '',
 	}
 
-	componentWillMount() {
+	componentDidMount() {
 		const { groupId } = this.props
 
 		this.props.onFetchRemovedAccounts(groupId)
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (nextProps.groupId !== this.props.groupId) {
-			this.props.onFetchRemovedAccounts(nextProps.groupId)
-		}
-	}
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (nextProps.groupId !== this.props.groupId) {
+      this.props.onFetchRemovedAccounts(nextProps.groupId)
+    }
+  }
 
 	handleLoadMore = debounce(() => {
 		this.props.onExpandRemovedAccounts(this.props.groupId)

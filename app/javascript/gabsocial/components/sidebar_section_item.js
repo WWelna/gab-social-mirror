@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { withRouter } from 'react-router-dom'
 import {
   CX,
 } from '../constants'
@@ -9,10 +10,6 @@ import Image from './image'
 import ResponsiveClassesComponent from '../features/ui/util/responsive_classes_component'
 
 class SidebarSectionItem extends React.PureComponent {
-
-  static contextTypes = {
-    router: PropTypes.object,
-  }
 
   state = {
     hovering: false,
@@ -38,12 +35,12 @@ class SidebarSectionItem extends React.PureComponent {
       onClick,
       href,
       buttonRef,
+      location
     } = this.props
     const { hovering } = this.state
 
-    const noRouter = !this.context.router
     const iconSize = '16px'
-    const currentPathname = noRouter ? '' : this.context.router.route.location.pathname
+    const currentPathname = location.pathname
     const shouldShowActive = hovering || active || currentPathname === to || currentPathname === href
     const isHighlighted = ['/notifications', '/messages'].indexOf(to) > -1
 
@@ -83,8 +80,8 @@ class SidebarSectionItem extends React.PureComponent {
 
     return (
       <Button
-        to={noRouter ? undefined : to}
-        href={noRouter ? (to || href) : href}
+        to={to}
+        href={href}
         onClick={onClick}
         noClasses
         buttonRef={buttonRef}
@@ -144,4 +141,4 @@ SidebarSectionItem.propTypes = {
   buttonRef: PropTypes.func,
 }
 
-export default SidebarSectionItem
+export default withRouter(SidebarSectionItem)

@@ -4,6 +4,7 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import isObject from 'lodash.isobject'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import Textarea from 'react-textarea-autosize'
+import debounce from 'lodash.debounce'
 import {
   CX,
   BREAKPOINT_EXTRA_SMALL,
@@ -42,13 +43,15 @@ class AutosuggestTextbox extends ImmutablePureComponent {
     if (token !== null && this.state.lastToken !== token) {
       this.setState({ lastToken: token, selectedSuggestion: 0, tokenStart });
       this.props.onSuggestionsFetchRequested(token);
-    } else if (token === null) {
+    } else if (token === null && this.state.lastToken !== null) {
       this.setState({ lastToken: null });
       this.props.onSuggestionsClearRequested();
     }
 
     this.props.onChange(e, e.target.selectionStart);
   }
+
+  editorChange = debounce((...args) => this.onChange(...args), 50)
 
   onKeyDown = (e) => {
     const { suggestions, disabled } = this.props;
@@ -134,7 +137,7 @@ class AutosuggestTextbox extends ImmutablePureComponent {
     this.textbox.focus();
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (nextProps.suggestions !== this.props.suggestions && nextProps.suggestions.size > 0 && this.state.suggestionsHidden && this.state.focused) {
       this.setState({ suggestionsHidden: false });
     }
@@ -255,7 +258,7 @@ class AutosuggestTextbox extends ImmutablePureComponent {
               placeholder={placeholder}
               value={value}
               valueMarkdown={valueMarkdown}
-              onChange={this.onChange}
+              onChange={this.editorChange}
               onKeyDown={this.onKeyDown}
               onKeyUp={onKeyUp}
               onFocus={this.onFocus}
@@ -264,6 +267,9 @@ class AutosuggestTextbox extends ImmutablePureComponent {
               small={small}
               isEdit={isEdit}
               isPro={isPro}
+              onUpstreamChangesAccepted={this.props.onUpstreamChangesAccepted}
+              hasUpstreamChanges={this.props.hasUpstreamChanges}
+              caretPosition={this.props.caretPosition}
             />
           </Responsive>
 
@@ -303,6 +309,9 @@ AutosuggestTextbox.propTypes = {
   small: PropTypes.bool,
   isPro: PropTypes.bool,
   isEdit: PropTypes.bool,
+  onUpstreamChangesAccepted: PropTypes.func,
+  hasUpstreamChanges: PropTypes.bool,
+  caretPosition: PropTypes.number,
 }
 
 AutosuggestTextbox.defaultProps = {

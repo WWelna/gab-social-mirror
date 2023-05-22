@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import { length } from 'stringz'
+import { withRouter } from 'react-router-dom'
 import { countableText } from '../../ui/util/counter'
 import { submitCompose } from '../../../actions/compose'
 import {
@@ -15,9 +16,9 @@ import Text from '../../../components/text'
 class ComposeFormSubmitButton extends React.PureComponent {
 
   handleSubmit = () => {
-    const { formLocation, autoJoinGroup, router, type } = this.props
+    const { formLocation, autoJoinGroup, history, type } = this.props
     const isStandalone = formLocation === 'standalone' || type === 'navigation'
-    this.props.onSubmit(router, isStandalone, autoJoinGroup)
+    this.props.onSubmit(history, isStandalone, autoJoinGroup)
   }
 
   render() {
@@ -36,7 +37,6 @@ class ComposeFormSubmitButton extends React.PureComponent {
       anyMedia,
       quoteOfId,
       scheduledAt,
-      hasPoll,
       replyToId,
     } = this.props
 
@@ -135,14 +135,13 @@ const mapStateToProps = (state) => ({
   anyMedia: state.getIn(['compose', 'media_attachments']).size > 0,
   quoteOfId: state.getIn(['compose', 'quote_of_id']),
   scheduledAt: state.getIn(['compose', 'scheduled_at']),
-  hasPoll: state.getIn(['compose', 'poll']),
   replyToId: state.getIn(['compose', 'in_reply_to']),
 })
 
 const mapDispatchToProps = (dispatch) => ({
-  onSubmit(router, isStandalone, autoJoinGroup) {
+  onSubmit(history, isStandalone, autoJoinGroup) {
     dispatch(submitCompose({
-      router,
+      history,
       isStandalone,
       autoJoinGroup,
     }))
@@ -153,7 +152,6 @@ ComposeFormSubmitButton.propTypes = {
   type: PropTypes.oneOf(['header', 'navigation', 'block', 'comment']),
   formLocation: PropTypes.string,
   autoJoinGroup: PropTypes.bool,
-  router: PropTypes.object,
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(ComposeFormSubmitButton))
+export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(ComposeFormSubmitButton)))

@@ -44,7 +44,6 @@ export const fetchBlockedbySuccess = (accounts) => {
   return {
     type: BLOCKS_FETCH_SUCCESS,
     accounts,
-    next,
   }
 }
 

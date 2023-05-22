@@ -10,6 +10,7 @@ import {
   convertFromRaw,
   ContentState,
 } from 'draft-js'
+import get from 'lodash.get'
 import draftToMarkdown from '../features/ui/util/draft_to_markdown'
 import markdownToDraft from '../features/ui/util/markdown_to_draft'
 import { urlRegex } from '../features/ui/util/url_regex'
@@ -125,42 +126,83 @@ class Composer extends React.PureComponent {
     active: false,
     editorState: EditorState.createEmpty(compositeDecorator),
     plainText: this.props.value,
+    markdownString: this.props.valueMarkdown
   }
 
   componentDidMount() {
-    if (this.props.valueMarkdown && this.props.isPro && this.props.isEdit) {
-      const rawData = markdownToDraft(this.props.valueMarkdown, markdownOptions)
-      const contentState = convertFromRaw(rawData)
-      const editorState = EditorState.createWithContent(contentState)
+    this.replaceEditorState({ focusable: false })
+    window.addEventListener('composer-clear', this.composerClear)
+  }
 
-      this.setState({
-        editorState,
-        plainText: this.props.value,
-      })
-    } else if (this.props.value) {
-      const editorState = EditorState.push(this.state.editorState, ContentState.createFromText(this.props.value))
-      this.setState({
-        editorState,
-        plainText: this.props.value,
-      })
-    }
+  componentWillUnmount() {
+    window.removeEventListener('composer-clear', this.composerClear)
   }
 
   componentDidUpdate() {
-    if (this.state.plainText !== this.props.value) {
-      let editorState
-      if (!this.props.value) {
-        editorState = EditorState.createEmpty(compositeDecorator)
-      } else {
-        editorState = EditorState.moveFocusToEnd(
-          EditorState.push(this.state.editorState, ContentState.createFromText(this.props.value))
-        )
-      }
-      this.setState({
-        editorState,
-        plainText: this.props.value,
-      })
+    if (this.props.hasUpstreamChanges) {
+      // Changes were made in the reducer
+      this.replaceEditorState({ focusable: true })
+      // Tell the reducer we updated it.
+      this.props.onUpstreamChangesAccepted()
     }
+  }
+
+  // This is a temporary work-around for clearing a just submitted comment status.
+  composerClear = evt => {
+    const submittedText = get(evt, 'detail.text')
+
+    if (typeof submittedText !== 'string') {
+      return // unknown compose submit
+    }
+
+    const { plainText, markdownString } = this.state
+
+    // is this the same text as what was submitted?
+    const textMatch = typeof plainText === 'string' &&
+      submittedText.trim() === plainText.trim()
+
+    // same markdown submitted?
+    const markdownMatch = typeof markdownString === 'string' &&
+      submittedText.trim() === markdownString.trim()
+
+    if (textMatch || markdownMatch) {
+      // blank out the text
+      let { editorState } = this.state
+      editorState = EditorState.push(editorState, ContentState.createFromText(''))
+      this.setState({ editorState })
+    }
+  }
+
+  replaceEditorState({ focusable }) {
+    let { editorState, active } = this.state
+
+    const { value, valueMarkdown, isPro, isEdit, caretPosition } = this.props
+    if (valueMarkdown && isPro && isEdit) {
+      const rawData = markdownToDraft(valueMarkdown, markdownOptions)
+      const contentState = convertFromRaw(rawData)
+      editorState = EditorState.push(editorState, contentState)
+    } else if (value) {
+      editorState = EditorState.push(editorState, ContentState.createFromText(value))
+    }
+
+    if (focusable || active) {
+      const currentSelection = editorState.getSelection()
+      if (
+        typeof caretPosition === 'number' &&
+        caretPosition !== currentSelection.get('anchorOffset') &&
+        caretPosition !== currentSelection.get('focusOffset')
+      ) {
+        const nextSelection = currentSelection
+          .set('anchorOffset', caretPosition)
+          .set('focusOffset', caretPosition)
+          .set('hasFocus', true)
+        editorState = EditorState.forceSelection(editorState, nextSelection)  
+      } else {
+        editorState = EditorState.moveFocusToEnd(editorState)
+      }
+    }
+
+    this.setState({ editorState })
   }
 
   onChange = (editorState) => {
@@ -169,11 +211,6 @@ class Composer extends React.PureComponent {
 
     const blocks = convertToRaw(editorState.getCurrentContent()).blocks
     const value = blocks.map(block => (!block.text.trim() && '') || block.text).join('\n')
-
-    this.setState({
-      editorState,
-      plainText: value,
-    })
 
     const selectionState = editorState.getSelection()  
     const currentBlockKey = selectionState.getStartKey()
@@ -186,6 +223,7 @@ class Composer extends React.PureComponent {
     const rawObject = convertToRaw(content)
     const markdownString = this.props.isPro ? draftToMarkdown(rawObject,markdownOptions) : null
 
+    this.setState({ editorState, plainText: value, markdownString })
     this.props.onChange(null, value, markdownString, cursorPosition)
   }
 
@@ -314,6 +352,9 @@ Composer.propTypes = {
   small: PropTypes.bool,
   isPro: PropTypes.bool,
   isEdit: PropTypes.bool,
+  onUpstreamChangesAccepted: PropTypes.func,
+  hasUpstreamChanges: PropTypes.bool,
+  caretPosition: PropTypes.number,
 }
 
 export default Composer

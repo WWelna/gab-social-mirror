@@ -66,7 +66,10 @@ const messages = defineMessages({
 })
 
 ModalLayout.propTypes = {
-  title: PropTypes.string,
+  title: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.node,
+  ]),
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
   width: PropTypes.number,

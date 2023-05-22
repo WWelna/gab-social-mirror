@@ -23,6 +23,7 @@ class Auth::SessionsController < Devise::SessionsController
 
   def create
     ActiveRecord::Base.connected_to(role: :writing) do
+      ActiveRecord::Base.connection.execute('SET synchronous_commit = "remote_write";')
       super do |resource|
         remember_me(resource)
         flash.delete(:notice)

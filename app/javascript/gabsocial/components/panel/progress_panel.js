@@ -55,6 +55,7 @@ class ProgressPanel extends React.PureComponent {
 
     return (
       <PanelLayout
+        key='progress-panel'
         noPadding
         title={intl.formatMessage(messages.operationsTitle)}
         subtitle={subtitle}

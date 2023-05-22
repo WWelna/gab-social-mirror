@@ -10,6 +10,8 @@
 #
 
 class EmailDomainBlock < ApplicationRecord
+  BLOCKED_TLDS = %w[tk ga ml cf].freeze
+
   include DomainNormalizable
 
   validates :domain, presence: true, uniqueness: true
@@ -24,6 +26,8 @@ class EmailDomainBlock < ApplicationRecord
     rescue Addressable::URI::InvalidURIError
       return true
     end
+
+    return true if BLOCKED_TLDS.any? { |tld| domain.end_with?(".#{tld}") }
 
     where(domain: domain).exists?
   end

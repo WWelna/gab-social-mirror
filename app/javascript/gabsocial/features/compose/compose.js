@@ -16,8 +16,4 @@ class Compose extends React.PureComponent {
 
 }
 
-Compose.contextTypes = {
-  router: PropTypes.object.isRequired,
-}
-
 export default connect()(Compose)

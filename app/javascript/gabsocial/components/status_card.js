@@ -47,7 +47,7 @@ class StatusCard extends ImmutablePureComponent {
     embedded: false,
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     if (!Immutable.is(this.props.card, nextProps.card)) {
       this.setState({ embedded: false })
     }

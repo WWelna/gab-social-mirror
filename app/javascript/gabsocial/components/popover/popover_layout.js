@@ -1,5 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { connect } from 'react-redux'
+import { closePopover } from '../../actions/popover'
 import Block from '../block'
 import Button from '../button'
 import Heading from '../heading'
@@ -8,7 +10,10 @@ import Text from '../text'
 class PopoverLayout extends React.PureComponent {
 
   handleOnClose = () => {
-    this.props.onClose()
+    if (this.props.onClose) {
+      return this.props.onClose()
+    }
+    this.props.onCloseAlternate() // because onClose can be missing
   }
 
   render() {
@@ -61,16 +66,21 @@ class PopoverLayout extends React.PureComponent {
 
 }
 
+const mapDispatchToProps = dispatch => ({
+  onCloseAlternate: () => closePopover()
+})
+
 PopoverLayout.propTypes = {
   children: PropTypes.node,
   width: PropTypes.number,
   isXS: PropTypes.bool,
   title: PropTypes.string,
   onClose: PropTypes.func,
+  onCloseAlternate: PropTypes.func,
 }
 
 PopoverLayout.defaultProps = {
   width: 250,
 }
 
-export default PopoverLayout
+export default connect(null, mapDispatchToProps)(PopoverLayout)

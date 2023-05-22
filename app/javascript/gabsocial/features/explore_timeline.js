@@ -114,7 +114,6 @@ const mapDispatchToProps = (dispatch) => ({
 })
 
 ExploreTimeline.propTypes = {
-	params: PropTypes.object.isRequired,
 	onClearTimeline: PropTypes.func.isRequired,
 	onExpandExploreTimeline: PropTypes.func.isRequired,
 	setFeaturedTop: PropTypes.func.isRequired,
@@ -122,7 +121,6 @@ ExploreTimeline.propTypes = {
 	intl: PropTypes.object.isRequired,
 	sortByValue: PropTypes.string.isRequired,
 	sortByTopValue: PropTypes.string,
-	hasStatuses: PropTypes.bool.isRequired,
 }
 
 export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(ExploreTimeline))
