@@ -17,6 +17,10 @@ class AccountPolicy < ApplicationPolicy
     staff? && !record.user&.staff? && !record.is_pro? && !record.is_investor? && !record.is_donor? && !record.is_verified?
   end
 
+  def soft_suspend?
+    staff? && !record.user&.staff? && !record.is_pro? && !record.is_investor? && !record.is_donor? && !record.is_verified?
+  end
+
   def unsuspend?
     staff?
   end

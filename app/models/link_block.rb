@@ -35,7 +35,6 @@ class LinkBlock < ApplicationRecord
   def self.block?(text)
     return false if text.blank?
 
-    return true if text.include? '.weebly.com'
     return true if text.include? '.brokenfuture.com'
     return true if text.include? 'gildapparels.xyz'
     return true if text.include? 'skatapparel.com'

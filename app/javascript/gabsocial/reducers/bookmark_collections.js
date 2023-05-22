@@ -3,6 +3,7 @@ import {
   BOOKMARK_COLLECTIONS_FETCH_SUCCESS,
   BOOKMARK_COLLECTIONS_FETCH_FAIL,
   BOOKMARK_COLLECTIONS_CREATE_SUCCESS,
+  BOOKMARK_COLLECTIONS_UPDATE_SUCCESS,
   BOOKMARK_COLLECTIONS_REMOVE_REQUEST,
 } from '../actions/bookmarks'
 import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable'
@@ -38,9 +39,11 @@ export default function bookmark_collections(state = initialState, action) {
     case BOOKMARK_COLLECTIONS_CREATE_SUCCESS:
       return state.update('items', list => list.push(fromJS(action.bookmarkCollection)))
     case BOOKMARK_COLLECTIONS_REMOVE_REQUEST:
-      return state.update('items', list => list.filterNot((item) => {
-        return item.get('id') === action.bookmarkCollectionId
-      }))
+      return state.set('items', state.get('items').filter(o => `${o.get('id')}` !== `${action.bookmarkCollectionId}`));
+    case BOOKMARK_COLLECTIONS_UPDATE_SUCCESS:
+      return state.setIn(['items', state.get('items').findIndex((item) => { 
+        return item.get('id') == action.bookmarkCollection.id
+      }), 'title'], action.bookmarkCollection.title)
     default:
       return state
   }

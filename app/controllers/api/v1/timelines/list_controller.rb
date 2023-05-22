@@ -1,23 +1,36 @@
 # frozen_string_literal: true
 
 class Api::V1::Timelines::ListController < Api::BaseController
-  before_action -> { doorkeeper_authorize! :read, :'read:lists' }
-  before_action :require_user!
+  include Authorization
+
   before_action :set_list
   before_action :set_statuses
 
   after_action :insert_pagination_headers, unless: -> { @statuses.empty? }
 
   def show
-    render json: set_statuses,
-           each_serializer: REST::StatusSerializer,
-           relationships: StatusRelationshipsPresenter.new(@statuses, current_user.account_id)
+    if !current_user.nil?
+      render json: @statuses,
+            each_serializer: REST::StatusSerializer,
+            relationships: StatusRelationshipsPresenter.new(@statuses, current_user.account_id)
+    else
+      render json: @statuses, each_serializer: REST::StatusSerializer
+    end
   end
 
   private
 
   def set_list
-    @list = List.where(account: current_account).find(params[:id])
+    @list = nil
+
+    if !current_account.nil?
+      @list = List.where(account: current_account).or(List.public_only).find(params[:id])
+    else
+      @list = List.public_only.find(params[:id])
+    end
+
+    authorize @list, :show?
+
     @accounts = ListAccount.select('account_id').where(list_id: @list)
   end
 
@@ -32,12 +45,19 @@ class Api::V1::Timelines::ListController < Api::BaseController
   def list_statuses
     statuses = Status.where(
       account: @accounts, reply: false
-    ).where(
-      'created_at > ?', 10.days.ago
-    ).paginate_by_id(
+    ).
+    since(10.days.ago).
+    paginate_by_id(
       limit_param(DEFAULT_STATUSES_LIMIT),
       params_slice(:max_id, :since_id, :min_id)
-    ).reject { |status| FeedManager.instance.filter?(:home, status, current_account.id) }
+    )
+
+    if !current_account.nil?
+      statuses = statuses.reject { |status| FeedManager.instance.filter?(:home, status, current_account.id) }
+    else
+      statuses = statuses.with_public_visibility
+    end
+    statuses
   end
 
   def insert_pagination_headers

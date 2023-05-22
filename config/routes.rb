@@ -98,6 +98,8 @@ Rails.application.routes.draw do
     resources :link_blocks, only: [:index, :new, :create, :destroy]
     resources :statuses, only: [:index, :show, :create, :update, :destroy]
     resources :preview_cards, only: [:index, :create, :destroy]
+    resources :account_warnings, only: [:index]
+    resources :tombstones, only: [:index, :create, :destroy]
     # resources :chat_messages, only: [:index, :destroy]
     resources :action_logs, only: [:index]
     resources :warning_presets, except: [:new]
@@ -106,7 +108,8 @@ Rails.application.routes.draw do
     resources :expenses, only: [:index, :new, :create, :edit, :update, :destroy]
     resources :group_categories, only: [:index, :new, :create, :edit, :update, :destroy]
     resources :trending_hashtags, only: [:index, :new, :create, :edit, :update, :destroy]
-
+    resources :lists, only: [:index, :show, :create, :edit, :update, :destroy]
+    
     resources :reports, only: [:index, :show] do
       member do
         post :assign_to_self
@@ -152,6 +155,7 @@ Rails.application.routes.draw do
       resources :joined_groups, only: [:index]
       resources :chat_conversation_accounts, only: [:index]
       resources :chat_messages, only: [:index, :show, :create, :update, :destroy]
+      resources :session_activations, only: [:index, :create]
 
       resource :confirmation, only: [:create] do
         collection do
@@ -199,6 +203,7 @@ Rails.application.routes.draw do
         scope module: :statuses do
           resources :reblogged_by, controller: :reblogged_by_accounts, only: :index
           resources :favourited_by, controller: :favourited_by_accounts, only: :index
+          resources :quotes, controller: :quotes, only: :index
           resource :reblog, only: :create
           post :unreblog, to: 'reblogs#destroy'
 
@@ -307,12 +312,19 @@ Rails.application.routes.draw do
       resource :trending_hashtags,  only: [:show]
       resource :expenses,     only: [:show]
       resources :comments,    only: [:show]
+      resources :blocks_and_mutes, only: [:index]
+
+      resources :warnings, only: [:index, :show, :destroy] do
+        collection do
+          get :new_unread_warnings_count
+        end
+        member do
+          post :dismiss
+        end
+      end
 
       resources :bookmark_collections, only: [:index, :create, :show, :update, :destroy] do
-        resources :bookmarks, only: [:index], controller: 'bookmark_collections/bookmarks'
-        member do
-          post :update_status
-        end
+        resources :bookmarks, only: [:index, :create], controller: 'bookmark_collections/bookmarks'
       end
 
       get '/account_by_username/:username', to: 'account_by_username#show', username: username_regex
@@ -356,7 +368,12 @@ Rails.application.routes.draw do
       end
 
       resources :lists, only: [:index, :create, :show, :update, :destroy] do
-        resource :accounts, only: [:show, :create, :destroy], controller: 'lists/accounts'
+        resource :accounts, only: [:show, :create, :destroy], controller: 'lists/accounts' do
+          member do
+            delete :leave
+          end
+        end
+        resource :subscribers, only: [:show, :create, :destroy], controller: 'lists/subscribers'
       end
 
       resources :groups, only: [:index, :create, :show, :update, :destroy] do
@@ -383,6 +400,7 @@ Rails.application.routes.draw do
       end
 
       post :group_relationships, to: 'group_relationships#relationships'
+      post :list_relationships, to: 'list_relationships#relationships'
 
       resources :polls, only: [:create, :show] do
         resources :votes, only: :create, controller: 'polls/votes'
@@ -410,6 +428,7 @@ Rails.application.routes.draw do
   end
 
   get '/g/:groupSlug', to: 'react#groupBySlug'
+  get '/feed/:listSlug', to: 'react#feedBySlug'
 
   get '/:username/posts/:statusId', to: 'react#status_show', username: username_regex
   get '/:username/posts/:statusId', to: 'react#status_show', username: username_regex, as: :short_account_status

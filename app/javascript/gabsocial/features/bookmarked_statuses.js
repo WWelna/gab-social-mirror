@@ -5,8 +5,16 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import { FormattedMessage } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import debounce from 'lodash.debounce'
-import { fetchBookmarkedStatuses, expandBookmarkedStatuses } from '../actions/bookmarks'
-import { meUsername } from '../initial_state'
+import {
+  fetchBookmarkCollections,
+  fetchBookmarkedStatuses,
+  expandBookmarkedStatuses,
+} from '../actions/bookmarks'
+import { openModal } from '../actions/modal'
+import { me, meUsername } from '../initial_state'
+import {
+  MODAL_BOOKMARK_COLLECTION_EDIT,
+} from '../constants'
 import StatusList from '../components/status_list'
 import ColumnIndicator from '../components/column_indicator'
 import Block from '../components/block'
@@ -16,11 +24,33 @@ import Text from '../components/text'
 class BookmarkedStatuses extends ImmutablePureComponent {
 
   componentDidMount() {
-    this.props.dispatch(fetchBookmarkedStatuses(this.props.bookmarkCollectionId))
+    const { dispatch, bookmarkCollectionsFetched, bookmarkCollectionId } = this.props
+    if (!bookmarkCollectionsFetched || bookmarkCollectionId === 'saved') {
+      dispatch(fetchBookmarkCollections())
+    }
+    dispatch(fetchBookmarkedStatuses(bookmarkCollectionId))
+  }
+
+  componentDidUpdate(prevProps) {
+    const { dispatch, bookmarkCollectionsFetched, bookmarkCollectionId } = this.props
+    // if (prevProps.bookmarkCollectionId === this.props.bookmarkCollectionId || !bookmarkCollectionsFetched) {
+    //   dispatch(fetchBookmarkCollections())
+    // }
+    // if (prevProps.bookmarkCollectionId === this.props.bookmarkCollectionId) {
+    //   dispatch(fetchBookmarkedStatuses(this.props.bookmarkCollectionId))
+    // }
+  }
+  
+  handleOnOpenEdit = () => {
+    const { bookmarkCollectionId, dispatch } = this.props
+    dispatch(openModal(MODAL_BOOKMARK_COLLECTION_EDIT, {
+      bookmarkCollectionId,
+    }))
   }
 
   handleLoadMore = debounce(() => {
-    this.props.dispatch(expandBookmarkedStatuses(this.props.bookmarkCollectionId))
+    const { bookmarkCollectionId, dispatch } = this.props
+    dispatch(expandBookmarkedStatuses(bookmarkCollectionId))
   }, 300, { leading: true })
 
   render() {
@@ -29,9 +59,17 @@ class BookmarkedStatuses extends ImmutablePureComponent {
       hasMore,
       isLoading,
       isMyAccount,
+      isMyBookmark,
+      bookmarkCollection,
+      bookmarkCollectionId,
+      bookmarkCollectionTitle,
     } = this.props
 
-    if (!isMyAccount) {
+    if (
+      !isMyAccount || 
+      (bookmarkCollectionId !== 'saved' && !isMyBookmark) ||
+      (bookmarkCollectionId !== 'saved' && !bookmarkCollection)
+      ) {
       return <ColumnIndicator type='missing' />
     }
 
@@ -41,15 +79,25 @@ class BookmarkedStatuses extends ImmutablePureComponent {
           <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
             <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
               <Text size='extraLarge' weight='bold'>
-                Bookmarks:
+                {bookmarkCollectionTitle}
               </Text>
-              <Button
-                className={[_s.px10, _s.mlAuto].join(' ')}
-                onClick={this.handleOpenModal}
-                backgroundColor='tertiary'
-                color='tertiary'
-                icon='cog'
-              />
+              {
+                bookmarkCollectionId !== 'saved' &&
+                <div className={[_s.d, _s.mlAuto].join(' ')}>
+                  <Button
+                    isText
+                    radiusSmall
+                    backgroundColor='none'
+                    color='brand'
+                    onClick={this.handleOnOpenEdit}
+                    className={[_s.px15, _s.py5, _s.bgSubtle_onHover].join(' ')}
+                  >
+                    <Text color='inherit' weight='bold'>
+                      Edit
+                    </Text>
+                  </Button>
+                </div>
+              }
             </div>
           </div>
         </Block>
@@ -69,13 +117,23 @@ class BookmarkedStatuses extends ImmutablePureComponent {
 
 }
 
-const mapStateToProps = (state, { params: { username, bookmarkCollectionId } }) => ({
-  bookmarkCollectionId,
-  isMyAccount: (username.toLowerCase() === meUsername.toLowerCase()),
-  statusIds: state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'items']),
-  isLoading: state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'isLoading'], true),
-  hasMore: !!state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'next']),
-})
+const mapStateToProps = (state, { params: { username, bookmarkCollectionId } }) => {
+  const bookmarkCollections = state.getIn(['bookmark_collections', 'items'])
+  const bookmarkCollection = bookmarkCollections.find((b) => b.get('id') === bookmarkCollectionId)
+  const bookmarkCollectionTitle = bookmarkCollectionId === 'saved' ? 'Saved' : !!bookmarkCollection ? bookmarkCollection.get('title') : null
+
+  return {
+    bookmarkCollection,
+    bookmarkCollectionId,
+    bookmarkCollectionTitle,
+    isMyBookmark: !!bookmarkCollection ? bookmarkCollection.get('account_id') == me : false,
+    isMyAccount: (username.toLowerCase() === meUsername.toLowerCase()),
+    statusIds: state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'items']),
+    isLoading: state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'isLoading'], true),
+    hasMore: !!state.getIn(['status_lists', 'bookmarks', bookmarkCollectionId, 'next']),
+    bookmarkCollectionsFetched: state.getIn(['bookmark_collections', 'isFetched'], false),
+  }
+}
 
 BookmarkedStatuses.propTypes = {
   dispatch: PropTypes.func.isRequired,

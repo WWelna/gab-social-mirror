@@ -245,6 +245,16 @@ function main ( ) {
   delegate(document, '#user_account_attributes_username.registration_username', 'keydown', handleRemoveSpecialCharactersForUsername);
   delegate(document, '#user_account_attributes_username.registration_username', 'keyup', handleRemoveSpecialCharactersForUsername);
   delegate(document, '#user_account_attributes_username.registration_username', 'change', handleRemoveSpecialCharactersForUsername);
+
+  delegate(document, '#admin_account_action_type', 'change', (e) => {
+    var adminAccountActionBtn = document.getElementById('admin-account-actions-action-btn');
+    if (e.target.value === 'suspend') {
+      adminAccountActionBtn.setAttribute('data-confirm', 'Are you sure?');
+    } else {
+      adminAccountActionBtn.removeAttribute('data-confirm');
+    }
+  });
+  
 }
 
 loadPolyfills().then(main).catch(error => {

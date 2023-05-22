@@ -112,9 +112,8 @@ class StatusOptionsPopover extends ImmutablePureComponent {
   }
 
   handleBookmarkClick = () => {
-    // : todo : add to specific bookmark collection
     if (this.props.isPro) {
-      this.props.onBookmark(this.props.status)
+      this.handleBookmarkChangeClick()
     } else {
       this.props.onOpenProUpgradeModal()
     }
@@ -130,7 +129,25 @@ class StatusOptionsPopover extends ImmutablePureComponent {
   }
 
   handleBookmarkChangeSelectClick = (bookmarkCollectionId) => {
-    this.props.onUpdateBookmarkCollectionStatus(this.props.status.get('id'), bookmarkCollectionId)
+    if (!this.props.isPro) {
+      this.props.onOpenProUpgradeModal()
+      return
+    }
+
+    if (this.props.status.get('bookmarked')) {
+      this.props.onUpdateBookmarkCollectionStatus(this.props.status.get('id'), bookmarkCollectionId)
+    } else {
+      this.props.onBookmark(this.props.status, bookmarkCollectionId)
+    }
+  }
+
+  handleBookmarkRemoveClick = () => {
+    if (!this.props.isPro) {
+      this.props.onOpenProUpgradeModal()
+      return
+    }
+    
+    this.props.onBookmark(this.props.status)
   }
 
   handleDeleteClick = () => {
@@ -190,16 +207,15 @@ class StatusOptionsPopover extends ImmutablePureComponent {
         icon: 'bookmark',
         hideArrow: status.get('bookmarked'),
         title: intl.formatMessage(status.get('bookmarked') ? messages.unbookmark : messages.bookmark),
-        onClick: this.handleBookmarkClick,
+        onClick: status.get('bookmarked') ? this.handleBookmarkRemoveClick : this.handleBookmarkChangeClick,
       })
 
       if (status.get('bookmarked')) {
-        // : todo :
-        // menu.push({
-        //   icon: 'bookmark',
-        //   title: 'Update bookmark collection',
-        //   onClick: this.handleBookmarkChangeClick,
-        // })
+        menu.push({
+          icon: 'bookmark',
+          title: 'Update bookmark collection',
+          onClick: this.handleBookmarkChangeClick,
+        })
       }
 
       if (status.getIn(['account', 'id']) === me) {
@@ -304,7 +320,7 @@ class StatusOptionsPopover extends ImmutablePureComponent {
       hideArrow: true,
       onClick: () => this.handleBookmarkChangeSelectClick('saved'),
       title: 'Saved',
-      isActive: !status.get('bookmark_collection_id'),
+      isActive: !status.get('bookmark_collection_id') && status.get('bookmarked'),
     })
 
     return (
@@ -426,13 +442,13 @@ const mapDispatchToProps = (dispatch) => ({
     }
   },
 
-  onBookmark(status) {
+  onBookmark(status, bookmarkCollectionId) {
     dispatch(closePopover())
 
     if (status.get('bookmarked')) {
       dispatch(unbookmark(status))
     } else {
-      dispatch(bookmark(status))
+      dispatch(bookmark(status, bookmarkCollectionId))
     }
   },
 

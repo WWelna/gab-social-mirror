@@ -46,21 +46,26 @@ class BookmarkCollections extends ImmutablePureComponent {
     console.log("bookmarkCollections:", bookmarkCollections)
 
     let listItems = !!bookmarkCollections ? bookmarkCollections.map((b) => ({
-      to: `/${meUsername}/bookmark_collections/${b.get('id')}`,
+      to: `/${meUsername}/bookmarks/${b.get('id')}`,
       title: b.get('title'),
+      icon: 'lock',
     })) : []
     listItems = listItems.unshift({
-      to: `/${meUsername}/bookmark_collections/saved`,
+      to: `/${meUsername}/bookmarks/saved`,
       title: 'Bookmarks',
+      icon: 'lock',
     })
 
     console.log("listItems:", listItems)
 
     return (
       <Block>
-        <div className={[_s.d, _s.px15, _s.py10].join(' ')}>
+        <div className={[_s.d, _s.px15, _s.py10, _s.borderColorSecondary, _s.borderBottom1PX].join(' ')}>
           <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
-            <Text size='extraLarge' weight='bold'>Bookmark Collections</Text>
+            <div className={[_s.d].join(' ')}>
+              <Text size='extraLarge' weight='bold'>Bookmark Collections</Text>
+              <Text color='secondary' weight='medium' className={_s.mt5}>Only you can see your bookmarks.</Text>
+            </div>
             <Button
               className={[_s.px10, _s.mlAuto].join(' ')}
               onClick={this.handleOpenModal}

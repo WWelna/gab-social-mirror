@@ -268,17 +268,17 @@ export const setFilter = (path, value) => (dispatch) => {
  * 
  */
 
-export const markReadNotifications = () => (dispatch, getState) => {
+export const markReadNotifications = (force) => (dispatch, getState) => {
   if (!me) return
-  debouncedMarkReadNotifications(dispatch, getState)
+  debouncedMarkReadNotifications(dispatch, getState, force)
 }
 
-export const debouncedMarkReadNotifications = debounce((dispatch, getState) => {
+export const debouncedMarkReadNotifications = debounce((dispatch, getState, force) => {
   if (!me) return
   const topNotification = parseInt(getState().getIn(['notifications', 'items', 0, 'id']))
   const lastReadId = getState().getIn(['notifications', 'lastReadId'])
 
-  if (topNotification && topNotification > lastReadId && lastReadId !== -1) {
+  if ((topNotification && topNotification > lastReadId && lastReadId !== -1) || force) {
     api(getState).post('/api/v1/notifications/mark_read', {
       id: topNotification
     }).then(() => {

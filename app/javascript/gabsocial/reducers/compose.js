@@ -345,6 +345,7 @@ export default function compose(state = initialState, action) {
   case COMPOSE_UPLOAD_REQUEST:
     return state.set('is_uploading', true).update('pending_media_attachments', n => n + 1)
   case COMPOSE_UPLOAD_SUCCESS:
+    state = state.set('progress', 0)
     return appendMedia(state, fromJS(action.media));
   case COMPOSE_UPLOAD_FAIL:
     return state.set('is_uploading', false).update('pending_media_attachments', n => action.decrement ? n - 1 : n);

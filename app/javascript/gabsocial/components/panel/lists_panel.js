@@ -8,11 +8,13 @@ import { getOrderedLists } from '../../selectors'
 import { fetchLists } from '../../actions/lists'
 import PanelLayout from './panel_layout'
 import List from '../list'
+import TabBar from '../tab_bar'
 
 class ListsPanel extends ImmutablePureComponent {
 
   state = {
     fetched: false,
+    activeList: 'own',
   }
 
   static getDerivedStateFromProps(nextProps, prevState) {
@@ -23,12 +25,6 @@ class ListsPanel extends ImmutablePureComponent {
     return null
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (!prevState.fetched && this.state.fetched) {
-      this.props.onFetchLists()
-    }
-  }
-
   componentDidMount() {
     if (!this.props.isLazy) {
       this.props.onFetchLists()
@@ -36,30 +32,80 @@ class ListsPanel extends ImmutablePureComponent {
     }
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    if (!prevState.fetched && this.state.fetched) {
+      this.props.onFetchLists()
+    }
+  }
+  
+  handleOnChangeTab(tab) {
+    this.setState({ activeList: tab })
+  }
+
   render() {
-    const { intl, lists } = this.props
-    const { fetched } = this.state
+    const {
+      intl,
+      ownLists,
+      memberOfLists,
+      subscribedToLists,
+      isFetched,
+     } = this.props
+    const { fetched, activeList } = this.state
 
-    const count = !!lists ? lists.count() : 0
-
-    if (count === 0 && fetched) return null
-    
+    const ownListsSize = !!ownLists ? ownLists.count() : 0
+    const memberOfListsSize = !!memberOfLists ? memberOfLists.count() : 0
+    const subscribedToListsSize = !!subscribedToLists ? subscribedToLists.count() : 0
+    const tabs = []
     const maxCount = 6
 
+    if (ownListsSize === 0 && memberOfListsSize === 0 && subscribedToListsSize === 0 && isFetched) {
+      return null
+    }
+
+    if (ownListsSize > 0) { 
+      tabs.push( {
+        title: 'My Feeds',
+        onClick: () => this.handleOnChangeTab('own'),
+        active: activeList === 'own',
+      })
+    }
+    if (subscribedToListsSize > 0) {
+      tabs.push({
+        title: 'Subscribed to',
+        onClick: () => this.handleOnChangeTab('subscribed_to'),
+        active: activeList === 'subscribed_to',
+      })
+    }
+    if (memberOfListsSize > 0) {
+      tabs.push({
+        title: 'Member of',
+        onClick: () => this.handleOnChangeTab('member_of'),
+        active: activeList === 'member_of',
+      })
+    }
+
+    const lists = activeList === 'own' ? ownLists : activeList === 'member_of' ? memberOfLists : subscribedToLists
+    
     const listItems = !!lists && lists.slice(0, maxCount).map((list) => ({
-      to: `/lists/${list.get('id')}`,
+      to: `/feeds/${list.get('id')}`,
       title: list.get('title'),
+      icon: list.get('visibility') === 'private' ? 'lock' : 'globe',
     }))
+
+    const showShowMore = ownListsSize > 6 || memberOfListsSize > 0 || subscribedToListsSize > 0
 
     return (
       <PanelLayout
-        title={intl.formatMessage(messages.title)}
+        title='Your Feeds'
         headerButtonTitle={intl.formatMessage(messages.show_all)}
-        headerButtonTo='/lists'
-        footerButtonTitle={count > maxCount ? intl.formatMessage(messages.show_all) : undefined}
-        footerButtonTo={count > maxCount ? '/lists' : undefined}
+        headerButtonTo='/feeds'
+        footerButtonTitle={showShowMore ? intl.formatMessage(messages.show_all) : undefined}
+        footerButtonTo={showShowMore ? '/feeds' : undefined}
         noPadding
       >
+        <div className={[_s.d, _s.maxH56PX, _s.flexRow, _s.bgPrimary, _s.z3, _s.borderBottom1PX, _s.borderColorSecondary, _s.w100PC].join(' ')}>
+          <TabBar tabs={tabs} />
+        </div>
         <div className={[_s.d, _s.boxShadowNone].join(' ')}>
           <List
             scrollKey='lists_sidebar_panel'
@@ -79,7 +125,10 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  lists: getOrderedLists(state),
+  ownLists: getOrderedLists(state, 'own'),
+  memberOfLists: getOrderedLists(state, 'member_of'),
+  subscribedToLists: getOrderedLists(state, 'subscribed_to'),
+  isFetched: state.getIn(['lists', 'isFetched']),
 })
 
 const mapDispatchToProps = (dispatch) => ({

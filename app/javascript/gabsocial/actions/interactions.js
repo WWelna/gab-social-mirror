@@ -1,7 +1,7 @@
 import api, { getLinks } from '../api'
 import {
   importFetchedAccounts,
-  importFetchedStatus,
+  importFetchedStatuses,
 } from './importer'
 import { fetchRelationships } from './accounts'
 import { updateStatusStats } from './statuses'
@@ -30,6 +30,14 @@ export const REPOSTS_FETCH_FAIL    = 'REPOSTS_FETCH_FAIL'
 export const REPOSTS_EXPAND_REQUEST = 'REPOSTS_EXPAND_REQUEST'
 export const REPOSTS_EXPAND_SUCCESS = 'REPOSTS_EXPAND_SUCCESS'
 export const REPOSTS_EXPAND_FAIL    = 'REPOSTS_EXPAND_FAIL'
+
+export const QUOTES_FETCH_REQUEST = 'QUOTES_FETCH_REQUEST'
+export const QUOTES_FETCH_SUCCESS = 'QUOTES_FETCH_SUCCESS'
+export const QUOTES_FETCH_FAIL    = 'QUOTES_FETCH_FAIL'
+
+export const QUOTES_EXPAND_REQUEST = 'QUOTES_EXPAND_REQUEST'
+export const QUOTES_EXPAND_SUCCESS = 'QUOTES_EXPAND_SUCCESS'
+export const QUOTES_EXPAND_FAIL    = 'QUOTES_EXPAND_FAIL'
 
 export const PIN_REQUEST = 'PIN_REQUEST'
 export const PIN_SUCCESS = 'PIN_SUCCESS'
@@ -310,12 +318,14 @@ const isPinFail = (statusId, error) => ({
  *              status.bookmarked:true on success.
  * @param {ImmutableMap} status
  */
-export const bookmark = (status) => (dispatch, getState) => {
+export const bookmark = (status, bookmarkCollectionId) => (dispatch, getState) => {
   if (!me || !status) return
 
   dispatch(bookmarkRequest(status))
 
-  api(getState).post(`/api/v1/statuses/${status.get('id')}/bookmark`).then((response) => {
+  api(getState).post(`/api/v1/statuses/${status.get('id')}/bookmark`, {
+    bookmarkCollectionId,
+  }).then((response) => {
     dispatch(updateStatusStats(response.data))
     dispatch(bookmarkSuccess(status))
   }).catch((error) => {
@@ -331,12 +341,14 @@ const bookmarkRequest = (status) => ({
 const bookmarkSuccess = (status) => ({
   type: BOOKMARK_SUCCESS,
   status,
+  showToast: true,
 })
 
 const bookmarkFail = (status, error) => ({
   type: BOOKMARK_FAIL,
   status,
   error,
+  showToast: true,
 })
 
 /**
@@ -365,12 +377,14 @@ const unbookmarkRequest = (status) => ({
 const unbookmarkSuccess = (status) => ({
   type: UNBOOKMARK_SUCCESS,
   status,
+  showToast: true,
 })
 
 const unbookmarkFail = (status, error) => ({
   type: UNBOOKMARK_FAIL,
   status,
   error,
+  showToast: true,
 })
 
 /**
@@ -484,6 +498,87 @@ const expandRepostsFail = (statusId, error) => ({
   statusId,
   error,
 })
+
+
+/**
+ * @description Fetch quotes for the given statusId and imports paginated statuses
+ *              and sets in user_lists reducer.
+ * @param {String} statusId
+ */
+ export const fetchQuotes = (statusId) => (dispatch, getState) => {
+  if (!me || !statusId) return
+
+  dispatch(fetchQuotesRequest(statusId))
+
+  api(getState).get(`/api/v1/statuses/${statusId}/quotes`).then((response) => {
+    const next = getLinks(response).refs.find(link => link.rel === 'next')
+    dispatch(importFetchedStatuses(response.data))
+    dispatch(fetchQuotesSuccess(statusId, response.data, next ? next.uri : null))
+  }).catch((error) => {
+    dispatch(fetchQuotesFail(statusId, error))
+  })
+}
+
+const fetchQuotesRequest = (statusId) => ({
+  type: QUOTES_FETCH_REQUEST,
+  statusId,
+})
+
+const fetchQuotesSuccess = (statusId, items, next) => {
+  return ({
+    type: QUOTES_FETCH_SUCCESS,
+    statusId,
+    items,
+    next,
+  })
+}
+
+const fetchQuotesFail = (statusId, error) => ({
+  type: QUOTES_FETCH_FAIL,
+  statusId,
+  error,
+})
+
+/**
+ * @description Expand quotes for the given statusId and imports paginated statuses
+ *              and sets in user_lists reducer.
+ * @param {String} statusId
+ */
+export const expandQuotes = (statusId) => (dispatch, getState) => {
+  if (!me || !statusId) return
+
+  const url = getState().getIn(['status_lists', 'quotes_for', statusId, 'next'])
+  const isLoading = getState().getIn(['status_lists', 'quotes_for', statusId, 'isLoading'])
+
+  if (url === null || isLoading) return
+
+  dispatch(expandQuotesRequest(statusId))
+
+  api(getState).get(url).then(response => {
+    const next = getLinks(response).refs.find(link => link.rel === 'next')
+    dispatch(importFetchedStatuses(response.data))
+    dispatch(expandQuotesSuccess(statusId, response.data, next ? next.uri : null))
+  }).catch(error => dispatch(expandQuotesFail(error)))
+}
+
+const expandQuotesRequest = (statusId) => ({
+  type: QUOTES_EXPAND_REQUEST,
+  statusId,
+})
+
+const expandQuotesSuccess = (statusId, items, next) => ({
+  type: QUOTES_EXPAND_SUCCESS,
+  statusId,
+  items,
+  next,
+})
+
+const expandQuotesFail = (statusId, error) => ({
+  type: QUOTES_EXPAND_FAIL,
+  statusId,
+  error,
+})
+
 
 
 /**

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { defineMessages, injectIntl } from 'react-intl'
-import { me } from '../initial_state'
+import { me, isStaff } from '../initial_state'
 import Text from './text'
 import Button from './button'
 import StatusActionBarItem from './status_action_bar_item'
@@ -45,6 +45,10 @@ class StatusActionBar extends ImmutablePureComponent {
     this.props.onOpenReposts(this.props.status)
   }
 
+  openQuotesList = () => {
+    this.props.onOpenQuotes(this.props.status)
+  }
+
   setShareButton = (n) => {
     this.shareButton = n
   }
@@ -61,8 +65,9 @@ class StatusActionBar extends ImmutablePureComponent {
     const replyCount = status.get('replies_count')
     const repostCount = status.get('reblogs_count')
     const favoriteCount = status.get('favourites_count')
+    const quotesCount = status.get('quotes_count')
 
-    const hasInteractions = favoriteCount > 0 || replyCount > 0 || repostCount > 0
+    const hasInteractions = favoriteCount > 0 || replyCount > 0 || repostCount > 0 || quotesCount > 0
     const shouldCondense = (
       !!status.get('card') ||
       status.get('media_attachments').size > 0 ||
@@ -93,10 +98,10 @@ class StatusActionBar extends ImmutablePureComponent {
     const likeBtnClasses = CX({
       d: 1,
       text: 1,
-      cursorPointer: myStatus,
+      cursorPointer: myStatus || isStaff,
       fw400: 1,
       noUnderline: 1,
-      underline_onHover: myStatus,
+      underline_onHover: myStatus || isStaff,
       bgTransparent: 1,
       mr10: 1,
       py5: 1,
@@ -133,7 +138,7 @@ class StatusActionBar extends ImmutablePureComponent {
               <button
                 className={likeBtnClasses}
                 onClick={this.openLikesList}
-                disabled={!myStatus}
+                disabled={!(myStatus || isStaff)}
               >
                 <Text color='secondary' size='small'>
                   {intl.formatMessage(messages.likesLabel, {
@@ -167,6 +172,17 @@ class StatusActionBar extends ImmutablePureComponent {
                 </Text>
               </button>
             }
+            {
+              quotesCount > 0 &&
+              <button className={interactionBtnClasses} onClick={this.openQuotesList}>
+                <Text color='secondary' size='small'>
+                  {intl.formatMessage(messages.quotesLabel, {
+                    number: quotesCount,
+                  })}
+                </Text>
+              </button>
+            }
+
           </div>
         }
         <div className={innerContainerClasses}>
@@ -226,6 +242,7 @@ const messages = defineMessages({
   like: { id: 'status.like', defaultMessage: 'Like' },
   likesLabel: { id: 'likes.label', defaultMessage: '{number, plural, one {# like} other {# likes}}' },
   repostsLabel: { id: 'reposts.label', defaultMessage: '{number, plural, one {# repost} other {# reposts}}' },
+  quotesLabel: { id: 'quotes.label', defaultMessage: '{number, plural, one {# quote} other {# quotes}}' },
   commentsLabel: { id: 'comments.label', defaultMessage: '{number, plural, one {# comment} other {# comments}}' },
 })
 
@@ -239,6 +256,7 @@ StatusActionBar.propTypes = {
   status: ImmutablePropTypes.map.isRequired,
   onOpenLikes: PropTypes.func.isRequired,
   onOpenReposts: PropTypes.func.isRequired,
+  onOpenQuotes: PropTypes.func.isRequired,
   onOpenStatusModal: PropTypes.func.isRequired,
   isCompact: PropTypes.bool,
 }

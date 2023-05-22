@@ -140,7 +140,7 @@ class MediaAttachment < ApplicationRecord
   end
 
   def video_or_gifv?
-    video? || gifv?
+    video? || gifv? || (VIDEO_MIME_TYPES.include?(file_content_type) || VIDEO_CONVERTIBLE_MIME_TYPES.include?(file_content_type))
   end
 
   def to_param
@@ -230,7 +230,7 @@ class MediaAttachment < ApplicationRecord
   end
 
   def set_type_and_extension
-    self.type = VIDEO_MIME_TYPES.include?(file_content_type) ? :video : :image
+    self.type = (VIDEO_MIME_TYPES.include?(file_content_type) || VIDEO_CONVERTIBLE_MIME_TYPES.include?(file_content_type)) ? :video : :image
   end
 
   def set_meta

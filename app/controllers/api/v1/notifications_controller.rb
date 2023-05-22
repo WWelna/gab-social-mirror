@@ -20,14 +20,15 @@ class Api::V1::NotificationsController < Api::BaseController
   end
 
   def clear
+    # : todo : put in worker
     current_account.notifications.delete_all
     render_empty_success
   end
 
   def mark_read
-    if !params[:id].nil? and !current_account.user.nil?
+    if !params[:id].nil? && !current_account.user.nil?
       conn = ActiveRecord::Base.connection
-      conn.exec_query "update users set last_read_notification = #{params[:id].to_i} where id = #{current_account.user.id}"
+      conn.exec_query "UPDATE users SET last_read_notification = #{params[:id].to_i} WHERE id = #{current_account.user.id} AND #{params[:id].to_i} > last_read_notification"
     end
     # current_account.notifications.find(params[:id]).mark_read!
     render_empty_success

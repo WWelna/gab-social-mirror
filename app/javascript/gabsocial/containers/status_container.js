@@ -132,7 +132,7 @@ const makeMapStateToProps = () => {
   const getStatus = makeGetStatus()
 
   const mapStateToProps = (state, props) => {
-    const statusId = props.id || props.params.statusId
+    const statusId = props.id || (props.params && props.params.statusId)
     const username = props.params ? props.params.username : undefined
     const commentSortingType = state.getIn(['settings', 'commentSorting'])
 
@@ -263,6 +263,12 @@ const mapDispatchToProps = (dispatch) => ({
     if (!me) return dispatch(openModal('UNAUTHORIZED'))
 
     dispatch(openModal('STATUS_REPOSTS', { status }))
+  },
+
+  onOpenQuotes(status) {
+    if (!me) return dispatch(openModal('UNAUTHORIZED'))
+
+    dispatch(openModal('STATUS_QUOTES', { status }))
   },
   
   onFetchComments(statusId) {

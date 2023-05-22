@@ -4,6 +4,7 @@ class Api::BaseController < ApplicationController
   DEFAULT_STATUSES_LIMIT = 20
   DEFAULT_COMMENTS_LIMIT = 10
   DEFAULT_ACCOUNTS_LIMIT = 20
+  DEFAULT_ACCOUNT_WARNINGS_LIMIT = 20
   DEFAULT_CHAT_CONVERSATION_LIMIT = 20
   DEFAULT_CHAT_CONVERSATION_MESSAGE_LIMIT = 20
   DEFAULT_GROUP_CHAT_CONVERSATION_PARTICIPANT_LIMIT = 50
@@ -64,6 +65,22 @@ class Api::BaseController < ApplicationController
 
   def params_slice(*keys)
     params.slice(*keys).permit(*keys)
+  end
+
+  def doorkeeper_token
+    return @doorkeeper_token if defined?(@doorkeeper_token)
+
+    bearer_token = Doorkeeper::OAuth::Token.from_bearer_authorization(request)
+
+    # If there's no bearer token header, there's no token
+    return @doorkeeper_token = nil unless bearer_token
+
+    # Connect to the master when reading, so we find tokens that aren't yet in the slaves
+    @doorkeeper_token = DoorkeeperTokenCache.fetch(bearer_token) do
+      ActiveRecord::Base.connected_to(role: :writing) do
+        super
+      end
+    end
   end
 
   def current_resource_owner

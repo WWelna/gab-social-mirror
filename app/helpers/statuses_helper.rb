@@ -56,6 +56,10 @@ module StatusesHelper
     return "#{group.title} on Gab. #{group.description}"
   end
 
+  def list_description(list)
+    return "Subscribe to the #{list.title} feed curated by (@#{list.account.username}) on Gab."
+  end
+
   def media_summary(status)
     attachments = { image: 0, video: 0 }
 
@@ -135,7 +139,7 @@ module StatusesHelper
   end
 
   def rtl_status?(status)
-    status.local? ? rtl?(status.text) : rtl?(strip_tags(status.text))
+    rtl?(status.text)
   end
 
   def rtl?(text)

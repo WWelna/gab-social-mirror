@@ -50,7 +50,6 @@ class ComposeNavigationBar extends React.PureComponent {
               {
                 !isExternal &&
                 <BackButton
-                  toHome
                   className={_s.h53PX}
                   iconSize='18px'
                   iconClassName={[_s.mr5, _s.fillNavigation].join(' ')}

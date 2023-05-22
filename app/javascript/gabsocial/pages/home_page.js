@@ -14,6 +14,8 @@ import DefaultLayout from '../layouts/default_layout'
 import TimelineComposeBlock from '../components/timeline_compose_block'
 import TabBar from '../components/tab_bar'
 import WelcomeReminders from '../components/welcome_reminders'
+import Announcement from '../components/announcement'
+import HomeSortBlock from '../components/home_sort_block'
 import WrappedBundle from '../features/ui/util/wrapped_bundle'
 import {
   UserPanel,
@@ -74,6 +76,7 @@ class HomePage extends React.PureComponent {
       isPro,
       totalQueuedItemsCount,
       unreadChatsCount,
+      unreadWarningsCount,
     } = this.props
     const { lazyLoaded } = this.state
 
@@ -83,16 +86,14 @@ class HomePage extends React.PureComponent {
       ProgressPanel,
       GabAdPanel,
       <WrappedBundle key='home-page-pro-panel' component={ProPanel} componentParams={{ isPro: isPro }} />,
-      <WrappedBundle key='home-page-gabtv-videos-panel' component={GabTVVideosPanel} />,
+      <WrappedBundle key='home-page-lists-panel' component={ListsPanel} />,
+      <WrappedBundle key='home-page-groups-panel' component={GroupsPanel} componentParams={{ groupType: 'member' }}  />,
+      <WrappedBundle key='home-page-gabtv-videos-panel' component={GabTVVideosPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }} />,
       <WrappedBundle key='home-page-shop-panel' component={ShopPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
+      <WrappedBundle key='home-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
+      <WrappedBundle key='home-page-trending-hashtags-panel' component={TrendingHashtagsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />,
+      LinkFooter,
     ]
-
-    sidebarLayout.push(<WrappedBundle key='home-page-lists-panel' component={ListsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-    sidebarLayout.push(<WrappedBundle key='home-page-user-suggestions-panel' component={UserSuggestionsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-    sidebarLayout.push(<WrappedBundle key='home-page-groups-panel' component={GroupsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded, groupType: 'member' }}  />)
-    sidebarLayout.push(<WrappedBundle key='home-page-trending-hashtags-panel' component={TrendingHashtagsPanel} componentParams={{ isLazy: true, shouldLoad: lazyLoaded }}  />)
-
-    sidebarLayout.push(LinkFooter)
 
     return (
       <DefaultLayout
@@ -121,12 +122,23 @@ class HomePage extends React.PureComponent {
           badge={totalQueuedItemsCount}
         />
 
+        {
+          !isNaN(unreadWarningsCount) && unreadWarningsCount > 0 &&
+          <Announcement
+            title={`You have ${unreadWarningsCount} new account warning${unreadWarningsCount > 1 ? 's' : '' }`}
+            actionTitle='Click to view'
+            actionTo='/warnings'
+          />
+        }
+
         <TimelineComposeBlock autoFocus={false} />
 
         <WelcomeReminders />
 
+        <HomeSortBlock />
+
         {children}
-        
+
       </DefaultLayout>
     )
   }
@@ -138,7 +150,8 @@ const messages = defineMessages({
 
 const mapStateToProps = (state) => ({
   totalQueuedItemsCount: state.getIn(['timelines', 'home', 'totalQueuedItemsCount'], 0),
-  unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount']),
+  unreadChatsCount: state.getIn(['chats', 'chatsUnreadCount'], 0),
+  unreadWarningsCount: state.getIn(['warnings', 'unreadCount'], 0),
   isPro: state.getIn(['accounts', me, 'is_pro']),
 })
 
@@ -149,6 +162,7 @@ HomePage.propTypes = {
   isPro: PropTypes.bool,
   unreadChatsCount: PropTypes.number.isRequired,
   totalQueuedItemsCount: PropTypes.number.isRequired,
+  unreadWarningsCount: PropTypes.number.isRequired,
 }
 
 export default injectIntl(connect(mapStateToProps)(HomePage))

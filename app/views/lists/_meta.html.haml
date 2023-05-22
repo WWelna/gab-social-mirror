@@ -1,0 +1,6 @@
+- content_for :page_title do
+  = "#{list.title} / Feed • #{site_hostname}"
+
+- content_for :header_tags do
+  = opengraph 'og:type', 'website'
+  = render 'lists/og', list: list, url: !list.slug.nil? ? "https://gab.com/feed/#{list.slug}" : "https://gab.com/feeds/#{list.id}"

@@ -130,7 +130,7 @@ class Comment extends ImmutablePureComponent {
           ||
           (blocks && blocks.split(',').includes(status.getIn(['account', 'id'])))
           ||
-          (mutes && mutes.split(',').includes(status.getIn(['author', 'id'])))
+          (mutes && mutes.split(',').includes(status.getIn(['account', 'id'])))
         )
     ) {
       return null
@@ -215,6 +215,7 @@ class Comment extends ImmutablePureComponent {
                   onOpenRevisions={this.props.onOpenStatusRevisionsPopover}
                   onOpenLikes={this.props.onOpenLikes}
                   onOpenReposts={this.props.onOpenReposts}
+                  onOpenQuotes={this.props.onOpenQuotes}
                 />
                 <StatusContent
                   status={status}
@@ -365,6 +366,9 @@ const mapDispatchToProps = (dispatch) => ({
   onOpenReposts(status) {
     dispatch(openModal('STATUS_REPOSTS', { status }))
   },
+  onOpenQuotes(status) {
+    dispatch(openModal('STATUS_QUOTES', { status }))
+  },
   onOpenStatusRevisionsPopover(status) {
     dispatch(openModal('STATUS_REVISIONS', {
       status,
@@ -392,6 +396,7 @@ Comment.propTypes = {
   onOpenStatusOptions: PropTypes.func.isRequired,
   onOpenLikes: PropTypes.func.isRequired,
   onOpenReposts: PropTypes.func.isRequired,
+  onOpenQuotes: PropTypes.func.isRequired,
   onOpenStatusRevisionsPopover: PropTypes.func.isRequired,
   onOpenMedia: PropTypes.func.isRequired,
 }

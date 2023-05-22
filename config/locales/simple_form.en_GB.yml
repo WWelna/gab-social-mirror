@@ -62,6 +62,7 @@ en_GB:
           none: Do nothing
           silence: Silence
           suspend: Suspend and irreversibly delete account data
+          soft_suspend: (Soft suspend) Mark as suspended, but keep account data
         warning_preset_id: Use a warning preset
       defaults:
         autofollow: Invite to follow your account

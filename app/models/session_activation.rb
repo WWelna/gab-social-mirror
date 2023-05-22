@@ -23,6 +23,8 @@ class SessionActivation < ApplicationRecord
            to: :access_token,
            allow_nil: true
 
+  scope :recent, -> { reorder(created_at: :desc) }
+
   def detection
     @detection ||= Browser.new(user_agent)
   end
@@ -58,7 +60,11 @@ class SessionActivation < ApplicationRecord
 
     def deactivate(id)
       return unless id
-      where(session_id: id).destroy_all
+
+      where(session_id: id).each do |session|
+        DoorkeeperTokenCache.delete(session.token)
+        session.destroy
+      end
     end
 
     def purge_old
@@ -86,6 +92,8 @@ class SessionActivation < ApplicationRecord
                                                           scopes: 'read write follow',
                                                           expires_in: Doorkeeper.configuration.access_token_expires_in,
                                                           use_refresh_token: Doorkeeper.configuration.refresh_token_enabled?)
+
+      DoorkeeperTokenCache.write(token, access_token)
     end
   end
 end

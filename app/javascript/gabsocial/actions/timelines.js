@@ -21,6 +21,8 @@ export const TIMELINE_DISCONNECT = 'TIMELINE_DISCONNECT'
 
 export const MAX_QUEUED_ITEMS = 40
 
+export const HOME_TIMELINE_SORT = 'HOME_TIMELINE_SORT'
+
 const parseTags = (tags = {}, mode) => {
   return (tags[mode] || []).map((tag) => tag.value)
 }
@@ -213,9 +215,11 @@ export const disconnectTimeline = (timeline) => ({
 /**
  * 
  */
-export const expandHomeTimeline = ({ maxId } = {}, done = noop) => {
+export const expandHomeTimeline = ({ maxId, sortByValue, page } = {}, done = noop) => {
   return expandTimeline('home', '/api/v1/timelines/home', {
-    max_id: maxId,
+    page,
+    max_id: (sortByValue !== 'top') ? maxId : null,
+    sort_by_value: sortByValue,
   }, done, true)
 }
 
@@ -286,7 +290,7 @@ export const expandListTimeline = (id, { maxId } = {}, done = noop) => {
 
   return expandTimeline(`list:${id}`, `/api/v1/timelines/list/${id}`, {
     max_id: maxId,
-  }, done, true)
+  }, done, false)
 }
 
 /**
@@ -300,7 +304,7 @@ export const expandGroupTimeline = (id, { sortBy, maxId, onlyMedia, page } = {},
     sort_by: sortBy,
     max_id: maxId,
     only_media: onlyMedia
-  }, done, true)
+  }, done, false)
 }
 
 /**
@@ -345,4 +349,16 @@ export const expandHashtagTimeline = (hashtag, { maxId } = {}, done = noop) => {
   return expandTimeline(`hashtag:${hashtag}`, `/api/v1/timelines/tag/${hashtag}`, {
     max_id: maxId,
   }, done, true)
+}
+
+
+/**
+ * 
+ */
+export const setHomeTimelineSort = (sortByValue) => (dispatch) => {
+  dispatch({
+    type: HOME_TIMELINE_SORT,
+    sortByValue,
+  })
+  localStorage.setItem('homeSortByValue', sortByValue)
 }

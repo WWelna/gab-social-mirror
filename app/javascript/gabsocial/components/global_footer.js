@@ -121,7 +121,7 @@ const GlobalFooter = () => (
 
           <div className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')}>
             <Text weight='bold'>
-              © 2020
+              © 2022
             </Text>
             <Text>
               &nbsp;Copyright |&nbsp;

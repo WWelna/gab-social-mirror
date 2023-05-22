@@ -154,6 +154,8 @@ class ProfileHeader extends ImmutablePureComponent {
         to: `/${account.get('acct')}/likes`,
         title: 'Likes',
       })
+    }
+    if (isMyProfile && account.get('is_pro')) {
       tabs.push({
         to: `/${account.get('acct')}/bookmarks`,
         title: intl.formatMessage(messages.bookmarks),
@@ -171,6 +173,7 @@ class ProfileHeader extends ImmutablePureComponent {
       circle: 1,
       mtNeg75PX: !headerMissing,
       boxShadowProfileAvatar: !headerMissing,
+      bgPrimary: 1,
     })
 
     const stickyBarContainerClasses = CX({
@@ -220,7 +223,7 @@ class ProfileHeader extends ImmutablePureComponent {
 
                 <div className={[_s.d, _s.px15].join(' ')}>
                   <div class={[_s.d, _s.flexRow].join(' ')}>
-                    <div className={[_s.d, _s.circle, _s.boxShadowProfileAvatar, _s.mtNeg32PX].join(' ')}>
+                    <div className={[_s.d, _s.circle, _s.boxShadowProfileAvatar, _s.mtNeg32PX, _s.bgPrimary].join(' ')}>
                       <Avatar size={88} account={account} noHover expandOnClick />
                     </div>
                     {
@@ -437,7 +440,7 @@ const mapStateToProps = (state, { account }) => {
   const accountId = account ? account.get('id') : null
   const shortcuts = state.getIn(['shortcuts', 'items'])
   const isShortcut = !!shortcuts.find((s) => {
-    return s.get('shortcut_id') === accountId && s.get('shortcut_type') === 'account'
+    return `${s.get('shortcut_id')}` === `${accountId}` && s.get('shortcut_type') === 'account'
   })
 
   const isBlocked = state.getIn(['relationships', accountId, 'blocked_by'], false)

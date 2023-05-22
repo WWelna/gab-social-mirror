@@ -8,6 +8,7 @@ class ChatMessageLimitValidator < ActiveModel::Validator
 
   def validate(chatMessage)
     return if chatMessage.from_account.nil?
+    return if chatMessage.from_account.is_pro?
     chatMessage.errors.add(:base, 'Daily chat message limit reached. Please slow down.') if daily_limit_reached?(chatMessage.from_account)
     chatMessage.errors.add(:base, 'Hourly chat message limit reached. Please slow down.') if hourly_limit_reached?(chatMessage.from_account)
     chatMessage.errors.add(:base, 'Semi-hourly chat message limit reached. Please slow down.') if half_hour_limit_reached?(chatMessage.from_account)

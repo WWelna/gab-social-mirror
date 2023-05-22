@@ -5,11 +5,22 @@ import { defineMessages, injectIntl } from 'react-intl'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import { me } from '../../initial_state'
+import { POPOVER_NOTIFICATION_SETTINGS } from '../../constants'
 import { setFilter } from '../../actions/notifications'
+import { openPopover } from '../../actions/popover'
 import PanelLayout from './panel_layout'
 import SettingSwitch from '../setting_switch'
+import Icon from '../icon'
 
 class NotificationFilterPanel extends ImmutablePureComponent {
+
+  handleOnClickSettings = () => {
+    this.props.onOpenPopover(this.node)
+  }
+
+  setRef = (n) => {
+    this.node = n
+  }
 
   render() {
     const {
@@ -19,17 +30,24 @@ class NotificationFilterPanel extends ImmutablePureComponent {
       isPro
     } = this.props
 
-    if (!isPro) return null
-
     return (
-      <PanelLayout title={intl.formatMessage(messages.title)}>
-        <SettingSwitch
-          prefix='notification'
-          settings={settings}
-          settingPath={'onlyVerified'}
-          onChange={onChange}
-          label={intl.formatMessage(messages.onlyVerified)}
-        />
+      <PanelLayout
+        title='Notification Settings'
+        headerButtonTitle={<Icon id='cog'/>}
+        headerButtonRef={this.setRef}
+        headerButtonAction={this.handleOnClickSettings}
+        noPadding={!isPro}
+      >
+        {
+          isPro &&
+          <SettingSwitch
+            prefix='notification'
+            settings={settings}
+            settingPath={'onlyVerified'}
+            onChange={onChange}
+            label={intl.formatMessage(messages.onlyVerified)}
+          />
+        }
 
         { /* : todo :
           <SettingSwitch
@@ -59,6 +77,11 @@ const mapDispatchToProps = (dispatch) => ({
   onChange(path, value) {
     dispatch(setFilter(path, value))
   },
+  onOpenPopover(targetRef) {
+    dispatch(openPopover(POPOVER_NOTIFICATION_SETTINGS, {
+      targetRef,
+    }))
+  }
 })
 
 NotificationFilterPanel.propTypes = {

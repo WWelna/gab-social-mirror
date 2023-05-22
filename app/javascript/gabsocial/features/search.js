@@ -15,6 +15,7 @@ import StatusContainer from '../containers/status_container'
 import Block from '../components/block'
 import PreviewCardItem from '../components/preview_card_item'
 import List from '../components/list'
+import Icon from '../components/icon'
 
 class Search extends ImmutablePureComponent {
 
@@ -31,6 +32,8 @@ class Search extends ImmutablePureComponent {
       submitted,
     } = this.props
     const { isSmallScreen } = this.state
+    const loggedIn = typeof me === 'string' && me.length > 0
+    const loggedOut = !loggedIn
 
     if (isLoading) {
       return <ColumnIndicator type='loading' />
@@ -45,6 +48,19 @@ class Search extends ImmutablePureComponent {
         </ResponsiveClassesComponent>
       )
     }
+
+    if (loggedOut) {
+      return (
+        <ResponsiveClassesComponent classNamesXS={[_s.px10, _s.pt15].join(' ')}>
+          <Block>
+            <div className={[_s.d, _s.py15, _s.px15].join(' ')}>
+              <Text><Icon id='warning'/> Search is available for registered users.</Text>
+            </div>
+          </Block>
+        </ResponsiveClassesComponent>
+      )
+    }
+
 
     if ((results.isEmpty() && isSmallScreen) || (!submitted && results.isEmpty())) {
       return (
@@ -133,7 +149,7 @@ class Search extends ImmutablePureComponent {
       )
     }
     
-    if (results.get('statuses') && results.get('statuses').size > 0 && me && (isTop || showStatuses)) {
+    if (results.get('statuses') && results.get('statuses').size > 0 && loggedIn && (isTop || showStatuses)) {
       const size = isTop ? Math.min(results.get('statuses').size, theLimit) : results.get('statuses').size;
       const isMax = size === results.get('statuses').size
 
@@ -165,7 +181,7 @@ class Search extends ImmutablePureComponent {
       )
     }
 
-    if (results.get('links') && results.get('links').size > 0 && me && (isTop || showLinks)) {
+    if (results.get('links') && results.get('links').size > 0 && loggedIn && (isTop || showLinks)) {
       const size = isTop ? Math.min(results.get('links').size, theLimit) : results.get('links').size;
       const isMax = size === results.get('links').size
 
@@ -192,7 +208,7 @@ class Search extends ImmutablePureComponent {
       )
     }
 
-    if (results.get('hashtags') && results.get('hashtags').size > 0 && me && (isTop || showHashtags)) {
+    if (results.get('hashtags') && results.get('hashtags').size > 0 && loggedIn && (isTop || showHashtags)) {
       const tagLimit = 10
       const size = isTop ? Math.min(results.get('hashtags').size, tagLimit) : results.get('hashtags').size;
 
@@ -220,7 +236,7 @@ class Search extends ImmutablePureComponent {
       )
     }
 
-    if (!accounts && !statuses && !groups && !links) {
+    if (!accounts && !statuses && !groups && !links && !hashtags) {
       return (
         <ResponsiveClassesComponent classNamesXS={[_s.px10, _s.pt15].join(' ')}>
           <Block>

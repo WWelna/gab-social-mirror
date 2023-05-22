@@ -3,15 +3,20 @@
 class Api::V1::BookmarkCollections::BookmarksController < Api::BaseController
   before_action -> { doorkeeper_authorize! :read, :'read:bookmarks' }
   before_action :require_user!
+  before_action :require_pro!
   after_action :insert_pagination_headers
 
   def index
-    if current_account.is_pro
-      @statuses = load_statuses
-      render json: @statuses, each_serializer: REST::StatusSerializer, relationships: StatusRelationshipsPresenter.new(@statuses, current_user&.account_id)
-    else
-      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
-    end
+    @statuses = load_statuses
+    render json: @statuses, each_serializer: REST::StatusSerializer, relationships: StatusRelationshipsPresenter.new(@statuses, current_user&.account_id)
+  end
+
+  def create
+    # update status bookmark collection id
+    current_account.status_bookmarks
+      .where(status_id: params[:statusId])
+      .update(status_bookmark_collection_id: params[:bookmark_collection_id])
+    render_empty_success
   end
 
   private
@@ -37,7 +42,7 @@ class Api::V1::BookmarkCollections::BookmarksController < Api::BaseController
   end
 
   def account_bookmarks
-    current_account.status_bookmarks
+    current_account.status_bookmarks.where(status_bookmark_collection_id: passed_bookmark_id)
   end
 
   def insert_pagination_headers
@@ -67,4 +72,19 @@ class Api::V1::BookmarkCollections::BookmarksController < Api::BaseController
   def pagination_params(core_params)
     params.slice(:limit).permit(:limit).merge(core_params)
   end
+
+  def passed_bookmark_id
+    the = params[:bookmark_collection_id]
+    return nil if the == 'saved'
+    return the
+  end
+
+  def require_pro!
+    if current_account.is_pro?
+      true
+    else
+      render json: { error: 'You need to be a GabPRO member to access this' }, status: 422
+    end
+  end
+
 end

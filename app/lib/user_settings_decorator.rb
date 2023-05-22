@@ -31,6 +31,7 @@ class UserSettingsDecorator
     user.settings['pro_wants_ads']        = pro_wants_ads_preference if change?('setting_pro_wants_ads')
     user.settings['aggregate_reblogs']   = aggregate_reblogs_preference if change?('setting_aggregate_reblogs')
     user.settings['group_in_home_feed']  = group_in_home_feed_preference if change?('setting_group_in_home_feed')
+    user.settings['show_pro_life']       = show_pro_life_preference if change?('setting_show_pro_life')
   end
 
   def merged_notification_emails
@@ -95,6 +96,10 @@ class UserSettingsDecorator
 
   def group_in_home_feed_preference
     boolean_cast_setting 'setting_group_in_home_feed'
+  end
+  
+  def show_pro_life_preference
+    boolean_cast_setting 'setting_show_pro_life'
   end
 
   def boolean_cast_setting(key)

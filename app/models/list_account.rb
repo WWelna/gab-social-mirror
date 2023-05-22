@@ -6,7 +6,7 @@
 #  id         :bigint(8)        not null, primary key
 #  list_id    :bigint(8)        not null
 #  account_id :bigint(8)        not null
-#  follow_id  :bigint(8)
+#  follow_id  :bigint(8)        default(1)
 #
 
 class ListAccount < ApplicationRecord
@@ -14,13 +14,7 @@ class ListAccount < ApplicationRecord
   belongs_to :account
   belongs_to :follow, optional: true
 
+  validates_with ListAccountLimitValidator, on: :create
   validates :account_id, uniqueness: { scope: :list_id }
 
-  before_validation :set_follow
-
-  private
-
-  def set_follow
-    self.follow = Follow.find_by!(account_id: list.account_id, target_account_id: account.id) unless true
-  end
 end

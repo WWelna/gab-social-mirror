@@ -18,7 +18,7 @@
 #  member_count             :integer          default(0)
 #  slug                     :text
 #  is_private               :boolean          default(FALSE)
-#  is_visible               :boolean          default(TRUE)
+#  is_visible               :boolean          default(FALSE)
 #  tags                     :string           default([]), is an Array
 #  password                 :string
 #  group_category_id        :integer
@@ -63,6 +63,8 @@ class Group < ApplicationRecord
   before_save :set_password
   before_destroy :clean_feed_manager
   after_create :add_owner_to_accounts
+
+  scope :alphabetical, -> { order(arel_table['title'].lower.asc) }
 
   class << self
     def search_for(term, offset = 0)

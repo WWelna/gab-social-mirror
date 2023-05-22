@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { withRouter } from 'react-router-dom'
 import { injectIntl, defineMessages } from 'react-intl'
 import { openModal } from '../../actions/modal'
 import { cancelReplyCompose } from '../../actions/compose'
@@ -69,6 +70,11 @@ class ModalBase extends React.PureComponent {
       requestAnimationFrame(() => {
         this.setState({ revealed: true })
       })
+    }
+
+    // if page location changes, immediately close modal
+    if (prevProps.location !== this.props.location) {
+      this.props.onClose()
     }
   }
 
@@ -175,4 +181,4 @@ ModalBase.propTypes = {
   isCenteredXS: PropTypes.bool,
 }
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(ModalBase))
+export default withRouter(injectIntl(connect(mapStateToProps, mapDispatchToProps)(ModalBase)))

@@ -87,7 +87,7 @@ class DefaultSidebar extends ImmutablePureComponent {
         <SidebarSectionItem title='Notifications' icon='notifications' to='/notifications' count={notificationCount} />
         <SidebarSectionItem title='Chats' icon='chat' to='/messages' count={unreadChatsCount} />
         <SidebarSectionItem title='Groups' icon='group' to='/groups' />
-        <SidebarSectionItem title='Lists' icon='list' to='/lists' />
+        <SidebarSectionItem title='Feeds' icon='list' to='/feeds' />
         <SidebarSectionItem title='Explore' icon='explore' to='/explore' />
         <SidebarSectionItem title='Pro Feed' icon='explore' to='/timeline/pro' />
         <SidebarSectionItem title='News' icon='news' to='/news' />

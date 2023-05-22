@@ -11,13 +11,14 @@ import { SEARCH_FILTERS } from '../constants'
 
 export const SEARCH_CHANGE = 'SEARCH_CHANGE';
 export const SEARCH_CLEAR  = 'SEARCH_CLEAR';
-export const SEARCH_SHOW   = 'SEARCH_SHOW';
+export const SEARCH_FOCUSED   = 'SEARCH_FOCUSED';
 
 export const SEARCH_FETCH_REQUEST = 'SEARCH_FETCH_REQUEST';
 export const SEARCH_FETCH_SUCCESS = 'SEARCH_FETCH_SUCCESS';
 export const SEARCH_FETCH_FAIL    = 'SEARCH_FETCH_FAIL';
 
 export const SEARCH_FILTER_SET = 'SEARCH_FILTER_SET'
+
 
 /**
  * 
@@ -96,13 +97,6 @@ const fetchSearchFail = (error) => ({
 /**
  * 
  */
-export const showSearch = () => ({
-  type: SEARCH_SHOW,
-})
-
-/**
- * 
- */
 export const setFilter = (path, value, shouldSubmit) => (dispatch) => {
   dispatch({
     type: SEARCH_FILTER_SET,
@@ -111,3 +105,5 @@ export const setFilter = (path, value, shouldSubmit) => (dispatch) => {
   })
   if (shouldSubmit) dispatch(submitSearch())
 }
+
+export const toggleFocused = focused => ({ type: SEARCH_FOCUSED, focused })

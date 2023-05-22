@@ -46,10 +46,10 @@ class FooterBar extends ImmutablePureComponent {
         active: currentPathname.indexOf('/groups') > -1,
       },
       {
-        to: '/search',
+        to: '/explore',
         icon: 'explore',
         title: 'Explore',
-        active: currentPathname.indexOf('/search') > -1,
+        active: currentPathname.indexOf('/explore') > -1,
       },
       {
         to: '/news',

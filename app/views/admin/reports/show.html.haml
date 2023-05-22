@@ -8,11 +8,12 @@
   - if @report.unresolved?
     %div{ style: 'float: right' }
       - if @report.target_account.local?
-        = link_to t('admin.accounts.warn'), new_admin_account_action_path(@report.target_account_id, type: 'none', report_id: @report.id), class: 'button'
-        = link_to t('admin.accounts.disable'), new_admin_account_action_path(@report.target_account_id, type: 'disable', report_id: @report.id), class: 'button button--destructive'
-      = link_to t('admin.accounts.silence'), new_admin_account_action_path(@report.target_account_id, type: 'silence', report_id: @report.id), class: 'button button--destructive'
+        = link_to t('admin.accounts.warn'), new_admin_account_action_path(@report.target_account_id, type: 'none', report_id: @report.id), class: 'button', style: 'background-color:#F2BE42;color:#292929;'
+        = link_to t('admin.accounts.disable'), new_admin_account_action_path(@report.target_account_id, type: 'disable', report_id: @report.id), class: 'button button--destructive', style: 'background-color:#AAAAAA;color:#292929;'
+      = link_to t('admin.accounts.silence'), new_admin_account_action_path(@report.target_account_id, type: 'silence', report_id: @report.id), class: 'button button--destructive', style: 'background-color:#cdd023;color:#292929;'
       - if !@report.target_account.is_pro? && !@report.target_account.is_investor? && !@report.target_account.is_donor? && !@report.target_account.is_verified?
-        = link_to t('admin.accounts.perform_full_suspension'), new_admin_account_action_path(@report.target_account_id, type: 'suspend', report_id: @report.id), class: 'button button--destructive'
+        = link_to t('admin.accounts.soft_suspend'), new_admin_account_action_path(@report.target_account_id, type: 'soft_suspend', report_id: @report.id), class: 'button button--destructive', style: 'background-color:#DF7164;'
+        -# = link_to t('admin.accounts.perform_full_suspension'), new_admin_account_action_path(@report.target_account_id, type: 'suspend', report_id: @report.id), class: 'button button--destructive', style: 'background-color:#EB524A;'
     %div{ style: 'float: left' }
       = link_to t('admin.reports.mark_as_resolved'), resolve_admin_report_path(@report), method: :post, class: 'button'
   - else
@@ -129,7 +130,8 @@
         .batch-table__toolbar__actions
           = f.button safe_join([fa_icon('eye-slash'), t('admin.statuses.batch.nsfw_on')]), name: :nsfw_on, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
           = f.button safe_join([fa_icon('eye'), t('admin.statuses.batch.nsfw_off')]), name: :nsfw_off, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
-          = f.button safe_join([fa_icon('trash'), t('admin.statuses.batch.delete')]), name: :delete, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
+          = f.button safe_join([fa_icon('database'), t('admin.statuses.batch.tombstone')]), name: :tombstone, class: 'table-action-link', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
+          = f.button safe_join([fa_icon('trash'), t('admin.statuses.batch.delete')]), name: :delete, class: 'table-action-link', style: 'color: #CE4D5D;', type: :submit, data: { confirm: t('admin.reports.are_you_sure') }
       .batch-table__body
         = render partial: 'admin/reports/status', collection: @report.statuses, locals: { f: f }
 

@@ -94,10 +94,10 @@ class EditStatusService < BaseService
     raise GabSocial::ValidationError, I18n.t('media_attachments.validations.images_and_video') if @media.size > 1 && hasVideoOrGif
   end
 
-  def validate_similarity!
-    return true unless StatusSimilarityService.new.call?(@text, @account.id)
-    raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
-  end
+  # def validate_similarity!
+  #   return true unless StatusSimilarityService.new.call?(@text, @account.id)
+  #   raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
+  # end
 
   def validate_links!
     return true unless LinkBlock.block?(@text)

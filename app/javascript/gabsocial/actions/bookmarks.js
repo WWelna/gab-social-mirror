@@ -1,6 +1,6 @@
 import api, { getLinks } from '../api'
 import { importFetchedStatuses } from './importer'
-import { me } from '../initial_state'
+import { me, meUsername } from '../initial_state'
 
 export const BOOKMARKED_STATUSES_FETCH_REQUEST = 'BOOKMARKED_STATUSES_FETCH_REQUEST'
 export const BOOKMARKED_STATUSES_FETCH_SUCCESS = 'BOOKMARKED_STATUSES_FETCH_SUCCESS'
@@ -26,13 +26,13 @@ export const BOOKMARK_COLLECTIONS_REMOVE_FAIL = 'BOOKMARK_COLLECTIONS_REMOVE_FAI
 
 //
 
-export const UPDATE_BOOKMARK_COLLECTION_FAIL = 'UPDATE_BOOKMARK_COLLECTION_FAIL'
-export const UPDATE_BOOKMARK_COLLECTION_REQUEST = 'UPDATE_BOOKMARK_COLLECTION_REQUEST'
-export const UPDATE_BOOKMARK_COLLECTION_SUCCESS = 'UPDATE_BOOKMARK_COLLECTION_SUCCESS'
+export const BOOKMARK_COLLECTIONS_UPDATE_FAIL = 'BOOKMARK_COLLECTIONS_UPDATE_FAIL'
+export const BOOKMARK_COLLECTIONS_UPDATE_REQUEST = 'BOOKMARK_COLLECTIONS_UPDATE_REQUEST'
+export const BOOKMARK_COLLECTIONS_UPDATE_SUCCESS = 'BOOKMARK_COLLECTIONS_UPDATE_SUCCESS'
 
-export const UPDATE_BOOKMARK_COLLECTION_STATUS_FAIL = 'UPDATE_BOOKMARK_COLLECTION_STATUS_FAIL'
-export const UPDATE_BOOKMARK_COLLECTION_STATUS_REQUEST = 'UPDATE_BOOKMARK_COLLECTION_STATUS_REQUEST'
-export const UPDATE_BOOKMARK_COLLECTION_STATUS_SUCCESS = 'UPDATE_BOOKMARK_COLLECTION_STATUS_SUCCESS'
+export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_FAIL = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_FAIL'
+export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST'
+export const BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS = 'BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS'
 
 /**
  * 
@@ -181,13 +181,14 @@ const createBookmarkCollectionFail = (error) => ({
 /**
  * 
  */
-export const removeBookmarkCollection = (bookmarkCollectionId) => (dispatch, getState) => {
+export const removeBookmarkCollection = (bookmarkCollectionId, routerHistory) => (dispatch, getState) => {
   if (!me || !bookmarkCollectionId) return
 
   dispatch(removeBookmarkCollectionRequest(bookmarkCollectionId))
 
-  api(getState).delete(`/api/v1/bookmark_collection/${bookmarkCollectionId}`).then((response) => {
+  api(getState).delete(`/api/v1/bookmark_collections/${bookmarkCollectionId}`).then((response) => {
     dispatch(removeBookmarkCollectionSuccess(response.data))
+    routerHistory.push(`/${meUsername}/bookmarks`)
   }).catch((error) => {
     dispatch(removeBookmarkCollectionFail(error))
   })
@@ -200,6 +201,7 @@ const removeBookmarkCollectionRequest = (bookmarkCollectionId) => ({
 
 const removeBookmarkCollectionSuccess = () => ({
   type: BOOKMARK_COLLECTIONS_REMOVE_SUCCESS,
+  showToast: true,
 })
 
 const removeBookmarkCollectionFail = (error) => ({
@@ -212,11 +214,11 @@ const removeBookmarkCollectionFail = (error) => ({
  * 
  */
 export const updateBookmarkCollection = (bookmarkCollectionId, title) => (dispatch, getState) => {
-  if (!me || !statusId) return
+  if (!me || !bookmarkCollectionId || !title) return
 
   dispatch(updateBookmarkCollectionRequest())
 
-  api(getState).put('/api/v1/bookmark_collections', { title }).then((response) => {
+  api(getState).put(`/api/v1/bookmark_collections/${bookmarkCollectionId}`, { title }).then((response) => {
     dispatch(updateBookmarkCollectionSuccess(response.data))
   }).catch((error) => {
     dispatch(updateBookmarkCollectionFail(error))
@@ -224,16 +226,16 @@ export const updateBookmarkCollection = (bookmarkCollectionId, title) => (dispat
 }
 
 const updateBookmarkCollectionRequest = () => ({
-  type: UPDATE_BOOKMARK_COLLECTION_REQUEST,
+  type: BOOKMARK_COLLECTIONS_UPDATE_REQUEST,
 })
 
 const updateBookmarkCollectionSuccess = (bookmarkCollection) => ({
-  type: UPDATE_BOOKMARK_COLLECTION_SUCCESS,
+  type: BOOKMARK_COLLECTIONS_UPDATE_SUCCESS,
   bookmarkCollection,
 })
 
 const updateBookmarkCollectionFail = (error) => ({
-  type: UPDATE_BOOKMARK_COLLECTION_FAIL,
+  type: BOOKMARK_COLLECTIONS_UPDATE_FAIL,
   showToast: true,
   error,
 })
@@ -246,24 +248,25 @@ export const updateBookmarkCollectionStatus = (statusId, bookmarkCollectionId) =
 
   dispatch(updateBookmarkCollectionStatusRequest())
 
-  api(getState).post(`/api/v1/bookmark_collections/${bookmarkCollectionId}/update_status`, { statusId }).then((response) => {
-    dispatch(importFetchedStatuses([response.data]))
-    dispatch(updateBookmarkCollectionStatusSuccess())
+  api(getState).post(`/api/v1/bookmark_collections/${bookmarkCollectionId}/bookmarks`, { statusId }).then((response) => {
+    dispatch(updateBookmarkCollectionStatusSuccess(statusId, bookmarkCollectionId))
   }).catch((error) => {
     dispatch(updateBookmarkCollectionStatusFail(error))
   })
 }
 
 const updateBookmarkCollectionStatusRequest = () => ({
-  type: UPDATE_BOOKMARK_COLLECTION_STATUS_REQUEST,
+  type: BOOKMARK_COLLECTIONS_UPDATE_STATUS_REQUEST,
 })
 
-const updateBookmarkCollectionStatusSuccess = () => ({
-  type: UPDATE_BOOKMARK_COLLECTION_STATUS_SUCCESS,
+const updateBookmarkCollectionStatusSuccess = (statusId, bookmarkCollectionId) => ({
+  type: BOOKMARK_COLLECTIONS_UPDATE_STATUS_SUCCESS,
+  statusId,
+  bookmarkCollectionId,
 })
 
 const updateBookmarkCollectionStatusFail = (error) => ({
-  type: UPDATE_BOOKMARK_COLLECTION_STATUS_FAIL,
+  type: BOOKMARK_COLLECTIONS_UPDATE_STATUS_FAIL,
   showToast: true,
   error,
 })

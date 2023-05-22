@@ -8,7 +8,8 @@ class RemindExpiredAccountProWorker
   attr_reader :user
 
   def perform(acct_id, date_range)
-    @acct = Account.find(acct_id)
+    @acct = Account.find_by(id: acct_id)
+    return if @acct.nil?
     deliver_email(date_range)
   end
 

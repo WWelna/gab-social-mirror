@@ -35,6 +35,7 @@ class Textarea extends React.PureComponent {
       maxH100VH: 1,
       resizeVertical: 1,
       cPrimary: 1,
+      minH106PX: 1,
       px5: !!prependIcon,
       pl15: !prependIcon,
     })

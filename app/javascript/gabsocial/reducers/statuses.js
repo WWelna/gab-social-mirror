@@ -5,6 +5,7 @@ import {
   FAVORITE_REQUEST,
   FAVORITE_FAIL,
   UNFAVORITE_REQUEST,
+  UNBOOKMARK_REQUEST,
 } from '../actions/interactions';
 import {
   STATUS_REVEAL,
@@ -56,6 +57,8 @@ export default function statuses(state = initialState, action) {
         }
       });
     });
+  case UNBOOKMARK_REQUEST:
+    return state.setIn([action.status.get('id'), 'bookmarked'], false);
   case STATUS_HIDE:
     return state.withMutations((map) => {
       action.ids.forEach(id => {
@@ -73,6 +76,7 @@ export default function statuses(state = initialState, action) {
       if (action.data.favourites_count !== undefined) map.setIn([status_id, 'favourites_count'], action.data.favourites_count)
       if (action.data.reblogged !== undefined) map.setIn([status_id, 'reblogged'], action.data.reblogged)
       if (action.data.reblogs_count !== undefined) map.setIn([status_id, 'reblogs_count'], action.data.reblogs_count)
+      if (action.data.quotes_count !== undefined) map.setIn([status_id, 'quotes_count'], action.data.quotes_count)
       if (action.data.replies_count !== undefined) map.setIn([status_id, 'replies_count'], action.data.replies_count)
       if (action.data.pinned !== undefined) map.setIn([status_id, 'pinned'], action.data.pinned)
       if (action.data.pinned_by_group !== undefined) map.setIn([status_id, 'pinned_by_group'], action.data.pinned_by_group)

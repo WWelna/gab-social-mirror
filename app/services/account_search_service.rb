@@ -22,16 +22,12 @@ class AccountSearchService < BaseService
     return [] if query_blank_or_hashtag? || limit < 1
 
     if @following_only
-      return @account.following.matches_display_name(@query)
+      return @account.following.contains_display_name(@query)
         .or(@account.following.matches_username(@query))
         .limit(@limit)
     end
 
-    if resolving_non_matching_remote_account?
-      return []
-    else
-      search_results_and_exact_match.compact.uniq.slice(0, limit)
-    end
+    search_results_and_exact_match.compact.uniq.slice(0, limit)
   end
 
   def resolving_non_matching_remote_account?
@@ -65,7 +61,7 @@ class AccountSearchService < BaseService
   end
 
   def domain_is_local?
-    @_domain_is_local ||= TagManager.instance.local_domain?(query_domain)
+    @_domain_is_local ||= true
   end
 
   def search_from
@@ -74,9 +70,7 @@ class AccountSearchService < BaseService
 
   def exact_match
     @_exact_match ||= begin
-      if domain_is_local?
-        search_from.without_suspended.find_local(query_username)
-      end
+      search_from.without_suspended.find_local(query_username)
     end
   end
 

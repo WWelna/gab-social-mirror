@@ -37,7 +37,7 @@ class Image extends React.PureComponent {
     const classes = CX(className, {
       d: 1,
       objectFitCover: !!src && fit === 'cover',
-      bgSecondary: !src,
+      bgSecondary: !src || error,
       cursorPointer: expandOnClick
     })
 
@@ -55,7 +55,7 @@ class Image extends React.PureComponent {
         alt={alt}
         className={classes}
         ref={imageRef}
-        src={src}
+        src={!error ? src : 'https://gab.com/headers/original/missing.png'}
         onError={this.handleOnError}
         onClick={this.props.onOpenMediaModal}
         loading={isLazy ? 'lazy' : undefined}

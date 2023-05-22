@@ -203,6 +203,7 @@ class Status extends ImmutablePureComponent {
       isPinnedInGroup,
       isPromoted,
       isChild,
+      isQuoteHidden,
       isHidden,
       isNotification,
       descendantsIds,
@@ -234,15 +235,33 @@ class Status extends ImmutablePureComponent {
     const blocks = !!me ? localStorage.getItem('blocks') : ''
     const mutes = !!me ? localStorage.getItem('mutes') : ''
     const blockedby = !!me ? localStorage.getItem('blockedby') : ''
+    let blocked = false
+
     if (
         !!me && (
           (blockedby && blockedby.split(',').includes(status.getIn(['account', 'id'])))
           ||
           (blocks && blocks.split(',').includes(status.getIn(['account', 'id'])))
           ||
-          (mutes && mutes.split(',').includes(status.getIn(['author', 'id'])))
+          (mutes && mutes.split(',').includes(status.getIn(['account', 'id'])))
         )
     ) {
+      blocked = true
+    }
+
+    if (blocked && isChild) {
+      const blockedContainerClasses = [
+        _s.d, _s.py10, _s.px10, _s.radiusSmall, _s.bgSubtle,
+        _s.borderColorSecondary, _s.statusContent, _s.border2PX
+      ].join(' ')
+      return (
+        <div className={blockedContainerClasses}>
+          The quoted status is unavailable.
+        </div>
+      )
+    }
+
+    if (blocked) {
       return null
     }
 
@@ -396,7 +415,7 @@ class Status extends ImmutablePureComponent {
                   />
 
                   {
-                    (!!status.get('quote') || status.get('has_quote')) && !isChild &&
+                    (!!status.get('quote') || status.get('has_quote')) && !isChild && !isQuoteHidden &&
                     <div className={[_s.d, _s.mt10, _s.px10].join(' ')}>
                       {
                         !!status.get('quoted_status') &&
@@ -421,6 +440,7 @@ class Status extends ImmutablePureComponent {
                       onShare={this.props.onShare}
                       onOpenLikes={this.props.onOpenLikes}
                       onOpenReposts={this.props.onOpenReposts}
+                      onOpenQuotes={this.props.onOpenQuotes}
                       onQuote={this.handleOnQuote}
                       isCompact={isDeckConnected}
                       onOpenStatusModal={this.handleOnOpenStatusModal}
@@ -438,16 +458,7 @@ class Status extends ImmutablePureComponent {
                   }
                   
                   {
-                    !me && status.get('replies_count') > 0 && !isChild && !isNotification && !commentsLimited &&
-                    <div className={[_s.d, _s.mr10, _s.ml10, _s.mb10, _s.px15, _s.py15, _s.aiCenter, _s.jcCenter, _s.borderColorSecondary, _s.borderTop1PX].join(' ')}>
-                      <Text color='tertiary' className={[_s.d, _s.py15].join(' ')}>
-                        Sign up to view {status.get('replies_count')} comments.
-                      </Text>
-                    </div>
-                  }
-
-                  {
-                    !!me && status.get('replies_count') > 0 && !isChild && !isNotification && !commentsLimited &&
+                    status.get('replies_count') > 0 && !isChild && !isNotification && !commentsLimited &&
                     <React.Fragment>
                       <div className={[_s.d, _s.mr10, _s.ml10, _s.mb10, _s.borderColorSecondary, _s.borderBottom1PX].join(' ')} />
 
@@ -496,6 +507,7 @@ Status.propTypes = {
   ancestorStatus: ImmutablePropTypes.map,
   isNotification: PropTypes.bool,
   isChild: PropTypes.bool,
+  isQuoteHidden: PropTypes.bool,
   isPromoted: PropTypes.bool,
   isFeatured: PropTypes.bool,
   isPinnedInGroup: PropTypes.bool,
@@ -524,6 +536,7 @@ Status.propTypes = {
   commentsLimited: PropTypes.bool,
   onOpenLikes: PropTypes.func,
   onOpenReposts: PropTypes.func,
+  onOpenQuotes: PropTypes.func,
   onCommentSortOpen: PropTypes.func,
   isComposeModalOpen: PropTypes.bool,
   commentSortingType: PropTypes.string,

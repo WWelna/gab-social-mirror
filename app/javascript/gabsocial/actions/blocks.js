@@ -2,6 +2,7 @@ import api, { getLinks } from '../api'
 import { fetchRelationships } from './accounts'
 import { importFetchedAccounts } from './importer'
 import { me } from '../initial_state'
+import isObject from 'lodash.isobject'
 
 export const BLOCKS_FETCH_REQUEST = 'BLOCKS_FETCH_REQUEST'
 export const BLOCKS_FETCH_SUCCESS = 'BLOCKS_FETCH_SUCCESS'
@@ -27,28 +28,11 @@ export const fetchBlocks = () => (dispatch, getState) => {
   }).catch(error => dispatch(fetchBlocksFail(error)))
 }
 
-export const fetchBlockedby = () => (dispatch, getState) => {
-  if (!me) return
-
-  api(getState).get('/api/v1/blockedby').then(response => {
-    dispatch(fetchBlockedbySuccess(response.data))
-  }).catch(error => dispatch(fetchBlockedbyFail(error)))
-}
-
 export const fetchBlocksRequest = () => ({
   type: BLOCKS_FETCH_REQUEST,
 })
 
-export const fetchBlockedbySuccess = (accounts) => {
-  localStorage.setItem('blockedby', accounts.map(item => item.id))
-  return {
-    type: BLOCKS_FETCH_SUCCESS,
-    accounts,
-  }
-}
-
 export const fetchBlocksSuccess = (accounts, next) => {
-  localStorage.setItem('blocks', accounts.map(item => item.id))
   return {
     type: BLOCKS_FETCH_SUCCESS,
     accounts,
@@ -59,12 +43,6 @@ export const fetchBlocksSuccess = (accounts, next) => {
 export const fetchBlocksFail = (error) => ({
   type: BLOCKS_FETCH_FAIL,
   showToast: true,
-  error,
-})
-
-export const fetchBlockedbyFail = (error) => ({
-  type: BLOCKS_FETCH_FAIL,
-  showToast: false,
   error,
 })
 
@@ -104,3 +82,19 @@ export const expandBlocksFail = (error) => ({
   showToast: true,
   error,
 })
+
+/**
+ * Fetch blocks, blocked_by and mutes for user, save to localStorage
+ * Doesn't necessarily have to be in actions/blocks...
+ */
+export const fetchBlocksAndMutes = (dispatch, getState) => {
+  if (!me) return
+
+  api(getState).get('/api/v1/blocks_and_mutes').then(({ data }) => {
+    if (isObject(data)) {
+      if (Array.isArray(data.bb)) localStorage.setItem('blockedby', data.bb)
+      if (Array.isArray(data.b)) localStorage.setItem('blocks', data.b)
+      if (Array.isArray(data.m)) localStorage.setItem('mutes', data.m)
+    }
+  })
+}

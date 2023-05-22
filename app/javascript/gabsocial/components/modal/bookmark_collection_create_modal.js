@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, injectIntl } from 'react-intl'
 import ModalLayout from './modal_layout'
-import BookmarkCollectionCreate from '../../features/bookmark_collection_create'
+import { BookmarkCollectionCreate } from '../../features/ui/util/async_components'
+import WrappedBundle from '../../features/ui/util/wrapped_bundle'
 
 class BookmarkCollectionCreateModal extends React.PureComponent {
 
@@ -15,7 +15,7 @@ class BookmarkCollectionCreateModal extends React.PureComponent {
         width={500}
         onClose={onClose}
       >
-        <BookmarkCollectionCreate isModal />
+        <WrappedBundle component={BookmarkCollectionCreate} componentParams={{ isModal: true }} />
       </ModalLayout>
     )
   }

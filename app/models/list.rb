@@ -3,22 +3,48 @@
 #
 # Table name: lists
 #
-#  id         :bigint(8)        not null, primary key
-#  account_id :bigint(8)        not null
-#  title      :string           default(""), not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
+#  id               :bigint(8)        not null, primary key
+#  account_id       :bigint(8)        not null
+#  title            :string           default(""), not null
+#  created_at       :datetime         not null
+#  updated_at       :datetime         not null
+#  visibility       :integer          default("private"), not null
+#  subscriber_count :integer          default(0), not null
+#  slug             :string
+#  order            :integer
+#  is_featured      :boolean
 #
 
 class List < ApplicationRecord
   include Paginable
+  include ListInteractions
 
-  PER_ACCOUNT_LIMIT = 50
+  PER_ACCOUNT_LIMIT = 100
 
   belongs_to :account, optional: true
 
+  enum visibility: [
+    :private, # [default] only creator can view
+    :public, # anyone can view, visible in profile
+    # :unlisted, # anyone can view, not visible in profile
+    # :limited, # only followers can view
+  ], _suffix: :visibility
+
   has_many :list_accounts, inverse_of: :list, dependent: :destroy
   has_many :accounts, through: :list_accounts
+
+  has_many :list_subscribers, inverse_of: :list, dependent: :destroy
+  has_many :subscribers, source: :account, through: :list_subscribers
+
+  has_many :list_removed_accounts, inverse_of: :list, dependent: :destroy
+  has_many :removed_accounts, source: :account, through: :list_removed_accounts
+
+  scope :recent, -> { reorder(id: :desc) }
+  scope :alphabetical, -> { order(arel_table['title'].lower.asc) }
+  scope :public_only, -> { where(visibility: :public) }
+
+  scope :is_member, ->(accountId) { left_outer_joins(:list_accounts).where('list_accounts.account_id=?', accountId) }
+  scope :is_subscriber, ->(accountId) { left_outer_joins(:list_subscribers).where('list_subscribers.account_id=?', accountId) }
 
   validates :title, presence: true
 

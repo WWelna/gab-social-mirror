@@ -1,0 +1,38 @@
+- content_for :page_title do
+  = "Warnings"
+
+= form_tag admin_account_warnings_url, method: 'GET', class: 'simple_form' do
+  .fields-group
+    .input.string.optional
+      = text_field_tag :id, params[:id], class: 'string optional', placeholder: "Id"
+    .input.string.optional
+      = text_field_tag :text, params[:text], class: 'string optional', placeholder: "Text"
+    .input.string.optional
+      = text_field_tag :account_id, params[:account_id], class: 'string optional', placeholder: "Target Account Id"
+    -# .input.string.optional
+    -#   %select{id: 'action', name: 'action'}
+    -#     %option{value: ''} Action
+    -#     %option{value: '0', selected: params[:action] == '0' ? true : nil} none
+    -#     %option{value: '1', selected: params[:action] == '1' ? true : nil} disable
+    -#     %option{value: '2', selected: params[:action] == '2' ? true : nil} silence
+    -#     %option{value: '3', selected: params[:action] == '3' ? true : nil} suspend
+    .actions
+      %button= t('admin.accounts.search')
+      = link_to t('admin.accounts.reset'), admin_account_warnings_path, class: 'button negative'
+
+-# .table-wrapper{style:'border:1px solid #474747;'}
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th ID
+        %th Text
+        %th Action
+        %th Target Account
+        %th By Moderator
+        %th Date
+    %tbody
+      = render partial: 'admin/account_warnings/tr/account_warning', collection: @account_warnings
+
+= paginate @account_warnings

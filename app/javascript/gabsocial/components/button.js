@@ -207,6 +207,7 @@ class Button extends React.PureComponent {
           className={classes}
           disabled={isDisabled}
           to={to}
+          aria-label={title}
           {...handlers}
         >
           {theChildren}

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Api::V1::Timelines::GroupController < Api::BaseController
-  before_action :require_user!
   before_action :set_group
   before_action :set_sort_type
   before_action :set_statuses
@@ -57,9 +56,8 @@ class Api::V1::Timelines::GroupController < Api::BaseController
         FeedManager.instance.filter?(:home, status, current_account.id)
       }
     else
-      return []
-      # page = [params[:page].to_i.abs, MIN_UNAUTHENTICATED_PAGES].min
-      # SortingQueryBuilder.new.call(@sort_type, @group, page)
+      page = [params[:page].to_i.abs, MIN_UNAUTHENTICATED_PAGES].min
+      SortingQueryBuilder.new.call(@sort_type, @group, page)
     end
 
   end

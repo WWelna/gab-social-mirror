@@ -6,8 +6,9 @@ class PollExpirationNotifyWorker
   sidekiq_options unique: :until_executed
 
   def perform(poll_id)
-    poll = Poll.find(poll_id)
-
+    poll = Poll.find_by(id: poll_id)
+    return if poll.nil?
+    
     # Notify poll owner and remote voters
     if poll.local?
       NotifyService.new.call(poll.account, poll)

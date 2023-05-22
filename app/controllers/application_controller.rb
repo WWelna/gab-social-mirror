@@ -107,11 +107,11 @@ class ApplicationController < ActionController::Base
     klass.reload_stale_associations!(cached_keys_with_value.values) if klass.respond_to?(:reload_stale_associations!)
 
     unless uncached_ids.empty?
-      uncached = klass.where(id: uncached_ids).with_includes.each_with_object({}) { |item, h| h[item.id] = item }
+      records = klass.where(id: uncached_ids).with_includes
+      uncached = records.index_by(&:id)
+      cache_entries = records.index_by(&:cache_key)
 
-      uncached.each_value do |item|
-        Rails.cache.write(item, item)
-      end
+      Rails.cache.write_multi(cache_entries)
     end
 
     raw.map { |item| cached_keys_with_value[item.id] || uncached[item.id] }.compact

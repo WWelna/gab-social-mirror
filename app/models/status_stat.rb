@@ -14,7 +14,7 @@
 
 class StatusStat < ApplicationRecord
   belongs_to :status, inverse_of: :status_stat
-
+  attr_readonly :replies_count
   after_commit :reset_parent_cache
 
   private

@@ -2,7 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { openModal } from '../actions/modal'
-import { defineMessages, injectIntl } from 'react-intl'
 import PageTitle from '../features/ui/util/page_title'
 import DefaultLayout from '../layouts/default_layout'
 import { MODAL_LIST_CREATE } from '../constants'
@@ -22,12 +21,10 @@ class ListsPage extends React.PureComponent {
   render() {
     const { children, intl } = this.props
 
-    const title = intl.formatMessage(messages.lists)
-
     return (
       <DefaultLayout
         showBackBtn
-        title={title}
+        title='Feeds'
         page='lists'
         actions={[
           {
@@ -42,7 +39,7 @@ class ListsPage extends React.PureComponent {
           LinkFooter,
         ]}
       >
-        <PageTitle path={title} />
+        <PageTitle path='Feeds' />
         {children}
       </DefaultLayout>
     )
@@ -50,14 +47,9 @@ class ListsPage extends React.PureComponent {
 
 }
 
-const messages = defineMessages({
-  lists: { id: 'lists', defaultMessage: 'Lists' },
-})
-
 ListsPage.propTypes = {
-  intl: PropTypes.object.isRequired,
   children: PropTypes.node.isRequired,
   dispatch: PropTypes.func.isRequired,
 }
 
-export default injectIntl(connect()(ListsPage))
+export default connect()(ListsPage)

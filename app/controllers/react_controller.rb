@@ -29,6 +29,18 @@ class ReactController < ApplicationController
     return not_found
   end
 
+  def feedBySlug
+    # NOTE: at the moment, only an admin can create a list with a custom slug
+    # and a list the uses a slug uses the singular version of GAB.COM/FEED/SLUG
+    # instead of the plural version of GAB.COM/FEEDS/ID when using ids
+    @list = List.where(slug: params[:listSlug]).public_only.first
+    unless @list.nil?
+      return redirect_to "/feeds/#{@list.id}"
+    end
+
+    return not_found
+  end
+
   def status_show
     render 'react'
   end
@@ -72,6 +84,9 @@ class ReactController < ApplicationController
     if request.path.match(/^\/groups/)
       groupIdFromPath = request.path.sub("/groups", "").gsub("/", "")
       @group = Group.where(id: groupIdFromPath, is_archived: false).first
+    elsif request.path.match(/^\/feeds/)
+      listIdFromPath = request.path.sub("/feeds", "").gsub("/", "")
+      @list = List.public_only.where(id: listIdFromPath).first
     elsif find_public_route_matches
       return
     elsif request.path.count("/") == 1 && request.path.length === 1
@@ -95,11 +110,11 @@ class ReactController < ApplicationController
   end
 
   def find_route_matches
-    request.path.match(/\A\/(home|news|api|deck|suggestions|links|chat_conversations|chat_conversation_accounts|messages|shortcuts|list|lists|notifications|tags|compose|follow_requests|admin|account|settings|filters|timeline|blocks|mutes)/)
+    request.path.match(/\A\/(home|news|api|deck|suggestions|links|chat_conversations|chat_conversation_accounts|messages|shortcuts|list|lists|notifications|tags|compose|follow_requests|admin|account|settings|filters|timeline|blocks|mutes|warnings)/)
   end
 
   def find_public_route_matches
-    request.path.match(/\A\/(about|news|search|group|groups|explore)/)
+    request.path.match(/\A\/(about|news|search|group|groups|explore|feeds)/)
   end
 
   def set_initial_state_json

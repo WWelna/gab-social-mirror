@@ -27,8 +27,8 @@ import hashtags from './hashtags'
 import height_cache from './height_cache'
 import links from './links.js'
 import lists from './lists'
-import listAdder from './list_adder'
-import listEditor from './list_editor'
+import list_editor from './list_editor'
+import list_relationships from './list_relationships'
 import media_attachments from './media_attachments'
 import meta from './meta'
 import modal from './modal'
@@ -56,6 +56,7 @@ import toasts from './toasts'
 import trending_hashtags from './trending_hashtags'
 import user from './user'
 import user_lists from './user_lists'
+import warnings from './warnings'
 
 const reducers = {
   accounts,
@@ -85,8 +86,8 @@ const reducers = {
   height_cache,
   links,
   lists,
-  listAdder,
-  listEditor,
+  list_editor,
+  list_relationships,
   loadingBar: loadingBarReducer,
   media_attachments,
   meta,
@@ -115,6 +116,7 @@ const reducers = {
   trending_hashtags,
   user,
   user_lists,
+  warnings,
 }
 
 export default combineReducers(reducers)

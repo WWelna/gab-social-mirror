@@ -22,7 +22,7 @@ class PillItem extends React.PureComponent {
 
     // Combine state, props, location to make absolutely
     // sure of active status.
-    const active = isActive || (to === location.pathname && !location.search)
+    const active = typeof isActive === 'boolean' ? isActive : (to === location.pathname && !location.search)
 
     const containerClasses = CX({
       d: 1,

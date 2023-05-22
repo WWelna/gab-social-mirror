@@ -14,4 +14,26 @@
   %td
     %samp= number_with_delimiter account.statuses.count
   %td
+    %samp= number_with_delimiter account.user_current_sign_in_ip
+  %td
+    %div{ :style => "display:flex;flex-direction:row;" }
+      - open_reports = account.targeted_reports.unresolved.count
+      - bg_color = 'transparent'
+      - color = '#fff'
+      
+      - if open_reports < 5
+        %samp= number_with_delimiter open_reports
+      - else
+        - if open_reports >= 5 && open_reports < 10
+          - bg_color = "#ffd8d8"
+          - color = '#000'
+        - elsif open_reports >= 10 && open_reports < 25
+          - bg_color = "#ff8989"
+          - color = '#000'
+        - elsif open_reports > 25
+          - bg_color = "#ff4e4e"
+          - color = '#fff'
+        %samp{ :style => "line-height:20px;font-weight:600;border-radius:6px;padding:1px 6px;font-size:12px;color:#{color};background-color:#{bg_color};" }= number_with_delimiter open_reports
+  
+  %td
     = render 'admin/accounts/account_flags_block', :account => account

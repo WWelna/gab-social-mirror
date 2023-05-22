@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
+import { me } from '../initial_state'
 import { createBookmarkCollection } from '../actions/bookmarks'
 import { closeModal } from '../actions/modal'
 import Button from '../components/button'
@@ -25,8 +26,11 @@ class BookmarkCollectionCreate extends React.PureComponent {
 
   render() {
     const { value } = this.state
+    const { isPro } = this.props
 
     const isDisabled = !value
+    
+    if (!isPro) return <div />
 
     return (
       <Form>
@@ -52,6 +56,10 @@ class BookmarkCollectionCreate extends React.PureComponent {
 
 }
 
+const mapStateToProps = (state) => ({
+  isPro: state.getIn(['accounts', me, 'is_pro']),
+})
+
 const mapDispatchToProps = (dispatch, { isModal }) => ({
   onSubmit(title) {
     if (isModal) dispatch(closeModal())
@@ -64,4 +72,4 @@ BookmarkCollectionCreate.propTypes = {
   isModal: PropTypes.bool,
 }
 
-export default connect(null, mapDispatchToProps)(BookmarkCollectionCreate)
+export default connect(mapStateToProps, mapDispatchToProps)(BookmarkCollectionCreate)

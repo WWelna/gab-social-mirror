@@ -15,6 +15,8 @@ gem 'pghero', '~> 2.7.0'
 gem 'dotenv-rails', '~> 2.7'
 gem 'email_address'
 
+gem 'fx' # Add database functions via migrations
+
 gem 'aws-sdk-s3', '~> 1.41', require: false
 gem 'fog-core', '<= 2.1.0'
 gem 'fog-openstack', '~> 0.3', require: false
@@ -159,6 +161,6 @@ end
 
 gem 'concurrent-ruby', require: false
 
-gem "elastic-apm", "~> 3.13"
+gem "elastic-apm", "~> 4.5"
 gem 'similar_text', '~> 0.0.4'
 gem 'lockbox'

@@ -4,8 +4,13 @@ import { connect } from 'react-redux'
 import { defineMessages, injectIntl } from 'react-intl'
 import { withRouter } from 'react-router-dom'
 import { setFilter } from '../actions/notifications'
+import { openPopover } from '../actions/popover'
 import { me } from '../initial_state'
-import { NOTIFICATION_FILTERS } from '../constants'
+import {
+  NOTIFICATION_FILTERS,
+  BREAKPOINT_EXTRA_SMALL,
+  POPOVER_NOTIFICATION_SETTINGS,
+} from '../constants'
 import PageTitle from '../features/ui/util/page_title'
 import DefaultLayout from '../layouts/default_layout'
 import {
@@ -37,6 +42,16 @@ class NotificationsPage extends React.PureComponent {
     }
   }
 
+  handleOnClickSettings = () => {
+    this.props.dispatch(openPopover(POPOVER_NOTIFICATION_SETTINGS, {
+      targetRef: this.node,
+    }))
+  }
+
+  setNode = (n) => {
+    this.node = n
+  }
+
   render() {
     const {
       children,
@@ -44,6 +59,7 @@ class NotificationsPage extends React.PureComponent {
       locked,
       notificationCount,
       selectedFilter,
+      isXS,
     } = this.props
 
     let filters = NOTIFICATION_FILTERS
@@ -71,13 +87,20 @@ class NotificationsPage extends React.PureComponent {
           LinkFooter,
         ]}
         tabs={tabs}
-        actions={[
+        actions={!isXS ? [
           {
             icon: 'search',
             to: '/search',
           },
+        ] : [
+          {
+            icon: 'cog',
+            onClick: this.handleOnClickSettings
+          },
         ]}
       >
+        {/* just do empty node because it only shows on mobile */}
+        <div ref={this.setNode} />
         <PageTitle badge={notificationCount} path={title} />
         {children}
       </DefaultLayout>
@@ -100,6 +123,7 @@ const mapStateToProps = (state) => ({
   selectedFilter: state.getIn(['notifications', 'filter', 'active']),
   notificationCount: state.getIn(['notifications', 'unread']),
   locked: !!state.getIn(['accounts', me, 'locked']),
+  isXS: state.getIn(['settings', 'window_dimensions', 'width']) <= BREAKPOINT_EXTRA_SMALL,
 })
 
 NotificationsPage.propTypes = {

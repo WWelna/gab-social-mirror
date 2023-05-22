@@ -5,38 +5,46 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { injectIntl, defineMessages } from 'react-intl'
 import isObject from 'lodash.isobject'
+import throttle from 'lodash.throttle'
 import {
   setupListEditor,
   resetListEditor,
-  removeFromListEditor,
   addToListEditor,
   fetchListSuggestions,
   clearListSuggestions,
   changeListSuggestions,
-} from '../actions/lists'
-import { openModal } from '../actions/modal'
+  changeListEditorTitle,
+  changeListEditorSlug,
+  changeListEditorVisibility,
+  submitListEditor,
+} from '../actions/list_editor'
+import {
+  openModal,
+  closeModal,
+} from '../actions/modal'
 import {
   MODAL_LIST_EDITOR,
   MODAL_LIST_DELETE,
 } from '../constants'
+import { me, isStaff } from '../initial_state'
 import Account from '../components/account'
 import Button from '../components/button'
 import Divider from '../components/divider'
 import Input from '../components/input'
 import TabBar from '../components/tab_bar'
 import Text from '../components/text'
+import Select from '../components/select'
+import ListMembers from './list_members'
 
 class ListEdit extends ImmutablePureComponent {
 
   state = {
-    activeTab: this.props.tab || 'members'
+    activeTab: this.props.tab || 'settings'
   }
 
   componentDidMount() {
     const { onInitialize, listId } = this.props
-    if (listId) {
-      onInitialize(listId)
-    }
+    if (listId) onInitialize(listId)
   }
 
   componentDidUpdate(prevProps) {
@@ -61,21 +69,17 @@ class ListEdit extends ImmutablePureComponent {
     this.props.onDeleteList(this.props.list)
   }
 
-  handleAddOrRemoveFromList = (accountId) => {
-    if (this.props.accountIds.includes(accountId)) {
-      this.props.onRemoveAccountFromList(accountId)
-    } else {
-      this.props.onAddAccountToList(accountId)
-    }
+  handleOnAddAccountToList = (accountId) => {
+    this.props.onAddAccountToList(accountId)
   }
 
   handleSearchSuggestionsChange = (value) => {
     this.props.onChangeSuggestions(value)
   }
 
-  handleSearchSuggestionsKeyUp = (e) => {
+  handleSearchSuggestionsKeyUp = throttle(() => {
     this.props.onSubmitSearchSuggestions(this.props.searchSuggestionsValue)
-  }
+  }, 1000, { leading: true, trailing: true })
 
   handleSearchSuggestionsSubmit = () => {
     this.props.onSubmitSearchSuggestions(this.props.searchSuggestionsValue)
@@ -84,14 +88,23 @@ class ListEdit extends ImmutablePureComponent {
   render() {
     const {
       title,
-      accountIds,
+      slug,
       searchAccountIds,
       intl,
       searchSuggestionsValue,
+      visibility,
+      onChangeTitle,
+      onChangeSlug,
+      onChangeVisibility,
+      disabled,
+      onUpdateList,
+      isPro,
+      isListOwner,
+      listId,
     } = this.props
     const { activeTab } = this.state
 
-    // : todo : save new list title
+    if (!isListOwner) return null
 
     return (
       <div>
@@ -100,73 +113,112 @@ class ListEdit extends ImmutablePureComponent {
             <TabBar
               tabs={[
                 {
-                  title: 'Members list',
-                  onClick: () => this.handleChangeTab('members'),
-                  active: activeTab === 'members',
+                  title: 'Settings',
+                  onClick: () => this.handleChangeTab('settings'),
+                  active: activeTab === 'settings',
                 },
                 {
-                  title: 'Add new',
+                  title: 'Add New Members',
                   onClick: () => this.handleChangeTab('add-new'),
                   active: activeTab === 'add-new',
                 },
                 {
-                  title: 'Settings',
-                  onClick: () => this.handleChangeTab('settings'),
-                  active: activeTab === 'settings',
+                  title: 'Remove Members',
+                  onClick: () => this.handleChangeTab('remove-members'),
+                  active: activeTab === 'remove-members',
                 },
               ]}
             />
           </div>
 
           {
-            activeTab === 'members' &&
-            <div className={[_s.d, _s.mb10, _s.py10].join(' ')}>
-              <div className={[_s.d, _s.pb10, _s.pt5].join(' ')}>
-                <div className={[_s.d].join(' ')}>
-                  <Text weight='bold' size='small' color='secondary' className={[_s.d, _s.px15, _s.mt5, _s.mb15].join(' ')}>
-                    Total members ({accountIds.size})
-                  </Text>
-                  {
-                    accountIds &&
-                    accountIds.map((accountId) => (
-                      <Account
-                        compact
-                        key={`remove-from-list-${accountId}`}
-                        id={accountId}
-                        onActionClick={() => this.handleAddOrRemoveFromList(accountId)}
-                        actionIcon='subtract'
-                      />
-                    ))
-                  }
-                </div>
-              </div>
-            </div>
-          }
-
-          {
             activeTab === 'settings' &&
             <div className={[_s.d, _s.mb10, _s.pb10, _s.px15].join(' ')}>
               <div className={[_s.d, _s.py15].join(' ')}>
                 <Input
-                  title={intl.formatMessage(messages.editListTitle)}
-                  placeholder='My new list title...'
+                  title='Edit feed title'
+                  placeholder='My new feed title...'
                   value={title}
-                // onChange={onChange}
-                // onSubmit={onSubmit}
-                // disabled={disabled}
+                  onChange={onChangeTitle}
+                  disabled={disabled}
                 />
               </div>
+              
+              {
+                isPro && isStaff &&
+                <div className={[_s.d, _s.py15].join(' ')}>
+                  <Input
+                    title='Slug (staff only)'
+                    placeholder=''
+                    value={slug}
+                    onChange={onChangeSlug}
+                  />
+                </div>
+              }
+
+              <div className={[_s.d, _s.mb10, _s.py5, _s.ml15].join(' ')}>
+                <Text
+                  htmlFor='list-visibility'
+                  size='small'
+                  weight='medium'
+                  color='secondary'
+                  tagName='label'
+                >
+                  Visibility
+                </Text>
+                <Text color='secondary' size='small' className={_s.pt10}>
+                  By default, feeds are private and only you can see who is on a feed. No one else can view your feeds. No one knows that they are on your feed.
+                </Text>
+                <Text color='secondary' size='small' className={_s.pt5}>
+                  If you want your feed to be public, then people will be able to subscribe to your feed, share your feed and see who is on your feed.
+                </Text>
+                <Text color='secondary' size='small' className={_s.pt5}>
+                  * Note: If you have a public feed then change it to private, all existing feed subscribers will be removed.
+                </Text>
+              </div>
+
+              <div className={[_s.d, _s.mb15].join(' ')}>
+                <Select
+                  id='list-visibility'
+                  value={visibility}
+                  onChange={onChangeVisibility}
+                  options={[
+                    {
+                      value: 'private',
+                      title: 'Private'
+                    },
+                    {
+                      value: 'public',
+                      title: 'Public',
+                    },
+                  ]}
+                />
+
+                <Button
+                  onClick={onUpdateList}
+                  isDisabled={disabled}
+                  className={[_s.mt15].join(' ')}
+                >
+                  <Text color='inherit' align='center'>
+                    Save Changes
+                  </Text>
+                </Button>
+              </div>
+
               <Divider />
-              <div className={_s.mb10}>
+
+              <div className={[_s.d, _s.mb10, _s.mt10].join(' ')}>
                 <Button
                   onClick={this.handleOnDeleteList}
                   backgroundColor='danger'
                 >
-                  Delete List
+                  <Text color='inherit' align='center'>
+                    Delete Feed
+                  </Text>
                 </Button>
               </div>
               <Text size='extraSmall' color='secondary'>
-                Once you delete a list you cannot retrieve it.
+                Once you delete a feed you cannot retrieve it.
               </Text>
             </div>
           }
@@ -182,6 +234,7 @@ class ListEdit extends ImmutablePureComponent {
                   onKeyUp={this.handleSearchSuggestionsKeyUp}
                   handleSubmit={this.handleSearchSuggestionsSubmit}
                   title={intl.formatMessage(messages.searchTitle)}
+                  autocomplete='off'
                   prependIcon='search'
                   hideLabel
                 />
@@ -195,21 +248,27 @@ class ListEdit extends ImmutablePureComponent {
                   {
                     searchAccountIds &&
                     searchAccountIds.map((accountId) => {
-                      if (accountIds.includes(accountId)) return null
+                      // if (searchAccountIds.includes(accountId)) return null
                       return (
                         <Account
                           key={`add-to-list-${accountId}`}
                           id={accountId}
                           compact
-                          onActionClick={() => this.handleAddOrRemoveFromList(accountId)}
+                          onActionClick={() => this.handleOnAddAccountToList(accountId)}
                           actionIcon='add'
+                          noClick
                         />
                       )
-                      })
+                    })
                   }
                 </div>
               </div>
             </div>
+          }
+
+          {
+            activeTab === 'remove-members' &&
+            <ListMembers listId={listId} />
           }
 
         </div>
@@ -240,69 +299,65 @@ const mapStateToProps = (state, { params, id }) => {
 
 	return {
     listId,
-    list: state.getIn(['lists', listId]),
-    title: state.getIn(['listEditor', 'title']),
-    disabled: !state.getIn(['listEditor', 'isChanged']),
-    accountIds: state.getIn(['listEditor', 'accounts', 'items']),
-    searchAccountIds: state.getIn(['listEditor', 'suggestions', 'items']),
-    searchSuggestionsValue: state.getIn(['listEditor', 'suggestions', 'value']),
+    list: state.getIn(['lists', 'items', listId]),
+    title: state.getIn(['list_editor', 'title']),
+    slug: state.getIn(['list_editor', 'slug']),
+    visibility: state.getIn(['list_editor', 'visibility']),
+    disabled: !state.getIn(['list_editor', 'isChanged']),
+    searchAccountIds: state.getIn(['list_editor', 'suggestions', 'items']),
+    searchSuggestionsValue: state.getIn(['list_editor', 'suggestions', 'value']),
+    isListOwner: state.getIn(['lists', 'items', listId, 'account', 'id'], null) === me,
+    isPro: state.getIn(['accounts', me, 'is_pro']),
   }
 }
 
 const mapDispatchToProps = (dispatch) => ({
-
   onDeleteList(list) {
     dispatch(openModal(MODAL_LIST_DELETE, { list }))
   },
-
   onChangeTitle(value) {
     dispatch(changeListEditorTitle(value))
   },
-
+  onChangeSlug(value) {
+    dispatch(changeListEditorSlug(value))
+  },
+  onChangeVisibility(e) {
+    dispatch(changeListEditorVisibility(e.target.value))
+  },
   onUpdateList() {
     dispatch(submitListEditor(false))
+    dispatch(closeModal())
   },
-
   onInitialize(listId) {
     dispatch(setupListEditor(listId))
   },
-
   onReset() {
     dispatch(resetListEditor())
   },
-  
-  onRemoveAccountFromList(accountId) {
-    dispatch(removeFromListEditor(accountId))
-  },
-  
   onAddAccountToList(accountId) {
     dispatch(addToListEditor(accountId))
   },
-
   onSubmitSearchSuggestions(value) {
     dispatch(fetchListSuggestions(value))
   },
-
   onClearSearchSuggestions() {
     dispatch(clearListSuggestions())
   },
-
   onChangeSuggestions(value) {
     dispatch(changeListSuggestions(value))
   },
-
 })
 
 ListEdit.propTypes = {
   list: ImmutablePropTypes.map,
   title: PropTypes.string,
+  visibility: PropTypes.string,
   listId: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   intl: PropTypes.object.isRequired,
   onInitialize: PropTypes.func.isRequired,
   onReset: PropTypes.func.isRequired,
   searchSuggestionsValue: PropTypes.string.isRequired,
-  accountIds: ImmutablePropTypes.list.isRequired,
   searchAccountIds: ImmutablePropTypes.list.isRequired,
   onRemoveAccountFromList: PropTypes.func.isRequired,
   onAddAccountToList: PropTypes.func.isRequired,
@@ -310,6 +365,7 @@ ListEdit.propTypes = {
   onClearSearchSuggestions: PropTypes.func.isRequired,
   onSubmitSearchSuggestions: PropTypes.func.isRequired,
   onDeleteList: PropTypes.func.isRequired,
+  onChangeVisibility: PropTypes.func.isRequired,
   tab: PropTypes.string,
 }
 

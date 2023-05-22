@@ -4,7 +4,7 @@ class BootstrapTimelineService < BaseService
   def call(source_account)
     @source_account = source_account
 
-    autofollow_bootstrap_timeline_accounts!
+    #autofollow_bootstrap_timeline_accounts!
   end
 
   private

@@ -41,6 +41,8 @@ function stopBothTimers() {
 }
 
 const popoverMiddleware = ({ getState, dispatch }) => next => function(action) {
+  if (!action) return
+
   const { type } = action
 
   next(action)

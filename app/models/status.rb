@@ -28,6 +28,7 @@
 #  markdown               :text
 #  expires_at             :datetime
 #  has_quote              :boolean
+#  tombstoned_at          :datetime
 #
 
 class Status < ApplicationRecord
@@ -81,7 +82,6 @@ class Status < ApplicationRecord
   has_one :status_stat, inverse_of: :status
   has_one :poll, inverse_of: :status, dependent: :destroy
 
-  validates :uri, uniqueness: true, presence: true, unless: :local?
   validates :text, presence: true, unless: -> { with_media? || reblog? }
   validates_with StatusLengthValidator
   validates_with StatusLimitValidator
@@ -90,13 +90,15 @@ class Status < ApplicationRecord
 
   accepts_nested_attributes_for :poll
 
-  default_scope { recent }
+  default_scope { recent.not_tombstoned }
 
-  scope :recent, -> { reorder(created_at: :desc) }
-  scope :oldest, -> { reorder(created_at: :asc) }
+  scope :recent, -> { reorder(id: :desc) }
+  scope :oldest, -> { reorder(id: :asc) }
   scope :top, -> { select('statuses.*, case when status_stats.favourites_count is null then 0 else status_stats.favourites_count end as favcount').left_outer_joins(:status_stat).reorder('favcount desc, statuses.id asc') }
-  scope :remote, -> { where(local: false).or(where.not(uri: nil)) }
-  scope :local,  -> { where(local: true).or(where(uri: nil)) }
+  scope :remote, -> { where('false') }
+  scope :local,  -> { }
+  scope :tombstoned,  -> { where.not(tombstoned_at: nil) }
+  scope :not_tombstoned,  -> { where(tombstoned_at: nil) }
 
   scope :only_replies, -> { where('statuses.reply IS TRUE') }
   scope :without_replies, -> { where('statuses.reply IS FALSE') }
@@ -118,6 +120,12 @@ class Status < ApplicationRecord
       result.joins("LEFT OUTER JOIN statuses_tags t#{id} ON t#{id}.status_id = statuses.id AND t#{id}.tag_id = #{id}")
             .where("t#{id}.tag_id IS NULL")
     end
+  }
+
+  scope :since, ->(timestamp) {
+    # All records that have been created since a certain timestamp
+    # This uses the `id` column instead of `created_at`, because it's much faster.
+    where(id: GabSocial::Snowflake.id_at(timestamp)..)
   }
 
   cache_associated :application,
@@ -166,7 +174,7 @@ class Status < ApplicationRecord
   end
 
   def local?
-    attributes['local'] || uri.nil?
+    true
   end
 
   def reblog?
@@ -175,6 +183,10 @@ class Status < ApplicationRecord
 
   def quote?
     !quote_of_id.nil?
+  end
+
+  def tombstoned?
+    !tombstoned_at.nil?
   end
 
   def verb
@@ -250,12 +262,15 @@ class Status < ApplicationRecord
     replies.count
   end
 
-  def replies_count
-    return(0) unless persisted?
-
-    @replies_count ||= Rails.cache.fetch("replies_count:#{id}", expires_in: 1.minutes) do
-      self.class.replies_count_map(id)[id] || 0
+  def quotes_count
+    @quotes_count ||= Rails.cache.fetch("quotes_count:#{id}", expires_in: 1.minutes) do
+      self.class.quotes_count_map(id)[id] || 0
     end
+  end
+
+
+  def replies_count
+    status_stat&.replies_count || 0
   end
 
   def reblogs_count
@@ -277,12 +292,12 @@ class Status < ApplicationRecord
   after_create_commit  :increment_counter_caches
   after_destroy_commit :decrement_counter_caches
 
-  after_create_commit :store_uri, if: :local?
-  after_create_commit :update_statistics, if: :local?
+  after_create_commit :store_uri
+  after_create_commit :update_statistics
 
   around_create GabSocial::Snowflake::Callbacks
 
-  before_validation :prepare_contents, if: :local?
+  before_validation :prepare_contents
   before_validation :set_reblog
   before_validation :set_visibility
   before_validation :set_conversation
@@ -302,12 +317,12 @@ class Status < ApplicationRecord
     end
 
     def as_home_timeline(account)
-      query = where('created_at > ?', 3.days.ago)
+      query = since(3.days.ago)
       query.where(account: [account] + account.following).without_replies
     end
 
     def as_group_timeline(group)
-      query = where('created_at > ?', 10.days.ago)
+      query = since(10.days.ago)
       query.where(group: group).without_replies
     end
 
@@ -346,21 +361,9 @@ class Status < ApplicationRecord
       return({}) unless status_ids.present?
 
       sql = <<-SQL.squish
-        with recursive comment_counter AS (
-          select id, in_reply_to_id
-          from statuses
-          where in_reply_to_id IN (:ids)
-
-          union
-
-          select s.id, c.in_reply_to_id
-          from statuses s
-          join comment_counter c on s.in_reply_to_id = c.id
-        )
-
-        select in_reply_to_id, count(*)
-        from comment_counter
-        group by in_reply_to_id
+        SELECT status_id AS in_reply_to_id, replies_count
+        FROM status_stats
+        WHERE status_id IN (:ids)
       SQL
 
       return self.connection.query(sanitize_sql([sql, { ids: status_ids }])).to_h
@@ -377,6 +380,14 @@ class Status < ApplicationRecord
         count
     end
 
+    def quotes_count_map(status_ids)
+      unscoped.
+        not_tombstoned.
+        where(quote_of_id: status_ids).
+        group(:quote_of_id).
+        count
+    end
+
     def group_pins_map(status_ids, group_id = nil)
       unless group_id.nil?
         GroupPinnedStatus.select('status_id').where(status_id: status_ids).where(group_id: group_id).each_with_object({}) { |p, h| h[p.status_id] = true }
@@ -388,7 +399,7 @@ class Status < ApplicationRecord
 
       cached_items.each do |item|
         account_ids << item.account_id
-        account_ids << item.reblog.account_id if item.reblog?
+        account_ids << item.reblog&.account_id if item.reblog?
       end
 
       account_ids.uniq!
@@ -398,8 +409,8 @@ class Status < ApplicationRecord
       accounts = Account.where(id: account_ids).includes(:account_stat, :user).each_with_object({}) { |a, h| h[a.id] = a }
 
       cached_items.each do |item|
-        item.account = accounts[item.account_id]
-        item.reblog.account = accounts[item.reblog.account_id] if item.reblog?
+        item.account = accounts[item.account_id]        
+        item.reblog.account = accounts[item.reblog.account_id] if item.reblog&.account_id
       end
     end
 
@@ -494,7 +505,7 @@ class Status < ApplicationRecord
   end
 
   def set_reblog
-    self.reblog = reblog.reblog if reblog? && reblog.reblog?
+    self.reblog = reblog.reblog if reblog? && reblog&.reblog?
   end
 
   def set_poll_id
@@ -542,7 +553,7 @@ class Status < ApplicationRecord
   end
 
   def set_local
-    self.local = account.local?
+    self.local = true
   end
 
   def update_statistics
@@ -553,7 +564,7 @@ class Status < ApplicationRecord
   def increment_counter_caches
     account&.increment_count!(:statuses_count)
     reblog&.increment_count!(:reblogs_count) if reblog? && reblog_countable?
-    thread&.increment_count!(:replies_count) if in_reply_to_id.present? && reply_countable?
+    thread&.increment_count!(:replies_count) if in_reply_to_id.present?
   end
 
   def decrement_counter_caches
@@ -561,7 +572,6 @@ class Status < ApplicationRecord
 
     account&.decrement_count!(:statuses_count)
     reblog&.decrement_count!(:reblogs_count) if reblog? && reblog_countable?
-    thread&.decrement_count!(:replies_count) if in_reply_to_id.present? && reply_countable?
   end
 
   def reblog_countable?

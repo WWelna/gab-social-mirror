@@ -54,7 +54,14 @@ module Admin
 
     def unsuspend
       authorize @account, :unsuspend?
+
+      # check if soft suspension, if so un-tombstone all statuses and delete account.suspended_at
+      if !@account.suspended_at.nil?
+        Admin::UndoSoftSuspensionWorker.perform_async(@account.id)
+      end
+
       @account.unsuspend!
+      
       log_action :unsuspend, @account
       redirect_to admin_account_path(@account.id)
     end
@@ -159,12 +166,10 @@ module Admin
     end
 
     def edit
-      redirect_to admin_account_path(@account.id) unless @account.local?
       @user = @account.user
     end
 
     def update
-      redirect_to admin_account_path(@account.id) unless @account.local?
       @user = @account.user
       if @user.update(credentials_params)
         redirect_to admin_account_path(@account.id), notice: I18n.t('generic.changes_saved_msg')
@@ -186,11 +191,11 @@ module Admin
     end
 
     def require_remote_account!
-      redirect_to admin_account_path(@account.id) if @account.local?
+      redirect_to admin_account_path(@account.id)
     end
 
     def require_local_account!
-      redirect_to admin_account_path(@account.id) unless @account.local? && @account.user.present?
+      redirect_to admin_account_path(@account.id) unless @account.user.present?
     end
 
     def filtered_accounts

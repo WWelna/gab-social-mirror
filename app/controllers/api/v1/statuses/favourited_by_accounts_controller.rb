@@ -76,7 +76,8 @@ class Api::V1::Statuses::FavouritedByAccountsController < Api::BaseController
   end
 
   def verify_own_status
-    unless @status.account.id == current_account.id
+    # OWN OR IF IS STAFF/ADMIN
+    unless @status.account.id == current_account.id || current_account.user&.staff?
       render json: {}, status: 404
     end
   end

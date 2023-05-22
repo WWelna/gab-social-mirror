@@ -1,0 +1,10 @@
+%tr
+  %td= list.id
+  %td= list.title
+  %td= list.slug
+  %td= list.subscriber_count
+  %td
+    - if list.is_featured?
+      %span Y
+  %td
+    = table_link_to '', 'Edit', admin_list_path(list)

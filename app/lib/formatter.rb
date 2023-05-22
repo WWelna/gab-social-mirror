@@ -115,12 +115,6 @@ class Formatter
 
     return '' if raw_content.blank?
 
-    unless status.local?
-      html = reformat(raw_content)
-      html = encode_custom_emojis(html, status.emojis, options[:autoplay]) if options[:custom_emojify]
-      return html.html_safe # rubocop:disable Rails/OutputSafety
-    end
-
     linkable_accounts = status.active_mentions.map(&:account)
     linkable_accounts << status.account
 
@@ -167,14 +161,11 @@ class Formatter
   end
 
   def plaintext(status)
-    return status.text if status.local?
-
-    text = status.text.gsub(/(<br \/>|<br>|<\/p>)+/) { |match| "#{match}\n" }
-    strip_tags(text)
+    status.text
   end
 
   def simplified_format(account, **options)
-    html = account.local? ? linkify(account.note) : reformat(account.note)
+    html = linkify(account.note)
     html = encode_custom_emojis(html, account.emojis, options[:autoplay]) if options[:custom_emojify]
     html.html_safe # rubocop:disable Rails/OutputSafety
   end
@@ -202,7 +193,7 @@ class Formatter
   end
 
   def format_field(account, str, **options)
-    html = account.local? ? encode_and_link_urls(str, me: true) : reformat(str)
+    html = encode_and_link_urls(str, me: true)
     html = encode_custom_emojis(html, account.emojis, options[:autoplay]) if options[:custom_emojify]
     html.html_safe # rubocop:disable Rails/OutputSafety
   end
@@ -451,7 +442,7 @@ class Formatter
   def link_to_account(acct)
     username, domain = acct.split('@')
 
-    domain  = nil if TagManager.instance.local_domain?(domain)
+    domain  = nil
     account = EntityCache.instance.mention(username, domain)
 
     account ? mention_html(account) : "@#{encode(acct)}"
@@ -488,7 +479,6 @@ class Formatter
   end
 
   def mention_html(account)
-    # return "<span>@#{encode(account.acct)}</span>" unless account.local?
     "<a data-focusable=\"true\" role=\"link\" href=\"#{encode(TagManager.instance.url_for(account))}\" class=\"u-url mention\">@#{encode(account.acct)}</a>"
   end
 

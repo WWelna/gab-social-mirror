@@ -4,8 +4,9 @@ import {
   SEARCH_FETCH_REQUEST,
   SEARCH_FETCH_FAIL,
   SEARCH_FETCH_SUCCESS,
-  SEARCH_SHOW,
   SEARCH_FILTER_SET,
+  SEARCH_FOCUSED,
+  SEARCH_BLURRED
 } from '../actions/search';
 import {
   COMPOSE_MENTION,
@@ -16,13 +17,13 @@ import { Map as ImmutableMap, List as ImmutableList, fromJS } from 'immutable';
 const initialState = ImmutableMap({
   value: '',
   submitted: false,
-  hidden: false,
   isLoading: false,
   isError: false,
   results: ImmutableMap(),
   filter: ImmutableMap({
     onlyVerified: false,
   }),
+  focused: false
 });
 
 export default function search(state = initialState, action) {
@@ -43,19 +44,7 @@ export default function search(state = initialState, action) {
       map.set('submitted', false);
     });
   case SEARCH_CLEAR:
-    return state.withMutations(map => {
-      map.set('value', '');
-      map.set('results', ImmutableMap());
-      map.set('submitted', false);
-      map.set('hidden', false);
-      map.set('isLoading', false);
-      map.set('isError', false);
-    });
-  case SEARCH_SHOW:
-    return state.set('hidden', false);
-  case COMPOSE_REPLY:
-  case COMPOSE_MENTION:
-    return state.set('hidden', true);
+    return initialState
   case SEARCH_FETCH_SUCCESS:
     return state.set('results', ImmutableMap({
       accounts: ImmutableList(action.results.accounts.map(item => item.id)),
@@ -69,6 +58,8 @@ export default function search(state = initialState, action) {
       mutable.set('items', ImmutableList()).set('hasMore', true)
       mutable.setIn(['filter', action.path], action.value)
     })
+  case SEARCH_FOCUSED:
+    return state.set('focused', action.focused || (!state.get('focused')))
   default:
     return state;
   }

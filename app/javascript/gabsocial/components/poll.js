@@ -111,7 +111,7 @@ class Poll extends ImmutablePureComponent {
             size='medium'
             color={textColor}
             weight={(leading && showResults) ? 'bold' : 'normal'}
-            className={[_s.displayFlex, _s.flexRow, _s.w100PC, _s.aiCenter].join(' ')}
+            className={[_s.displayFlex, _s.flexRow, _s.w100PC, _s.aiCenter, 'textShadow'].join(' ')}
           >
             {
               !showResults &&
@@ -133,7 +133,7 @@ class Poll extends ImmutablePureComponent {
 
             {
               showResults &&
-                <span className={_s.mlAuto}>
+                <span className={[_s.mlAuto, 'textShadow'].join(' ')}>
                   {Math.round(percent)}%
                 </span>
             }

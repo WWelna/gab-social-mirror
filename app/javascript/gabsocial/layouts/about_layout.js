@@ -48,7 +48,7 @@ class AboutLayout extends React.PureComponent {
           <LoggedOutNavigationBar />
         }
 
-        <div className={[_s.d, _s.flexRow, _s.w100PC].join(' ')}>
+        <div className={[_s.d, _s.flexRow, _s.w100PC, _s.flexGrow1].join(' ')}>
 
           <Responsive min={BREAKPOINT_EXTRA_SMALL}>
             <WrappedBundle component={AboutSidebar} componentParams={{ title }} />

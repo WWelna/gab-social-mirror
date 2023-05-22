@@ -16,6 +16,7 @@ class PanelLayout extends React.PureComponent {
       headerButtonTo,
       headerButtonTooltip,
       headerButtonHref,
+      headerButtonRef,
       footerButtonTitle,
       footerButtonAction,
       footerButtonTo,
@@ -42,6 +43,7 @@ class PanelLayout extends React.PureComponent {
                       radiusSmall
                       backgroundColor='none'
                       color='brand'
+                      buttonRef={headerButtonRef}
                       to={headerButtonTo}
                       href={headerButtonHref}
                       onClick={headerButtonAction}
@@ -109,6 +111,7 @@ PanelLayout.propTypes = {
   headerButtonTo: PropTypes.string,
   headerButtonTooltip: PropTypes.string,
   headerButtonHref: PropTypes.string,
+  headerButtonRef: PropTypes.func,
   footerButtonTitle: PropTypes.string,
   footerButtonAction: PropTypes.func,
   footerButtonTo: PropTypes.string,

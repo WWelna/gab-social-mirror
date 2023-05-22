@@ -6,6 +6,7 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import { FormattedMessage } from 'react-intl'
 import { expandListTimeline } from '../actions/timelines'
 import { fetchList, deleteList } from '../actions/lists'
+import { me } from '../initial_state'
 import { openModal } from '../actions/modal'
 import StatusList from '../components/status_list'
 import ColumnIndicator from '../components/column_indicator'
@@ -37,11 +38,14 @@ class ListTimeline extends ImmutablePureComponent {
   }
 
   handleEditClick = () => {
-    this.props.dispatch(openModal('LIST_EDITOR', { id: this.props.params.id }))
+    this.props.dispatch(openModal('LIST_EDITOR', {
+      id: this.props.params.id,
+      tab: 'add-new',
+    }))
   }
 
   render() {
-    const { list } = this.props
+    const { list, isListOwner } = this.props
     const { id } = this.props.params
     const title = list ? list.get('title') : id
 
@@ -54,20 +58,22 @@ class ListTimeline extends ImmutablePureComponent {
     const emptyMessage = (
       <div className={[_s.d, _s.py15, _s.px15, _s.aiCenter].join(' ')}>
         <FormattedMessage
-          id='empty_column.list'
-          defaultMessage='There is nothing in this list yet. When members of this list post new statuses, they will appear here.'
+          id='empty_column.feed'
+          defaultMessage='There is nothing in this feed yet. When members of this feed post new statuses, they will appear here.'
         />
-
-        <div className={_s.mt10}>
-          <Button
-            onClick={this.handleEditClick}
-            className={[_s.mt10]}
-          >
-            <Text color='inherit' align='center'>
-              <FormattedMessage id='list.click_to_add' defaultMessage='Click here to add people' />
-            </Text>
-          </Button>
-        </div>
+        {
+          isListOwner && me &&
+          <div className={_s.mt10}>
+            <Button
+              onClick={this.handleEditClick}
+              className={[_s.mt10]}
+            >
+              <Text color='inherit' align='center'>
+                <FormattedMessage id='list.click_to_add' defaultMessage='Click here to add people' />
+              </Text>
+            </Button>
+          </div>
+        }
       </div>
     )
 
@@ -84,7 +90,8 @@ class ListTimeline extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state, props) => ({
-  list: state.getIn(['lists', props.params.id]),
+  list: state.getIn(['lists', 'items', props.params.id]),
+  isListOwner: state.getIn(['lists', 'items', props.params.id, 'account', 'id'], null) === me,
 })
 
 ListTimeline.propTypes = {

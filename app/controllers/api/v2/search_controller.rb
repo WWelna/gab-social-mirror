@@ -22,7 +22,7 @@ class Api::V2::SearchController <  Api::BaseController
   end
 
   def search_params
-    params.permit(:type, :onlyVerified, :offset, :min_id, :max_id, :account_id)
+    params.permit(:type, :onlyVerified, :offset, :min_id, :max_id, :account_id, :q, :resolve)
   end
 end
 

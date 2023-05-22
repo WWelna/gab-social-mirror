@@ -40,6 +40,9 @@ module AccountAssociations
     has_many :reports, dependent: :destroy, inverse_of: :account
     has_many :targeted_reports, class_name: 'Report', foreign_key: :target_account_id, dependent: :destroy, inverse_of: :target_account
 
+    # Unfollow relationships
+    has_many :targeted_unfollows, class_name: 'Unfollow', foreign_key: :target_account_id, inverse_of: :target_account
+
     has_many :report_notes, dependent: :destroy
     has_many :custom_filters, inverse_of: :account, dependent: :destroy
 
@@ -51,6 +54,8 @@ module AccountAssociations
 
     # Lists (that the account is on, not owned by the account)
     has_many :list_accounts, inverse_of: :account, dependent: :destroy
+    has_many :list_subscribers, inverse_of: :account, dependent: :destroy
+    has_many :list_removed_accounts, inverse_of: :account, dependent: :destroy
     has_many :lists, through: :list_accounts
 
     # Lists (owned by the account)

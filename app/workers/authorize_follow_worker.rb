@@ -4,8 +4,9 @@ class AuthorizeFollowWorker
   include Sidekiq::Worker
 
   def perform(source_account_id, target_account_id)
-    @source_account = Account.find(source_account_id)
-    @target_account = Account.find(target_account_id)
+    @source_account = Account.find_by(id: source_account_id)
+    @target_account = Account.find_by(id: target_account_id)
+    return if @source_account.nil? || @target_account.nil?
 
     AuthorizeFollowService.new.call(@source_account, @target_account)
   rescue ActiveRecord::RecordNotFound

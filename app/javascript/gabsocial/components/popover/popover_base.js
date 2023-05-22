@@ -63,13 +63,18 @@ function containsElement(parentElement, checkElement, level = 0) {
 }
 
 class PopoverBase extends ImmutablePureComponent {
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     if (this.isOpen) {
       // if we don't use a timeout it will bind and trigger some of the events
       // simultaneously
       setTimeout(() => this.bindEvents(), 20)
     } else {
       this.unbindEvents()
+    }
+
+     // if page location changes, immediately close popover
+    if (prevProps.location !== this.props.location) {
+      this.handleClose()
     }
   }
 

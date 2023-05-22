@@ -1,7 +1,13 @@
 import api from '../api'
+import isObject from 'lodash.isobject'
 import { importFetchedAccounts } from './importer'
-// import { showAlertForError } from './alerts'
+import { List as ImmutableList } from 'immutable'
+import { resetListEditor } from './list_editor'
 import { me } from '../initial_state'
+import {
+  LISTS_SORTING_TYPE_ALPHABETICAL,
+  LISTS_SORTING_TYPE_SUBS_DESC,
+} from '../constants'
 
 export const LIST_FETCH_REQUEST = 'LIST_FETCH_REQUEST'
 export const LIST_FETCH_SUCCESS = 'LIST_FETCH_SUCCESS'
@@ -10,10 +16,6 @@ export const LIST_FETCH_FAIL    = 'LIST_FETCH_FAIL'
 export const LISTS_FETCH_REQUEST = 'LISTS_FETCH_REQUEST'
 export const LISTS_FETCH_SUCCESS = 'LISTS_FETCH_SUCCESS'
 export const LISTS_FETCH_FAIL    = 'LISTS_FETCH_FAIL'
-
-export const LIST_EDITOR_TITLE_CHANGE = 'LIST_EDITOR_TITLE_CHANGE'
-export const LIST_EDITOR_RESET        = 'LIST_EDITOR_RESET'
-export const LIST_EDITOR_SETUP        = 'LIST_EDITOR_SETUP'
 
 export const LIST_CREATE_REQUEST = 'LIST_CREATE_REQUEST'
 export const LIST_CREATE_SUCCESS = 'LIST_CREATE_SUCCESS'
@@ -27,14 +29,6 @@ export const LIST_DELETE_REQUEST = 'LIST_DELETE_REQUEST'
 export const LIST_DELETE_SUCCESS = 'LIST_DELETE_SUCCESS'
 export const LIST_DELETE_FAIL    = 'LIST_DELETE_FAIL'
 
-export const LIST_ACCOUNTS_FETCH_REQUEST = 'LIST_ACCOUNTS_FETCH_REQUEST'
-export const LIST_ACCOUNTS_FETCH_SUCCESS = 'LIST_ACCOUNTS_FETCH_SUCCESS'
-export const LIST_ACCOUNTS_FETCH_FAIL    = 'LIST_ACCOUNTS_FETCH_FAIL'
-
-export const LIST_EDITOR_SUGGESTIONS_CHANGE = 'LIST_EDITOR_SUGGESTIONS_CHANGE'
-export const LIST_EDITOR_SUGGESTIONS_READY  = 'LIST_EDITOR_SUGGESTIONS_READY'
-export const LIST_EDITOR_SUGGESTIONS_CLEAR  = 'LIST_EDITOR_SUGGESTIONS_CLEAR'
-
 export const LIST_EDITOR_ADD_REQUEST = 'LIST_EDITOR_ADD_REQUEST'
 export const LIST_EDITOR_ADD_SUCCESS = 'LIST_EDITOR_ADD_SUCCESS'
 export const LIST_EDITOR_ADD_FAIL    = 'LIST_EDITOR_ADD_FAIL'
@@ -43,25 +37,44 @@ export const LIST_EDITOR_REMOVE_REQUEST = 'LIST_EDITOR_REMOVE_REQUEST'
 export const LIST_EDITOR_REMOVE_SUCCESS = 'LIST_EDITOR_REMOVE_SUCCESS'
 export const LIST_EDITOR_REMOVE_FAIL    = 'LIST_EDITOR_REMOVE_FAIL'
 
-export const LIST_ADDER_RESET = 'LIST_ADDER_RESET'
-export const LIST_ADDER_SETUP = 'LIST_ADDER_SETUP'
-
 export const LIST_ADDER_LISTS_FETCH_REQUEST = 'LIST_ADDER_LISTS_FETCH_REQUEST'
 export const LIST_ADDER_LISTS_FETCH_SUCCESS = 'LIST_ADDER_LISTS_FETCH_SUCCESS'
 export const LIST_ADDER_LISTS_FETCH_FAIL    = 'LIST_ADDER_LISTS_FETCH_FAIL'
 
+export const LIST_ACCOUNTS_MEMBER_LEAVE_REQUEST = 'LIST_ACCOUNTS_MEMBER_LEAVE_REQUEST'
+export const LIST_ACCOUNTS_MEMBER_LEAVE_SUCCESS = 'LIST_ACCOUNTS_MEMBER_LEAVE_SUCCESS'
+export const LIST_ACCOUNTS_MEMBER_LEAVE_FAIL    = 'LIST_ACCOUNTS_MEMBER_LEAVE_FAIL'
+
+export const LIST_SUBSCRIBE_REQUEST = 'LIST_SUBSCRIBE_REQUEST'
+export const LIST_SUBSCRIBE_SUCCESS = 'LIST_SUBSCRIBE_SUCCESS'
+export const LIST_SUBSCRIBE_FAIL    = 'LIST_SUBSCRIBE_FAIL'
+
+export const LIST_UNSUBSCRIBE_REQUEST = 'LIST_SUBSCRIBE_REQUEST'
+export const LIST_UNSUBSCRIBE_SUCCESS = 'LIST_SUBSCRIBE_SUCCESS'
+export const LIST_UNSUBSCRIBE_FAIL    = 'LIST_SUBSCRIBE_FAIL'
+
+export const LIST_RELATIONSHIPS_FETCH_REQUEST = 'LIST_RELATIONSHIPS_FETCH_REQUEST'
+export const LIST_RELATIONSHIPS_FETCH_SUCCESS = 'LIST_RELATIONSHIPS_FETCH_SUCCESS'
+export const LIST_RELATIONSHIPS_FETCH_FAIL    = 'LIST_RELATIONSHIPS_FETCH_FAIL'
+
+export const LIST_SORT = 'LIST_SORT'
+
 /**
- *
+ * Fetch list by id
  */
 export const fetchList = (id) => (dispatch, getState) => {
-  if (!me) return
-
-  if (getState().getIn(['lists', id])) return
+  // if list exists already, return
+  if (getState().getIn(['lists', 'items', id])) return
 
   dispatch(fetchListRequest(id))
 
   api(getState).get(`/api/v1/lists/${id}`)
-    .then(({ data }) => dispatch(fetchListSuccess(data)))
+    .then(({ data }) => {
+      dispatch(fetchListSuccess(data))
+      if (data) {
+        if (data.account) dispatch(importFetchedAccounts([data.account]))
+      }
+    })
     .catch((err) => dispatch(fetchListFail(id, err)))
 }
 
@@ -82,19 +95,28 @@ const fetchListFail = (id, error) => ({
 })
 
 /**
- *
+ * Fetch all lists for current user
  */
 export const fetchLists = () => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    dispatch(fetchListsRequest())
-    if (!me) return reject()
-    api(getState).get('/api/v1/lists').then(({ data }) => {
-      dispatch(fetchListsSuccess(data))
-      return resolve()
-    }).catch((err) => {
-      dispatch(fetchListsFail(err))
-      return reject()
-    })
+  if (!me) return
+  if (getState().getIn(['lists', 'isLoading'])) return false
+
+  dispatch(fetchListsRequest())
+  api(getState).get('/api/v1/lists').then(({ data }) => {
+    dispatch(fetchListsSuccess(data))
+
+    if (isObject(data)) {
+      const ownAccounts = Array.isArray(data.own) ? data.own.map((list) => list.account) : null
+      if (ownAccounts) dispatch(importFetchedAccounts(ownAccounts))
+
+      const memberAccounts = Array.isArray(data.member_of) ? data.member_of.map((list) => list.account) : null
+      if (memberAccounts) dispatch(importFetchedAccounts(memberAccounts))
+      
+      const subscribedToAccounts = Array.isArray(data.subscribed_to) ? data.subscribed_to.map((list) => list.account) : null
+      if (subscribedToAccounts) dispatch(importFetchedAccounts(subscribedToAccounts))
+    }
+  }).catch((err) => {
+    dispatch(fetchListsFail(err))
   })
 }
 
@@ -102,9 +124,9 @@ const fetchListsRequest = () => ({
   type: LISTS_FETCH_REQUEST,
 })
 
-const fetchListsSuccess = (lists) => ({
+const fetchListsSuccess = (data) => ({
   type: LISTS_FETCH_SUCCESS,
-  lists,
+  data,
 })
 
 const fetchListsFail = (error) => ({
@@ -114,113 +136,77 @@ const fetchListsFail = (error) => ({
 })
 
 /**
- *
+ * Create a list with given params
  */
-export const submitListEditor = (shouldReset) => (dispatch, getState) => {
-  const listId = getState().getIn(['listEditor', 'listId'])
-  const title  = getState().getIn(['listEditor', 'title'])
-
-  if (listId === null) {
-    dispatch(createList(title, shouldReset))
-  } else {
-    dispatch(updateList(listId, title, shouldReset))
-  }
-}
-
-/**
- *
- */
-export const setupListEditor = (listId) => (dispatch, getState) => {
-  dispatch({
-    type: LIST_EDITOR_SETUP,
-    list: getState().getIn(['lists', listId]),
-  })
-
-  dispatch(fetchListAccounts(listId))
-}
-
-/**
- *
- */
-export const changeListEditorTitle = (value) => ({
-  type: LIST_EDITOR_TITLE_CHANGE,
-  value,
-})
-
-/**
- *
- */
-export const createList = (title, shouldReset) => (dispatch, getState) => {
+ export const createList = (title, visibility, shouldReset, routerHistory) => (dispatch, getState) => {
   if (!me) return
+  // private by default
+  if (!visibility) visibility = 'private'
 
   dispatch(createListRequest())
 
-  api(getState).post('/api/v1/lists', { title }).then(({ data }) => {
+  api(getState).post('/api/v1/lists', { title, visibility }).then(({ data }) => {
     dispatch(createListSuccess(data))
-
-    if (shouldReset) {
-      dispatch(resetListEditor())
-    }
+    if (shouldReset) dispatch(resetListEditor())
+    if (routerHistory && data) routerHistory.push(`/feeds/${data.id}`) 
   }).catch((err) => dispatch(createListFail(err)))
 }
 
-export const createListRequest = () => ({
+const createListRequest = () => ({
   type: LIST_CREATE_REQUEST,
 })
 
-export const createListSuccess = (list) => ({
+const createListSuccess = (list) => ({
   type: LIST_CREATE_SUCCESS,
   showToast: true,
   list,
 })
 
-export const createListFail = (error) => ({
+const createListFail = (error) => ({
   type: LIST_CREATE_FAIL,
   showToast: true,
   error,
 })
 
 /**
- *
+ * Update list with id with given params
  */
-export const updateList = (id, title, shouldReset) => (dispatch, getState) => {
+ export const updateList = (id, title, slug, visibility, shouldReset) => (dispatch, getState) => {
   if (!me) return
 
   dispatch(updateListRequest(id))
 
-  api(getState).put(`/api/v1/lists/${id}`, { title }).then(({ data }) => {
+  api(getState).put(`/api/v1/lists/${id}`, {
+    slug,
+    title,
+    visibility,
+  }).then(({ data }) => {
     dispatch(updateListSuccess(data))
 
-    if (shouldReset) {
-      dispatch(resetListEditor())
-    }
+    if (shouldReset) dispatch(resetListEditor())
   }).catch((err) => dispatch(updateListFail(id, err)))
 }
 
-export const updateListRequest = id => ({
+const updateListRequest = id => ({
   type: LIST_UPDATE_REQUEST,
   id,
 })
 
-export const updateListSuccess = list => ({
+const updateListSuccess = list => ({
   type: LIST_UPDATE_SUCCESS,
   showToast: true,
   list,
 })
 
-export const updateListFail = (id, error) => ({
+const updateListFail = (id, error) => ({
   type: LIST_UPDATE_FAIL,
   showToast: true,
   id,
   error,
 })
 
-export const resetListEditor = () => ({
-  type: LIST_EDITOR_RESET,
-})
-
 /**
- *
+ * Delete a list with given id
  */
 export const deleteList = (id) => (dispatch, getState) => {
   if (!me) return
@@ -232,106 +218,23 @@ export const deleteList = (id) => (dispatch, getState) => {
     .catch((err) => dispatch(deleteListFail(id, err)))
 }
 
-export const deleteListRequest = (id) => ({
+const deleteListRequest = (id) => ({
   type: LIST_DELETE_REQUEST,
   id,
 })
 
-export const deleteListSuccess = (id) => ({
+const deleteListSuccess = (id) => ({
   type: LIST_DELETE_SUCCESS,
   showToast: true,
   id,
 })
 
-export const deleteListFail = (id, error) => ({
+const deleteListFail = (id, error) => ({
   type: LIST_DELETE_FAIL,
   showToast: true,
   id,
   error,
 })
-
-/**
- *
- */
-export const fetchListAccounts = (listId) => (dispatch, getState) => {
-  if (!me) return
-
-  dispatch(fetchListAccountsRequest(listId))
-
-  api(getState).get(`/api/v1/lists/${listId}/accounts`, { params: { limit: 0 } }).then(({ data }) => {
-    dispatch(importFetchedAccounts(data))
-    dispatch(fetchListAccountsSuccess(listId, data))
-  }).catch((err) => dispatch(fetchListAccountsFail(listId, err)))
-}
-
-export const fetchListAccountsRequest = (id) => ({
-  type: LIST_ACCOUNTS_FETCH_REQUEST,
-  id,
-})
-
-export const fetchListAccountsSuccess = (id, accounts, next) => ({
-  type: LIST_ACCOUNTS_FETCH_SUCCESS,
-  id,
-  accounts,
-  next,
-})
-
-export const fetchListAccountsFail = (id, error) => ({
-  type: LIST_ACCOUNTS_FETCH_FAIL,
-  showToast: true,
-  id,
-  error,
-})
-
-/**
- *
- */
-export const fetchListSuggestions = (q) => (dispatch, getState) => {
-  if (!me) return
-
-  const params = {
-    q,
-    resolve: false,
-    limit: 25,
-  }
-
-  api(getState).get('/api/v1/accounts/search', { params }).then(({ data }) => {
-    dispatch(importFetchedAccounts(data))
-    dispatch(fetchListSuggestionsReady(q, data))
-  })
-  // }).catch(error => dispatch(showAlertForError(error)))
-}
-
-/**
- *
- */
-const fetchListSuggestionsReady = (query, accounts) => ({
-  type: LIST_EDITOR_SUGGESTIONS_READY,
-  query,
-  accounts,
-})
-
-/**
- *
- */
-export const clearListSuggestions = () => ({
-  type: LIST_EDITOR_SUGGESTIONS_CLEAR,
-})
-
-/**
- *
- */
-export const changeListSuggestions = (value) => ({
-  type: LIST_EDITOR_SUGGESTIONS_CHANGE,
-  value,
-})
-
-/**
- *
- */
-export const addToListEditor = accountId => (dispatch, getState) => {
-  dispatch(addToList(getState().getIn(['listEditor', 'listId']), accountId))
-}
 
 /**
  *
@@ -370,13 +273,6 @@ const addToListFail = (listId, accountId, error) => ({
 /**
  *
  */
-export const removeFromListEditor = accountId => (dispatch, getState) => {
-  dispatch(removeFromList(getState().getIn(['listEditor', 'listId']), accountId))
-}
-
-/**
- *
- */
 export const removeFromList = (listId, accountId) => (dispatch, getState) => {
   if (!me) return
 
@@ -411,25 +307,6 @@ const removeFromListFail = (listId, accountId, error) => ({
 /**
  *
  */
-export const resetListAdder = () => ({
-  type: LIST_ADDER_RESET,
-})
-
-/**
- *
- */
-export const setupListAdder = accountId => (dispatch, getState) => {
-  dispatch({
-    type: LIST_ADDER_SETUP,
-    account: getState().getIn(['accounts', accountId]),
-  })
-  dispatch(fetchLists())
-  dispatch(fetchAccountLists(accountId))
-}
-
-/**
- *
- */
 export const fetchAccountLists = (accountId) => (dispatch, getState) => {
   if (!me) return
 
@@ -459,15 +336,168 @@ const fetchAccountListsFail = (id, error) => ({
 })
 
 /**
- *
+ * 
  */
-export const addToListAdder = (listId) => (dispatch, getState) => {
-  dispatch(addToList(listId, getState().getIn(['listAdder', 'accountId'])))
+ export const sortLists = (tab, sortType) => (dispatch, getState) => {
+  const listIdsByTab = getState().getIn(['lists', 'lists', tab], ImmutableList()).toJS()
+  const listsByTab = []
+  
+  for (let i = 0; i < listIdsByTab.length; i++) {
+    const listId = listIdsByTab[i]
+    const list = getState().getIn(['lists', 'items', listId])
+    if (list) {
+      listsByTab.push(list.toJS())
+    }
+  }
+
+  if (sortType === LISTS_SORTING_TYPE_ALPHABETICAL) {
+    listsByTab.sort((a, b) => a.title.localeCompare(b.title))
+  } else if (sortType === LISTS_SORTING_TYPE_SUBS_DESC) {
+    listsByTab.sort((a, b) => (a.subscriber_count < b.subscriber_count) ? 1 : -1)
+  }
+
+  const sortedListsIdsByTab = listsByTab.map((list) => list.id)
+
+  dispatch(listsSort(tab, sortedListsIdsByTab))
 }
+
+export const listsSort = (tab, listIds) =>({
+  type: LIST_SORT,
+  tab,
+  listIds,
+})
 
 /**
  *
  */
-export const removeFromListAdder = (listId) => (dispatch, getState) => {
-  dispatch(removeFromList(listId, getState().getIn(['listAdder', 'accountId'])))
+export const subscribeToList = (listId) => (dispatch, getState) => {
+  if (!me) return
+
+  dispatch(subscribeToListRequest(listId))
+
+  api(getState).post(`/api/v1/lists/${listId}/subscribers`)
+    .then(({ data }) => dispatch(subscribeToListSuccess(listId)))
+    .catch((err) => dispatch(subscribeToListFail(listId, err)))
 }
+
+const subscribeToListRequest = (id) => ({
+  type: LIST_SUBSCRIBE_REQUEST,
+  id,
+})
+
+const subscribeToListSuccess = (id) => ({
+  type: LIST_SUBSCRIBE_SUCCESS,
+  showToast: true,
+  id,
+})
+
+const subscribeToListFail = (id, error) => ({
+  type: LIST_SUBSCRIBE_FAIL,
+  showToast: true,
+  id,
+  error,
+})
+
+/**
+ *
+ */
+ export const unsubscribeFromList = (listId) => (dispatch, getState) => {
+  if (!me) return
+
+  dispatch(unsubscribeFromListRequest(listId))
+
+  api(getState).delete(`/api/v1/lists/${listId}/subscribers`)
+    .then(({ data }) => dispatch(unsubscribeFromListSuccess(listId)))
+    .catch((err) => dispatch(unsubscribeFromListFail(listId, err)))
+}
+
+const unsubscribeFromListRequest = (id) => ({
+  type: LIST_UNSUBSCRIBE_REQUEST,
+  id,
+})
+
+const unsubscribeFromListSuccess = (id, lists) => ({
+  type: LIST_UNSUBSCRIBE_SUCCESS,
+  showToast: true,
+  id,
+})
+
+const unsubscribeFromListFail = (id, error) => ({
+  type: LIST_UNSUBSCRIBE_FAIL,
+  showToast: true,
+  id,
+  error,
+})
+
+/**
+ *
+ */
+ export const leaveList = (listId) => (dispatch, getState) => {
+  if (!me) return
+
+  dispatch(leaveListRequest(listId))
+
+  api(getState).delete(`/api/v1/lists/${listId}/accounts/leave`)
+    .then(({ data }) => dispatch(leaveListSuccess(listId)))
+    .catch((err) => dispatch(leaveListFail(listId, err)))
+}
+
+const leaveListRequest = (id) => ({
+  type: LIST_ACCOUNTS_MEMBER_LEAVE_REQUEST,
+  id,
+})
+
+const leaveListSuccess = (id) => ({
+  type: LIST_ACCOUNTS_MEMBER_LEAVE_SUCCESS,
+  showToast: true,
+  id,
+})
+
+const leaveListFail = (id, error) => ({
+  type: LIST_ACCOUNTS_MEMBER_LEAVE_FAIL,
+  showToast: true,
+  id,
+  error,
+})
+
+/**
+ * @description Fetch relationships for the given listIds and current user. For example
+ *              if the current user is a member, admin, mod or not.
+ * @param {Array} listIds
+ */
+ export const fetchListRelationships = (listIds) => (dispatch, getState) => {
+  if (!me || !Array.isArray(listIds)) return
+
+  const loadedRelationships = getState().get('list_relationships')
+  let newListIds = listIds.filter((id) => loadedRelationships.get(id, null) === null)
+
+  if (newListIds.length === 0) return
+
+  // Unique
+  newListIds = Array.from(new Set(newListIds))
+
+  dispatch(fetchListRelationshipsRequest(newListIds))
+
+  api(getState).post('/api/v1/list_relationships', {
+    listIds: newListIds,
+  }).then((response) => {
+    dispatch(fetchListRelationshipsSuccess(response.data))
+  }).catch((error) => {
+    dispatch(fetchListRelationshipsFail(error))
+  })
+}
+
+const fetchListRelationshipsRequest = (listIds) => ({
+  type: LIST_RELATIONSHIPS_FETCH_REQUEST,
+  listIds,
+})
+
+const fetchListRelationshipsSuccess = (relationships) => ({
+  type: LIST_RELATIONSHIPS_FETCH_SUCCESS,
+  relationships,
+})
+
+const fetchListRelationshipsFail = (error) => ({
+  type: LIST_RELATIONSHIPS_FETCH_FAIL,
+  error,
+})

@@ -32,11 +32,14 @@ SimpleNavigation::Configuration.run do |navigation|
       s.item :statuses, safe_join([fa_icon('bars fw'), "Statuses"]), admin_statuses_url, if: -> { current_user.admin? }
       s.item :groups, safe_join([fa_icon('smile-o fw'), t('admin.groups.title')]), admin_groups_url, highlights_on: %r{/admin/groups}
       s.item :reports, safe_join([fa_icon('flag fw'), t('admin.reports.title')]), admin_reports_url, highlights_on: %r{/admin/reports}
+      s.item :lists, safe_join([fa_icon('list fw'), 'Feeds']), admin_lists_url, highlights_on: %r{/admin/lists}
       # s.item :chat_messages, safe_join([fa_icon('comments fw'), "Chat Messages"]), admin_chat_messages_url, if: -> { current_user.admin? }
       s.item :preview_cards, safe_join([fa_icon('link fw'), "Preview Cards"]), admin_preview_cards_url
       s.item :action_logs, safe_join([fa_icon('bars fw'), t('admin.action_logs.title')]), admin_action_logs_url
       s.item :email_domain_blocks, safe_join([fa_icon('envelope fw'), t('admin.email_domain_blocks.title')]), admin_email_domain_blocks_url, highlights_on: %r{/admin/email_domain_blocks}, if: -> { current_user.admin? }
       s.item :link_blocks, safe_join([fa_icon('link fw'), t('admin.link_blocks.title')]), admin_link_blocks_url
+      s.item :tombstones, safe_join([fa_icon('bars fw'), "Tombstones"]), admin_tombstones_url
+      s.item :account_warnings, safe_join([fa_icon('link fw'), "Account Warnings"]), admin_account_warnings_url
     end
 
     n.item :admin, safe_join([fa_icon('cogs fw'), t('admin.title')]), admin_dashboard_url, if: proc { current_user.staff? } do |s|

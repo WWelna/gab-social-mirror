@@ -48,6 +48,7 @@ class Settings::PreferencesController < Settings::BaseController
       :setting_aggregate_reblogs,
       :setting_group_in_home_feed,
       :setting_pro_wants_ads,
+      :setting_show_pro_life,
       notification_emails: %i(follow follow_request reblog favourite mention digest report pro_reminder emails_from_gabcom),
       interactions: %i(must_be_follower must_be_following)
     )

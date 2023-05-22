@@ -23,4 +23,4 @@
       = f.input :text, as: :text, wrapper: :with_block_label, hint: t('simple_form.hints.admin_account_action.text_html', path: admin_warning_presets_path)
 
   .actions
-    = f.button :button, t('admin.account_actions.action'), type: :submit
+    = f.button :button, t('admin.account_actions.action'), id: 'admin-account-actions-action-btn', type: :submit, data: { confirm: @account_action.type == 'suspend' ? t('doorkeeper.applications.confirmations.destroy') : nil }

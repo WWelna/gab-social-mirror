@@ -3,7 +3,6 @@
 class Api::V1::CommentsController < Api::BaseController
   include Authorization
 
-  before_action :require_user!
   before_action :set_status, only: [:show]
   after_action :insert_pagination_headers, only: :show
 

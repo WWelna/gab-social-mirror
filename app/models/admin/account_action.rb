@@ -10,6 +10,7 @@ class Admin::AccountAction
     disable
     silence
     suspend
+    soft_suspend
   ).freeze
 
   attr_accessor :target_account,
@@ -49,11 +50,7 @@ class Admin::AccountAction
 
   class << self
     def types_for_account(account)
-      if account.local?
-        TYPES
-      else
-        TYPES - %w(none disable)
-      end
+      TYPES
     end
   end
 
@@ -67,6 +64,8 @@ class Admin::AccountAction
       handle_silence!
     when 'suspend'
       handle_suspend!
+    when 'soft_suspend'
+      handle_soft_suspend!
     end
   end
 
@@ -118,12 +117,22 @@ class Admin::AccountAction
     queue_suspension_worker!
   end
 
+  def handle_soft_suspend!
+    authorize(target_account, :soft_suspend?)
+    log_action(:soft_suspend, target_account)
+    queue_soft_suspension_worker!
+  end
+
   def text_for_warning
     [warning_preset&.text, text].compact.join("\n\n")
   end
 
   def queue_suspension_worker!
     Admin::SuspensionWorker.perform_async(target_account.id)
+  end
+
+  def queue_soft_suspension_worker!
+    Admin::SoftSuspensionWorker.perform_async(target_account.id)
   end
 
   def process_email!

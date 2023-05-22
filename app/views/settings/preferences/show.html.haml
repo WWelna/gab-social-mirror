@@ -60,6 +60,8 @@
   - if current_user.account.is_pro?
     .fields-group
       = f.input :setting_pro_wants_ads, as: :boolean, wrapper: :with_label
-
+      - if current_user.account.is_pro_life?
+        = f.input :setting_show_pro_life, as: :boolean, wrapper: :with_label
+      
   .actions
     = f.button :button, t('generic.save_changes'), type: :submit

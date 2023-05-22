@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'mime/types/columnar'
+require 'net/http'
 
 module Attachmentable
   extend ActiveSupport::Concern
@@ -12,6 +13,7 @@ module Attachmentable
     before_post_process :set_file_extensions
     before_post_process :check_image_dimensions
     before_post_process :set_file_content_type
+    before_post_process :check_image_nsfw
   end
 
   private
@@ -47,6 +49,42 @@ module Attachmentable
       raise GabSocial::DimensionsValidationError, "#{width}x#{height} images are not supported, must be below #{MAX_MATRIX_LIMIT} sqpx" if width.present? && height.present? && (width * height >= MAX_MATRIX_LIMIT)
     end
   end
+
+  def check_image_nsfw
+    return if !self.is_a?(Account) && !self.is_a?(MediaAttachment)    
+    account = self.is_a?(Account) ? self : self.account
+    self.class.attachment_definitions.each_key do |attachment_name|
+      attachment = send(attachment_name)
+
+      next if attachment.blank? || !/image.*/.match?(attachment.content_type) || attachment.queued_for_write[:original].blank?
+
+      if ENV['CHECK_NSFW_SERVICE'] && attachment.content_type.start_with?('image/')
+        begin
+          log = Logger.new(ENV['CHECK_NSFW_LOG'] || STDOUT)
+          url = URI.parse("#{ENV['CHECK_NSFW_SERVICE']}/image#{attachment.queued_for_write[:original].path}")
+          req = Net::HTTP::Get.new(url.request_uri)
+          res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }        
+          score = Float(res.body)
+          log.info "NSFW score: #{score} for user https://gab.com/admin/accounts/#{account.id}"
+          threshold = if account.vpdi?
+            0.97
+           elsif account.created_at > 1.month.ago
+            0.9
+          else
+            0.95
+          end           
+          bad = score >= threshold
+          if bad
+            raise GabSocial::ValidationError, 'This image appears to contain degenerate sexual content which is not allowed on Gab, please contact support@gab.com if you feel this is in error.'
+          end
+        rescue => e
+          raise if e.is_a?(GabSocial::ValidationError)
+          log.info "NSFW check failed for user https://gab.com/admin/accounts/#{account.id} with error #{e}"
+        end
+      end
+
+    end
+  end  
 
   def appropriate_extension(attachment)
     mime_type = MIME::Types[attachment.content_type]

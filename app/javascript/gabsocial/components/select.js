@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { CX } from '../constants'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import Icon from './icon'
@@ -19,15 +20,31 @@ class Select extends ImmutablePureComponent {
 
   render() {
     const {
+      id,
       value,
       options,
       onChange,
     } = this.props
 
+    const selectClasses = CX({
+      d: 1,
+      outlineNone: 1,
+      text: 1,
+      border1PX: 1,
+      borderColorSecondary: 1,
+      bgTransparent: 1,
+      cPrimary: 1,
+      px15: 1,
+      select: 1,
+      fs14PX: 1,
+      circle: 1,
+    })
+
     return (
       <div className={_s.d}>
         <select
-          className={[_s.d, _s.outlineNone, _s.text, _s.border1PX, _s.borderColorSecondary, _s.px15, _s.select, _s.fs14PX, _s.circle].join(' ')}
+          id={id}
+          className={selectClasses}
           value={value}
           onChange={onChange}
         >
@@ -51,6 +68,7 @@ class Select extends ImmutablePureComponent {
 }
 
 Select.propTypes = {
+  id: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   options: PropTypes.oneOfType([
     ImmutablePropTypes.list,

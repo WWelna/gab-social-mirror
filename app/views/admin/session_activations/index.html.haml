@@ -1,0 +1,24 @@
+- content_for :header_tags do
+  = javascript_pack_tag 'admin', integrity: true, async: true, crossorigin: 'anonymous'
+
+- content_for :page_title do
+  = "@#{@account.acct} Sessions"
+
+= form_for(@form, url: admin_account_session_activations_path) do |f|
+  = hidden_field_tag :page, params[:page]
+
+  .batch-table
+    .batch-table__toolbar
+      %label.batch-table__toolbar__select.batch-checkbox-all
+        = check_box_tag :batch_checkbox_all, nil, false
+      .batch-table__toolbar__actions
+        = f.button safe_join([fa_icon('trash'), t('sessions.revoke')]), name: :revoke, class: 'table-action-link', type: :submit, style: 'color: #CE4D5D;', data: { confirm: t('admin.reports.are_you_sure') }
+    .batch-table__row
+      .batch-table__row__content{style: 'padding:10px 15px 10px 50px;'}
+        %span{style: 'display:inline-block;width:33%;'}= t 'sessions.browser'
+        %span{style: 'display:inline-block;width:33%;'}= t 'sessions.activity'
+        %span{style: 'display:inline-block;width:33%;'} IP Address
+    .batch-table__body
+      = render partial: 'admin/session_activations/session_activation', collection: @session_activations, locals: { f: f }
+
+= paginate @session_activations

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'digest/md5'
+
 class PostStatusService < BaseService
   include Redisable
 
@@ -30,6 +32,7 @@ class PostStatusService < BaseService
     @markdown    = @options[:markdown] if @account.is_pro
     @in_reply_to = @options[:thread]
     @auto_join_group = @options[:autoJoinGroup] || false
+    @status_hash = Digest::MD5.new << @text unless @text.blank?
 
     set_group
 
@@ -42,6 +45,7 @@ class PostStatusService < BaseService
     validate_media!
     validate_group!
     #validate_similarity! unless @account.user&.staff? || @account.vpdi?
+    validate_copy_paste_spam! unless @text.blank? || @account.user&.staff? || @account.vpdi?
     preprocess_attributes!
 
     if scheduled?
@@ -209,9 +213,14 @@ class PostStatusService < BaseService
     end
   end
 
-  def validate_similarity!
-    return true unless StatusSimilarityService.new.call?(@text, @account.id)
-    raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
+  # def validate_similarity!
+  #   return true unless StatusSimilarityService.new.call?(@text, @account.id)
+  #   raise GabSocial::NotPermittedError, 'Spammy behavior detected!'
+  # end
+
+  def validate_copy_paste_spam!
+    return true unless CopyPasteSpamService.new.is_copy_paste_spam(@account.id, @status_hash)
+    raise GabSocial::NotPermittedError, 'Please do not copy and paste the same message over and over.'
   end
 
   def validate_links!

@@ -35,14 +35,11 @@ const fetchMutesRequest = () => ({
   type: MUTES_FETCH_REQUEST,
 })
 
-const fetchMutesSuccess = (accounts, next) => {
-  localStorage.setItem('mutes', accounts.map(item => item.id))
-  return {
-    type: MUTES_FETCH_SUCCESS,
-    accounts,
-    next,
-  }
-}
+const fetchMutesSuccess = (accounts, next) => ({
+  type: MUTES_FETCH_SUCCESS,
+  accounts,
+  next,
+})
 
 const fetchMutesFail = (error) => ({
   type: MUTES_FETCH_FAIL,

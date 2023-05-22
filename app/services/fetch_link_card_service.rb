@@ -78,12 +78,8 @@ class FetchLinkCardService < BaseService
   end
 
   def parse_urls
-    if @status.local?
-      urls = @status.text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
-      return urls.reject { |uri| bad_url?(uri) }.first
-    else
-      return nil
-    end
+    urls = @status.text.scan(URL_PATTERN).map { |array| Addressable::URI.parse(array[0]).normalize }
+    return urls.reject { |uri| bad_url?(uri) }.first
   end
 
   def bad_url?(uri)

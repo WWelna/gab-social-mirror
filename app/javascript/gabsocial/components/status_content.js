@@ -3,9 +3,17 @@ import PropTypes from 'prop-types'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { injectIntl, defineMessages } from 'react-intl'
+import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
+import {
+  openPopoverDeferred,
+  cancelPopover,
+} from '../actions/popover'
 import { isRtl } from '../utils/rtl'
-import { CX } from '../constants'
+import {
+  CX,
+  POPOVER_USER_INFO,
+} from '../constants'
 import Button from './button'
 import Icon from './icon'
 import Text from './text'
@@ -26,6 +34,21 @@ class StatusContent extends ImmutablePureComponent {
     'isComment',
   ]
 
+  // from display_name.js
+  handleOnOpenUserInfoPopover(e, accountId) {
+    if (!e) return
+    this.props.onOpenUserInfoPopover({
+      accountId,
+      targetRef: e.target,
+      position: 'top-start',
+      timeout: 1250
+    })
+  }
+
+  handleOnCancelUserInfoPopover() {
+    this.props.onCancelUserInfoPopover()
+  }
+
   _updateStatusLinks() {
     const node = this.node
 
@@ -45,6 +68,9 @@ class StatusContent extends ImmutablePureComponent {
 
       if (mention) {
         link.addEventListener('click', this.onMentionClick.bind(this, mention), false)
+        link.addEventListener('mouseenter', (e) => this.handleOnOpenUserInfoPopover(e, mention.get('id')), false)
+        link.addEventListener('mousemove', (e) => this.handleOnOpenUserInfoPopover(e, mention.get('id')), false)
+        link.addEventListener('mouseleave', (e) => this.handleOnCancelUserInfoPopover(), false)
         link.setAttribute('title', mention.get('acct'))
         link.removeAttribute('target')
       } else if (['#', '$'].includes(link.textContent[0])  || (link.previousSibling && link.previousSibling.textContent && link.previousSibling.textContent[link.previousSibling.textContent.length - 1] === '#')) {
@@ -327,6 +353,15 @@ class StatusContent extends ImmutablePureComponent {
 
 }
 
+const mapDispatchToProps = (dispatch) => ({
+  onOpenUserInfoPopover(props) {
+    dispatch(openPopoverDeferred(POPOVER_USER_INFO, props))
+  },
+  onCancelUserInfoPopover() {
+    dispatch(cancelPopover())
+  }
+})
+
 const messages = defineMessages({
   show: { id: 'status.show_more', defaultMessage: 'Show' },
   hide: { id: 'status.show_less', defaultMessage: 'Hide' },
@@ -343,4 +378,4 @@ StatusContent.propTypes = {
   isComment: PropTypes.bool,
 }
 
-export default withRouter(injectIntl(StatusContent))
+export default withRouter(injectIntl(connect(null, mapDispatchToProps)(StatusContent)))

@@ -114,7 +114,8 @@ class MediaItem extends ImmutablePureComponent {
       minW198PX: !isVideo && !isSmallRatio && !isSquare,
       minW232PX: isVideo && !isSmallRatio && !isSquare,
       minW120PX: isSmallRatio,
-      minW162PX: isSquare,
+      minW162PX: isSquare && !isSmall,
+      w33PC: isSmall,
     })
 
     const paddedContainerClasses = CX({

@@ -18,7 +18,7 @@ class FavouriteService < BaseService
     end
 
     create_notification(favourite)
-    bump_potential_friendship(account, status)
+    #bump_potential_friendship(account, status)
 
     favourite
   end
@@ -28,15 +28,13 @@ class FavouriteService < BaseService
   def create_notification(favourite)
     status = favourite.status
 
-    if status.account.local?
-      NotifyService.new.call(status.account, favourite)
-    end
+    NotifyService.new.call(status.account, favourite)
   end
 
   def bump_potential_friendship(account, status)
     # ActivityTracker.increment('activity:interactions')
-    return if account.following?(status.account_id)
-    PotentialFriendshipTracker.record(account.id, status.account_id, :favourite)
+    # return if account.following?(status.account_id)
+    #PotentialFriendshipTracker.record(account.id, status.account_id, :favourite)
   end
 
 end

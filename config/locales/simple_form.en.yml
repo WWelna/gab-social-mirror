@@ -64,6 +64,7 @@ en:
           none: Do nothing
           silence: Silence
           suspend: Suspend and irreversibly delete account data
+          soft_suspend: (Soft suspend) Mark as suspended, but keep account data
         warning_preset_id: Use a warning preset
       defaults:
         autofollow: Invite to follow your account
@@ -108,6 +109,7 @@ en:
         setting_noindex: Opt-out of search engine indexing
         setting_reduce_motion: Reduce motion in animations
         setting_group_in_home_feed: Show posts from your groups
+        setting_show_pro_life: Show "PRO Life" in your GabPRO badge instead of "PRO"
         setting_show_application: Disclose application used to send gabs
         setting_system_font_ui: Use system's default font
         setting_theme: Site theme

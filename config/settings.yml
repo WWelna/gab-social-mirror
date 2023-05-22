@@ -20,6 +20,7 @@ defaults: &defaults
   expand_spoilers: false
   preview_sensitive_media: false
   group_in_home_feed: true
+  show_pro_life: false
   noindex: false
   aggregate_reblogs: true
   chat_messages:
@@ -89,6 +90,7 @@ defaults: &defaults
     - messages
     - message
     - deck
+    - warnings
   bootstrap_timeline_accounts: ''
 
 development:

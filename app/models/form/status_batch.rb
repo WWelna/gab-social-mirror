@@ -12,7 +12,12 @@ class Form::StatusBatch
       change_sensitive(action == 'nsfw_on')
     when 'delete'
       delete_statuses
+    when 'tombstone'
+      tombstone_statuses
+    when 'un_tombstone'
+      untombstone_statuses
     end
+
   end
 
   private
@@ -37,6 +42,29 @@ class Form::StatusBatch
       RemovalWorker.perform_async(status.id)
       Tombstone.find_or_create_by(uri: status.uri, account: status.account, by_moderator: true)
       log_action :destroy, status
+    end
+
+    true
+  end
+
+  def tombstone_statuses
+    Status.where(id: status_ids).reorder(nil).find_each do |status|
+      status.update!(tombstoned_at: Time.now)
+      StatusTombstone.create(status: status)
+      log_action :tombstone, status
+    end
+
+    true
+  end
+
+  def untombstone_statuses
+    Status.unscoped.where(id: status_ids).reorder(nil).find_each do |status|
+      status.update!(tombstoned_at: nil)
+      tombstone = StatusTombstone.find_by(status: status)
+      if !tombstone.nil?
+        tombstone.destroy!
+      end
+      log_action :un_tombstone, status
     end
 
     true

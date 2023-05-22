@@ -63,10 +63,18 @@ class InitialStateSerializer < ActiveModel::Serializer
   end
 
   private
-  
+
   def unread_count(account)
-    last_read = account.user.last_read_notification || 0
-    account.notifications.where("id > #{last_read}").count
+    account.
+      notifications.
+      then do |r|
+        last_read = account.user.last_read_notification || 0
+
+        # Only include `AND id > ?` if last_read is > 0.
+        # The query planner was taking 1 second with `AND id > 0` but microseconds without it.
+        last_read.positive? ? r.where('id > ?', last_read) : r
+      end.
+      count
   end
 
   def instance_presenter

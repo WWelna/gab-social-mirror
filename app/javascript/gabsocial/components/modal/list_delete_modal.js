@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
+import { withRouter } from 'react-router-dom'
 import ImmutablePropTypes from 'react-immutable-proptypes'
 import ImmutablePureComponent from 'react-immutable-pure-component'
 import { injectIntl, defineMessages } from 'react-intl'
@@ -11,8 +12,7 @@ class ListDeleteModal extends ImmutablePureComponent {
 
   handleClick = () => {
     this.props.onConfirm(this.props.list.get('id'))
-    // : todo :
-    // redirect back to /lists
+    this.props.history.push('/feeds')
   }
 
   render() {
@@ -54,4 +54,4 @@ ListDeleteModal.propTypes = {
   onConfirm: PropTypes.func.isRequired,
 }
 
-export default injectIntl(connect(null, mapDispatchToProps)(ListDeleteModal))
+export default withRouter(injectIntl(connect(null, mapDispatchToProps)(ListDeleteModal)))

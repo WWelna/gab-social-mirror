@@ -208,7 +208,7 @@ class DeckColumnAddOptionsModal extends ImmutablePureComponent {
 }
 
 const mapStateToProps = (state) => ({
-  lists: getOrderedLists(state),
+  lists: getOrderedLists(state, 'own'),
   groups: getListOfGroups(state, { type: 'member' }),
   suggestionsIds: state.getIn(['deck', 'accountSuggestions']),
 })

@@ -306,7 +306,7 @@ export default class CaliforniaConsumerProtection extends React.PureComponent {
 
             <br />
             <Heading size='h2'>CCPA Rights Request Met</Heading>
-            <Text tagName='p' className={[_s.mt15, _s.mb15].join(' ')} size='medium'>Metrics regarding the consumer rights requests we received from California residents from January 1, 2019 to December 31, 2019 appear in the following chart:</Text>
+            <Text tagName='p' className={[_s.mt15, _s.mb15].join(' ')} size='medium'>Metrics regarding the consumer rights requests we received from California residents from January 1, 2020 to December 31, 2020 appear in the following chart:</Text>
             <Table
               id='table-3'
               columns={['Request Type', 'Received', 'Granted (in whole or in part)', 'Denied', 'Mean Days to Respond']}

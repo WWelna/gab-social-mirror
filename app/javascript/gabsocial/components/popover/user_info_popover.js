@@ -6,7 +6,10 @@ import ImmutablePureComponent from 'react-immutable-pure-component'
 import { NavLink } from 'react-router-dom'
 import { FormattedMessage } from 'react-intl'
 import { makeGetAccount } from '../../selectors'
-import { fetchRelationships } from '../../actions/accounts'
+import {
+  fetchAccount,
+  fetchRelationships,
+} from '../../actions/accounts'
 import { shortNumberFormat } from '../../utils/numbers'
 import { me } from '../../initial_state'
 import PopoverLayout from './popover_layout'
@@ -18,12 +21,17 @@ import UserStat from '../user_stat'
 class UserInfoPopover extends ImmutablePureComponent {
 
   componentDidMount() {
-    this.checkRelationships(this.props.account)
+    const { account, accountId } = this.props
+    if (!account && accountId) {
+      this.props.onFetchAccount(accountId)
+    } else if (!!account) {
+      this.checkRelationships(account)
+    }
   }
 
   componentDidUpdate(prevProps) {
-    const { account } = this.props
-    if (prevProps.account !== account) {
+    const { account, accountId } = this.props
+    if (prevProps.accountId !== accountId) {
       this.checkRelationships(account)
     }
   }
@@ -38,8 +46,8 @@ class UserInfoPopover extends ImmutablePureComponent {
   render() {
     const { account, isXS } = this.props
 
-    if (isXS || !me) return null
-    
+    if (isXS || !me || !account) return null
+
     const content = !account ? null : { __html: account.get('note_emojified') }
     const to = !account ? '' : `/${account.get('acct')}`
 
@@ -92,6 +100,9 @@ const mapStateToProps = (state, props) => ({
 })
 
 const mapDispatchToProps = (dispatch) => ({
+  onFetchAccount(accountId) {
+    dispatch(fetchAccount(accountId))
+  },
   onFetchRelationships(accountId) {
     dispatch(fetchRelationships([accountId]))
   },

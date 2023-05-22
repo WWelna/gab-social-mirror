@@ -40,6 +40,7 @@ class ProfileInfoPanel extends ImmutablePureComponent {
     const isDonor = account.get('is_donor')
     const isInvestor = account.get('is_investor')
     const hasBadges = isPro || isDonor || isInvestor || isBot
+    const proBadgeTitle = isPro && account.get('show_pro_life') ? 'PRO Life' : 'PRO'
 
     return (
       <Wrapper title={intl.formatMessage(messages.title)}>
@@ -81,7 +82,7 @@ class ProfileInfoPanel extends ImmutablePureComponent {
                 { 
                   isPro &&
                   <div className={[_s.mr5, _s.radiusSmall, _s.bgPro, _s.py2, _s.px5].join(' ')}>
-                    <Text weight='bold' size='small' className={_s.colorBGPrimary} isBadge>PRO</Text>
+                    <Text weight='bold' size='small' className={_s.colorBGPrimary} isBadge>{proBadgeTitle}</Text>
                   </div>
                 }
                 {
@@ -107,14 +108,14 @@ class ProfileInfoPanel extends ImmutablePureComponent {
                 fields.map((pair, i) => (
                   <React.Fragment>
                     <Divider isSmall />
-                    <dl className={[_s.d, _s.flexRow, _s.aiCenter].join(' ')} key={`profile-field-${i}`}>
+                    <dl className={[_s.d, _s.flexRow, _s.flexWrap, _s.aiCenter].join(' ')} key={`profile-field-${i}`}>
                       <dt
-                        className={[_s.text, _s.dangerousContent, _s.pr5].join(' ')}
+                        className={[_s.text, _s.dangerousContent, _s.lineHeight15, _s.pr5, _s.mrAuto].join(' ')}
                         dangerouslySetInnerHTML={{ __html: pair.get('name_emojified') }}
                         title={pair.get('name')}
                       />
                       <dd
-                        className={[_s.dangerousContent, _s.mlAuto].join(' ')}
+                        className={[_s.dangerousContent, _s.lineHeight15, _s.ml0].join(' ')}
                         title={pair.get('value_plain')}
                         dangerouslySetInnerHTML={{ __html: pair.get('value_emojified') }}
                       />

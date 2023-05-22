@@ -13,6 +13,7 @@ import {
   TIMELINE_DEQUEUE,
   MAX_QUEUED_ITEMS,
   TIMELINE_SCROLL_TOP,
+  HOME_TIMELINE_SORT,
 } from '../actions/timelines'
 import {
   ACCOUNT_BLOCK_SUCCESS,
@@ -34,6 +35,7 @@ const initialTimeline = ImmutableMap({
   isLoading: false,
   isError: false,
   hasMore: true,
+  sortByValue: null,
   items: ImmutableList(),
   queuedItems: ImmutableList(), //max= MAX_QUEUED_ITEMS
   totalQueuedItemsCount: 0, //used for queuedItems overflow for MAX_QUEUED_ITEMS+
@@ -46,13 +48,11 @@ const expandNormalizedTimeline = (state, timeline, statuses, next, isPartial, is
 
     if (!next && !isLoadingRecent) mMap.set('hasMore', false)
 
-    if (!statuses.isEmpty()) {
+    if (timeline.endsWith(':pinned')) {
+      mMap.set('items', statuses.map(status => status.get('id')));
+    } else if (!statuses.isEmpty()) {
       mMap.update('items', ImmutableList(), oldIds => {
         const newIds = statuses.map(status => status.get('id'));
-
-        if (timeline.indexOf(':pinned') !== -1) {
-          return newIds;
-        }
 
         // const realtime = ['home']
         // if no realtime, do all that, otherwise just concat
@@ -131,8 +131,10 @@ const deleteStatus = (state, id, accountId, references, exclude_account = null) 
 };
 
 const clearTimeline = (state, timeline) => {
-  return state.set(timeline, initialTimeline);
-};
+  // keep sortByValue
+  const existingSortByValue = state.getIn([timeline, 'sortByValue'], null)
+  return state.set(timeline, initialTimeline).setIn([timeline, 'sortByValue'], existingSortByValue)
+}
 
 const filterTimelines = (state, relationship, statuses) => {
   let references;
@@ -219,6 +221,11 @@ export default function timelines(state = initialState, action) {
     return removeStatusFromGroup(state, action.groupId, action.statusId)
   case GROUP_UNPIN_STATUS_SUCCESS:
     return removeStatusFromGroupPins(state, action.groupId, action.statusId)
+
+  case HOME_TIMELINE_SORT:
+    return state.update('home', initialTimeline, map => map.withMutations(mMap => {
+      mMap.set('sortByValue', action.sortByValue)
+    }))
   default:
     return state
   }

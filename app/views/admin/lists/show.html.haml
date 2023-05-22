@@ -1,0 +1,24 @@
+- content_for :page_title do
+  = @list.title
+
+= simple_form_for(@list, url: admin_list_path(@list.id), html: { method: :put }) do |f|
+  = render 'shared/error_messages', object: @list
+
+  .fields-group
+    = f.input :title, wrapper: :with_label, label: 'Title'
+  
+  .fields-group
+    = f.input :slug, wrapper: :with_label, label: 'Slug'
+  
+  .fields-group
+    = f.input :is_featured, as: :boolean, wrapper: :with_label, label: 'Is Featured?'
+
+  .actions
+    = f.button :button, t('generic.save_changes'), type: :submit
+
+%br
+%hr
+%br
+
+.actions
+  = table_link_to 'times', 'Delete Feed', admin_list_path(@list.id), method: :delete, data: { confirm: t('admin.accounts.are_you_sure') }

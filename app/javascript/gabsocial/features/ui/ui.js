@@ -3,18 +3,19 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { HotKeys } from 'react-hotkeys'
+// import { HotKeys } from 'react-hotkeys'
 import { defineMessages, injectIntl } from 'react-intl'
 import { Switch, Redirect, withRouter } from 'react-router-dom'
 import debounce from 'lodash.debounce'
 import queryString from 'query-string'
-import moment from 'moment-mini'
 import { uploadCompose, resetCompose } from '../../actions/compose'
-import { expandHomeTimeline } from '../../actions/timelines'
-import { fetchGroups } from '../../actions/groups'
+import {
+  setHomeTimelineSort,
+  expandHomeTimeline,
+} from '../../actions/timelines'
 import { expandNotifications, setFilter } from '../../actions/notifications'
+import { fetchUnreadWarningsCount } from '../../actions/warnings'
 import LoadingBar from '../../components/loading_bar'
-import { fetchFilters } from '../../actions/filters'
 import { clearHeight } from '../../actions/height_cache'
 import { openModal } from '../../actions/modal'
 import WrappedRoute from './util/wrapped_route'
@@ -110,9 +111,11 @@ import {
   StatusFeature,
   StatusLikes,
   StatusReposts,
+  StatusQuotes,
   Suggestions,
   TermsOfSale,
   TermsOfService,
+  Warnings,
 } from './util/async_components'
 import { me, meUsername } from '../../initial_state'
 
@@ -247,11 +250,13 @@ class SwitchingArea extends React.PureComponent {
         <WrappedRoute path='/links/:id' page={LinkPage} component={LinkTimeline} content={children} componentParams={{ title: 'Link Feed' }} />
 
         <WrappedRoute path='/shortcuts' page={ShortcutsPage} component={Shortcuts} content={children} />
+        
+        <WrappedRoute path='/warnings' page={BasicPage} component={Warnings} content={children} componentParams={{ title: 'Warnings' }} />
 
-        <WrappedRoute path='/lists' exact page={ListsPage} component={ListsDirectory} content={children} />
-        <WrappedRoute path='/lists/create' exact page={ModalPage} component={ListCreate} content={children} componentParams={{ title: 'Create List', page: 'create-list' }} />
-        <WrappedRoute path='/lists/:id/edit' exact page={ModalPage} component={ListEdit} content={children} componentParams={{ title: 'Edit List', page: 'edit-list' }} />
-        <WrappedRoute path='/lists/:id' page={ListPage} component={ListTimeline} content={children} />
+        <WrappedRoute path='/feeds' exact page={ListsPage} component={ListsDirectory} content={children} />
+        <WrappedRoute path='/feeds/create' exact page={ModalPage} component={ListCreate} content={children} componentParams={{ title: 'Create Feed', page: 'create-feed' }} />
+        <WrappedRoute path='/feeds/:id/edit' exact page={ModalPage} component={ListEdit} content={children} componentParams={{ title: 'Edit Feed', page: 'edit-feed' }} />
+        <WrappedRoute path='/feeds/:id' publicRoute page={ListPage} component={ListTimeline} content={children} />
 
         <WrappedRoute path='/notifications' exact page={NotificationsPage} component={Notifications} content={children} />
         <Redirect from='/follow_requests' to='/notifications/follow_requests' exact />
@@ -282,15 +287,15 @@ class SwitchingArea extends React.PureComponent {
         { /* <WrappedRoute path='/:username/albums/:albumId/edit' page={ModalPage} component={AlbumCreate} content={children} componentParams={{ title: 'Edit Album', page: 'edit-album' }} />  */ }
 
         <WrappedRoute path='/:username/likes' page={ProfilePage} component={LikedStatuses} content={children} />
-        <WrappedRoute path='/:username/bookmarks' page={ProfilePage} component={BookmarkedStatuses} content={children} />
-        {/*<WrappedRoute path='/:username/bookmark_collections/create' page={ModalPage} component={BookmarkCollectionCreate} content={children} componentParams={{ title: 'Create Bookmark Collection', page: 'create-bookmark-collection' }} />
-        <WrappedRoute path='/:username/bookmark_collections/:bookmarkCollectionId' page={ProfilePage} component={BookmarkedStatuses} content={children} />
-        <WrappedRoute path='/:username/bookmark_collections/:bookmarkCollectionId/edit' page={ModalPage} component={BookmarkCollectionCreate} content={children} componentParams={{ title: 'Edit Bookmark Collection', page: 'edit-bookmark-collection' }} />
-        <WrappedRoute path='/:username/bookmark_collections' page={ProfilePage} component={BookmarkCollections} content={children} />*/}
+        <WrappedRoute path='/:username/bookmarks' exact page={ProfilePage} component={BookmarkCollections} content={children} />
+        <WrappedRoute path='/:username/bookmarks/create' page={ModalPage} component={BookmarkCollectionCreate} content={children} componentParams={{ title: 'Create Bookmark Collection', page: 'create-bookmark-collection' }} />
+        {/* <WrappedRoute path='/:username/bookmarks/:bookmarkCollectionId/edit' exact page={ModalPage} component={BookmarkCollectionEdit} content={children} componentParams={{ title: 'Edit Bookmark Collection', page: 'edit-bookmark-collection' }} /> */}
+        <WrappedRoute path='/:username/bookmarks/:bookmarkCollectionId' page={ProfilePage} component={BookmarkedStatuses} content={children} />
         
         <WrappedRoute path='/:username/posts/:statusId' publicRoute exact page={BasicPage} component={StatusFeature} content={children} componentParams={{ title: 'Status', page: 'status' }} />
 
         <WrappedRoute path='/:username/posts/:statusId/reposts' publicRoute page={ModalPage} component={StatusReposts} content={children} componentParams={{ title: 'Reposts' }} />
+        <WrappedRoute path='/:username/posts/:statusId/quotes' publicRoute page={ModalPage} component={StatusQuotes} content={children} componentParams={{ title: 'Quotes' }} />
         <WrappedRoute path='/:username/posts/:statusId/likes' page={ModalPage} component={StatusLikes} content={children} componentParams={{ title: 'Likes' }} />
 
         <WrappedRoute page={ErrorPage} component={GenericNotFound} content={children} />
@@ -440,7 +445,10 @@ class UI extends React.PureComponent {
 
     if (pathname === '/home') {
       this.setState({ fetchedHome: true })
-      this.props.dispatch(expandHomeTimeline())
+      const savedHomeSortByValue = localStorage.getItem('homeSortByValue')
+      if (savedHomeSortByValue) this.props.dispatch(setHomeTimelineSort(savedHomeSortByValue))
+      this.props.dispatch(expandHomeTimeline({ sortByValue: savedHomeSortByValue }))
+      this.props.dispatch(fetchUnreadWarningsCount())
     } else if (pathname.startsWith('/notifications')) {
       try {
         const search = this.props.location.search
@@ -477,6 +485,7 @@ class UI extends React.PureComponent {
       if (pathname === '/home' && !this.state.fetchedHome) {
         this.setState({ fetchedHome: true })
         this.props.dispatch(expandHomeTimeline())
+        this.props.dispatch(fetchUnreadWarningsCount())
       } else if (pathname.startsWith('/notifications') && !this.state.fetchedNotifications) {
         this.setState({ fetchedNotifications: true })
         this.props.dispatch(expandNotifications())

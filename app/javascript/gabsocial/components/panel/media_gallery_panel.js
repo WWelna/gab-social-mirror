@@ -57,17 +57,21 @@ class MediaGalleryPanel extends ImmutablePureComponent {
         headerButtonTitle={!!account ? intl.formatMessage(messages.show_all) : undefined}
         headerButtonTo={!!account ? `/${account.get('acct')}/photos` : undefined}
       > 
-        <div className={[_s.d, _s.flexRow, _s.flexWrap, _s.aiCenter, _s.jcCenter].join(' ')}>
+        <div className={[_s.d, _s.w100PC, _s.px10, _s.pb10, _s.flexRow, _s.flexWrap].join(' ')}>
           {
             !!account && attachments.size > 0 &&
-            attachments.slice(0, 16).map((attachment, i) => (
-              <MediaItem
-                isSmall
-                key={attachment.get('id')}
-                attachment={attachment}
-                account={account}
-              />
-            ))
+            <React.Fragment>
+              {
+                attachments.slice(0, 9).map((attachment, i) => (
+                  <MediaItem
+                    isSmall
+                    key={attachment.get('id')}
+                    attachment={attachment}
+                    account={account}
+                  />
+                ))
+              }
+            </React.Fragment>
           }
           {
             !account || (attachments.size === 0 && isLoading) &&

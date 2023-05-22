@@ -116,9 +116,9 @@ class SidebarXS extends ImmutablePureComponent {
                     title: intl.formatMessage(messages.profile),
                   },
                   {
-                    to: '/lists',
+                    to: '/feeds',
                     onClick: this.handleSidebarClose,
-                    title: intl.formatMessage(messages.lists),
+                    title: 'Feeds',
                   },
                   {
                     to: '/shortcuts',

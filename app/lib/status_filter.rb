@@ -23,24 +23,32 @@ class StatusFilter
     scope
   end
 
+  def unscoped_results
+    scope = Status.unscoped.recent
+    params.each do |key, value|
+      scope = scope.merge scope_for(key, value) if !value.nil? && !value.empty?
+    end
+    scope
+  end
+
   private
 
   def scope_for(key, value)
     case key.to_sym
     when :text
-      Status.where("LOWER(text) LIKE LOWER(?)", "%#{value}%")
+      Status.unscoped.where("LOWER(text) LIKE LOWER(?)", "%#{value}%")
     when :id
-      Status.where(id: value)
+      Status.unscoped.where(id: value)
     when :account_id
-      Status.where(account_id: value)
+      Status.unscoped.where(account_id: value)
     when :group_id
-      Status.where(group_id: value)
+      Status.unscoped.where(group_id: value)
     when :preview_card_id
-      Status.joins(:preview_cards).where("preview_cards.id = #{value.to_i}")
+      Status.unscoped.joins(:preview_cards).where("preview_cards.id = #{value.to_i}")
     when :created_at_lte
-      Status.where("created_at <= ?", value)
+      Status.unscoped.where("created_at <= ?", value)
     when :created_at_gte
-      Status.where("created_at >= ?", value)
+      Status.unscoped.where("created_at >= ?", value)
     else
       raise "Unknown filter: #{key}"
     end

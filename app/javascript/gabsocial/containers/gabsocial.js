@@ -27,8 +27,7 @@ import UI from '../features/ui'
 import IntroductionPage from '../pages/introduction_page'
 import ErrorBoundary from '../components/error_boundary'
 import Display from './display'
-import { fetchBlocks, fetchBlockedby } from '../actions/blocks'
-import { fetchMutes } from '../actions/mutes'
+import { fetchBlocksAndMutes } from '../actions/blocks'
 
 const { localeData, messages } = getLocale()
 addLocaleData(localeData)
@@ -73,9 +72,7 @@ class GabSocialMount extends React.PureComponent {
       const metricsUpdated = Date.parse(localStorage.getItem('metrics_updated')) || null
       if (!metricsUpdated || Date.now().valueOf() > metricsUpdated + 60) {
         localStorage.setItem('metrics_updated', Date.now().valueOf())
-        store.dispatch(fetchBlocks())
-        store.dispatch(fetchBlockedby())
-        store.dispatch(fetchMutes())
+        store.dispatch(fetchBlocksAndMutes())
       }
     }
 

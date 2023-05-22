@@ -31,4 +31,3 @@ delegate(document, '.media-spoiler-hide-button', 'click', () => {
     element.click();
   });
 });
-

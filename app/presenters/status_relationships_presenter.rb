@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class StatusRelationshipsPresenter
-  attr_reader :reblogs_map, :favourites_map, :direct_replies_count_map, :replies_count_map
+  attr_reader :reblogs_map, :favourites_map, :direct_replies_count_map,
+    :quotes_count_map
 
   def initialize(statuses, current_account_id = nil, **options)
     statuses = statuses.compact
@@ -16,6 +17,6 @@ class StatusRelationshipsPresenter
     end
 
     @direct_replies_count_map = Status.direct_replies_count_map(status_ids)
-    @replies_count_map = Status.replies_count_map(status_ids)
+    @quotes_count_map = Status.quotes_count_map(status_ids)
   end
 end

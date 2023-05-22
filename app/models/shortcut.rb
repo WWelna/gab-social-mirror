@@ -15,6 +15,7 @@ class Shortcut < ApplicationRecord
   SHORTCUT_TYPE_MAP = {
     account: 'account',
     group: 'group',
+    list: 'list',
   }.freeze
 
   belongs_to :account

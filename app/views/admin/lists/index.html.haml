@@ -1,0 +1,30 @@
+- content_for :page_title do
+  = 'Feeds'
+
+= form_tag admin_lists_url, method: 'GET', class: 'simple_form' do
+  .fields-group
+    .input.string.optional
+      = text_field_tag :id, params[:id], class: 'string optional', placeholder: "Id"
+    .input.string.optional
+      = text_field_tag :title, params[:title], class: 'string optional', placeholder: "Title"
+    .input.string.optional
+      = text_field_tag :slug, params[:slug], class: 'string optional', placeholder: "Slug"
+    .input.string.optional
+    .actions
+      %button= t('admin.accounts.search')
+      = link_to t('admin.accounts.reset'), admin_lists_path, class: 'button negative'
+
+.table-wrapper
+  %table.table
+    %thead
+      %tr
+        %th ID
+        %th Tite
+        %th Slug
+        %th Subscribers
+        %th Featured
+        %th
+    %tbody
+      = render @lists
+
+= paginate @lists

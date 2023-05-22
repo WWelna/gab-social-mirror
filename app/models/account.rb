@@ -50,6 +50,7 @@
 #  is_investor             :boolean          default(FALSE), not null
 #  is_flagged_as_spam      :boolean          default(FALSE), not null
 #  spam_flag               :integer
+#  weighted_tsv            :tsvector
 #
 
 class Account < ApplicationRecord
@@ -77,20 +78,16 @@ class Account < ApplicationRecord
 
   validates :username, presence: true
 
-  # Remote user validations
-  validates :username, uniqueness: { scope: :domain, case_sensitive: true }, if: -> { !local? && will_save_change_to_username? }
-  validates :username, format: { with: /\A#{USERNAME_RE}\z/i }, if: -> { !local? && will_save_change_to_username? }
-
   # Local user validations
-  validates :username, format: { with: /\A[a-z0-9_]+\z/i }, length: { maximum: 30 }, if: -> { local? && will_save_change_to_username? }
-  validates_with UniqueUsernameValidator, if: -> { local? && will_save_change_to_username? }
-  validates_with UnreservedUsernameValidator, if: -> { local? && will_save_change_to_username? }
-  validates :display_name, length: { maximum: 30 }, if: -> { local? && will_save_change_to_display_name? }
-  validates :note, note_length: { maximum: 500 }, if: -> { local? && will_save_change_to_note? }
-  validates :fields, length: { maximum: 6 }, if: -> { local? && will_save_change_to_fields? }
+  validates :username, format: { with: /\A[a-z0-9_]+\z/i }, length: { maximum: 30 }, if: -> { will_save_change_to_username? }
+  validates_with UniqueUsernameValidator, if: -> { will_save_change_to_username? }
+  validates_with UnreservedUsernameValidator, if: -> { will_save_change_to_username? }
+  validates :display_name, length: { maximum: 30 }, if: -> { will_save_change_to_display_name? }
+  validates :note, note_length: { maximum: 500 }, if: -> { will_save_change_to_note? }
+  validates :fields, length: { maximum: 6 }, if: -> { will_save_change_to_fields? }
 
-  scope :remote, -> { where.not(domain: nil) }
-  scope :local, -> { where(domain: nil) }
+  scope :remote, -> { where('false') }
+  scope :local, -> { }
   scope :partitioned, -> { order(Arel.sql('row_number() over (partition by domain)')) }
   scope :silenced, -> { where.not(silenced_at: nil) }
   scope :suspended, -> { where.not(suspended_at: nil) }
@@ -102,6 +99,7 @@ class Account < ApplicationRecord
   scope :by_domain_accounts, -> { group(:id).select(:domain, 'COUNT(*) AS accounts_count').order('accounts_count desc') }
   scope :matches_username, ->(value) { matching(:username, :starts_with, value) }
   scope :matches_display_name, ->(value) { matching(:display_name, :starts_with, value) }
+  scope :contains_display_name, ->(value) { matching(:display_name, :contains, value) }
   scope :matches_domain, ->(value) { matching(:domain, :contains, value) }
   scope :searchable, -> { without_suspended.where(moved_to_account_id: nil) }
   scope :discoverable, -> { searchable.without_silenced.where(discoverable: true).joins(:account_stat).where(AccountStat.arel_table[:followers_count].gteq(MIN_FOLLOWERS_DISCOVERY)) }
@@ -127,7 +125,7 @@ class Account < ApplicationRecord
   delegate :chosen_languages, to: :user, prefix: false, allow_nil: true
 
   def local?
-    domain.nil?
+    true
   end
 
   def is_spam?
@@ -146,6 +144,18 @@ class Account < ApplicationRecord
     is_verified || is_pro || is_donor || is_investor?
   end
 
+  def is_pro_life?
+    return false if pro_expires_at.nil?
+    return false if !pro_expires_at.present?
+
+    is_pro? && pro_expires_at > DateTime.now + 10.years
+  end
+
+  def show_pro_life?
+    return true if is_pro_life? && user&.setting_show_pro_life
+    false
+  end
+
   alias bot bot?
 
   def bot=(val)
@@ -153,7 +163,7 @@ class Account < ApplicationRecord
   end
 
   def acct
-    local? ? username : "#{username}@#{domain}"
+    username
   end
 
   def local_username_and_domain
@@ -200,21 +210,21 @@ class Account < ApplicationRecord
   def suspend!(date = nil)
     date ||= Time.now.utc
     transaction do
-      user&.disable! if local?
+      user&.disable!
       update!(suspended_at: date)
     end
   end
 
   def unsuspend!
     transaction do
-      user&.enable! if local?
+      user&.enable!
       update!(suspended_at: nil)
     end
   end
 
   def memorialize!
     transaction do
-      user&.disable! if local?
+      user&.disable!
       update!(memorial: true)
     end
   end
@@ -340,11 +350,7 @@ class Account < ApplicationRecord
 
     def value_for_verification
       @value_for_verification ||= begin
-        if account.local?
-          value
-        else
-          ActionController::Base.helpers.strip_tags(value)
-        end
+        value
       end
     end
 
@@ -364,11 +370,7 @@ class Account < ApplicationRecord
     private
 
     def string_limit
-      if account.local?
-        255
-      else
-        2047
-      end
+      255
     end
   end
 
@@ -393,7 +395,6 @@ class Account < ApplicationRecord
           AND accounts.suspended_at IS NULL
           AND accounts.moved_to_account_id IS NULL
           AND accounts.domain IS NULL
-          AND accounts.spam_flag != 1
           #{'AND accounts.is_verified' if options[:onlyVerified]}
         ORDER BY accounts.is_verified DESC
         LIMIT ? OFFSET ?
@@ -411,17 +412,18 @@ class Account < ApplicationRecord
         SELECT
           accounts.*,
           (count(f.id) + 1) * ts_rank_cd(#{textsearch}, #{query}, 32) AS rank,
-          (count(f.id) + 1) AS fc
+          (count(f.id) + 1) AS fc,
+          acs.followers_count
         FROM accounts
         LEFT OUTER JOIN follows AS f ON (accounts.id = f.account_id AND f.target_account_id = ?) OR (accounts.id = f.target_account_id AND f.account_id = ?)
+        JOIN account_stats AS acs ON acs.account_id = accounts.id
         WHERE #{query} @@ #{textsearch}
           AND accounts.suspended_at IS NULL
           AND accounts.moved_to_account_id IS NULL
           AND accounts.domain IS NULL
-          and accounts.spam_flag != 1
           #{'AND accounts.is_verified' if options[:onlyVerified]}
-        GROUP BY accounts.id
-        ORDER BY accounts.is_verified DESC, fc DESC, rank DESC
+        GROUP BY accounts.id, acs.followers_count
+        ORDER BY accounts.is_verified DESC, followers_count DESC, rank DESC, rank DESC
         LIMIT ? OFFSET ?
       SQL
 
@@ -434,11 +436,16 @@ class Account < ApplicationRecord
     private
 
     def generate_query_for_search(terms)
-      terms      = Arel.sql(connection.quote(terms.gsub(/['?\\:]/, ' ')))
-      textsearch = "(setweight(to_tsvector('simple', accounts.display_name), 'A') || setweight(to_tsvector('simple', accounts.username), 'B') || setweight(to_tsvector('simple', coalesce(accounts.domain, '')), 'C'))"
-      query      = "to_tsquery('simple', ''' ' || #{terms} || ' ''' || ':*')"
+      terms      = Arel.sql(connection.quote(terms.gsub(/['?\|\W\\:]/, ' ')))
+      individual_terms = terms.split(' ')
+      terms_string = individual_terms.map { |t| "#{t}" }.join(" | ")
 
-      [textsearch, query]
+      if individual_terms.size == 1
+        query      = "to_tsquery('simple', ''' ' || #{terms} || ' ''' || ':*')"
+      else
+        query      = "to_tsquery('simple', #{terms_string})"
+      end
+      ['accounts.weighted_tsv', query]
     end
   end
 
@@ -446,7 +453,7 @@ class Account < ApplicationRecord
     @emojis ||= CustomEmoji.from_text(emojifiable_text)
   end
 
-  before_validation :prepare_contents, if: :local?
+  before_validation :prepare_contents
   before_validation :prepare_username, on: :create
   before_destroy :clean_feed_manager
 
@@ -462,9 +469,7 @@ class Account < ApplicationRecord
   end
 
   def normalize_domain
-    return if local?
-
-    super
+    return
   end
 
   def emojifiable_text

@@ -95,7 +95,7 @@ class User < ApplicationRecord
   scope :enabled, -> { where(disabled: false) }
   scope :inactive, -> { where(arel_table[:current_sign_in_at].lt(ACTIVE_DURATION.ago)) }
   scope :active, -> { confirmed.where(arel_table[:current_sign_in_at].gteq(ACTIVE_DURATION.ago)).joins(:account).where.not(accounts: { suspended_at: nil }) }
-  scope :matches_email, ->(value) { matching(:email, :starts_with, value) }
+  scope :matches_email, ->(value) { matching(:email, :contains, value) }
   scope :emailable, -> { confirmed.enabled.joins(:account).merge(Account.searchable) }
 
   before_validation :sanitize_languages
@@ -111,7 +111,7 @@ class User < ApplicationRecord
 
   delegate :auto_play_gif, :default_sensitive, :unfollow_modal, :boost_modal, :delete_modal,
            :noindex, :display_media, :hide_network, :pro_wants_ads,
-           :expand_spoilers, :default_language, :aggregate_reblogs,
+           :expand_spoilers, :default_language, :aggregate_reblogs, :show_pro_life,
            :group_in_home_feed, to: :settings, prefix: :setting, allow_nil: false
 
   attr_writer :external

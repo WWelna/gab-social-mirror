@@ -66,8 +66,8 @@ class Api::V1::Timelines::GroupCollectionController < Api::BaseController
     if @collection_type == 'featured'
       @groupIds = FetchGroupsService.new.call("featured")
     elsif @collection_type == 'member' && !current_account.nil?
-      # @groupIds = current_account.groups.pluck(:id)
-      return SortingQueryBuilder.new.call(@sort_type, @groupIds, params[:page], current_account.id, "group_collection")
+      @groupIds = current_account.group_accounts.pluck(:group_id)
+      return SortingQueryBuilder.new.call(@sort_type, @groupIds, params[:page], "group_collection")
     end
 
     if current_account

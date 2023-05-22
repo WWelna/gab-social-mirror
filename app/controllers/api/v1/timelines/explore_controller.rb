@@ -19,11 +19,9 @@ class Api::V1::Timelines::ExploreController < Api::BaseController
   private
 
   def set_sort_type
-    @sort_type = 'newest'
+    @sort_type = 'hot'
     @sort_type = params[:sort_by] if [
       'hot',
-      'newest',
-      'recent',
       'top_today',
       'top_weekly',
       'top_monthly',
@@ -35,31 +33,25 @@ class Api::V1::Timelines::ExploreController < Api::BaseController
   end
 
   def set_statuses
-    seen = []
-    @statuses = cached_explore_statuses.reject {|status|
-      dupe = seen.include?(status.account_id)
-      if !dupe
-        seen.push(status.account_id)
-      end
-      dupe
-    }
-  end
-
-  def cached_explore_statuses
-    ActiveRecord::Base.connected_to(role: :reading) do
+    @statuses = ActiveRecord::Base.connected_to(role: :reading) do
       cache_collection explore_statuses, Status
     end
   end
 
   def explore_statuses
-    if current_account
-      SortingQueryBuilder.new.call(@sort_type, nil, params[:page], nil, "explore").reject {|status|
-        FeedManager.instance.filter?(:home, status, current_account.id)
-      }
+    page = if current_account
+      params[:page].to_i
     else
-      page = [params[:page].to_i.abs, MIN_UNAUTHENTICATED_PAGES].min
-      SortingQueryBuilder.new.call(@sort_type, nil, page, nil, "explore")
+      [params[:page].to_i.abs, MIN_UNAUTHENTICATED_PAGES].min
     end
+
+    statuses = SortingQueryBuilder.new.deduped_with_cache(@sort_type, nil, page, "explore")
+
+    if current_account
+      statuses = statuses.reject {|status| FeedManager.instance.filter?(:home, status, current_account.id) }
+    end
+
+    statuses
   end
 
   def insert_pagination_headers

@@ -80,7 +80,7 @@ class Layout extends React.PureComponent {
           <LoggedOutNavigationBar />
         }
 
-        <div className={[_s.d, _s.flexRow, _s.w100PC].join(' ')}>
+        <div className={[_s.d, _s.flexRow, _s.w100PC, _s.flexGrow1].join(' ')}>
           {
             !noSidebar &&
             <Responsive min={BREAKPOINT_EXTRA_SMALL}>

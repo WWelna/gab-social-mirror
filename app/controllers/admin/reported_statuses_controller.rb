@@ -34,6 +34,8 @@ module Admin
         'nsfw_off'
       elsif params[:delete]
         'delete'
+      elsif params[:tombstone]
+        'tombstone'
       end
     end
 

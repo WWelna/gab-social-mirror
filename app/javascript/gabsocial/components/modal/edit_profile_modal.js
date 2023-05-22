@@ -13,6 +13,7 @@ import FileInput from '../file_input'
 import Input from '../input'
 import Switch from '../switch'
 import Heading from '../heading'
+import Text from '../text'
 import Textarea from '../textarea'
 
 class EditProfileModal extends ImmutablePureComponent {
@@ -115,7 +116,7 @@ class EditProfileModal extends ImmutablePureComponent {
     const isVerified = account.get('is_verified')
 
     return (
-      <div style={{ width: '440px' }} className={[_s.d, _s.modal].join(' ')}>
+      <div style={{ width: '480px' }} className={[_s.d, _s.modal].join(' ')}>
         <Block>
           <div className={[_s.d, _s.flexRow, _s.aiCenter, _s.jcCenter, _s.borderBottom1PX, _s.borderColorSecondary, _s.h53PX, _s.pr10].join(' ')}>
             <Button
@@ -133,16 +134,18 @@ class EditProfileModal extends ImmutablePureComponent {
             <Button
               radiusSmall
               title={intl.formatMessage(messages.save)}
-              className={[_s.mlAuto, _s.w60PX].join(' ')}
+              className={[_s.mlAuto, _s.w72PX, _s.aiCenter].join(' ')}
               onClick={this.handleOnSave}
             >
-              {intl.formatMessage(messages.save)}
+              <Text color='inherit' weight='medium'>
+                {intl.formatMessage(messages.save)}
+              </Text>
             </Button>
           </div>
           <div className={[_s.d, _s.maxH80VH, _s.overflowYScroll].join(' ')}>
             <div className={[_s.d, _s.w100PC, _s.aiCenter].join(' ')}>
               <FileInput
-                width='440px'
+                width='480px'
                 height='180px'
                 id='cover-photo'
                 onChange={this.handleCoverPhotoChange}
@@ -158,40 +161,53 @@ class EditProfileModal extends ImmutablePureComponent {
                   onChange={this.handleProfilePhotoChange}
                 />
               </div>
-              <div className={[_s.d, _s.py5, _s.px15, _s.mt5, _s.mb15, _s.w100PC].join(' ')}>
-                {
-                  !isVerified &&
-                  <React.Fragment>
-                    <Input
-                      id='display-name'
-                      title='Display name'
-                      maxLength={30}
-                      value={displayNameValue}
-                      onChange={this.handleDisplayNameChange}
-                      onBlur={this.handleDisplayNameBlur}
-                    />
-                    <Divider isInvisible />
-                  </React.Fragment>
-                }
+              <div className={[_s.d, _s.py5, _s.mt5, _s.mb15, _s.w100PC].join(' ')}>
+                <div className={[_s.d, _s.mb10, _s.px15].join(' ')}>
+                  <div className={[_s.d, _s.pl15].join(' ')}>
+                    <Text htmlFor='display-name' size='small' weight='medium' color='secondary' tagName='label'>
+                      Display name
+                    </Text>
+                    {
+                      isVerified &&
+                      <Text htmlFor='display-name' size='extraSmall' color='secondary' tagName='label' className={[_s.mt5, _s.mb10].join(' ')}>
+                        (Verified accounts cannot change display names.)
+                      </Text>
+                    }
+                  </div>
+                  <Input
+                    id='display-name'
+                    maxLength={30}
+                    value={displayNameValue}
+                    isDisabled={isVerified}
+                    readOnly={isVerified}
+                    onChange={this.handleDisplayNameChange}
+                    onBlur={this.handleDisplayNameBlur}
+                  />
+                </div>
 
-                <Textarea
-                  title='Bio'
-                  value={bioValue}
-                  disabled={false}
-                  maxLength={500}
-                  onChange={this.handleBioChange}
-                  placeholder='Add your bio...'
-                />
+                <Divider />
+                  
+                <div className={[_s.d, _s.mb10, _s.px15].join(' ')}>
+                  <Textarea
+                    title='Bio'
+                    value={bioValue}
+                    disabled={false}
+                    maxLength={500}
+                    onChange={this.handleBioChange}
+                    placeholder='Add your bio...'
+                  />
+                </div>
 
-                <Divider isInvisible />
+                <Divider />
 
-                <div className={[_s.d, _s.px10].join(' ')}>
+                <div className={[_s.d, _s.mb10, _s.pl25, _s.pr15].join(' ')}>
                   <Switch
                     label='Private account'
                     checked={locked}
                     onChange={this.handleLockedChange}
                   />
                 </div>
+
               </div>
             </div>
           </div>

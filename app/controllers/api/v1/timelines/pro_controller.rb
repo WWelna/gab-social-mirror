@@ -12,17 +12,6 @@ class Api::V1::Timelines::ProController < Api::BaseController
   private
 
   def load_statuses
-    seen = []
-    cached_pro_statuses.reject {|status|
-      dupe = seen.include?(status.account_id)
-      if !dupe
-        seen.push(status.account_id)
-      end
-      dupe
-    }
-  end
-
-  def cached_pro_statuses
     ActiveRecord::Base.connected_to(role: :reading) do
       cache_collection pro_statuses, Status
     end
@@ -37,10 +26,12 @@ class Api::V1::Timelines::ProController < Api::BaseController
     if truthy_param?(:only_media)
       # `SELECT DISTINCT id, updated_at` is too slow, so pluck ids at first, and then select id, updated_at with ids.
       status_ids = statuses.joins(:media_attachments).distinct(:id).pluck(:id)
-      statuses.where(id: status_ids)
-    else
-      statuses
+      statuses = statuses.where(id: status_ids)
     end
+
+    statuses = statuses.uniq { |s| s.account_id }
+
+    statuses
   end
 
   def pro_timeline_statuses

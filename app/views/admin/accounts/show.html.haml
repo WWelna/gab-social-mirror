@@ -71,6 +71,10 @@
       .dashboard__counters__num= number_with_delimiter @account.unfollowing_count
       .dashboard__counters__label Unfollow Count
   %div
+    %a
+      .dashboard__counters__num= number_with_delimiter @account.targeted_unfollows.count
+      .dashboard__counters__label Unfollowed By Count
+  %div
     %a{href: "/admin/chat_messages?account_id=#{@account.id}"}
       .dashboard__counters__num= number_with_delimiter @account.chat_conversation_accounts_count
       .dashboard__counters__label Chat Conversations
@@ -78,6 +82,22 @@
     = link_to admin_account_chat_messages_path(@account.id) do
       .dashboard__counters__num= number_with_delimiter @account.chat_messages_count
       .dashboard__counters__label Chat Messages
+  %div
+    = link_to admin_account_session_activations_path(@account.id) do
+      .dashboard__counters__num= number_with_delimiter @account.user.session_activations.count
+      .dashboard__counters__label Sessions
+  %div
+    %a{href: "/admin/tombstones?account_id=#{@account.id}"}
+      .dashboard__counters__num= number_with_delimiter Status.unscoped.tombstoned.where(account: @account).count
+      .dashboard__counters__label Tombstoned Statuses
+  %div
+    %a{href: "/admin/account_warnings?target_account_id=#{@account.id}"}
+      .dashboard__counters__num= number_with_delimiter @account.targeted_account_warnings.count
+      .dashboard__counters__label Account Warnings
+  %div
+    %a{href: "/admin/action_logs?target_id=#{@account.id}"}
+      .dashboard__counters__num= number_with_delimiter Admin::ActionLog.where(target_id: @account.id).count
+      .dashboard__counters__label Account Audit Logs
 
 - unless @account.local? && @account.user.nil?
   .table-wrapper
@@ -221,33 +241,30 @@
   %div{ style: 'overflow: hidden' }
     %div{ style: 'float: right' }
       - if @account.local?
+        = link_to t('admin.accounts.change_password.button'), edit_admin_account_path(@account.id), class: 'button'
+      - if @account.local?
         = link_to t('admin.accounts.reset_password'), admin_account_reset_path(@account.id), method: :create, class: 'button' if can?(:reset_password, @account.user)
         - if @account.user&.otp_required_for_login?
           = link_to t('admin.accounts.disable_two_factor_authentication'), admin_user_two_factor_authentication_path(@account.user.id), method: :delete, class: 'button' if can?(:disable_2fa, @account.user)
-        - if !@account.memorial? && @account.user_approved?
-          = link_to t('admin.accounts.memorialize'), memorialize_admin_account_path(@account.id), method: :post, data: { confirm: t('admin.accounts.are_you_sure') }, class: 'button button--destructive' if can?(:memorialize, @account)
       - else
         = link_to t('admin.accounts.redownload'), redownload_admin_account_path(@account.id), method: :post, class: 'button' if can?(:redownload, @account)
+      - if @account.local?
+        - unless @account.user_confirmed?
+          = link_to t('admin.accounts.confirm'), admin_account_confirmation_path(@account.id), method: :post, style: 'margin-left:25px;', class: 'button' if can?(:confirm, @account.user)
 
     %div{ style: 'float: left' }
       - if @account.local? && @account.user_approved?
-        = link_to t('admin.accounts.warn'), new_admin_account_action_path(@account.id, type: 'none'), class: 'button' if can?(:warn, @account)
+        = link_to t('admin.accounts.warn'), new_admin_account_action_path(@account.id, type: 'none'), style: 'background-color:#F2BE42;color:#292929;', class: 'button' if can?(:warn, @account)
       - if @account.silenced?
         = link_to t('admin.accounts.undo_silenced'), unsilence_admin_account_path(@account.id), method: :post, class: 'button' if can?(:unsilence, @account)
       - elsif !@account.local? || @account.user_approved?
-        = link_to t('admin.accounts.silence'), new_admin_account_action_path(@account.id, type: 'silence'), class: 'button button--destructive' if can?(:silence, @account)
-
-      - if @account.local?
-        - unless @account.user_confirmed?
-          = link_to t('admin.accounts.confirm'), admin_account_confirmation_path(@account.id), method: :post, class: 'button' if can?(:confirm, @account.user)
+        = link_to t('admin.accounts.silence'), new_admin_account_action_path(@account.id, type: 'silence'), style: 'background-color:#cdd023;color:#292929;', class: 'button button--destructive' if can?(:silence, @account)
 
       - if @account.suspended?
         = link_to t('admin.accounts.undo_suspension'), unsuspend_admin_account_path(@account.id), method: :post, class: 'button' if can?(:unsuspend, @account)
       - elsif !@account.local? || @account.user_approved?
-        = link_to t('admin.accounts.perform_full_suspension'), new_admin_account_action_path(@account.id, type: 'suspend'), class: 'button button--destructive' if can?(:suspend, @account)
-
-      - if @account.local?
-        = link_to t('admin.accounts.change_password.button'), edit_admin_account_path(@account.id), class: 'button'
+        = link_to t('admin.accounts.soft_suspend'), new_admin_account_action_path(@account.id, type: 'soft_suspend'), style: 'background-color:#DF7164;', class: 'button button--destructive' if can?(:suspend, @account)
+        = link_to t('admin.accounts.perform_full_suspension'), new_admin_account_action_path(@account.id, type: 'suspend'), style: 'background-color:#EB524A;', class: 'button button--destructive', data: { confirm: t('doorkeeper.applications.confirmations.destroy') } if can?(:suspend, @account)
 
       - unless @account.local?
         - if DomainBlock.where(domain: @account.domain).exists?

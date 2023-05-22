@@ -31,7 +31,9 @@ export const connectTimelineStream = (timelineId, path, pollingRefresh = null, a
       onReceive (data) {
         switch(data.event) {
         case 'update':
-          dispatch(updateTimelineQueue(timelineId, JSON.parse(data.payload), accept))
+          const update = JSON.parse(data.payload)
+          console.log(update)
+          //dispatch(updateTimelineQueue(timelineId, JSON.parse(data.payload), accept))
           break
         case 'delete':
           dispatch(deleteFromTimelines(data.payload))

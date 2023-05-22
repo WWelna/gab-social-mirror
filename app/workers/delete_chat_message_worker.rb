@@ -7,6 +7,8 @@ class DeleteChatMessageWorker
 
   def perform(chat_message_id)
     return if chat_message_id.nil?
-    DeleteChatMessageService.new.call(ChatMessage.find(chat_message_id))
+    message = ChatMessage.find_by(id: chat_message_id)
+    return if message.nil?
+    DeleteChatMessageService.new.call(message)
   end
 end

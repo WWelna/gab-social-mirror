@@ -162,6 +162,7 @@ en:
       outbox_url: Outbox URL
       pending: Pending review
       perform_full_suspension: Suspend
+      soft_suspend: Soft Suspend
       profile_url: Profile URL
       promote: Promote
       protocol: Protocol
@@ -218,6 +219,7 @@ en:
         destroy_domain_block: "%{name} unblocked domain %{target}"
         destroy_email_domain_block: "%{name} whitelisted e-mail domain %{target}"
         destroy_status: "%{name} removed status by %{target}"
+        tombstoned_status: "%{name} tombstoned status by %{target}"
         disable_2fa_user: "%{name} disabled two factor requirement for user %{target}"
         disable_custom_emoji: "%{name} disabled emoji %{target}"
         disable_user: "%{name} disabled login for user %{target}"
@@ -499,6 +501,7 @@ en:
       back_to_account: Back to account page
       batch:
         delete: Delete
+        tombstone: Tombstone
         nsfw_off: Mark as not sensitive
         nsfw_on: Mark as sensitive
       failed_to_execute: Failed to execute
@@ -1102,17 +1105,20 @@ en:
         disable: While your account is frozen, your account data remains intact, but you cannot perform any actions until it is unlocked.
         silence: While your account is limited, only people who are already following you will see your gabs on this server, and you may be excluded from various public listings. However, others may still manually follow you.
         suspend: Your account has been suspended, and all of your gabs and your uploaded media files have been irreversibly removed from this server, and servers where you had followers.
+        soft_suspend: Your account has been disabled, your account data remains intact, but you cannot perform any actions until it is enabled.
       review_server_policies: Review server policies
       subject:
         disable: Your account %{acct} has been frozen
         none: Warning for %{acct}
         silence: Your account %{acct} has been limited
         suspend: Your account %{acct} has been suspended
+        soft_suspend: Your account %{acct} has been disabled
       title:
         disable: Account frozen
         none: Warning
         silence: Account limited
         suspend: Account suspended
+        soft_suspend: Account disabled
     welcome:
       edit_profile_action: Setup profile
       edit_profile_step: You can customize your profile by uploading an avatar, header, changing your display name and more. If you’d like to review new followers before they’re allowed to follow you, you can lock your account.

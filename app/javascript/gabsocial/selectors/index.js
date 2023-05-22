@@ -220,10 +220,16 @@ export const getAccountGallery = createSelector([
   return medias
 })
 
-export const getOrderedLists = createSelector([state => state.get('lists')], lists => {
-  if (!lists) return lists
-
-  return lists.toList().filter(item => !!item).sort((a, b) => a.get('title').localeCompare(b.get('title')))
+export const getOrderedLists = createSelector([
+  (state, tab) => state.getIn(['lists', 'lists', tab], ImmutableList()),
+  (state) => state.getIn(['lists', 'items']),
+], (listIdsByTab, allLists) => {
+  let returner = ImmutableList()
+  listIdsByTab.forEach((id, i) => {
+    const list = allLists.get(`${id}`)
+    returner = returner.set(i, list)
+  })
+  return returner
 })
 
 export const getToasts = createSelector([

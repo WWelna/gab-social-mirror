@@ -76,7 +76,7 @@ const messages = defineMessages({
 })
 
 const mapStateToProps = (state) => ({
-  lists: getOrderedLists(state),
+  lists: getOrderedLists(state, 'own'),
 })
 
 const mapDispatchToProps = (dispatch) => ({

@@ -22,6 +22,11 @@ class CommentHeader extends ImmutablePureComponent {
     this.props.onOpenReposts(this.props.status)
   }
 
+  openQuotesList = () => {
+    this.props.onOpenQuotes(this.props.status)
+  }
+
+
   openRevisions = () => {
     this.props.onOpenRevisions(this.props.status)
   }
@@ -37,6 +42,7 @@ class CommentHeader extends ImmutablePureComponent {
 
     const repostCount = status.get('reblogs_count')
     const favoriteCount = status.get('favourites_count')
+    const quotesCount = status.get('quotes_count')
 
     const statusUrl = `/${status.getIn(['account', 'acct'])}/posts/${status.get('id')}`;
     const isOwner = ancestorAccountId === status.getIn(['account', 'id'])
@@ -148,6 +154,27 @@ class CommentHeader extends ImmutablePureComponent {
             </React.Fragment>
           }
 
+          {
+            quotesCount > 0 &&
+            <React.Fragment>
+              <DotTextSeperator />
+                <Button
+                  isText
+                  underlineOnHover
+                  backgroundColor='none'
+                  color='tertiary'
+                  className={_s.ml5}
+                  onClick={this.openQuotesList}
+                >
+                <Text size='extraSmall' color='inherit'>
+                  {intl.formatMessage(messages.quotesLabel, {
+                    number: quotesCount,
+                  })}
+                </Text>
+              </Button>
+            </React.Fragment>
+          }
+
           <DotTextSeperator />
 
           <Button
@@ -174,6 +201,7 @@ const messages = defineMessages({
   edited: { id: 'status.edited', defaultMessage: 'Edited' },
   likesLabel: { id: 'likes.label', defaultMessage: '{number, plural, one {# like} other {# likes}}' },
   repostsLabel: { id: 'reposts.label', defaultMessage: '{number, plural, one {# repost} other {# reposts}}' },
+  quotesLabel: { id: 'quotes.label', defaultMessage: '{number, plural, one {# quote} other {# quotes}}' },
   original: { id: 'original_gabber', defaultMessage: 'Original Gabber' },
 })
 
@@ -183,6 +211,7 @@ CommentHeader.propTypes = {
   status: ImmutablePropTypes.map.isRequired,
   onOpenLikes: PropTypes.func.isRequired,
   onOpenReposts: PropTypes.func.isRequired,
+  onOpenQuotes: PropTypes.func.isRequired,
   onOpenRevisions: PropTypes.func.isRequired,
 }
 

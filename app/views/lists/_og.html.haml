@@ -1,0 +1,12 @@
+- description = list_description(list)
+
+%meta{ name: 'description', content: description }/
+
+= opengraph 'og:url', url
+= opengraph 'og:site_name', site_title
+= opengraph 'og:title', "#{list.title} / Feed • #{site_hostname}"
+= opengraph 'og:description', description
+= opengraph 'og:image', asset_pack_path('media/images/preview.png', protocol: :request)
+= opengraph 'og:image:width', '120'
+= opengraph 'og:image:height', '120'
+= opengraph 'twitter:card', 'summary'

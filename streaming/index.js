@@ -132,8 +132,8 @@ const startWorker = (workerId) => {
 
   const redisPrefix = redisNamespace ? `${redisNamespace}:` : '';
 
-  const redisSubscribeClient = redisUrlToClient(redisParams, process.env.REDIS_URL);
-  const redisClient = redisUrlToClient(redisParams, process.env.REDIS_URL);
+  const redisSubscribeClient = redisUrlToClient(redisParams, `redis://${redisParams.host}:${redisParams.port}/${redisParams.db}`);
+  const redisClient = redisUrlToClient(redisParams, `redis://${redisParams.host}:${redisParams.port}/${redisParams.db}`);
 
   const subs = {};
 

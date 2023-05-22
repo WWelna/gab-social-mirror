@@ -77,6 +77,27 @@ import {
   GROUP_REMOVED_ACCOUNTS_CREATE_SUCCESS,
 } from '../actions/groups'
 
+import {
+  LIST_EDITOR_ADD_SUCCESS,
+  LIST_EDITOR_REMOVE_SUCCESS,
+  LIST_ACCOUNTS_MEMBER_LEAVE_SUCCESS,
+} from '../actions/lists'
+import {
+  LIST_SUBSCRIBERS_FETCH_REQUEST,
+  LIST_SUBSCRIBERS_FETCH_SUCCESS,
+  LIST_SUBSCRIBERS_FETCH_FAIL,
+  LIST_SUBSCRIBERS_EXPAND_REQUEST,
+  LIST_SUBSCRIBERS_EXPAND_SUCCESS,
+  LIST_SUBSCRIBERS_EXPAND_FAIL,
+  
+  LIST_MEMBERS_FETCH_REQUEST,
+  LIST_MEMBERS_FETCH_SUCCESS,
+  LIST_MEMBERS_FETCH_FAIL,
+  LIST_MEMBERS_EXPAND_REQUEST,
+  LIST_MEMBERS_EXPAND_SUCCESS,
+  LIST_MEMBERS_EXPAND_FAIL,
+} from '../actions/list_accounts'
+
 const initialState = ImmutableMap({
   followers: ImmutableMap(),
   following: ImmutableMap(),
@@ -89,6 +110,8 @@ const initialState = ImmutableMap({
   groups: ImmutableMap(),
   group_removed_accounts: ImmutableMap(),
   group_join_requests: ImmutableMap(),
+  list_members: ImmutableMap(), // then by id
+  list_subscribers: ImmutableMap(), // then by id
 });
 
 const setListFailed = (state, type, id) => {
@@ -125,7 +148,6 @@ const removeOneFromList = (state, type, id, accountId) => {
   })
 }
 
-
 export default function userLists(state = initialState, action) {
   switch(action.type) {
 
@@ -160,7 +182,7 @@ export default function userLists(state = initialState, action) {
     return appendToList(state, 'reblogged_by', action.statusId, action.accounts, action.next)
   case REPOSTS_FETCH_FAIL:
   case REPOSTS_EXPAND_FAIL:
-    return setListFailed(state, 'reblogged_by', action.statusId)
+    return setListFailed(state, 'reblogged_by', action.statusId)    
 
   case LIKES_FETCH_REQUEST:
   case LIKES_EXPAND_REQUEST:
@@ -243,6 +265,36 @@ export default function userLists(state = initialState, action) {
   case CHAT_MESSENGER_BLOCKS_FETCH_FAIL:
   case CHAT_MESSENGER_BLOCKS_EXPAND_FAIL:
     return setListFailed(state, 'chat_blocks', me)
+
+  case LIST_SUBSCRIBERS_FETCH_REQUEST:
+  case LIST_SUBSCRIBERS_EXPAND_REQUEST:
+    return state.setIn(['list_subscribers', action.id, 'isLoading'], true)
+  case LIST_SUBSCRIBERS_FETCH_SUCCESS:
+    return normalizeList(state, 'list_subscribers', action.id, action.accounts, action.next)
+  case LIST_SUBSCRIBERS_EXPAND_SUCCESS:
+    return appendToList(state, 'list_subscribers', action.id, action.accounts, action.next)
+  case LIST_SUBSCRIBERS_FETCH_FAIL:
+  case LIST_SUBSCRIBERS_EXPAND_FAIL:
+    return setListFailed(state, 'list_subscribers', action.id)
+  
+  case LIST_MEMBERS_FETCH_REQUEST:
+  case LIST_MEMBERS_EXPAND_REQUEST:
+    return state.setIn(['list_members', action.id, 'isLoading'], true)
+  case LIST_MEMBERS_FETCH_SUCCESS:
+    return normalizeList(state, 'list_members', action.id, action.accounts, action.next)
+  case LIST_MEMBERS_EXPAND_SUCCESS:
+    return appendToList(state, 'list_members', action.id, action.accounts, action.next)
+  case LIST_MEMBERS_FETCH_FAIL:
+  case LIST_MEMBERS_EXPAND_FAIL:
+    return setListFailed(state, 'list_members', action.id)
+  
+  case LIST_ACCOUNTS_MEMBER_LEAVE_SUCCESS:
+    return removeOneFromList(state, 'list_members', action.id, me)
+  
+  case LIST_EDITOR_ADD_SUCCESS:
+    // return appendToList(state, 'list_members', action.listId, [{id: action.accountId}])
+  case LIST_EDITOR_REMOVE_SUCCESS:
+    return removeOneFromList(state, 'list_members', action.listId, action.accountId)
 
   default:
     return state;

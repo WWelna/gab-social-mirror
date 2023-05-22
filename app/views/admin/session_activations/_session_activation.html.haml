@@ -1,0 +1,10 @@
+.batch-table__row
+  %label.batch-table__row__select.batch-checkbox
+    = f.check_box :session_activation_ids, { multiple: true, include_hidden: false }, session_activation.id
+  .batch-table__row__content
+    %span{ title: session_activation.user_agent, style: 'display:inline-block;width:33%;' }<
+      = fa_icon "#{session_device_icon(session_activation)} fw", 'aria-label' => session_device_icon(session_activation)
+      = ' '
+      = t 'sessions.description', browser: t("sessions.browsers.#{session_activation.browser}", default: "#{session_activation.browser}"), platform: t("sessions.platforms.#{session_activation.platform}", default: "#{session_activation.platform}")
+    %time.time-ago{style: 'display:inline-block;width:33%;', datetime: session_activation.updated_at.iso8601, title: l(session_activation.updated_at) }= l(session_activation.updated_at)
+    %span{style: 'display:inline-block;width:33%;'}= session_activation.ip

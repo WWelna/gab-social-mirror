@@ -32,7 +32,10 @@ class StatusActionBarItem extends React.PureComponent {
     const iconClasses = CX({
       d: 1,
       inheritFill: 1,
-      mr10: !!title && !isCompact,
+    })
+
+    const textClasses = CX({
+      ml10: 1,
     })
 
     const color = active ? 'brand' : 'secondary'
@@ -44,7 +47,7 @@ class StatusActionBarItem extends React.PureComponent {
           isBlock
           radiusSmall
           backgroundColor='none'
-          title={altTitle}
+          title={altTitle || title}
           color={color}
           buttonRef={buttonRef}
           className={btnClasses}
@@ -53,11 +56,11 @@ class StatusActionBarItem extends React.PureComponent {
           icon={icon}
           iconSize='16px'
           iconClassName={iconClasses}
-        > 
+        >
           {
             !!title && !isCompact &&
             <Responsive min={BREAKPOINT_SMALL}>
-              <Text color='inherit' size='small' weight={weight}>
+              <Text color='inherit' size='small' weight={weight} className={textClasses}>
                 {title}
               </Text>
             </Responsive>
